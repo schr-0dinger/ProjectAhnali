@@ -1,5 +1,7 @@
 # ssa/verify.py
 
+from ssa.value import SSAValue
+
 class SSAVerificationError(RuntimeError):
     pass
 
@@ -41,10 +43,16 @@ def _verify_uses_dominated(ssa_blocks, dominators):
     for block in ssa_blocks.values():
         for stmt in block.statements:
             for used in stmt.uses():
-                def_block = used.def_block
+                val = used.name
+
+                # Ignore literals / non-SSA values
+                if not isinstance(val, SSAValue):
+                    continue
+
+                def_block = val.def_block
                 if def_block not in dominators[block.cfg_block]:
                     raise SSAVerificationError(
-                        f"Use of {used} not dominated by its definition"
+                        f"Use of {val} not dominated by its definition"
                     )
 
 

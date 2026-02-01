@@ -11,6 +11,8 @@ from cfg.frontier import compute_dominance_frontier
 from ssa.insert_phi import insert_phi_nodes
 from ssa.rename import SSARenamer
 from ssa.verify import verify_ssa
+from passes.lower_ssa_to_dalvik import LowerSSAToDalvik
+
 
 
 def alpha_pipeline(frontend_ir):
@@ -47,7 +49,11 @@ def alpha_pipeline(frontend_ir):
     ssa_blocks = renamer.run()
 
     # 7. SSA verification (hard gate)
+        # 7. SSA verification (hard gate)
     verify_ssa(cfg, ssa_blocks, dom)
+
+    # 8. SSA → Dalvik lowering (no registers)
+    dalvik_blocks = LowerSSAToDalvik(cfg, ssa_blocks).run()
 
     return {
         "cfg": cfg,
@@ -57,4 +63,5 @@ def alpha_pipeline(frontend_ir):
         "df": df,
         "phi_nodes": phi_nodes,
         "ssa": ssa_blocks,
+        "dalvik": dalvik_blocks,
     }

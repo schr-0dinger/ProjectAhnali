@@ -45,6 +45,7 @@ class SSARenamer:
             name = phi.target.name
             version = self._new_version(name)
             val = SSAValue(name, version)
+            val.def_block = block
             phi.target = val
             self.stacks[name].append(val)
             pushed.append(name)
@@ -61,6 +62,7 @@ class SSARenamer:
                 name = stmt.defines().name
                 version = self._new_version(name)
                 val = SSAValue(name, version)
+                val.def_block = block
                 stmt.replace_def(val)
                 self.stacks[name].append(val)
                 pushed.append(name)
