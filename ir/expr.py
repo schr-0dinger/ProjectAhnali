@@ -58,3 +58,27 @@ class Compare(Expr):
 
     def __repr__(self):
         return f"({self.left} {self.op} {self.right})"
+
+class BinaryOp(Expr):
+    """
+    Arithmetic operation that produces a value.
+    Used inside Assign statements.
+    """
+    OPS = {"+", "-", "*", "/", "%"}
+
+    def __init__(self, op: str, left: Expr, right: Expr):
+        if op not in self.OPS:
+            raise ValueError(f"Invalid arithmetic operator: {op}")
+
+        # Strict type checking (Consistent with Compare class)
+        if not isinstance(left, Expr):
+            raise TypeError(f"BinaryOp.left must be Expr, got {type(left)}")
+        if not isinstance(right, Expr):
+            raise TypeError(f"BinaryOp.right must be Expr, got {type(right)}")
+
+        self.op = op
+        self.left = left
+        self.right = right
+
+    def __repr__(self):
+        return f"({self.left} {self.op} {self.right})"
