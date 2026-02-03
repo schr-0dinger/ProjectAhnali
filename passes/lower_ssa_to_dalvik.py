@@ -10,6 +10,8 @@ from dalvik.ir import (
     DReturnVoid,
 )
 from ir.expr import Compare
+from ir.expr import BinaryOp
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
 
 class LowerSSAToDalvik:
@@ -102,16 +104,38 @@ class LowerSSAToDalvik:
 
     def _lower_stmt(self, stmt, db):
         """
-        Alpha-only lowering:
-        Assign(x = literal) or Assign(x = y)
+        Delta-2 lowering:
+        - literals
+        - moves
+        - binary arithmetic
         """
         dst = DValue(stmt.defines())
 
-        if stmt.expr is None:
+        expr = stmt.expr
+        if expr is None:
             return
 
-        if isinstance(stmt.expr, int):
-            db.emit(DConst(dst, stmt.expr))
-        else:
-            # symbolic move (x = y)
-            db.emit(DMove(dst, DValue(stmt.expr)))
+        # Literal
+        if isinstance(expr, int):
+            db.emit(DConst(dst, expr))
+            return
+
+        # Binary arithmetic
+        if isinstance(expr, BinaryOp):
+            lhs = DValue(expr.left)
+            rhs = DValue(expr.right)
+
+            op_map = {
+                "+": DAdd,
+                "-": DSub,
+                "*": DMul,
+                "/": DDiv,
+                "%": DRem,
+            }
+
+            instr_cls = op_map[expr.op]
+            db.emit(instr_cls(dst, lhs, rhs))
+            return
+
+        # Symbolic move (x = y)
+        db.emit(DMove(dst, DValue(expr)))

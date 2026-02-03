@@ -35,6 +35,38 @@ class DMove(DInstr):
 
     def __repr__(self):
         return f"{self.dst} = move {self.src}"
+    
+class DBinaryOp(DInstr):
+    """
+    Base class for Dalvik binary arithmetic instructions.
+    dst = lhs <op> rhs
+    """
+    def __init__(self, dst, lhs, rhs):
+        self.dst = dst    # DValue
+        self.lhs = lhs    # DValue
+        self.rhs = rhs    # DValue
+
+    def __repr__(self):
+        return f"{self.dst} = {self.op} {self.lhs}, {self.rhs}"
+    
+class DAdd(DBinaryOp):
+    op = "add"
+
+
+class DSub(DBinaryOp):
+    op = "sub"
+
+
+class DMul(DBinaryOp):
+    op = "mul"
+
+
+class DDiv(DBinaryOp):
+    op = "div"
+
+
+class DRem(DBinaryOp):
+    op = "rem"
 
 
 class DIf(DInstr):
