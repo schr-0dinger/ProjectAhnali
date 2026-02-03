@@ -38,13 +38,14 @@ class DMove(DInstr):
 
 
 class DIf(DInstr):
-    def __init__(self, cond, true_block, false_block):
-        self.cond = cond
+    def __init__(self, *, cond=None, cmp=None, true_block, false_block):
+        # Exactly one must be set
+        assert (cond is None) ^ (cmp is None)
+
+        self.cond = cond          # DValue (boolean variable)
+        self.cmp = cmp            # (op, DValue, DValue)
         self.true = true_block
         self.false = false_block
-
-    def __repr__(self):
-        return f"if {self.cond} goto B{self.true.id} else B{self.false.id}"
 
 
 class DGoto(DInstr):

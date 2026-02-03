@@ -3,6 +3,7 @@
 from cfg.graph import ControlFlowGraph
 from cfg.validate import validate_cfg
 from tests.ir_stub import Assign, If, While
+from ir.expr import Expr, Compare
 
 
 class Terminator:
@@ -67,8 +68,12 @@ class CFGBuilder:
         else_entry = self.cfg.new_block()
         merge = self.cfg.new_block()
 
-        if not isinstance(stmt.cond, str):
-            raise TypeError("Condition must be a variable name (defined before the branch)")
+        if not isinstance(stmt.cond, (str, Expr)):
+            raise TypeError("Condition must be variable name or Expr")
+        
+        if isinstance(stmt.cond, Expr) and not isinstance(stmt.cond, Compare):
+            raise TypeError("Only Compare expressions allowed in conditions")
+
 
         current.terminator = Terminator(
             "branch",
@@ -95,8 +100,11 @@ class CFGBuilder:
         body = self.cfg.new_block()
         exit = self.cfg.new_block()
 
-        if not isinstance(stmt.cond, str):
-            raise TypeError("Condition must be a variable name (SSA-backed)")
+        if not isinstance(stmt.cond, (str, Expr)):
+            raise TypeError("Condition must be variable name or Expr")
+
+        if isinstance(stmt.cond, Expr) and not isinstance(stmt.cond, Compare):
+            raise TypeError("Only Compare expressions allowed in conditions")
 
         self._jump(current, cond_block)
 

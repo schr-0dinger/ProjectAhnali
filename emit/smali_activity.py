@@ -56,19 +56,26 @@ def emit_activity_smali(
                 lines.append(f"    goto :B{instr.target.id}")
 
             elif name == "DIf":
-                # Boolean condition: 0 = false, non-zero = true
-                rc = reg_map[instr.cond]
+                if instr.cmp:
+                    op, a, b = instr.cmp
+                    ra = reg_map[a]
+                    rb = reg_map[b]
 
-                # if cond == 0 → false branch
-                lines.append(
-                    f"    if-eqz {rc}, :B{instr.false.id}"
-                )
+                    opcode = {
+                        "<":  "if-lt",
+                        "<=": "if-le",
+                        ">":  "if-gt",
+                        ">=": "if-ge",
+                        "==": "if-eq",
+                        "!=": "if-ne",
+                    }[op]
 
-                # otherwise → true branch
-                lines.append(
-                    f"    goto :B{instr.true.id}"
-                )
-
+                    lines.append(
+                        f"    {opcode} {ra}, {rb}, :B{instr.true.id}"
+                    )
+                    lines.append(
+                        f"    goto :B{instr.false.id}"
+                    )
 
             elif name == "DReturnVoid":
                 pass  # ignore inner return

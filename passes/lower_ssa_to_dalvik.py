@@ -9,6 +9,7 @@ from dalvik.ir import (
     DGoto,
     DReturnVoid,
 )
+from ir.expr import Compare
 
 
 class LowerSSAToDalvik:
@@ -18,7 +19,6 @@ class LowerSSAToDalvik:
 
         # CFG block -> DalvikBlock
         self.blocks = {}
-        
 
     # ----------------------------
     # Entry point
@@ -51,10 +51,7 @@ class LowerSSAToDalvik:
             for phi in succ_ssa.phis:
                 src = phi.incoming[cfg_block]
                 dst = phi.target
-
-                db.emit(
-                    DMove(DValue(dst), DValue(src))
-                )
+                db.emit(DMove(DValue(dst), DValue(src)))
 
         # --- Lower SSA statements ---
         for stmt in ssa_block.statements:
@@ -65,18 +62,34 @@ class LowerSSAToDalvik:
         kind = term.kind
 
         if kind == "branch":
-            if not hasattr(term.cond, "version"):
-                raise RuntimeError(
-                    "Branch condition must be SSAValue (did you forget to define it?)"
+            if isinstance(term.cond, Compare):
+                # Relational branch
+                db.emit(
+                    DIf(
+                        cmp=(
+                            term.cond.op,
+                            DValue(term.cond.left),
+                            DValue(term.cond.right),
+                        ),
+                        true_block=term.true,
+                        false_block=term.false,
+                    )
                 )
+            else:
+                # Boolean SSA condition
+                if not hasattr(term.cond, "version"):
+                    raise RuntimeError(
+                        "Branch condition must be SSAValue "
+                        "(did you forget to define it?)"
+                    )
 
-            db.emit(
-                DIf(
-                    cond=DValue(term.cond),
-                    true_block=term.true,
-                    false_block=term.false,
+                db.emit(
+                    DIf(
+                        cond=DValue(term.cond),
+                        true_block=term.true,
+                        false_block=term.false,
+                    )
                 )
-            )
 
         elif kind == "jump":
             db.emit(DGoto(term.target))
@@ -86,8 +99,6 @@ class LowerSSAToDalvik:
 
         else:
             raise RuntimeError(f"Unknown terminator {kind}")
-        
-        
 
     def _lower_stmt(self, stmt, db):
         """

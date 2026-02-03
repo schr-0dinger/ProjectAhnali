@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from ssa.value import SSAValue
+from ir.expr import Compare, Var
 
 
 class SSARenamer:
@@ -72,12 +73,21 @@ class SSARenamer:
         # --- Rename terminator condition (if any) ---
         term = block.terminator
         if term and term.kind == "branch":
-            name = term.cond
-            if not isinstance(name, str):
-                raise RuntimeError("Branch condition must be variable name")
+            if isinstance(term.cond, str):
+                term.cond = self._current(term.cond)
 
-            # Replace condition with current SSA value
-            term.cond = self._current(name)
+            elif isinstance(term.cond, Compare):
+                # Rename variables inside comparison
+                def rename(e):
+                    if isinstance(e, Var):
+                        return self._current(e.name)
+                    return e
+
+                term.cond.left = rename(term.cond.left)
+                term.cond.right = rename(term.cond.right)
+
+            else:
+                raise RuntimeError("Invalid branch condition")
 
 
         # 3. Populate Phi incoming edges
