@@ -52,6 +52,23 @@ def emit_activity_smali(
                 rs = reg_map[instr.src]
                 lines.append(f"    move {rd}, {rs}")
 
+            elif name in ("DAdd", "DSub", "DMul", "DDiv", "DRem"):
+                rd = reg_map[instr.dst]
+                ra = reg_map[instr.lhs]
+                rb = reg_map[instr.rhs]
+
+                opcode = {
+                    "DAdd": "add-int",
+                    "DSub": "sub-int",
+                    "DMul": "mul-int",
+                    "DDiv": "div-int",
+                    "DRem": "rem-int",
+                }[name]
+
+                lines.append(
+                    f"    {opcode} {rd}, {ra}, {rb}"
+                )
+
             elif name == "DGoto":
                 lines.append(f"    goto :B{instr.target.id}")
 
