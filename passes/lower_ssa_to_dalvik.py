@@ -18,6 +18,7 @@ class LowerSSAToDalvik:
 
         # CFG block -> DalvikBlock
         self.blocks = {}
+        
 
     # ----------------------------
     # Entry point
@@ -64,9 +65,14 @@ class LowerSSAToDalvik:
         kind = term.kind
 
         if kind == "branch":
+            if not hasattr(term.cond, "version"):
+                raise RuntimeError(
+                    "Branch condition must be SSAValue (did you forget to define it?)"
+                )
+
             db.emit(
                 DIf(
-                    cond=term.cond,
+                    cond=DValue(term.cond),
                     true_block=term.true,
                     false_block=term.false,
                 )
@@ -80,6 +86,8 @@ class LowerSSAToDalvik:
 
         else:
             raise RuntimeError(f"Unknown terminator {kind}")
+        
+        
 
     def _lower_stmt(self, stmt, db):
         """

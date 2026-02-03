@@ -13,6 +13,7 @@ from tests.ir_stub import Assign, If
 def test_ssa_versions_and_phi_incoming():
     ir = [
         Assign("x", 0),
+        Assign("c", 1),
         If("c", [Assign("x", 1)], [Assign("x", 2)]),
         Assign("y", "x"),
     ]

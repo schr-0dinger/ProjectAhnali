@@ -67,6 +67,9 @@ class CFGBuilder:
         else_entry = self.cfg.new_block()
         merge = self.cfg.new_block()
 
+        if not isinstance(stmt.cond, str):
+            raise TypeError("Condition must be a variable name (defined before the branch)")
+
         current.terminator = Terminator(
             "branch",
             cond=stmt.cond,
@@ -91,6 +94,9 @@ class CFGBuilder:
         cond_block = self.cfg.new_block()
         body = self.cfg.new_block()
         exit = self.cfg.new_block()
+
+        if not isinstance(stmt.cond, str):
+            raise TypeError("Condition must be a variable name (SSA-backed)")
 
         self._jump(current, cond_block)
 

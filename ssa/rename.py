@@ -69,6 +69,17 @@ class SSARenamer:
 
             ssa_block.statements.append(stmt)
 
+        # --- Rename terminator condition (if any) ---
+        term = block.terminator
+        if term and term.kind == "branch":
+            name = term.cond
+            if not isinstance(name, str):
+                raise RuntimeError("Branch condition must be variable name")
+
+            # Replace condition with current SSA value
+            term.cond = self._current(name)
+
+
         # 3. Populate Phi incoming edges
         for succ in block.successors:
             for phi in self.phi_nodes.get(succ, []):

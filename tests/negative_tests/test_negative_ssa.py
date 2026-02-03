@@ -1,6 +1,6 @@
 import pytest
 from alpha_pipeline import alpha_pipeline
-from tests.ir_stub import Assign
+from tests.ir_stub import Assign, If
 
 
 def test_use_before_def_rejected():
@@ -51,3 +51,12 @@ def test_cfg_missing_terminator_rejected():
 
     with pytest.raises(CFGValidationError):
         validate_cfg(cfg)
+
+
+def test_symbolic_condition_rejected():
+    ir = [
+        If("c", [], []),  # c never defined
+    ]
+
+    with pytest.raises(RuntimeError):
+        alpha_pipeline(ir)
