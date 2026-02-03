@@ -1,7 +1,8 @@
 # ssa/verify.py
 
 from ssa.value import SSAValue
-from ir.expr import Compare, Const
+from ir.expr import Compare, Const, BinaryOp
+
 
 class SSAVerificationError(RuntimeError):
     pass
@@ -10,15 +11,43 @@ class SSAVerificationError(RuntimeError):
 def verify_ssa(cfg, ssa_blocks, dominators):
     """
     Verify SSA invariants.
-
-    This is a skeleton: called after SSA renaming exists.
+    Called after SSA renaming.
     """
 
     _verify_single_definition(ssa_blocks)
     _verify_uses_dominated(ssa_blocks, dominators)
     _verify_phi_legality(ssa_blocks)
     _verify_compare_is_ssa_clean(cfg, ssa_blocks)
+    _verify_binaryop_is_ssa_clean(ssa_blocks)
 
+
+# --------------------------------------------------------------------
+# Core helpers
+# --------------------------------------------------------------------
+
+def _iter_ssa_uses(value):
+    """
+    Yield all SSAValue uses contained inside a value/expression.
+    This is the single source of truth for dominance verification.
+    """
+
+    if isinstance(value, SSAValue):
+        yield value
+
+    elif isinstance(value, BinaryOp):
+        yield from _iter_ssa_uses(value.left)
+        yield from _iter_ssa_uses(value.right)
+
+    elif isinstance(value, Compare):
+        yield from _iter_ssa_uses(value.left)
+        yield from _iter_ssa_uses(value.right)
+
+    # Const and unknown leaf nodes produce no SSA uses
+
+
+# --------------------------------------------------------------------
+# Verification passes
+# --------------------------------------------------------------------
 
 def _verify_single_definition(ssa_blocks):
     seen = set()
@@ -45,44 +74,36 @@ def _verify_uses_dominated(ssa_blocks, dominators):
     for block in ssa_blocks.values():
         cfg_block = block.cfg_block
 
-        # ---- Statement uses ----
+        # ---- Statement uses (generic + arithmetic) ----
         for stmt in block.statements:
             for used in stmt.uses():
-                val = used.name
+                for val in _iter_ssa_uses(used.name):
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} not dominated by its definition"
+                        )
 
-                if not isinstance(val, SSAValue):
-                    continue
-
-                def_block = val.def_block
-                if def_block not in dominators[cfg_block]:
-                    raise SSAVerificationError(
-                        f"Use of {val} not dominated by its definition"
-                    )
+            expr = getattr(stmt, "expr", None)
+            if expr is not None:
+                for val in _iter_ssa_uses(expr):
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} in expression "
+                            f"not dominated by its definition"
+                        )
 
         # ---- Terminator uses ----
         term = cfg_block.terminator
         if term and term.kind == "branch":
-
-            cond = term.cond
-
-            # Boolean condition
-            if isinstance(cond, SSAValue):
-                def_block = cond.def_block
+            for val in _iter_ssa_uses(term.cond):
+                def_block = val.def_block
                 if def_block not in dominators[cfg_block]:
                     raise SSAVerificationError(
-                        f"Branch condition {cond} not dominated by its definition"
+                        f"Branch use of {val} not dominated by its definition"
                     )
 
-            # Compare condition
-            elif isinstance(cond, Compare):
-                for side in (cond.left, cond.right):
-                    if isinstance(side, SSAValue):
-                        def_block = side.def_block
-                        if def_block not in dominators[cfg_block]:
-                            raise SSAVerificationError(
-                                f"Compare operand {side} "
-                                f"not dominated by its definition"
-                            )
 
 def _verify_phi_legality(ssa_blocks):
     for block in ssa_blocks.values():
@@ -103,8 +124,9 @@ def _verify_phi_legality(ssa_blocks):
                     f"with <2 predecessors"
                 )
 
+
 def _verify_compare_is_ssa_clean(cfg, ssa_blocks):
-    for cfg_block, ssa_block in ssa_blocks.items():
+    for cfg_block, _ in ssa_blocks.items():
         term = cfg_block.terminator
         if not term or term.kind != "branch":
             continue
@@ -121,3 +143,18 @@ def _verify_compare_is_ssa_clean(cfg, ssa_blocks):
                 f"Non-SSA value {side} found in Compare condition "
                 f"in block {cfg_block.id}"
             )
+
+
+def _verify_binaryop_is_ssa_clean(ssa_blocks):
+    for block in ssa_blocks.values():
+        for stmt in block.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, BinaryOp):
+                for side in (expr.left, expr.right):
+                    if isinstance(side, (SSAValue, Const)):
+                        continue
+
+                    raise SSAVerificationError(
+                        f"Non-SSA value {side} found in BinaryOp "
+                        f"in block {block.cfg_block.id}"
+                    )
