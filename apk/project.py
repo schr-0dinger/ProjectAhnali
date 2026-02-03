@@ -1,24 +1,49 @@
 # apk/project.py
 
 from pathlib import Path
-from emit.smali_preview import emit_smali_preview
+
 from passes.regalloc_naive import RegisterAllocatorNaive
-from emit.smali_emit import emit_smali
+from emit.smali_activity import emit_activity_smali
 
 
+# ------------------------------------------------------------
+# AndroidManifest.xml (LAUNCHABLE)
+# ------------------------------------------------------------
 
 ANDROID_MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.anali.preview">
+    package="com.anali.preview"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <uses-sdk
+        android:minSdkVersion="21"
+        android:targetSdkVersion="33" />
 
     <application
         android:label="AnaliPreview"
         android:allowBackup="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+        </activity>
+
     </application>
 
 </manifest>
 """
 
+
+# ------------------------------------------------------------
+# apktool.yml (minimal but valid)
+# ------------------------------------------------------------
 
 APKTOOL_YML = """!!brut.androlib.meta.MetaInfo
 apkFileName: AnaliPreview.apk
@@ -34,6 +59,10 @@ versionInfo:
 """
 
 
+# ------------------------------------------------------------
+# Project emitter
+# ------------------------------------------------------------
+
 def emit_apktool_project(dalvik_blocks, out_dir="out_apk"):
     out = Path(out_dir)
     smali_dir = out / "smali"
@@ -43,23 +72,32 @@ def emit_apktool_project(dalvik_blocks, out_dir="out_apk"):
 
     # 1. AndroidManifest.xml
     (out / "AndroidManifest.xml").write_text(
-        ANDROID_MANIFEST, encoding="utf-8"
+        ANDROID_MANIFEST,
+        encoding="utf-8",
     )
 
     # 2. apktool.yml
     (out / "apktool.yml").write_text(
-        APKTOOL_YML, encoding="utf-8"
+        APKTOOL_YML,
+        encoding="utf-8",
     )
 
-    # 3. Smali file
-        # Register allocation
+    # 3. Register allocation
     allocator = RegisterAllocatorNaive(dalvik_blocks)
     reg_map, locals_count = allocator.allocate()
 
-    smali_code = emit_smali(dalvik_blocks, reg_map, locals_count)
+    # 4. Activity smali
+    smali_code = emit_activity_smali(
+        dalvik_blocks,
+        reg_map,
+        locals_count,
+        package="com/anali/preview",
+        activity="MainActivity",
+    )
 
-    (smali_dir / "Test.smali").write_text(
-        smali_code, encoding="utf-8"
+    (smali_dir / "MainActivity.smali").write_text(
+        smali_code,
+        encoding="utf-8",
     )
 
     return out
