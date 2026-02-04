@@ -58,6 +58,12 @@ class SSARenamer:
             for var in stmt.uses():
                 var.replace_with(self._current(var.name))
 
+            # Some IR stubs use a bare string for simple moves (e.g. z = "y").
+            # Normalize those to SSAValues so later passes see true SSA uses.
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, str):
+                stmt.expr = self._current(expr)
+
             # Rename definitions
             if stmt.defines():
                 name = stmt.defines().name

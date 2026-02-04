@@ -9,8 +9,7 @@ from dalvik.ir import (
     DGoto,
     DReturnVoid,
 )
-from ir.expr import Compare
-from ir.expr import BinaryOp
+from ir.expr import Compare, BinaryOp, Const
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
 
@@ -41,6 +40,20 @@ class LowerSSAToDalvik:
     # Lowering helpers
     # ----------------------------
 
+    def _as_dvalue(self, v, db):
+        if hasattr(v, "version"):  # SSAValue
+            return DValue(v)
+
+        if isinstance(v, Const):
+            tmp = DValue(v)
+            db.emit(DConst(tmp, v.value))
+            return tmp
+
+        raise RuntimeError(
+            f"Dalvik lowering received non-SSA value: {v!r}"
+        )
+
+
     def _lower_block(self, cfg_block, ssa_block):
         db = self.blocks[cfg_block]
 
@@ -70,13 +83,14 @@ class LowerSSAToDalvik:
                     DIf(
                         cmp=(
                             term.cond.op,
-                            DValue(term.cond.left),
-                            DValue(term.cond.right),
+                            self._as_dvalue(term.cond.left, db),
+                            self._as_dvalue(term.cond.right, db),
                         ),
                         true_block=term.true,
                         false_block=term.false,
                     )
                 )
+
             else:
                 # Boolean SSA condition
                 if not hasattr(term.cond, "version"):
@@ -117,13 +131,13 @@ class LowerSSAToDalvik:
 
         # Literal
         if isinstance(expr, int):
-            db.emit(DConst(dst, expr))
+            # db.emit(DConst(dst, expr))
             return
 
         # Binary arithmetic
         if isinstance(expr, BinaryOp):
-            lhs = DValue(expr.left)
-            rhs = DValue(expr.right)
+            lhs = self._as_dvalue(expr.left, db)
+            rhs = self._as_dvalue(expr.right, db)
 
             op_map = {
                 "+": DAdd,
