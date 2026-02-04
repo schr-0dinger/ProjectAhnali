@@ -1,5 +1,8 @@
 # ssa/value.py
 
+from ir.types import AnaliType
+
+
 class SSAValue:
     """
     A single-assignment value.
@@ -8,6 +11,8 @@ class SSAValue:
     def __init__(self, name: str, version: int):
         self.name = name      # original variable name
         self.version = version
+        self.type = AnaliType.UNKNOWN
+        self.def_block = None
 
     def __repr__(self):
         return f"{self.name}_{self.version}"

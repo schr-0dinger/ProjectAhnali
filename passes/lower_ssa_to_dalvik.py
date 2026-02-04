@@ -10,6 +10,7 @@ from dalvik.ir import (
     DReturnVoid,
 )
 from ir.expr import Compare, BinaryOp, Const
+from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
 
@@ -126,6 +127,7 @@ class LowerSSAToDalvik:
         dst = DValue(stmt.defines())
 
         expr = stmt.expr
+
         if expr is None:
             return
 
@@ -136,6 +138,18 @@ class LowerSSAToDalvik:
 
         # Binary arithmetic
         if isinstance(expr, BinaryOp):
+
+            expr_type = stmt.defines().type
+
+            if expr_type == AnaliType.INT:
+                op_map = {"+": DAdd, "-": DSub, "*": DMul, "/": DDiv, "%": DRem}
+            elif expr_type == AnaliType.FLOAT:
+                # Future-proofing: Phase Omega allows adding DAddFloat easily here
+                raise NotImplementedError("Float arithmetic not yet implemented")
+            else:
+                raise RuntimeError(f"Cannot perform arithmetic on type {expr_type}")          
+
+
             lhs = self._as_dvalue(expr.left, db)
             rhs = self._as_dvalue(expr.right, db)
 

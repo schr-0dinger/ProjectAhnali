@@ -8,11 +8,13 @@ from cfg.dominance import (
     build_dominator_tree,
 )
 from cfg.frontier import compute_dominance_frontier
+from passes.type_verify import verify_types
 from ssa.insert_phi import insert_phi_nodes
 from ssa.rename import SSARenamer
 from ssa.verify import verify_ssa
 from passes.lower_ssa_to_dalvik import LowerSSAToDalvik
 from passes.dce import eliminate_dead_code
+from passes.type_inference import TypeInferencePass
 
 
 
@@ -50,12 +52,17 @@ def alpha_pipeline(frontend_ir):
     ssa_blocks = renamer.run()
 
     # 7. SSA verification (hard gate)
-        # 7. SSA verification (hard gate)
     verify_ssa(cfg, ssa_blocks, dom)
 
-    # 8. SSA → Dalvik lowering (no registers)
+    # 8. NEW: Type Inference (Phase Omega Gate)
+    TypeInferencePass(cfg, ssa_blocks).run()
+
+    verify_types(ssa_blocks)
+
+    # 9. SSA → Dalvik lowering (no registers)
     dalvik_blocks = LowerSSAToDalvik(cfg, ssa_blocks).run()
 
+    # 10. Optimizations
     dalvik_blocks = eliminate_dead_code(dalvik_blocks)
 
     return {
