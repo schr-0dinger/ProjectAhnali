@@ -1,6 +1,6 @@
 from alpha_pipeline import alpha_pipeline
-from tests.ir_stub import Assign
-from ir.expr import BinaryOp, Var, Const
+from tests.ir_stub import Assign, If
+from ir.expr import BinaryOp, Compare, Var, Const
 from dalvik.ir import DAdd, DConst
 
 
@@ -11,6 +11,7 @@ def test_binaryop_add_lowers_to_dadd():
             "y",
             BinaryOp("+", Var("x"), Const(2))
         ),
+        If(Compare("==", Var("y"), Const(3)), [], [])
     ]
 
     result = alpha_pipeline(ir)
@@ -27,7 +28,8 @@ def test_binaryop_add_lowers_to_dadd():
                 consts.append(instr)
 
     # One const for literal 2
-    assert len(consts) == 1
+    assert any(c.value == 2 for c in consts)
+    assert len(adds) == 1
 
     # One arithmetic instruction
     assert len(adds) == 1

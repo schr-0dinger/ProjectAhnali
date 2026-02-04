@@ -12,6 +12,7 @@ from ssa.insert_phi import insert_phi_nodes
 from ssa.rename import SSARenamer
 from ssa.verify import verify_ssa
 from passes.lower_ssa_to_dalvik import LowerSSAToDalvik
+from passes.dce import eliminate_dead_code
 
 
 
@@ -54,6 +55,8 @@ def alpha_pipeline(frontend_ir):
 
     # 8. SSA → Dalvik lowering (no registers)
     dalvik_blocks = LowerSSAToDalvik(cfg, ssa_blocks).run()
+
+    dalvik_blocks = eliminate_dead_code(dalvik_blocks)
 
     return {
         "cfg": cfg,

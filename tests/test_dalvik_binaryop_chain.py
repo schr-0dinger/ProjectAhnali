@@ -1,20 +1,16 @@
 from alpha_pipeline import alpha_pipeline
-from tests.ir_stub import Assign
-from ir.expr import BinaryOp, Var, Const
+from tests.ir_stub import Assign, If
+from ir.expr import BinaryOp, Compare, Var, Const
 from dalvik.ir import DAdd, DMul
 
 
 def test_chained_binaryops_lower_correctly():
     ir = [
         Assign("x", 2),
-        Assign(
-            "y",
-            BinaryOp("+", Var("x"), Const(1))
-        ),
-        Assign(
-            "z",
-            BinaryOp("*", Var("y"), Const(4))
-        ),
+        Assign("y", BinaryOp("+", Var("x"), Const(1))),
+        Assign("z", BinaryOp("*", Var("y"), Const(4))),
+
+        If(Compare(">", Var("z"), Const(0)), [], [])
     ]
 
     result = alpha_pipeline(ir)

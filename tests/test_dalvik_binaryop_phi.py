@@ -1,6 +1,6 @@
 from alpha_pipeline import alpha_pipeline
 from tests.ir_stub import Assign, If
-from ir.expr import BinaryOp, Var, Const
+from ir.expr import BinaryOp, Compare, Var, Const
 from dalvik.ir import DAdd
 
 
@@ -14,6 +14,7 @@ def test_binaryop_with_phi_lowering():
             else_=[Assign("x", BinaryOp("+", Var("x"), Const(2)))],
         ),
         Assign("y", "x"),
+        If(Compare("!=", Var("y"), Const(0)), [], [])
     ]
 
     result = alpha_pipeline(ir)
