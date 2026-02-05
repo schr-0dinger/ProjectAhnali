@@ -1,7 +1,7 @@
 # ssa/verify.py
 
 from ssa.value import SSAValue
-from ir.expr import Compare, Const, BinaryOp
+from ir.expr import Compare, Const, BinaryOp, Call, Var
 
 
 class SSAVerificationError(RuntimeError):
@@ -19,6 +19,7 @@ def verify_ssa(cfg, ssa_blocks, dominators):
     _verify_phi_legality(ssa_blocks)
     _verify_compare_is_ssa_clean(cfg, ssa_blocks)
     _verify_binaryop_is_ssa_clean(ssa_blocks)
+    _verify_call_is_ssa_clean(ssa_blocks)
 
 
 # --------------------------------------------------------------------
@@ -41,6 +42,10 @@ def _iter_ssa_uses(value):
     elif isinstance(value, Compare):
         yield from _iter_ssa_uses(value.left)
         yield from _iter_ssa_uses(value.right)
+
+    elif isinstance(value, Call):
+        for arg in value.args:
+            yield from _iter_ssa_uses(arg)
 
     # Const and unknown leaf nodes produce no SSA uses
 
@@ -74,10 +79,13 @@ def _verify_uses_dominated(ssa_blocks, dominators):
     for block in ssa_blocks.values():
         cfg_block = block.cfg_block
 
-        # ---- Statement uses (generic + arithmetic) ----
+        # ---- Statement uses ----
         for stmt in block.statements:
             for used in stmt.uses():
-                for val in _iter_ssa_uses(used.name):
+                for val in _iter_ssa_uses(used):
+                    if getattr(val, "is_undef", False):
+                        continue
+
                     def_block = val.def_block
                     if def_block not in dominators[cfg_block]:
                         raise SSAVerificationError(
@@ -87,6 +95,9 @@ def _verify_uses_dominated(ssa_blocks, dominators):
             expr = getattr(stmt, "expr", None)
             if expr is not None:
                 for val in _iter_ssa_uses(expr):
+                    if getattr(val, "is_undef", False):
+                        continue
+
                     def_block = val.def_block
                     if def_block not in dominators[cfg_block]:
                         raise SSAVerificationError(
@@ -98,6 +109,9 @@ def _verify_uses_dominated(ssa_blocks, dominators):
         term = cfg_block.terminator
         if term and term.kind == "branch":
             for val in _iter_ssa_uses(term.cond):
+                if getattr(val, "is_undef", False):
+                    continue
+
                 def_block = val.def_block
                 if def_block not in dominators[cfg_block]:
                     raise SSAVerificationError(
@@ -126,24 +140,19 @@ def _verify_phi_legality(ssa_blocks):
 
 
 def _verify_compare_is_ssa_clean(cfg, ssa_blocks):
-    for cfg_block, _ in ssa_blocks.items():
-        term = cfg_block.terminator
-        if not term or term.kind != "branch":
-            continue
 
-        cond = term.cond
-        if not isinstance(cond, Compare):
-            continue
-
-        for side in (cond.left, cond.right):
-            if isinstance(side, (SSAValue, Const)):
-                continue
-
-            raise SSAVerificationError(
-                f"Non-SSA value {side} found in Compare condition "
-                f"in block {cfg_block.id}"
-            )
-
+    for block in ssa_blocks.values():
+        term = block.cfg_block.terminator
+        if term and term.kind == "branch":
+            cond = term.cond
+            if isinstance(cond, Compare):
+                for side in (cond.left, cond.right):
+                    if isinstance(side, (SSAValue, Const)):
+                        continue
+                    raise SSAVerificationError(
+                        f"Non-SSA value {side} found in Compare condition "
+                        f"in block {block.cfg_block.id}"
+                    )
 
 def _verify_binaryop_is_ssa_clean(ssa_blocks):
     for block in ssa_blocks.values():
@@ -156,5 +165,19 @@ def _verify_binaryop_is_ssa_clean(ssa_blocks):
 
                     raise SSAVerificationError(
                         f"Non-SSA value {side} found in BinaryOp "
+                        f"in block {block.cfg_block.id}"
+                    )
+
+def _verify_call_is_ssa_clean(ssa_blocks):
+
+    for block in ssa_blocks.values():
+        for stmt in block.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, Call):
+                for arg in expr.args:
+                    if isinstance(arg, (SSAValue, Const)):
+                        continue
+                    raise SSAVerificationError(
+                        f"Non-SSA arg {arg} found in Call "
                         f"in block {block.cfg_block.id}"
                     )

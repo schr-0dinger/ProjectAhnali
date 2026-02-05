@@ -9,16 +9,14 @@ from dalvik.ir import (
     DGoto,
     DReturnVoid,
 )
-from ir.expr import Compare, BinaryOp, Const
+from ir.expr import Compare, BinaryOp, Const, Var
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
-
-from dalvik.ir import DMove, DValue
 
 
 # passes/lower_ssa_to_dalvik.py
 
-from dalvik.ir import DMove, DValue
+from ssa.value import SSAValue
 
 
 def apply_spills(dalvik_blocks, intervals):
@@ -91,18 +89,28 @@ class LowerSSAToDalvik:
     # Lowering helpers
     # ----------------------------
 
-    def _as_dvalue(self, v, db):
-        if hasattr(v, "version"):  # SSAValue
-            return DValue(v)
+    def _as_dvalue(self, value, db):
 
-        if isinstance(v, Const):
-            tmp = DValue(v)
-            db.emit(DConst(tmp, v.value))
-            return tmp
+        if isinstance(value, DValue):
+            return value
+
+        if isinstance(value, Const):
+            dv = DValue(value)
+            db.emit(DConst(dv, value.value))
+            return dv
+
+        if isinstance(value, SSAValue):
+            return DValue(value)
+
+        if isinstance(value, Var):
+            # Legacy unresolved variable (e.g., If("c"))
+            # Treat as symbolic value; verifier decides legality
+            return DValue(value)
 
         raise RuntimeError(
-            f"Dalvik lowering received non-SSA value: {v!r}"
+            f"Dalvik lowering received unsupported value: {value}"
         )
+
 
 
     def _lower_block(self, cfg_block, ssa_block):

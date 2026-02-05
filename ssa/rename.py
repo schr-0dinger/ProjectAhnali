@@ -38,8 +38,13 @@ class SSARenamer:
         for stmt in block.statements:
             # Rename uses
             for var in stmt.uses():
-                if isinstance(var, Var):
-                    var.replace_with(self._current(var.name))
+                if isinstance(var, SSAValue):
+                    continue
+                name = self._resolve_name(var)
+                if name is None:
+                    continue
+                if hasattr(var, "replace_with"):
+                    var.replace_with(self._current(name))
 
             # Normalize bare string expressions
             expr = getattr(stmt, "expr", None)
@@ -55,8 +60,9 @@ class SSARenamer:
                 expr.right = self._rename_expr(expr.right)
 
             # Rename definitions
-            if stmt.defines():
-                name = stmt.defines().name
+            defines = stmt.defines() if hasattr(stmt, "defines") else None
+            if defines:
+                name = self._resolve_name(defines)
                 version = self._new_version(name)
                 val = SSAValue(name, version)
                 val.def_block = block
@@ -80,7 +86,12 @@ class SSARenamer:
         for succ in block.successors:
             for phi in self.phi_nodes.get(succ, []):
                 name = phi.target.name
-                phi.add_incoming(block, self._current(name))
+                if self.stacks[name]:
+                    val = self._current(name)
+                else:
+                    # Undefined along this edge → phi undef
+                    val = SSAValue.undef(name)
+                phi.add_incoming(block, val)
 
         # Recurse
         for child in self.dom_tree.get(block, []):
@@ -91,9 +102,13 @@ class SSARenamer:
             self.stacks[name].pop()
 
     def _rename_expr(self, expr):
-        if isinstance(expr, Var):
-            return self._current(expr.name)
+        if isinstance(expr, SSAValue):
+            return expr
+        name = self._resolve_name(expr)
+        if name is not None:
+            return self._current(name)
         return expr
+
 
     def _new_version(self, name):
         v = self.counters[name]
@@ -105,8 +120,19 @@ class SSARenamer:
             raise RuntimeError(f"Use of undefined variable '{name}'")
         return self.stacks[name][-1]
 
+
+
     def _get_ssa_block(self, block):
         if block not in self.ssa_blocks:
             from ssa.block import SSABlock
             self.ssa_blocks[block] = SSABlock(block)
         return self.ssa_blocks[block]
+
+    def _resolve_name(self, obj):
+        if isinstance(obj, SSAValue):
+            return obj.name
+        if isinstance(obj, str):
+            return obj
+        if hasattr(obj, "name"):
+            return obj.name
+        return None

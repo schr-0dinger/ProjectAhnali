@@ -1,7 +1,7 @@
 # passes/type_verify.py
 
 from ir.types import AnaliType
-from ir.expr import BinaryOp, Compare
+from ir.expr import BinaryOp, Compare, Call
 from ssa.value import SSAValue
 
 
@@ -35,6 +35,9 @@ def verify_types(ssa_blocks):
                 required.add(expr.left)
                 required.add(expr.right)
                 required.add(stmt.defines())
+
+            elif isinstance(expr, Call):
+                continue #UNKNOWN allowed at this stage
                 
     # ---------------------------------
     # 2. Verify only REQUIRED SSAValues

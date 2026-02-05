@@ -27,8 +27,10 @@ class TypeInferencePass:
                 incoming_types = {
                     v.type
                     for v in incoming_vals
-                    if v is not None and v.type not in (None, AnaliType.UNKNOWN)
+                    if isinstance(v, SSAValue)
+                    and v.type not in (None, AnaliType.UNKNOWN)
                 }
+
 
                 # Undetermined phi (all inputs UNKNOWN) → skip for now
                 if not incoming_types:

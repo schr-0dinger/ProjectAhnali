@@ -13,6 +13,13 @@ class SSAValue:
         self.version = version
         self.type = AnaliType.UNKNOWN
         self.def_block = None
+        self.is_undef = False
+
+    @staticmethod
+    def undef(name):
+        v = SSAValue(name, -1)
+        v.is_undef = True
+        return v
 
     def __repr__(self):
         return f"{self.name}_{self.version}"
