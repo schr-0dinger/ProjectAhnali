@@ -10,9 +10,14 @@ class LiveInterval:
         self.end = -1
         self.reg = None
 
-    def __repr__(self):
-        return f"<Interval {self.value} [{self.start}, {self.end}] r={self.reg}>"
+        # Zeta-3
+        self.spilled = False
+        self.stack_slot = None
 
+    def __repr__(self):
+        if self.spilled:
+            return f"<Interval {self.value} [{self.start}, {self.end}] spill@{self.stack_slot}>"
+        return f"<Interval {self.value} [{self.start}, {self.end}] r={self.reg}>"
 
 
 class LinearScanAllocator:
@@ -56,19 +61,37 @@ class LinearScanAllocator:
         self.intervals = sorted(interval_map.values(), key=lambda i: i.start)
 
     def allocate(self):
-        """
-        Linear scan allocation (no spilling yet).
-        """
         for interval in self.intervals:
             self._expire_old(interval)
 
-            if not self.free_regs:
-                raise RuntimeError("Register spill required (Zeta-3)")
+            if self.free_regs:
+                reg = self.free_regs.pop(0)
+                interval.reg = reg
+                self.active.append(interval)
+                self.active.sort(key=lambda i: i.end)
+                continue
 
-            reg = self.free_regs.pop(0)
-            interval.reg = reg
-            self.active.append(interval)
-            self.active.sort(key=lambda i: i.end)
+            # ---- SPILL ----
+            spill = self.active[-1]  # farthest end
+            if spill.end > interval.end:
+                # Spill active interval
+                interval.reg = spill.reg
+                spill.spilled = True
+                spill.reg = None
+                self.active.remove(spill)
+
+                self.active.append(interval)
+                self.active.sort(key=lambda i: i.end)
+            else:
+                # Spill current interval
+                interval.spilled = True
+
+    def assign_stack_slots(self):
+        slot = 0
+        for interval in self.intervals:
+            if interval.spilled:
+                interval.stack_slot = slot
+                slot += 1
 
     def _expire_old(self, current):
         expired = [i for i in self.active if i.end < current.start]

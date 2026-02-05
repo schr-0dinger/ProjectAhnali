@@ -7,9 +7,12 @@ class DValue:
     """
     def __init__(self, ssa_value):
         self.ssa = ssa_value
+        self.reg = None
 
     def __repr__(self):
-        return f"<{self.ssa}>"
+        if self.reg is not None:
+            return f"v{self.reg}"
+        return f"<DValue {self.ssa}>"
 
 
 class DInstr:

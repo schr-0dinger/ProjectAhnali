@@ -13,6 +13,45 @@ from ir.expr import Compare, BinaryOp, Const
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
+from dalvik.ir import DMove, DValue
+
+
+# passes/lower_ssa_to_dalvik.py
+
+from dalvik.ir import DMove, DValue
+
+
+def apply_spills(dalvik_blocks, intervals):
+    spill_map = {i.value: i for i in intervals if i.spilled}
+
+    for block in dalvik_blocks.values():
+        new_instrs = []
+
+        for instr in block.instructions:
+            # ---- reload before uses ----
+            for field in ("src", "lhs", "rhs", "cond"):
+                if hasattr(instr, field):
+                    d = getattr(instr, field)
+                    if d and d.ssa in spill_map:
+                        slot = spill_map[d.ssa].stack_slot
+                        spill_val = DValue(d.ssa)
+                        spill_val.reg = slot
+                        tmp = DValue(d.ssa)
+                        new_instrs.append(DMove(tmp, spill_val))
+                        setattr(instr, field, tmp)
+
+            new_instrs.append(instr)
+
+            # ---- spill after defs ----
+            if hasattr(instr, "dst") and instr.dst and instr.dst.ssa in spill_map:
+                slot = spill_map[instr.dst.ssa].stack_slot
+                spill_val = DValue(instr.dst.ssa)
+                spill_val.reg = slot
+                new_instrs.append(DMove(spill_val, instr.dst))
+
+        block.instructions = new_instrs
+
+
 def _apply_registers(dalvik_blocks, intervals):
     regmap = {i.value: i.reg for i in intervals}
 

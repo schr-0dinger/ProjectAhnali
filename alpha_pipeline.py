@@ -75,6 +75,12 @@ def alpha_pipeline(frontend_ir):
     allocator.build_intervals(cfg, dalvik_blocks, liveness)
     allocator.allocate()
 
+    allocator.assign_stack_slots()
+
+    from passes.lower_ssa_to_dalvik import apply_spills
+    apply_spills(dalvik_blocks, allocator.intervals)
+
+
     # Apply registers to Dalvik IR
     from passes.lower_ssa_to_dalvik import _apply_registers
     
