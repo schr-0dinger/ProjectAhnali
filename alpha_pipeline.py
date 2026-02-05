@@ -19,6 +19,7 @@ from passes.liveness import compute_liveness
 from passes.regalloc_linear import LinearScanAllocator
 from ir.method import MethodIR
 from ir.program import ProgramIR
+from dalvik.method import DalvikMethod
 
 def build_program(frontend_ir):
     if isinstance(frontend_ir, ProgramIR):
@@ -107,8 +108,9 @@ def compile_method(method_ir):
     _apply_registers(dalvik_blocks, allocator.intervals)
 
     # 13. Smali emission (mandatory)
-    from emit.smali_emit import emit_smali
-    smali = emit_smali(dalvik_blocks, allocator.intervals)
+    dalvik_method = DalvikMethod(method_ir.name, dalvik_blocks, allocator)
+    from emit.smali_emit import emit_method_smali
+    smali_method = "\n".join(emit_method_smali(dalvik_method))
 
 
 
@@ -123,7 +125,8 @@ def compile_method(method_ir):
         "dalvik": dalvik_blocks,
         "liveness": liveness,
         "regalloc": allocator,
-        "smali": smali,
+        "smali_method": smali_method,
+        "dalvik_method": dalvik_method,
     }
 
 def alpha_pipeline(frontend_ir):
@@ -134,13 +137,21 @@ def alpha_pipeline(frontend_ir):
         compiled[method.name] = compile_method(method)
 
     # Eta-1 compatibility shim
+    from emit.smali_emit import emit_program_smali
+
     if len(compiled) == 1 and "main" in compiled:
         main = compiled["main"]
+        smali_class = emit_program_smali([main["dalvik_method"]])
         return {
             **main,
+            "smali": smali_class,
             "methods": compiled,
         }
 
+    methods = [m["dalvik_method"] for m in compiled.values()]
+    smali_class = emit_program_smali(methods)
+
     return {
-        "methods": compiled
+        "methods": compiled,
+        "smali_class": smali_class,
     }

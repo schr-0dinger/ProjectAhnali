@@ -4,21 +4,6 @@ from dalvik.method import DalvikMethod
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
 
-def emit_method(method: DalvikMethod):
-    lines = []
-
-    lines.append(f".method public static {method.name}()V")
-    lines.append(f"    .locals {method.locals_count}")
-
-    for block in method.blocks.values():
-        for instr in block.instructions:
-            lines.append(f"    {instr}")
-
-    lines.append("    return-void")
-    lines.append(".end method")
-
-    return lines
-
 def _build_reg_map(intervals):
     reg_map = {}
     max_reg = max(
@@ -39,18 +24,15 @@ def _build_reg_map(intervals):
     return reg_map, locals_count
 
 
-def emit_smali(dalvik_blocks, intervals):
-    lines = []
-    reg_map, locals_count = _build_reg_map(intervals)
+def emit_method_smali(method: DalvikMethod):
+    reg_map, locals_count = _build_reg_map(method.allocator.intervals)
 
-    lines.append(".class public LTest;")
-    lines.append(".super Ljava/lang/Object;")
-    lines.append("")
-    lines.append(".method public static main()V")
+    lines = []
+    lines.append(f".method public static {method.name}()V")
     lines.append(f"    .locals {locals_count}")
     lines.append("")
 
-    for block in dalvik_blocks.values():
+    for block in method.blocks.values():
         lines.append(f"  :B{block.id}")
 
         for instr in block.instructions:
@@ -115,4 +97,24 @@ def emit_smali(dalvik_blocks, intervals):
                 lines.append("    return-void")
 
     lines.append(".end method")
+    return lines
+
+
+def emit_program_smali(methods, class_name="LTest;"):
+    lines = []
+    lines.append(f".class public {class_name}")
+    lines.append(".super Ljava/lang/Object;")
+    lines.append("")
+
+    for method in methods:
+        lines.extend(emit_method_smali(method))
+        lines.append("")
+
+    if lines and lines[-1] == "":
+        lines.pop()
     return "\n".join(lines)
+
+
+def emit_smali(dalvik_blocks, intervals, method_name="main", class_name="LTest;"):
+    method = DalvikMethod(method_name, dalvik_blocks, type("A", (), {"intervals": intervals}))
+    return emit_program_smali([method], class_name=class_name)
