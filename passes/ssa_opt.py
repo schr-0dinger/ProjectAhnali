@@ -98,50 +98,81 @@ def optimize_ssa(
                 continue
 
     if enable_coalesce:
+        def _rewrite_expr(expr):
+            if isinstance(expr, SSAValue):
+                return _resolve(expr)
+            if isinstance(expr, BinaryOp):
+                expr.left = _resolve(expr.left)
+                expr.right = _resolve(expr.right)
+            elif isinstance(expr, Compare):
+                expr.left = _resolve(expr.left)
+                expr.right = _resolve(expr.right)
+            elif isinstance(expr, Call):
+                expr.args = [_resolve(a) for a in expr.args]
+            return expr
+
         for block in ssa_blocks.values():
             for phi in block.phis:
                 for pred, val in list(phi.incoming.items()):
                     if isinstance(val, SSAValue):
-                        resolved = _resolve(val)
-                        if isinstance(resolved, SSAValue):
-                            phi.incoming[pred] = resolved
-
-    if enable_copy_removal:
-        # Compute SSA uses after propagation
-        uses = {}
-
-        def _mark_use(val):
-            if isinstance(val, SSAValue):
-                uses[val] = uses.get(val, 0) + 1
-
-        for block in ssa_blocks.values():
-            for phi in block.phis:
-                for v in phi.incoming.values():
-                    _mark_use(v)
+                        phi.incoming[pred] = _resolve(val)
 
             for stmt in block.statements:
-                for u in stmt.uses():
-                    for v in _iter_uses(u):
-                        _mark_use(v)
-
                 expr = getattr(stmt, "expr", None)
-                for v in _iter_uses(expr):
-                    _mark_use(v)
+                if expr is not None:
+                    stmt.expr = _rewrite_expr(expr)
 
             term = block.cfg_block.terminator
             if term and term.kind == "branch":
-                for v in _iter_uses(term.cond):
-                    _mark_use(v)
+                term.cond = _rewrite_expr(term.cond)
 
-        for block in ssa_blocks.values():
-            new_stmts = []
-            for stmt in block.statements:
-                expr = getattr(stmt, "expr", None)
-                dst = stmt.defines() if hasattr(stmt, "defines") else None
-                if isinstance(expr, SSAValue) and isinstance(dst, SSAValue):
-                    if uses.get(dst, 0) == 0:
-                        continue
-                new_stmts.append(stmt)
-            block.statements = new_stmts
+    if enable_copy_removal:
+        # Aggressive copy-prop rewrite + delete
+        changed = True
+        while changed:
+            changed = False
+
+            # Build use counts
+            uses = {}
+
+            def _mark_use(val):
+                if isinstance(val, SSAValue):
+                    uses[val] = uses.get(val, 0) + 1
+
+            for block in ssa_blocks.values():
+                for phi in block.phis:
+                    for v in phi.incoming.values():
+                        _mark_use(v)
+
+                for stmt in block.statements:
+                    for u in stmt.uses():
+                        for v in _iter_uses(u):
+                            _mark_use(v)
+
+                    expr = getattr(stmt, "expr", None)
+                    for v in _iter_uses(expr):
+                        _mark_use(v)
+
+                term = block.cfg_block.terminator
+                if term and term.kind == "branch":
+                    for v in _iter_uses(term.cond):
+                        _mark_use(v)
+
+            for block in ssa_blocks.values():
+                new_stmts = []
+                for stmt in block.statements:
+                    expr = getattr(stmt, "expr", None)
+                    dst = stmt.defines() if hasattr(stmt, "defines") else None
+
+                    if isinstance(expr, SSAValue) and isinstance(dst, SSAValue):
+                        # rewrite all uses of dst -> expr, then delete stmt
+                        if uses.get(dst, 0) > 0:
+                            copy_map[dst] = expr
+                            changed = True
+                        if uses.get(dst, 0) == 0 or changed:
+                            continue
+
+                    new_stmts.append(stmt)
+                block.statements = new_stmts
 
     return ssa_blocks
