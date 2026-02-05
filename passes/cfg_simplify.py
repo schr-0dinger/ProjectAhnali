@@ -73,6 +73,53 @@ def simplify_cfg(cfg, dalvik_blocks):
             changed = True
             break
 
+        # Block merging: merge block into its single predecessor when safe
+        for block in list(cfg.blocks.values()):
+            if block in protected:
+                continue
+            if exceptional_preds.get(block):
+                continue
+            if len(block.predecessors) != 1:
+                continue
+            pred = next(iter(block.predecessors))
+            if pred in protected:
+                continue
+            if exceptional_preds.get(pred):
+                continue
+            if len(pred.successors) != 1:
+                continue
+            if block not in pred.successors:
+                continue
+
+            pred_db = dalvik_blocks.get(pred)
+            block_db = dalvik_blocks.get(block)
+            if pred_db is None or block_db is None:
+                continue
+
+            # Only merge if pred ends with a jump to block
+            if pred.terminator is None or pred.terminator.kind != "jump":
+                continue
+            if pred.terminator.target is not block:
+                continue
+
+            # Remove the trailing goto and append block instructions
+            if pred_db.instructions and isinstance(pred_db.instructions[-1], DGoto):
+                pred_db.instructions.pop()
+
+            pred_db.instructions.extend(block_db.instructions)
+
+            # Rewire preds/terminator to block's successor/terminator
+            pred.terminator = block.terminator
+            pred.successors = set(block.successors)
+            for succ in block.successors:
+                if block in succ.predecessors:
+                    succ.predecessors.remove(block)
+                succ.predecessors.add(pred)
+
+            _remove_block(block)
+            changed = True
+            break
+
         for block in list(cfg.blocks.values()):
             if block in protected:
                 continue
