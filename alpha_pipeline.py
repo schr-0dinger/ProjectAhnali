@@ -14,6 +14,7 @@ from ssa.rename import SSARenamer
 from ssa.verify import verify_ssa
 from passes.lower_ssa_to_dalvik import LowerSSAToDalvik
 from passes.dce import eliminate_dead_code
+from passes.cfg_simplify import simplify_cfg
 from passes.type_inference import TypeInferencePass
 from passes.ssa_opt import optimize_ssa
 from passes.liveness import compute_liveness
@@ -108,6 +109,7 @@ def compile_method(method_ir, *, ssa_opt=None):
 
     # 10. Optimizations
     dalvik_blocks = eliminate_dead_code(dalvik_blocks)
+    cfg, dalvik_blocks = simplify_cfg(cfg, dalvik_blocks)
 
     # 11. Liveness
     liveness = compute_liveness(cfg, dalvik_blocks)

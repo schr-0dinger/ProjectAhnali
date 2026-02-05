@@ -1,6 +1,7 @@
 from alpha_pipeline import alpha_pipeline
-from tests.ir_stub import Assign
-from ir.expr import BinaryOp, Var, Const
+from tests.ir_stub import Assign, If
+from ir.expr import BinaryOp, Var, Const, Call, Compare
+from ir.types import AnaliType
 
 
 def test_constprop_folds_binaryop():
@@ -82,3 +83,87 @@ def test_constfold_skips_division_by_zero():
             expr = getattr(stmt, "expr", None)
             if isinstance(expr, BinaryOp):
                 assert expr.op == "/"
+
+
+def test_constfold_skips_mod_by_zero():
+    ir = [
+        Assign("x", 1),
+        Assign("y", 0),
+        Assign("z", BinaryOp("%", Var("x"), Var("y"))),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    for b in ssa_blocks.values():
+        for stmt in b.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, BinaryOp):
+                assert expr.op == "%"
+
+
+def test_constfold_skips_bool_operands():
+    ir = [
+        Assign("x", True),
+        Assign("y", False),
+        Assign("z", BinaryOp("+", Var("x"), Var("y"))),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    for b in ssa_blocks.values():
+        for stmt in b.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, BinaryOp):
+                assert isinstance(expr.left, Const)
+                assert isinstance(expr.right, Const)
+                assert isinstance(expr.left.value, bool)
+                assert isinstance(expr.right.value, bool)
+
+
+def test_constfold_skips_non_const_operand():
+    ir = [
+        Assign(
+            "x",
+            Call(
+                "foo",
+                args=[],
+                return_type=AnaliType.INT,
+                arg_types=[],
+            ),
+        ),
+        Assign("y", BinaryOp("+", Var("x"), Const(2))),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    for b in ssa_blocks.values():
+        for stmt in b.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, BinaryOp):
+                assert not isinstance(expr.left, Const)
+                assert isinstance(expr.right, Const)
+
+
+def test_constfold_branch_heavy_keeps_binaryop_when_needed():
+    ir = [
+        Assign("x", 1),
+        Assign("y", 2),
+        If("x", [Assign("z", BinaryOp("+", Var("x"), Var("y")))], []),
+        Assign("w", "z"),
+        If(Compare("!=", Var("w"), Const(0)), [], []),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    has_binaryop_or_const = False
+    for b in ssa_blocks.values():
+        for stmt in b.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, (BinaryOp, Const)):
+                has_binaryop_or_const = True
+
+    assert has_binaryop_or_const
