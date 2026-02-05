@@ -94,6 +94,65 @@ def emit_activity_smali(
                         f"    goto :B{instr.false.id}"
                     )
 
+            elif name == "DInvoke":
+                # Eta-2 scaffolding: only static calls supported here
+                invoke = {
+                    "static": "invoke-static",
+                    "virtual": "invoke-virtual",
+                }.get(instr.invoke_kind)
+                if invoke is None:
+                    raise RuntimeError(
+                        f"Unsupported invoke kind: {instr.invoke_kind}"
+                    )
+
+                arg_types = instr.arg_types or [None] * len(instr.args)
+                if len(arg_types) != len(instr.args):
+                    raise RuntimeError(
+                        "Call arg_types length does not match args"
+                    )
+
+                def _type_desc(t):
+                    from ir.types import AnaliType
+                    if t is None:
+                        raise RuntimeError("Call arg type missing")
+                    if t == AnaliType.INT:
+                        return "I"
+                    if t == AnaliType.FLOAT:
+                        return "F"
+                    if t == AnaliType.BOOL:
+                        return "Z"
+                    if t == AnaliType.OBJECT:
+                        return "Ljava/lang/Object;"
+                    raise RuntimeError(f"Unsupported type {t}")
+
+                arg_desc = "".join(_type_desc(t) for t in arg_types)
+
+                from ir.types import AnaliType
+                if instr.return_type is None:
+                    ret_desc = "V"
+                elif instr.return_type == AnaliType.INT:
+                    ret_desc = "I"
+                elif instr.return_type == AnaliType.FLOAT:
+                    ret_desc = "F"
+                elif instr.return_type == AnaliType.BOOL:
+                    ret_desc = "Z"
+                elif instr.return_type == AnaliType.OBJECT:
+                    ret_desc = "Ljava/lang/Object;"
+                else:
+                    raise RuntimeError(f"Unsupported return type {instr.return_type}")
+
+                regs = ", ".join(reg_map[a.ssa] for a in instr.args)
+                lines.append(
+                    f"    {invoke} {{{regs}}}, {instr.owner}->{instr.method}({arg_desc}){ret_desc}"
+                )
+
+                if instr.dst and instr.return_type is not None:
+                    rd = reg_map[instr.dst.ssa]
+                    if instr.return_type == AnaliType.OBJECT:
+                        lines.append(f"    move-result-object {rd}")
+                    else:
+                        lines.append(f"    move-result {rd}")
+
             elif name == "DReturnVoid":
                 pass  # ignore inner return
 

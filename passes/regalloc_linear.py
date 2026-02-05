@@ -47,9 +47,16 @@ class LinearScanAllocator:
                     interval.end = max(interval.end, index)
 
                 # uses
-                for field in ("src", "lhs", "rhs", "cond"):
+                for field in ("src", "lhs", "rhs", "cond", "value"):
                     if hasattr(instr, field):
                         d = getattr(instr, field)
+                        if d and hasattr(d, "ssa") and d.ssa:
+                            v = d.ssa
+                            interval = interval_map.setdefault(v, LiveInterval(v))
+                            interval.start = min(interval.start, index)
+                            interval.end = max(interval.end, index)
+                if hasattr(instr, "args"):
+                    for d in instr.args:
                         if d and hasattr(d, "ssa") and d.ssa:
                             v = d.ssa
                             interval = interval_map.setdefault(v, LiveInterval(v))

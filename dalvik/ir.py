@@ -94,3 +94,35 @@ class DGoto(DInstr):
 class DReturnVoid(DInstr):
     def __repr__(self):
         return "return-void"
+
+
+class DReturn(DInstr):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f"return {self.value}"
+
+
+class DInvoke(DInstr):
+    def __init__(
+        self,
+        *,
+        method,
+        args,
+        dst=None,
+        return_type=None,
+        arg_types=None,
+        invoke_kind="static",
+        owner="LTest;"
+    ):
+        self.method = method
+        self.args = args
+        self.dst = dst
+        self.return_type = return_type
+        self.arg_types = arg_types
+        self.invoke_kind = invoke_kind
+        self.owner = owner
+
+    def __repr__(self):
+        return f"invoke-{self.invoke_kind} {self.owner}->{self.method}({len(self.args)} args)"

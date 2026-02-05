@@ -8,9 +8,22 @@ class Expr:
     pass
 
 class Call:
-    def __init__(self, func_name, args):
+    def __init__(
+        self,
+        func_name,
+        args,
+        *,
+        return_type=None,
+        arg_types=None,
+        invoke_kind="static",
+        owner="LTest;"
+    ):
         self.func_name = func_name
         self.args = args
+        self.return_type = return_type
+        self.arg_types = arg_types
+        self.invoke_kind = invoke_kind
+        self.owner = owner
 
     def __repr__(self):
         return f"Call({self.func_name}, {self.args})"

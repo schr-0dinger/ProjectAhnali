@@ -117,6 +117,8 @@ class TypeInferencePass:
             return AnaliType.BOOL
         
         if isinstance(expr, Call):
+            if expr.return_type is not None:
+                return expr.return_type
             return AnaliType.UNKNOWN
 
         return AnaliType.UNKNOWN

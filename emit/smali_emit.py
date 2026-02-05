@@ -1,7 +1,8 @@
 # emit/smali_emit.py
 
 from dalvik.method import DalvikMethod
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn
+from ir.types import AnaliType
 
 
 def _build_reg_map(intervals):
@@ -60,6 +61,62 @@ def emit_method_smali(method: DalvikMethod):
 
                 lines.append(f"    {opcode} {rd}, {ra}, {rb}")
 
+            elif isinstance(instr, DInvoke):
+                invoke = {
+                    "static": "invoke-static",
+                    "virtual": "invoke-virtual",
+                }.get(instr.invoke_kind)
+                if invoke is None:
+                    raise RuntimeError(
+                        f"Unsupported invoke kind: {instr.invoke_kind}"
+                    )
+
+                arg_types = instr.arg_types or [None] * len(instr.args)
+                if len(arg_types) != len(instr.args):
+                    raise RuntimeError(
+                        "Call arg_types length does not match args"
+                    )
+
+                def _type_desc(t):
+                    if t is None:
+                        raise RuntimeError("Call arg type missing")
+                    if t == AnaliType.INT:
+                        return "I"
+                    if t == AnaliType.FLOAT:
+                        return "F"
+                    if t == AnaliType.BOOL:
+                        return "Z"
+                    if t == AnaliType.OBJECT:
+                        return "Ljava/lang/Object;"
+                    raise RuntimeError(f"Unsupported type {t}")
+
+                arg_desc = "".join(_type_desc(t) for t in arg_types)
+
+                if instr.return_type is None:
+                    ret_desc = "V"
+                elif instr.return_type == AnaliType.INT:
+                    ret_desc = "I"
+                elif instr.return_type == AnaliType.FLOAT:
+                    ret_desc = "F"
+                elif instr.return_type == AnaliType.BOOL:
+                    ret_desc = "Z"
+                elif instr.return_type == AnaliType.OBJECT:
+                    ret_desc = "Ljava/lang/Object;"
+                else:
+                    raise RuntimeError(f"Unsupported return type {instr.return_type}")
+
+                regs = ", ".join(reg_map[a.ssa] for a in instr.args)
+                lines.append(
+                    f"    {invoke} {{{regs}}}, {instr.owner}->{instr.method}({arg_desc}){ret_desc}"
+                )
+
+                if instr.dst and instr.return_type is not None:
+                    rd = reg_map[instr.dst.ssa]
+                    if instr.return_type == AnaliType.OBJECT:
+                        lines.append(f"    move-result-object {rd}")
+                    else:
+                        lines.append(f"    move-result {rd}")
+
             elif instr.__class__.__name__ == "DGoto":
                 lines.append(f"    goto :B{instr.target.id}")
 
@@ -95,6 +152,15 @@ def emit_method_smali(method: DalvikMethod):
 
             elif instr.__class__.__name__ == "DReturnVoid":
                 lines.append("    return-void")
+            elif isinstance(instr, DReturn):
+                rd = reg_map[instr.value.ssa]
+                value_type = getattr(instr.value.ssa, "type", None)
+                if value_type in (None, AnaliType.UNKNOWN):
+                    raise RuntimeError("Return type UNKNOWN; cannot emit Smali")
+                if value_type == AnaliType.OBJECT:
+                    lines.append(f"    return-object {rd}")
+                else:
+                    lines.append(f"    return {rd}")
 
     lines.append(".end method")
     return lines

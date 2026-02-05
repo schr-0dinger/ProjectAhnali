@@ -8,8 +8,10 @@ from dalvik.ir import (
     DIf,
     DGoto,
     DReturnVoid,
+    DReturn,
+    DInvoke,
 )
-from ir.expr import Compare, BinaryOp, Const, Var
+from ir.expr import Compare, BinaryOp, Const, Var, Call
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
@@ -27,16 +29,30 @@ def apply_spills(dalvik_blocks, intervals):
 
         for instr in block.instructions:
             # ---- reload before uses ----
-            for field in ("src", "lhs", "rhs", "cond"):
+            for field in ("src", "lhs", "rhs", "cond", "value"):
                 if hasattr(instr, field):
                     d = getattr(instr, field)
-                    if d and d.ssa in spill_map:
+                    if d and hasattr(d, "ssa") and d.ssa in spill_map:
                         slot = spill_map[d.ssa].stack_slot
                         spill_val = DValue(d.ssa)
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
                         new_instrs.append(DMove(tmp, spill_val))
                         setattr(instr, field, tmp)
+
+            if hasattr(instr, "args"):
+                new_args = []
+                for d in instr.args:
+                    if d and d.ssa in spill_map:
+                        slot = spill_map[d.ssa].stack_slot
+                        spill_val = DValue(d.ssa)
+                        spill_val.reg = slot
+                        tmp = DValue(d.ssa)
+                        new_instrs.append(DMove(tmp, spill_val))
+                        new_args.append(tmp)
+                    else:
+                        new_args.append(d)
+                instr.args = new_args
 
             new_instrs.append(instr)
 
@@ -55,10 +71,14 @@ def _apply_registers(dalvik_blocks, intervals):
 
     for block in dalvik_blocks.values():
         for instr in block.instructions:
-            for attr in ("dst", "src", "lhs", "rhs", "cond"):
+            for attr in ("dst", "src", "lhs", "rhs", "cond", "value"):
                 if hasattr(instr, attr):
                     d = getattr(instr, attr)
-                    if d and d.ssa in regmap:
+                    if d and hasattr(d, "ssa") and d.ssa in regmap:
+                        d.reg = regmap[d.ssa]
+            if hasattr(instr, "args"):
+                for d in instr.args:
+                    if d and hasattr(d, "ssa") and d.ssa in regmap:
                         d.reg = regmap[d.ssa]
 
 
@@ -170,7 +190,15 @@ class LowerSSAToDalvik:
             db.emit(DGoto(term.target))
 
         elif kind == "return":
-            db.emit(DReturnVoid())
+            if hasattr(term, "value") and term.value is not None:
+                ret = self._as_dvalue(term.value, db)
+                if isinstance(ret.ssa, SSAValue) and ret.ssa.type == AnaliType.UNKNOWN:
+                    raise RuntimeError(
+                        f"Return type UNKNOWN for {ret.ssa}"
+                    )
+                db.emit(DReturn(ret))
+            else:
+                db.emit(DReturnVoid())
 
         else:
             raise RuntimeError(f"Unknown terminator {kind}")
@@ -181,8 +209,10 @@ class LowerSSAToDalvik:
         - literals
         - moves
         - binary arithmetic
+        - calls (Eta-2 scaffolding)
         """
-        dst = DValue(stmt.defines())
+        defines = stmt.defines() if hasattr(stmt, "defines") else None
+        dst = DValue(defines) if defines is not None else None
 
         expr = stmt.expr
 
@@ -191,11 +221,15 @@ class LowerSSAToDalvik:
 
         # Literal
         if isinstance(expr, int):
+            if dst is None:
+                raise RuntimeError("Literal must be assigned to a destination")
             db.emit(DConst(dst, expr))
             return
 
         # Binary arithmetic
         if isinstance(expr, BinaryOp):
+            if dst is None:
+                raise RuntimeError("BinaryOp must be assigned to a destination")
 
             expr_type = stmt.defines().type
 
@@ -223,5 +257,78 @@ class LowerSSAToDalvik:
             db.emit(instr_cls(dst, lhs, rhs))
             return
 
+        # Call (Eta-2 scaffolding)
+        if isinstance(expr, Call):
+            return_type = expr.return_type
+            if return_type is None:
+                if dst is not None:
+                    raise RuntimeError(
+                        "Void call cannot assign to a destination"
+                    )
+                db.emit(
+                    DInvoke(
+                        method=expr.func_name,
+                        args=[self._as_dvalue(a, db) for a in expr.args],
+                        dst=None,
+                        return_type=None,
+                        arg_types=expr.arg_types,
+                        invoke_kind=expr.invoke_kind,
+                        owner=expr.owner,
+                    )
+                )
+                return
+            if dst is None:
+                raise RuntimeError(
+                    "Non-void call must assign to a destination"
+                )
+            if return_type == AnaliType.UNKNOWN:
+                raise RuntimeError(
+                    "Call return type is UNKNOWN; Eta-2 requires typed calls."
+                )
+
+            args = [self._as_dvalue(a, db) for a in expr.args]
+
+            def _infer_arg_type(dval):
+                if not hasattr(dval, "ssa"):
+                    return AnaliType.UNKNOWN
+                ssa = dval.ssa
+                if isinstance(ssa, SSAValue):
+                    return ssa.type
+                if isinstance(ssa, Const):
+                    v = ssa.value
+                    if isinstance(v, bool):
+                        return AnaliType.BOOL
+                    if isinstance(v, int):
+                        return AnaliType.INT
+                    if isinstance(v, float):
+                        return AnaliType.FLOAT
+                return AnaliType.UNKNOWN
+
+            if expr.arg_types is None:
+                arg_types = [_infer_arg_type(a) for a in args]
+            else:
+                arg_types = expr.arg_types
+
+            for t in arg_types:
+                if t == AnaliType.UNKNOWN:
+                    raise RuntimeError(
+                        "Call arg type UNKNOWN; Eta-2 requires typed calls."
+                    )
+
+            db.emit(
+                DInvoke(
+                    method=expr.func_name,
+                    args=args,
+                    dst=dst,
+                    return_type=return_type,
+                    arg_types=arg_types,
+                    invoke_kind=expr.invoke_kind,
+                    owner=expr.owner,
+                )
+            )
+            return
+
         # Symbolic move (x = y)
+        if dst is None:
+            raise RuntimeError("Move must be assigned to a destination")
         db.emit(DMove(dst, DValue(expr)))

@@ -7,6 +7,8 @@ from dalvik.ir import (
     DGoto,
     DReturnVoid,
     DBinaryOp,
+    DInvoke,
+    DReturn,
 )
 from ssa.value import SSAValue
 
@@ -83,6 +85,16 @@ def eliminate_dead_code(dalvik_blocks):
                         for v in (_ssa_of(a), _ssa_of(b)):
                             if v:
                                 read.add(v)
+
+                elif isinstance(instr, DInvoke):
+                    for v in (_ssa_of(a) for a in instr.args):
+                        if v:
+                            read.add(v)
+
+                elif isinstance(instr, DReturn):
+                    v = _ssa_of(instr.value)
+                    if v:
+                        read.add(v)
 
                 elif isinstance(instr, DReturnVoid):
                     # Return is a control-flow sink.
