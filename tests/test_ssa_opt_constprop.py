@@ -22,3 +22,23 @@ def test_constprop_folds_binaryop():
                     left_right_consts = True
 
     assert left_right_consts
+
+
+def test_constfold_flag_folds_binaryop():
+    ir = [
+        Assign("x", 1),
+        Assign("y", 2),
+        Assign("z", BinaryOp("+", Var("x"), Var("y"))),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    folded = False
+    for b in ssa_blocks.values():
+        for stmt in b.statements:
+            expr = getattr(stmt, "expr", None)
+            if isinstance(expr, Const) and expr.value == 3:
+                folded = True
+
+    assert folded

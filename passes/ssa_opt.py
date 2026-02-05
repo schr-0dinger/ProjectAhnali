@@ -2,12 +2,20 @@ from ir.expr import Const, BinaryOp, Compare, Call
 from ssa.value import SSAValue
 
 
-def optimize_ssa(ssa_blocks):
+def optimize_ssa(
+    ssa_blocks,
+    *,
+    enable_folding=False,
+    enable_copy_removal=True,
+    enable_coalesce=True,
+):
     """
     Epsilon-2 SSA optimizations (simple, safe):
     - Constant propagation
     - Copy propagation
-    - Constant folding for BinaryOp with Const operands
+    - Optional constant folding for BinaryOp with Const operands
+    - Copy-prop removal (delete redundant moves)
+    - Coalesce phi incoming copies (start)
     """
     const_map = {}
     copy_map = {}
@@ -17,6 +25,19 @@ def optimize_ssa(ssa_blocks):
             v = copy_map.get(val, val)
             return const_map.get(v, v)
         return val
+
+    def _iter_uses(value):
+        if isinstance(value, SSAValue):
+            yield value
+        elif isinstance(value, BinaryOp):
+            yield from _iter_uses(value.left)
+            yield from _iter_uses(value.right)
+        elif isinstance(value, Compare):
+            yield from _iter_uses(value.left)
+            yield from _iter_uses(value.right)
+        elif isinstance(value, Call):
+            for arg in value.args:
+                yield from _iter_uses(arg)
 
     for block in ssa_blocks.values():
         for stmt in block.statements:
@@ -45,6 +66,26 @@ def optimize_ssa(ssa_blocks):
             if isinstance(expr, BinaryOp):
                 expr.left = _resolve(expr.left)
                 expr.right = _resolve(expr.right)
+                if enable_folding:
+                    if isinstance(expr.left, Const) and isinstance(expr.right, Const):
+                        if isinstance(expr.left.value, int) and isinstance(expr.right.value, int):
+                            op = expr.op
+                            if op == "+":
+                                folded = Const(expr.left.value + expr.right.value)
+                            elif op == "-":
+                                folded = Const(expr.left.value - expr.right.value)
+                            elif op == "*":
+                                folded = Const(expr.left.value * expr.right.value)
+                            elif op == "/":
+                                folded = Const(expr.left.value // expr.right.value)
+                            elif op == "%":
+                                folded = Const(expr.left.value % expr.right.value)
+                            else:
+                                folded = None
+                            if folded is not None:
+                                stmt.expr = folded
+                                if isinstance(dst, SSAValue):
+                                    const_map[dst] = folded
                 continue
 
             if isinstance(expr, Compare):
@@ -55,5 +96,52 @@ def optimize_ssa(ssa_blocks):
             if isinstance(expr, Call):
                 expr.args = [_resolve(a) for a in expr.args]
                 continue
+
+    if enable_coalesce:
+        for block in ssa_blocks.values():
+            for phi in block.phis:
+                for pred, val in list(phi.incoming.items()):
+                    if isinstance(val, SSAValue):
+                        resolved = _resolve(val)
+                        if isinstance(resolved, SSAValue):
+                            phi.incoming[pred] = resolved
+
+    if enable_copy_removal:
+        # Compute SSA uses after propagation
+        uses = {}
+
+        def _mark_use(val):
+            if isinstance(val, SSAValue):
+                uses[val] = uses.get(val, 0) + 1
+
+        for block in ssa_blocks.values():
+            for phi in block.phis:
+                for v in phi.incoming.values():
+                    _mark_use(v)
+
+            for stmt in block.statements:
+                for u in stmt.uses():
+                    for v in _iter_uses(u):
+                        _mark_use(v)
+
+                expr = getattr(stmt, "expr", None)
+                for v in _iter_uses(expr):
+                    _mark_use(v)
+
+            term = block.cfg_block.terminator
+            if term and term.kind == "branch":
+                for v in _iter_uses(term.cond):
+                    _mark_use(v)
+
+        for block in ssa_blocks.values():
+            new_stmts = []
+            for stmt in block.statements:
+                expr = getattr(stmt, "expr", None)
+                dst = stmt.defines() if hasattr(stmt, "defines") else None
+                if isinstance(expr, SSAValue) and isinstance(dst, SSAValue):
+                    if uses.get(dst, 0) == 0:
+                        continue
+                new_stmts.append(stmt)
+            block.statements = new_stmts
 
     return ssa_blocks

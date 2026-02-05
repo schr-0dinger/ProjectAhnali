@@ -43,7 +43,7 @@ def build_program(frontend_ir):
     }
 
 
-def compile_method(method_ir):
+def compile_method(method_ir, *, ssa_opt=None):
     """
     Complete Alpha pipeline:
     Structured IR → CFG → Dominance → Phi → SSA → Verify
@@ -93,7 +93,13 @@ def compile_method(method_ir):
     TypeInferencePass(cfg, ssa_blocks).run()
 
     verify_types(ssa_blocks)
-    optimize_ssa(ssa_blocks)
+    ssa_opt = ssa_opt or {}
+    optimize_ssa(
+        ssa_blocks,
+        enable_folding=ssa_opt.get("enable_folding", False),
+        enable_copy_removal=ssa_opt.get("enable_copy_removal", True),
+        enable_coalesce=ssa_opt.get("enable_coalesce", True),
+    )
 
     _verify_method_returns(ssa_blocks, method_ir.return_type)
 
@@ -150,12 +156,12 @@ def compile_method(method_ir):
         "dalvik_method": dalvik_method,
     }
 
-def alpha_pipeline(frontend_ir):
+def alpha_pipeline(frontend_ir, *, ssa_opt=None):
     program = build_program(frontend_ir)
 
     compiled = {}
     for method in program["methods"]:
-        compiled[method.name] = compile_method(method)
+        compiled[method.name] = compile_method(method, ssa_opt=ssa_opt)
 
     # Eta-1 compatibility shim
     from emit.smali_emit import emit_program_smali
