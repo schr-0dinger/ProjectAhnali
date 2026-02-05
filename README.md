@@ -20,7 +20,7 @@ Last updated: 2026-02-05
 - cfg/                Control flow graph (builder, dominance, frontier, validate)
 - ssa/                SSA construction + verification
 - dalvik/             Dalvik IR + blocks + methods
-- passes/             Compiler passes (lowering, liveness, regalloc, DCE)
+- passes/             Compiler passes (lowering, liveness, regalloc, DCE, SSA opts)
 - emit/               Smali emission
 - tests/              Unit and integration tests
 
@@ -34,6 +34,7 @@ DSL
 -> SSA verify
 -> Type inference
 -> Type verify
+-> SSA optimizations (Epsilon-2)
 -> Dalvik lowering
 -> Dead code elimination
 -> Liveness
@@ -53,10 +54,11 @@ Phases completed:
 - Zeta-0/1/2/3: regalloc, liveness, linear scan, spilling
 - Epsilon-1: DCE
 - Eta-2: typed calls and returns
-- Eta-3: try/catch surface + exceptional edges + smali emission
+- Eta-3: try/catch + throw + smali emission
+- Epsilon-2: SSA constant/copy propagation + coalescing
 
 Active:
-- Eta polish (remaining UX and tests)
+- Epsilon-2 polish and regression coverage
 
 ## DSL Surface (Current)
 
@@ -72,7 +74,7 @@ From dsl/app.py:
 - while_(cond, body)
 - binary(op, left, right)
 - compare(op, left, right)
-- try_catch(try_body, except_body, exception_type=None)
+- try_catch(try_body, except_body=None, exception_type=None, handlers=None)
 - throw(value)
 
 ## IR Surface (Current)
@@ -88,7 +90,7 @@ Statements:
 - Assign(name, expr)
 - Return(value)
 - CallStmt(Call(...))
-- TryCatch(try_body, except_body, exception_type)
+- TryCatch(try_body, except_body, exception_type, handlers)
 - Throw(value)
 
 Methods / Program:
@@ -102,6 +104,8 @@ Methods / Program:
 - Typed SSA enforcement where required
 - Call signature checks (arity and void/non-void rules)
 - Return type checks (method signature vs return values)
+- Try/catch structural validation (non-empty try, descriptor types, catchall ordering)
+- Throw validation (must be OBJECT)
 
 ## Eta-2 Details (Calls + Returns)
 
@@ -113,12 +117,14 @@ Implemented:
 - Return type verification
 - DSL method signatures and call helpers
 - Negative tests for invalid signatures
+- Param binding into SSA
 
 Constraints:
 - Call must provide return_type for non-void
 - arg_types length must match args
 - void call cannot assign
 - non-void call must assign
+- param_types length must match params
 
 ## Eta-3 Details (try/catch + throw)
 
@@ -129,11 +135,30 @@ Implemented:
 - Throw IR and lowering to DThrow
 - Validation for empty try blocks
 - Validation for exception type descriptors
+- Multi-handler ordering (catchall last)
 
 Constraints:
 - try_body must be non-empty
 - exception_type must be Smali descriptor: L...;
+- catchall must be last
 - throw value must be OBJECT type
+
+## Epsilon-2 Details (SSA optimizations)
+
+Implemented:
+- Constant propagation
+- Copy propagation
+- Optional constant folding (flagged)
+- Coalescing across phi + non-phi moves
+- Aggressive copy removal (rewrite + delete)
+
+Flags:
+- alpha_pipeline(..., ssa_opt={"enable_folding": True})
+
+## Immediate Step (Highlighted)
+
+- Expand Epsilon-2 with safe constant folding coverage + targeted correctness tests
+- Add more SSA/Dalvik equivalence tests to guard coalescing
 
 ## How to Run Tests
 
@@ -141,6 +166,7 @@ Constraints:
 
 ## Example: Multi-Method Program
 
+```python
 from dsl.app import program, method, assign, call, const, ret
 from ir.types import AnaliType
 
@@ -151,21 +177,22 @@ prog = program([
     ])
 ])
 
+
 result = alpha_pipeline(prog)
 print(result["smali_class"])
+```
 
-## Next Work (Detailed)
+## Future Plans (Detailed)
 
-Eta polish:
-- Typed parameter binding smoke tests for multiple params
-- Method signature validation for param descriptors in Smali
-- Negative tests for invalid descriptors
+Epsilon-2 (finish):
+- Add broader constant folding test coverage (multi-op chains, nested ops)
+- Add SSA/Dalvik equivalence tests for coalescing + DCE in branch-heavy CFGs
+- Add negative tests ensuring coalescing doesn�t break phi edges
 
-Epsilon-2 optimizations:
-- Constant propagation on SSA
-- Copy propagation on SSA
-- SSA coalescing
-- Dominance-safe DCE ordering
+Epsilon-3 (next optimization tier):
+- Control-flow simplification (remove redundant gotos)
+- Simple block merging (fallthrough merges)
+- CFG cleanup after DCE
 
 Zeta refinements:
 - Register pressure stress tests
