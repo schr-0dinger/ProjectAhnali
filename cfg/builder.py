@@ -2,8 +2,8 @@
 
 from cfg.graph import ControlFlowGraph
 from cfg.validate import validate_cfg
-from tests.ir_stub import Assign, If, While, TryCatch as StubTryCatch
-from ir.stmt import Return, TryCatch as IRTryCatch
+from tests.ir_stub import Assign, If, While, TryCatch as StubTryCatch, Throw as StubThrow
+from ir.stmt import Return, TryCatch as IRTryCatch, Throw as IRThrow
 from ir.expr import Compare, Call, Const, Var
 from ir.stmt import Return
 
@@ -60,6 +60,11 @@ class CFGBuilder:
 
             elif isinstance(stmt, (StubTryCatch, IRTryCatch)):
                 current = self._lower_try(stmt, current)
+
+            elif isinstance(stmt, (StubThrow, IRThrow)):
+                current.statements.append(stmt)
+                current.terminator = stmt
+                return current
 
             else:
                 raise TypeError(f"Unsupported IR node: {stmt}")

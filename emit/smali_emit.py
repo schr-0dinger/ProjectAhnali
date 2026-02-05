@@ -1,7 +1,7 @@
 # emit/smali_emit.py
 
 from dalvik.method import DalvikMethod
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow
 from ir.types import AnaliType
 from ir.expr import Const
 
@@ -187,6 +187,9 @@ def emit_method_smali(method: DalvikMethod):
                     lines.append(f"    return-object {rd}")
                 else:
                     lines.append(f"    return {rd}")
+            elif isinstance(instr, DThrow):
+                rd = reg_map[instr.value.ssa]
+                lines.append(f"    throw {rd}")
 
     if method.try_regions:
         lines.append("")

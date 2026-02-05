@@ -3,7 +3,7 @@
 from ir.program import ProgramIR
 from ir.method import MethodIR
 from ir.expr import Call, Const, Var, BinaryOp, Compare
-from ir.stmt import Return, TryCatch, CallStmt
+from ir.stmt import Return, TryCatch, CallStmt, Throw
 from tests.ir_stub import Assign, If, While
 
 
@@ -95,3 +95,7 @@ def compare(op, left, right):
 
 def try_catch(try_body, except_body, exception_type=None):
     return TryCatch(try_body, except_body, exception_type)
+
+
+def throw(value):
+    return Throw(value)

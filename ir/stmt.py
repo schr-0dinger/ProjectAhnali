@@ -17,6 +17,21 @@ class Return:
         return f"Return({self.value})"
 
 
+class Throw:
+    def __init__(self, value):
+        self.value = value
+        self.kind = "throw"
+
+    def defines(self):
+        return None
+
+    def uses(self):
+        return [self.value]
+
+    def __repr__(self):
+        return f"Throw({self.value})"
+
+
 class TryCatch:
     def __init__(self, try_body, except_body, exception_type=None):
         self.try_body = try_body

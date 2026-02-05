@@ -10,6 +10,7 @@ from dalvik.ir import (
     DReturnVoid,
     DReturn,
     DInvoke,
+    DThrow,
 )
 from ir.expr import Compare, BinaryOp, Const, Var, Call
 from ir.types import AnaliType
@@ -199,6 +200,15 @@ class LowerSSAToDalvik:
                 db.emit(DReturn(ret))
             else:
                 db.emit(DReturnVoid())
+
+        elif kind == "throw":
+            val = self._as_dvalue(term.value, db)
+            if isinstance(val.ssa, SSAValue):
+                if val.ssa.type != AnaliType.OBJECT:
+                    raise RuntimeError(
+                        f"Throw requires OBJECT type, got {val.ssa.type}"
+                    )
+            db.emit(DThrow(val))
 
         else:
             raise RuntimeError(f"Unknown terminator {kind}")

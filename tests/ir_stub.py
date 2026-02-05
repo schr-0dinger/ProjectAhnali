@@ -82,3 +82,8 @@ class TryCatch:
         self.try_body = try_body
         self.except_body = except_body
         self.exception_type = exception_type
+
+
+class Throw:
+    def __init__(self, value):
+        self.value = value

@@ -44,6 +44,10 @@ def validate_cfg(cfg):
         b for b in blocks.values()
         if b.terminator is not None and b.terminator.kind == "return"
     }
+    throw_blocks = {
+        b for b in blocks.values()
+        if b.terminator is not None and b.terminator.kind == "throw"
+    }
     has_return = bool(return_blocks)
     if unreachable:
         if not (has_return and unreachable == {exit}):
@@ -92,6 +96,10 @@ def validate_cfg(cfg):
             raise CFGValidationError(
                 f"Return block {b} must have no successors"
             )
+        if kind == "throw" and succ_count != 0:
+            raise CFGValidationError(
+                f"Throw block {b} must have no successors"
+            )
 
     # CFG-6: Exit reachability (normal + exceptional)
     exceptional_preds = {b: set() for b in blocks.values()}
@@ -112,6 +120,7 @@ def validate_cfg(cfg):
 
     dead_ends = set(blocks.values()) - can_reach_exit
     dead_ends -= return_blocks
+    dead_ends -= throw_blocks
     if has_return:
         dead_ends -= {exit}
     if dead_ends:

@@ -104,6 +104,14 @@ class DReturn(DInstr):
         return f"return {self.value}"
 
 
+class DThrow(DInstr):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f"throw {self.value}"
+
+
 class DInvoke(DInstr):
     def __init__(
         self,

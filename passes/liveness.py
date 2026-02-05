@@ -1,6 +1,6 @@
 # passes/liveness.py
 
-from dalvik.ir import DMove, DBinaryOp, DIf, DInvoke, DReturn
+from dalvik.ir import DMove, DBinaryOp, DIf, DInvoke, DReturn, DThrow
 from ssa.value import SSAValue
 
 
@@ -96,6 +96,10 @@ def _block_uses_defs(dblock):
                     uses.add(v)
 
         elif isinstance(instr, DReturn):
+            v = _ssa_of(instr.value)
+            if isinstance(v, SSAValue):
+                uses.add(v)
+        elif isinstance(instr, DThrow):
             v = _ssa_of(instr.value)
             if isinstance(v, SSAValue):
                 uses.add(v)

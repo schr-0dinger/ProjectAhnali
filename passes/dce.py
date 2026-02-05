@@ -9,6 +9,7 @@ from dalvik.ir import (
     DBinaryOp,
     DInvoke,
     DReturn,
+    DThrow,
 )
 from ssa.value import SSAValue
 
@@ -92,6 +93,11 @@ def eliminate_dead_code(dalvik_blocks):
                             read.add(v)
 
                 elif isinstance(instr, DReturn):
+                    v = _ssa_of(instr.value)
+                    if v:
+                        read.add(v)
+
+                elif isinstance(instr, DThrow):
                     v = _ssa_of(instr.value)
                     if v:
                         read.add(v)
