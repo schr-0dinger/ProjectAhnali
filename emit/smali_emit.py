@@ -3,6 +3,7 @@
 from dalvik.method import DalvikMethod
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn
 from ir.types import AnaliType
+from ir.expr import Const
 
 
 def _build_reg_map(intervals):
@@ -29,7 +30,23 @@ def emit_method_smali(method: DalvikMethod):
     reg_map, locals_count = _build_reg_map(method.allocator.intervals)
 
     lines = []
-    lines.append(f".method public static {method.name}()V")
+    def _type_desc(t):
+        if t == AnaliType.INT:
+            return "I"
+        if t == AnaliType.FLOAT:
+            return "F"
+        if t == AnaliType.BOOL:
+            return "Z"
+        if t == AnaliType.OBJECT:
+            return "Ljava/lang/Object;"
+        if t is None:
+            return "V"
+        raise RuntimeError(f"Unsupported type {t}")
+
+    params_desc = "".join(_type_desc(t) for t in (method.param_types or []))
+    ret_desc = _type_desc(method.return_type)
+
+    lines.append(f".method public static {method.name}({params_desc}){ret_desc}")
     lines.append(f"    .locals {locals_count}")
     lines.append("")
 
@@ -156,7 +173,16 @@ def emit_method_smali(method: DalvikMethod):
                 rd = reg_map[instr.value.ssa]
                 value_type = getattr(instr.value.ssa, "type", None)
                 if value_type in (None, AnaliType.UNKNOWN):
-                    raise RuntimeError("Return type UNKNOWN; cannot emit Smali")
+                    if isinstance(instr.value.ssa, Const):
+                        v = instr.value.ssa.value
+                        if isinstance(v, bool):
+                            value_type = AnaliType.BOOL
+                        elif isinstance(v, int):
+                            value_type = AnaliType.INT
+                        elif isinstance(v, float):
+                            value_type = AnaliType.FLOAT
+                    if value_type in (None, AnaliType.UNKNOWN):
+                        raise RuntimeError("Return type UNKNOWN; cannot emit Smali")
                 if value_type == AnaliType.OBJECT:
                     lines.append(f"    return-object {rd}")
                 else:

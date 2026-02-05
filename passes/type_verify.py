@@ -24,7 +24,7 @@ def verify_types(ssa_blocks):
 
     for block in ssa_blocks.values():
         for stmt in block.statements:
-            expr = stmt.expr
+            expr = getattr(stmt, "expr", None)
 
             if isinstance(expr, BinaryOp):
                 required.add(expr.left)

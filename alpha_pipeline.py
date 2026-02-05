@@ -113,6 +113,8 @@ def compile_method(method_ir):
         dalvik_blocks,
         allocator,
         try_regions=getattr(cfg, "try_regions", []),
+        return_type=getattr(method_ir, "return_type", None),
+        param_types=getattr(method_ir, "param_types", None),
     )
     from emit.smali_emit import emit_method_smali
     smali_method = "\n".join(emit_method_smali(dalvik_method))
@@ -150,6 +152,7 @@ def alpha_pipeline(frontend_ir):
         return {
             **main,
             "smali": smali_class,
+            "smali_class": smali_class,
             "methods": compiled,
         }
 

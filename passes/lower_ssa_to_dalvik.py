@@ -214,7 +214,7 @@ class LowerSSAToDalvik:
         defines = stmt.defines() if hasattr(stmt, "defines") else None
         dst = DValue(defines) if defines is not None else None
 
-        expr = stmt.expr
+        expr = getattr(stmt, "expr", None)
 
         if expr is None:
             return

@@ -70,9 +70,9 @@ def compute_immediate_dominators(cfg, dom):
                 break
 
         if candidate is None:
-            raise RuntimeError(
-                f"No immediate dominator found for block {b}"
-            )
+            # Unreachable block (e.g., synthetic exit when returns exist)
+            idom[b] = None
+            continue
 
         idom[b] = candidate
 

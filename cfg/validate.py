@@ -40,10 +40,16 @@ def validate_cfg(cfg):
         work.extend(b.exceptional_successors)
 
     unreachable = set(blocks.values()) - reachable
+    return_blocks = {
+        b for b in blocks.values()
+        if b.terminator is not None and b.terminator.kind == "return"
+    }
+    has_return = bool(return_blocks)
     if unreachable:
-        raise CFGValidationError(
-            f"Unreachable blocks detected: {[b for b in unreachable]}"
-        )
+        if not (has_return and unreachable == {exit}):
+            raise CFGValidationError(
+                f"Unreachable blocks detected: {[b for b in unreachable]}"
+            )
 
     # CFG-3: Terminator completeness
     for b in blocks.values():
@@ -105,6 +111,9 @@ def validate_cfg(cfg):
         work.extend(exceptional_preds[b])
 
     dead_ends = set(blocks.values()) - can_reach_exit
+    dead_ends -= return_blocks
+    if has_return:
+        dead_ends -= {exit}
     if dead_ends:
         raise CFGValidationError(
             f"Blocks cannot reach exit: {[b for b in dead_ends]}"

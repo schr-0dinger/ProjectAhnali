@@ -2,7 +2,8 @@
 
 from cfg.graph import ControlFlowGraph
 from cfg.validate import validate_cfg
-from tests.ir_stub import Assign, If, While, TryCatch
+from tests.ir_stub import Assign, If, While, TryCatch as StubTryCatch
+from ir.stmt import Return, TryCatch as IRTryCatch
 from ir.expr import Compare, Call, Const, Var
 from ir.stmt import Return
 
@@ -57,7 +58,7 @@ class CFGBuilder:
             elif isinstance(stmt, While):
                 current = self._lower_while(stmt, current)
 
-            elif isinstance(stmt, TryCatch):
+            elif isinstance(stmt, (StubTryCatch, IRTryCatch)):
                 current = self._lower_try(stmt, current)
 
             else:
