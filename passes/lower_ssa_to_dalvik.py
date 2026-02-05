@@ -191,7 +191,7 @@ class LowerSSAToDalvik:
 
         # Literal
         if isinstance(expr, int):
-            # db.emit(DConst(dst, expr))
+            db.emit(DConst(dst, expr))
             return
 
         # Binary arithmetic

@@ -18,8 +18,18 @@ from passes.type_inference import TypeInferencePass
 from passes.liveness import compute_liveness
 from passes.regalloc_linear import LinearScanAllocator
 from ir.method import MethodIR
+from ir.program import ProgramIR
 
 def build_program(frontend_ir):
+    if isinstance(frontend_ir, ProgramIR):
+        return {
+            "methods": frontend_ir.methods
+        }
+
+    if isinstance(frontend_ir, list) and frontend_ir:
+        if all(isinstance(m, MethodIR) for m in frontend_ir):
+            return {"methods": frontend_ir}
+
     return {
         "methods": [
             MethodIR(
@@ -94,8 +104,11 @@ def compile_method(method_ir):
 
     # Apply registers to Dalvik IR
     from passes.lower_ssa_to_dalvik import _apply_registers
-    
     _apply_registers(dalvik_blocks, allocator.intervals)
+
+    # 13. Smali emission (mandatory)
+    from emit.smali_emit import emit_smali
+    smali = emit_smali(dalvik_blocks, allocator.intervals)
 
 
 
@@ -110,6 +123,7 @@ def compile_method(method_ir):
         "dalvik": dalvik_blocks,
         "liveness": liveness,
         "regalloc": allocator,
+        "smali": smali,
     }
 
 def alpha_pipeline(frontend_ir):

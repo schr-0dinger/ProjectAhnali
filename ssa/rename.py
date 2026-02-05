@@ -1,6 +1,7 @@
 # ssa/rename.py
 
 from collections import defaultdict
+from typing import Optional
 from ssa.value import SSAValue
 from ir.expr import Compare, Var, Call, BinaryOp
 
@@ -128,7 +129,7 @@ class SSARenamer:
             self.ssa_blocks[block] = SSABlock(block)
         return self.ssa_blocks[block]
 
-    def _resolve_name(self, obj):
+    def _resolve_name(self, obj) -> Optional[str]:
         if isinstance(obj, SSAValue):
             return obj.name
         if isinstance(obj, str):

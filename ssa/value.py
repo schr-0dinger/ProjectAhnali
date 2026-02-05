@@ -1,9 +1,10 @@
 # ssa/value.py
 
 from ir.types import AnaliType
+from ir.expr import Expr
 
 
-class SSAValue:
+class SSAValue(Expr):
     """
     A single-assignment value.
     """
