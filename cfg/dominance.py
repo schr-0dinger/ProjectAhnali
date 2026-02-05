@@ -4,13 +4,12 @@ def compute_dominators(cfg):
     """
     Compute dominator sets for all blocks using
     the classic iterative algorithm.
-    Returns: dict[BasicBlock, set[BasicBlock]]
+    Dominance is defined ONLY over normal control-flow edges.
     """
 
     blocks = list(cfg.blocks.values())
     entry = cfg.entry
 
-    # Initialize
     dom = {}
     for b in blocks:
         if b is entry:
@@ -43,12 +42,10 @@ def compute_dominators(cfg):
 def compute_immediate_dominators(cfg, dom):
     """
     Compute immediate dominators from dominator sets.
-    Returns: dict[BasicBlock, BasicBlock | None]
     """
 
     idom = {}
     entry = cfg.entry
-
     idom[entry] = None
 
     for b in cfg.blocks.values():
@@ -56,10 +53,8 @@ def compute_immediate_dominators(cfg, dom):
             continue
 
         strict_doms = dom[b] - {b}
-
-        # Immediate dominator is the strict dominator
-        # that dominates all other strict dominators
         candidate = None
+
         for d in strict_doms:
             if all(
                 d == other or d not in dom[other]
@@ -70,7 +65,7 @@ def compute_immediate_dominators(cfg, dom):
 
         if candidate is None:
             raise RuntimeError(
-                f"No immediate dominator found for block {b.id}"
+                f"No immediate dominator found for block {b}"
             )
 
         idom[b] = candidate
@@ -81,7 +76,6 @@ def compute_immediate_dominators(cfg, dom):
 def build_dominator_tree(idom):
     """
     Build dominator tree from immediate dominators.
-    Returns: dict[BasicBlock, list[BasicBlock]]
     """
 
     tree = {b: [] for b in idom}

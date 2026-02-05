@@ -1,29 +1,39 @@
 # cfg/block.py
 
-from typing import List, Optional, Set
-
 class BasicBlock:
-    """
-    A basic block is a straight-line sequence of statements
-    with a single entry and explicit exits.
-    """
+    _id_counter = 0
 
-    def __init__(self, id: int):
-        self.id: int = id
+    def __init__(self, name):
+        # Stable numeric id (required by Dalvik lowering)
+        self.id = BasicBlock._id_counter
+        BasicBlock._id_counter += 1
 
-        # Frontend or SSA statements (phase-dependent)
-        self.statements: List[object] = []
+        self.name = name
 
-        # Control flow
-        self.successors: Set["BasicBlock"] = set()
-        self.predecessors: Set["BasicBlock"] = set()
+        # IR statements (CFG builder expects this)
+        self.statements = []
 
-        # Optional terminator (If / Goto / Return)
-        self.terminator: Optional[object] = None
+        # Instructions (used later by lowering)
+        self.instructions = []
 
-    def add_successor(self, block: "BasicBlock"):
+        # Normal control-flow successors
+        self.successors = set()
+
+        # Exceptional control-flow successors (Omega-2)
+        self.exceptional_successors = set()
+
+        # Predecessors (normal flow only)
+        self.predecessors = set()
+
+        # Terminator (branch / jump / return)
+        self.terminator = None
+
+    def add_successor(self, block):
         self.successors.add(block)
         block.predecessors.add(self)
 
+    def add_exceptional_successor(self, block):
+        self.exceptional_successors.add(block)
+
     def __repr__(self):
-        return f"<Block {self.id}>"
+        return f"<BasicBlock {self.name}#{self.id}>"

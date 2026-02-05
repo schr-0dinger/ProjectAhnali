@@ -2,14 +2,15 @@
 
 from collections import deque
 
+
 class CFGValidationError(RuntimeError):
     pass
 
 
 def validate_cfg(cfg):
     """
-    Validate structural correctness of a ControlFlowGraph.
-    Must be called before SSA or dominance.
+    Structural CFG validation.
+    Exceptional edges are allowed but ignored for semantics.
     """
 
     blocks = cfg.blocks
@@ -26,7 +27,7 @@ def validate_cfg(cfg):
     if exit.successors:
         raise CFGValidationError("Exit block must have no successors")
 
-    # CFG-2: Reachability from entry
+    # CFG-2: Reachability from entry (normal edges only)
     reachable = set()
     work = deque([entry])
 
@@ -40,53 +41,52 @@ def validate_cfg(cfg):
     unreachable = set(blocks.values()) - reachable
     if unreachable:
         raise CFGValidationError(
-            f"Unreachable blocks detected: {[b.id for b in unreachable]}"
+            f"Unreachable blocks detected: {[b for b in unreachable]}"
         )
 
     # CFG-3: Terminator completeness
     for b in blocks.values():
         if b.terminator is None:
             raise CFGValidationError(
-                f"Block {b.id} has no terminator"
+                f"Block {b} has no terminator"
             )
 
-    # CFG-4: Successor / predecessor symmetry
+    # CFG-4: Successor / predecessor symmetry (normal edges only)
     for b in blocks.values():
         for succ in b.successors:
             if b not in succ.predecessors:
                 raise CFGValidationError(
-                    f"CFG edge mismatch: {b.id} -> {succ.id}"
+                    f"CFG edge mismatch: {b} -> {succ}"
                 )
 
         for pred in b.predecessors:
             if b not in pred.successors:
                 raise CFGValidationError(
-                    f"CFG edge mismatch: {pred.id} -> {b.id}"
+                    f"CFG edge mismatch: {pred} -> {b}"
                 )
 
-    # CFG-5: Terminator legality
+    # CFG-5: Terminator legality (normal successors only)
     for b in blocks.values():
         term = b.terminator
         succ_count = len(b.successors)
-
-        kind = term.kind  # Branch / Jump / Return
+        kind = term.kind  # branch / jump / return
 
         if kind == "branch" and succ_count != 2:
             raise CFGValidationError(
-                f"Branch block {b.id} must have exactly 2 successors"
+                f"Branch block {b} must have exactly 2 successors"
             )
 
         if kind == "jump" and succ_count != 1:
             raise CFGValidationError(
-                f"Jump block {b.id} must have exactly 1 successor"
+                f"Jump block {b} must have exactly 1 successor"
             )
 
         if kind == "return" and succ_count != 0:
             raise CFGValidationError(
-                f"Return block {b.id} must have no successors"
+                f"Return block {b} must have no successors"
             )
 
-    # CFG-6: Exit reachability (all blocks must reach exit)
+    # CFG-6: Exit reachability (normal edges only)
     can_reach_exit = set()
     work = deque([exit])
 
@@ -100,5 +100,7 @@ def validate_cfg(cfg):
     dead_ends = set(blocks.values()) - can_reach_exit
     if dead_ends:
         raise CFGValidationError(
-            f"Blocks cannot reach exit: {[b.id for b in dead_ends]}"
+            f"Blocks cannot reach exit: {[b for b in dead_ends]}"
         )
+
+    return True
