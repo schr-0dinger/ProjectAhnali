@@ -13,6 +13,17 @@ from ir.expr import Compare, BinaryOp, Const
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
+def _apply_registers(dalvik_blocks, intervals):
+    regmap = {i.value: i.reg for i in intervals}
+
+    for block in dalvik_blocks.values():
+        for instr in block.instructions:
+            for attr in ("dst", "src", "lhs", "rhs", "cond"):
+                if hasattr(instr, attr):
+                    d = getattr(instr, attr)
+                    if d and d.ssa in regmap:
+                        d.reg = regmap[d.ssa]
+
 
 class LowerSSAToDalvik:
     def __init__(self, cfg, ssa_blocks):

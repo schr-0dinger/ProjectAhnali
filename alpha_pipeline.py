@@ -16,6 +16,7 @@ from passes.lower_ssa_to_dalvik import LowerSSAToDalvik
 from passes.dce import eliminate_dead_code
 from passes.type_inference import TypeInferencePass
 from passes.liveness import compute_liveness
+from passes.regalloc_linear import LinearScanAllocator
 
 
 
@@ -69,6 +70,17 @@ def alpha_pipeline(frontend_ir):
     # 11. Liveness
     liveness = compute_liveness(cfg, dalvik_blocks)
 
+    # 12. Register allocation (Zeta-2: linear scan, no spill)
+    allocator = LinearScanAllocator()
+    allocator.build_intervals(cfg, dalvik_blocks, liveness)
+    allocator.allocate()
+
+    # Apply registers to Dalvik IR
+    from passes.lower_ssa_to_dalvik import _apply_registers
+    
+    _apply_registers(dalvik_blocks, allocator.intervals)
+
+
 
     return {
         "cfg": cfg,
@@ -80,4 +92,5 @@ def alpha_pipeline(frontend_ir):
         "ssa": ssa_blocks,
         "dalvik": dalvik_blocks,
         "liveness": liveness,
+        "regalloc": allocator,
     }
