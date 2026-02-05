@@ -7,6 +7,14 @@ class Expr:
     """
     pass
 
+class Call:
+    def __init__(self, func_name, args):
+        self.func_name = func_name
+        self.args = args
+
+    def __repr__(self):
+        return f"Call({self.func_name}, {self.args})"
+    
 
 class Var(Expr):
     """
@@ -16,6 +24,14 @@ class Var(Expr):
     """
     def __init__(self, name: str):
         self.name = name
+
+    def replace_with(self, value):
+        """
+        SSA renaming hook.
+        Mutates this Var into an SSAValue.
+        """
+        self.__class__ = value.__class__
+        self.__dict__ = value.__dict__
 
     def __repr__(self):
         return self.name

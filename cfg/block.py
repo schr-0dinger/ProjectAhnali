@@ -1,4 +1,5 @@
 # cfg/block.py
+from typing import Optional, Any
 
 class BasicBlock:
     _id_counter = 0
@@ -26,7 +27,7 @@ class BasicBlock:
         self.predecessors = set()
 
         # Terminator (branch / jump / return)
-        self.terminator = None
+        self.terminator: Optional[Any] = None
 
     def add_successor(self, block):
         self.successors.add(block)

@@ -2,46 +2,28 @@
 
 from collections import defaultdict
 from ssa.value import SSAValue
-from ir.expr import Compare, Var
+from ir.expr import Compare, Var, Call, BinaryOp
 
 
 class SSARenamer:
     def __init__(self, cfg, dom_tree, phi_nodes):
-        """
-        Args:
-            cfg: ControlFlowGraph
-            dom_tree: dict[BasicBlock, list[BasicBlock]]
-            phi_nodes: dict[BasicBlock, list[Phi]]
-        """
         self.cfg = cfg
         self.dom_tree = dom_tree
         self.phi_nodes = phi_nodes
 
         self.stacks = defaultdict(list)
         self.counters = defaultdict(int)
-
-        # Result: block -> SSABlock
         self.ssa_blocks = {}
-
-    # -----------------------------
-    # Entry point
-    # -----------------------------
 
     def run(self):
         self._rename_block(self.cfg.entry)
         return self.ssa_blocks
 
-    # -----------------------------
-    # Core algorithm
-    # -----------------------------
-
     def _rename_block(self, block):
-        # Create SSA block wrapper
         ssa_block = self._get_ssa_block(block)
-
         pushed = []
 
-        # 1. Rename Phi targets
+        # Phi targets
         for phi in self.phi_nodes.get(block, []):
             name = phi.target.name
             version = self._new_version(name)
@@ -52,17 +34,25 @@ class SSARenamer:
             pushed.append(name)
             ssa_block.phis.append(phi)
 
-        # 2. Rename statements
+        # Statements
         for stmt in block.statements:
             # Rename uses
             for var in stmt.uses():
-                var.replace_with(self._current(var.name))
+                if isinstance(var, Var):
+                    var.replace_with(self._current(var.name))
 
-            # Some IR stubs use a bare string for simple moves (e.g. z = "y").
-            # Normalize those to SSAValues so later passes see true SSA uses.
+            # Normalize bare string expressions
             expr = getattr(stmt, "expr", None)
             if isinstance(expr, str):
                 stmt.expr = self._current(expr)
+                expr = stmt.expr
+
+            if isinstance(expr, Call):
+                expr.args = [self._rename_expr(a) for a in expr.args]
+
+            elif isinstance(expr, BinaryOp):
+                expr.left = self._rename_expr(expr.left)
+                expr.right = self._rename_expr(expr.right)
 
             # Rename definitions
             if stmt.defines():
@@ -76,43 +66,34 @@ class SSARenamer:
 
             ssa_block.statements.append(stmt)
 
-        # --- Rename terminator condition (if any) ---
+        # Terminator
         term = block.terminator
         if term and term.kind == "branch":
             if isinstance(term.cond, str):
                 term.cond = self._current(term.cond)
 
             elif isinstance(term.cond, Compare):
-                # Rename variables inside comparison
-                def rename(e):
-                    if isinstance(e, Var):
-                        return self._current(e.name)
-                    return e
+                term.cond.left = self._rename_expr(term.cond.left)
+                term.cond.right = self._rename_expr(term.cond.right)
 
-                term.cond.left = rename(term.cond.left)
-                term.cond.right = rename(term.cond.right)
-
-            else:
-                raise RuntimeError("Invalid branch condition")
-
-
-        # 3. Populate Phi incoming edges
+        # Phi incoming edges
         for succ in block.successors:
             for phi in self.phi_nodes.get(succ, []):
                 name = phi.target.name
                 phi.add_incoming(block, self._current(name))
 
-        # 4. Recurse into dominator tree children
+        # Recurse
         for child in self.dom_tree.get(block, []):
             self._rename_block(child)
 
-        # 5. Pop stack entries created in this block
+        # Pop stack
         for name in reversed(pushed):
             self.stacks[name].pop()
 
-    # -----------------------------
-    # Helpers
-    # -----------------------------
+    def _rename_expr(self, expr):
+        if isinstance(expr, Var):
+            return self._current(expr.name)
+        return expr
 
     def _new_version(self, name):
         v = self.counters[name]

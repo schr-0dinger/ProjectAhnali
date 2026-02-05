@@ -1,5 +1,5 @@
 from ir.types import AnaliType
-from ir.expr import Const, BinaryOp, Var, Compare
+from ir.expr import Const, BinaryOp, Var, Compare, Call
 from ssa.value import SSAValue
 
 
@@ -113,5 +113,8 @@ class TypeInferencePass:
 
         if isinstance(expr, Compare):
             return AnaliType.BOOL
+        
+        if isinstance(expr, Call):
+            return AnaliType.UNKNOWN
 
         return AnaliType.UNKNOWN

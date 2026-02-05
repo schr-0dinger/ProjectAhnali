@@ -3,7 +3,8 @@
 from cfg.graph import ControlFlowGraph
 from cfg.validate import validate_cfg
 from tests.ir_stub import Assign, If, While
-from ir.expr import Expr, Compare
+from ir.expr import Compare, Call, Const, Var
+from ir.stmt import Return
 
 
 class Terminator:
@@ -17,39 +18,37 @@ class CFGBuilder:
         self.cfg = ControlFlowGraph()
 
     def build(self, block_ir):
-        """
-        Build CFG from structured frontend IR block.
-        """
         entry = self.cfg.new_block()
         exit = self.cfg.new_block()
 
         self.cfg.set_entry(entry)
         self.cfg.set_exit(exit)
 
-        end = self._lower_block(block_ir, entry)
+        self._lower_block(block_ir, entry)
 
-        # 1. Ensure all NON-exit blocks are terminated
         for block in self.cfg.blocks.values():
             if block is exit:
                 continue
             if block.terminator is None:
                 self._jump(block, exit)
 
-        # 2. Exit block must terminate with return
         if exit.terminator is None:
             exit.terminator = Terminator("return")
 
         validate_cfg(self.cfg)
         return self.cfg
 
-
-    # -------------------------------
-    # Internal lowering helpers
-    # -------------------------------
-
     def _lower_block(self, stmts, current):
         for stmt in stmts:
             if isinstance(stmt, Assign):
+                current.statements.append(stmt)
+
+            elif isinstance(stmt, Return):
+                current.statements.append(stmt)
+                current.terminator = stmt
+                return current
+
+            elif hasattr(stmt, "expr") and isinstance(stmt.expr, Call):
                 current.statements.append(stmt)
 
             elif isinstance(stmt, If):
@@ -63,21 +62,30 @@ class CFGBuilder:
 
         return current
 
+    def _normalize_condition(self, cond):
+        # Accept Compare directly
+        if isinstance(cond, Compare):
+            return cond
+
+        # Legacy DSL: If("x") → Compare("!=", Var("x"), 0)
+        if isinstance(cond, str):
+            return Compare("!=", Var(cond), Const(0))
+
+        # Reject Var and everything else
+        raise TypeError(
+            f"If condition must be Compare or str, got {type(cond).__name__}"
+        )
+
     def _lower_if(self, stmt, current):
+        cond = self._normalize_condition(stmt.cond)
+
         then_entry = self.cfg.new_block()
         else_entry = self.cfg.new_block()
         merge = self.cfg.new_block()
 
-        if not isinstance(stmt.cond, (str, Expr)):
-            raise TypeError("Condition must be variable name or Expr")
-        
-        if isinstance(stmt.cond, Expr) and not isinstance(stmt.cond, Compare):
-            raise TypeError("Only Compare expressions allowed in conditions")
-
-
         current.terminator = Terminator(
             "branch",
-            cond=stmt.cond,
+            cond=cond,
             true=then_entry,
             false=else_entry,
         )
@@ -96,21 +104,17 @@ class CFGBuilder:
         return merge
 
     def _lower_while(self, stmt, current):
+        cond = self._normalize_condition(stmt.cond)
+
         cond_block = self.cfg.new_block()
         body = self.cfg.new_block()
         exit = self.cfg.new_block()
-
-        if not isinstance(stmt.cond, (str, Expr)):
-            raise TypeError("Condition must be variable name or Expr")
-
-        if isinstance(stmt.cond, Expr) and not isinstance(stmt.cond, Compare):
-            raise TypeError("Only Compare expressions allowed in conditions")
 
         self._jump(current, cond_block)
 
         cond_block.terminator = Terminator(
             "branch",
-            cond=stmt.cond,
+            cond=cond,
             true=body,
             false=exit,
         )
