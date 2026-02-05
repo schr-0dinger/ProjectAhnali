@@ -77,9 +77,15 @@ def optimize_ssa(
                             elif op == "*":
                                 folded = Const(expr.left.value * expr.right.value)
                             elif op == "/":
-                                folded = Const(expr.left.value // expr.right.value)
+                                if expr.right.value == 0:
+                                    folded = None
+                                else:
+                                    folded = Const(expr.left.value // expr.right.value)
                             elif op == "%":
-                                folded = Const(expr.left.value % expr.right.value)
+                                if expr.right.value == 0:
+                                    folded = None
+                                else:
+                                    folded = Const(expr.left.value % expr.right.value)
                             else:
                                 folded = None
                             if folded is not None:
