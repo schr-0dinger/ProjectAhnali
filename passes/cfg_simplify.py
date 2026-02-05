@@ -34,6 +34,45 @@ def simplify_cfg(cfg, dalvik_blocks):
     while changed:
         changed = False
 
+        # Redundant goto elimination: remove blocks that only jump to their sole successor
+        for block in list(cfg.blocks.values()):
+            if block in protected:
+                continue
+            if exceptional_preds.get(block):
+                continue
+            if len(block.successors) != 1:
+                continue
+            if block.terminator is None or block.terminator.kind != "jump":
+                continue
+            dblock = dalvik_blocks.get(block)
+            if dblock is None:
+                continue
+            if len(dblock.instructions) != 1 or not isinstance(dblock.instructions[0], DGoto):
+                continue
+
+            succ = next(iter(block.successors))
+            for pred in list(block.predecessors):
+                if block in pred.successors:
+                    pred.successors.remove(block)
+                pred.successors.add(succ)
+                succ.predecessors.add(pred)
+
+                term = pred.terminator
+                if term and term.kind == "jump" and getattr(term, "target", None) is block:
+                    term.target = succ
+                elif term and term.kind == "branch":
+                    if getattr(term, "true", None) is block:
+                        term.true = succ
+                    if getattr(term, "false", None) is block:
+                        term.false = succ
+
+            if block in succ.predecessors:
+                succ.predecessors.remove(block)
+
+            _remove_block(block)
+            changed = True
+            break
+
         for block in list(cfg.blocks.values()):
             if block in protected:
                 continue
