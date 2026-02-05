@@ -67,6 +67,13 @@ class CFGBuilder:
         return current
 
     def _lower_try(self, stmt, current):
+        if not stmt.try_body:
+            raise RuntimeError("Try block cannot be empty")
+        if stmt.exception_type is not None:
+            exc = stmt.exception_type
+            if not (isinstance(exc, str) and exc.startswith("L") and exc.endswith(";")):
+                raise RuntimeError("Exception type must be a Smali class descriptor")
+
         try_entry = self.cfg.new_block()
         handler_entry = self.cfg.new_block()
         merge = self.cfg.new_block()
