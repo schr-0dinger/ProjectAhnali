@@ -75,3 +75,10 @@ class While:
     def __init__(self, cond, body):
         self.cond = cond
         self.body = body
+
+
+class TryCatch:
+    def __init__(self, try_body, except_body, exception_type=None):
+        self.try_body = try_body
+        self.except_body = except_body
+        self.exception_type = exception_type

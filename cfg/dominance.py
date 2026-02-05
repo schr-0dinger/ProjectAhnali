@@ -10,6 +10,11 @@ def compute_dominators(cfg):
     blocks = list(cfg.blocks.values())
     entry = cfg.entry
 
+    exceptional_preds = {b: set() for b in blocks}
+    for b in blocks:
+        for succ in b.exceptional_successors:
+            exceptional_preds[succ].add(b)
+
     dom = {}
     for b in blocks:
         if b is entry:
@@ -25,11 +30,12 @@ def compute_dominators(cfg):
             if b is entry:
                 continue
 
-            if not b.predecessors:
+            preds = b.predecessors or exceptional_preds[b]
+            if not preds:
                 new_dom = {b}
             else:
                 new_dom = {b}.union(
-                    set.intersection(*(dom[p] for p in b.predecessors))
+                    set.intersection(*(dom[p] for p in preds))
                 )
 
             if new_dom != dom[b]:

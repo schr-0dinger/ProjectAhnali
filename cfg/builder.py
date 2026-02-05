@@ -2,7 +2,7 @@
 
 from cfg.graph import ControlFlowGraph
 from cfg.validate import validate_cfg
-from tests.ir_stub import Assign, If, While
+from tests.ir_stub import Assign, If, While, TryCatch
 from ir.expr import Compare, Call, Const, Var
 from ir.stmt import Return
 
@@ -57,10 +57,42 @@ class CFGBuilder:
             elif isinstance(stmt, While):
                 current = self._lower_while(stmt, current)
 
+            elif isinstance(stmt, TryCatch):
+                current = self._lower_try(stmt, current)
+
             else:
                 raise TypeError(f"Unsupported IR node: {stmt}")
 
         return current
+
+    def _lower_try(self, stmt, current):
+        try_entry = self.cfg.new_block()
+        handler_entry = self.cfg.new_block()
+        merge = self.cfg.new_block()
+
+        self._jump(current, try_entry)
+
+        before_try = set(self.cfg.blocks.values())
+        try_end = self._lower_block(stmt.try_body, try_entry)
+        after_try = set(self.cfg.blocks.values())
+        try_blocks = {try_entry} | (after_try - before_try)
+
+        if try_end.terminator is None:
+            self._jump(try_end, merge)
+
+        handler_end = self._lower_block(stmt.except_body, handler_entry)
+        if handler_end.terminator is None:
+            self._jump(handler_end, merge)
+
+        for b in try_blocks:
+            b.add_exceptional_successor(handler_entry)
+
+        # Record try region (start, end, handler, exception_type)
+        self.cfg.try_regions.append(
+            (try_entry, try_end, handler_entry, stmt.exception_type)
+        )
+
+        return merge
 
     def _normalize_condition(self, cond):
         # Accept Compare directly

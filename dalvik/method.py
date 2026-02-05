@@ -1,10 +1,11 @@
 # dalvik/method.py
 
 class DalvikMethod:
-    def __init__(self, name, blocks, allocator):
+    def __init__(self, name, blocks, allocator, try_regions=None):
         self.name = name
         self.blocks = blocks
         self.allocator = allocator
+        self.try_regions = try_regions or []
 
     @property
     def locals_count(self):

@@ -12,6 +12,7 @@ class ControlFlowGraph:
         self.blocks: Dict[int, BasicBlock] = {}
         self.entry: BasicBlock | None = None
         self.exit: BasicBlock | None = None
+        self.try_regions = []
 
         self._next_id = 0
 

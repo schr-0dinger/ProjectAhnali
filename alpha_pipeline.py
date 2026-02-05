@@ -108,7 +108,12 @@ def compile_method(method_ir):
     _apply_registers(dalvik_blocks, allocator.intervals)
 
     # 13. Smali emission (mandatory)
-    dalvik_method = DalvikMethod(method_ir.name, dalvik_blocks, allocator)
+    dalvik_method = DalvikMethod(
+        method_ir.name,
+        dalvik_blocks,
+        allocator,
+        try_regions=getattr(cfg, "try_regions", []),
+    )
     from emit.smali_emit import emit_method_smali
     smali_method = "\n".join(emit_method_smali(dalvik_method))
 

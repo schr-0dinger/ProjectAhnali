@@ -162,6 +162,18 @@ def emit_method_smali(method: DalvikMethod):
                 else:
                     lines.append(f"    return {rd}")
 
+    if method.try_regions:
+        lines.append("")
+        for start, end, handler, exc_type in method.try_regions:
+            if exc_type is None:
+                lines.append(
+                    f"    .catchall {{:B{start.id} .. :B{end.id}}} :B{handler.id}"
+                )
+            else:
+                lines.append(
+                    f"    .catch {exc_type} {{:B{start.id} .. :B{end.id}}} :B{handler.id}"
+                )
+
     lines.append(".end method")
     return lines
 

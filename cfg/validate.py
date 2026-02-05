@@ -27,7 +27,7 @@ def validate_cfg(cfg):
     if exit.successors:
         raise CFGValidationError("Exit block must have no successors")
 
-    # CFG-2: Reachability from entry (normal edges only)
+    # CFG-2: Reachability from entry (normal + exceptional)
     reachable = set()
     work = deque([entry])
 
@@ -37,6 +37,7 @@ def validate_cfg(cfg):
             continue
         reachable.add(b)
         work.extend(b.successors)
+        work.extend(b.exceptional_successors)
 
     unreachable = set(blocks.values()) - reachable
     if unreachable:
@@ -86,7 +87,12 @@ def validate_cfg(cfg):
                 f"Return block {b} must have no successors"
             )
 
-    # CFG-6: Exit reachability (normal edges only)
+    # CFG-6: Exit reachability (normal + exceptional)
+    exceptional_preds = {b: set() for b in blocks.values()}
+    for b in blocks.values():
+        for succ in b.exceptional_successors:
+            exceptional_preds[succ].add(b)
+
     can_reach_exit = set()
     work = deque([exit])
 
@@ -96,6 +102,7 @@ def validate_cfg(cfg):
             continue
         can_reach_exit.add(b)
         work.extend(b.predecessors)
+        work.extend(exceptional_preds[b])
 
     dead_ends = set(blocks.values()) - can_reach_exit
     if dead_ends:
