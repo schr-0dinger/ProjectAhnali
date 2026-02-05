@@ -74,13 +74,31 @@ class CFGBuilder:
     def _lower_try(self, stmt, current):
         if not stmt.try_body:
             raise RuntimeError("Try block cannot be empty")
-        if stmt.exception_type is not None:
-            exc = stmt.exception_type
-            if not (isinstance(exc, str) and exc.startswith("L") and exc.endswith(";")):
-                raise RuntimeError("Exception type must be a Smali class descriptor")
+        handlers = []
+        if stmt.handlers:
+            handlers = list(stmt.handlers)
+        else:
+            handlers = [(stmt.exception_type, stmt.except_body)]
+
+        if not handlers:
+            raise RuntimeError("Try must have at least one handler")
+
+        # Validate handler ordering: catchall (None) must be last
+        seen_catchall = False
+        for exc_type, body in handlers:
+            if exc_type is None:
+                if seen_catchall:
+                    raise RuntimeError("Only one catchall allowed")
+                seen_catchall = True
+            elif seen_catchall:
+                raise RuntimeError("catchall must be last")
+            if exc_type is not None:
+                if not (isinstance(exc_type, str) and exc_type.startswith("L") and exc_type.endswith(";")):
+                    raise RuntimeError("Exception type must be a Smali class descriptor")
+            if body is None:
+                raise RuntimeError("Handler body cannot be None")
 
         try_entry = self.cfg.new_block()
-        handler_entry = self.cfg.new_block()
         merge = self.cfg.new_block()
 
         self._jump(current, try_entry)
@@ -93,17 +111,19 @@ class CFGBuilder:
         if try_end.terminator is None:
             self._jump(try_end, merge)
 
-        handler_end = self._lower_block(stmt.except_body, handler_entry)
-        if handler_end.terminator is None:
-            self._jump(handler_end, merge)
+        for exc_type, body in handlers:
+            handler_entry = self.cfg.new_block()
+            handler_end = self._lower_block(body, handler_entry)
+            if handler_end.terminator is None:
+                self._jump(handler_end, merge)
 
-        for b in try_blocks:
-            b.add_exceptional_successor(handler_entry)
+            for b in try_blocks:
+                b.add_exceptional_successor(handler_entry)
 
-        # Record try region (start, end, handler, exception_type)
-        self.cfg.try_regions.append(
-            (try_entry, try_end, handler_entry, stmt.exception_type)
-        )
+            # Record try region (start, end, handler, exception_type)
+            self.cfg.try_regions.append(
+                (try_entry, try_end, handler_entry, exc_type)
+            )
 
         return merge
 

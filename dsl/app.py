@@ -93,8 +93,8 @@ def compare(op, left, right):
     return Compare(op, left, right)
 
 
-def try_catch(try_body, except_body, exception_type=None):
-    return TryCatch(try_body, except_body, exception_type)
+def try_catch(try_body, except_body=None, exception_type=None, handlers=None):
+    return TryCatch(try_body, except_body, exception_type, handlers)
 
 
 def throw(value):

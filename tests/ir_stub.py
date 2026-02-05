@@ -78,10 +78,11 @@ class While:
 
 
 class TryCatch:
-    def __init__(self, try_body, except_body, exception_type=None):
+    def __init__(self, try_body, except_body, exception_type=None, handlers=None):
         self.try_body = try_body
         self.except_body = except_body
         self.exception_type = exception_type
+        self.handlers = handlers
 
 
 class Throw:

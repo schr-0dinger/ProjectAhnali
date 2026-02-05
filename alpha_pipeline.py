@@ -15,6 +15,7 @@ from ssa.verify import verify_ssa
 from passes.lower_ssa_to_dalvik import LowerSSAToDalvik
 from passes.dce import eliminate_dead_code
 from passes.type_inference import TypeInferencePass
+from passes.ssa_opt import optimize_ssa
 from passes.liveness import compute_liveness
 from passes.regalloc_linear import LinearScanAllocator
 from ir.method import MethodIR
@@ -92,6 +93,7 @@ def compile_method(method_ir):
     TypeInferencePass(cfg, ssa_blocks).run()
 
     verify_types(ssa_blocks)
+    optimize_ssa(ssa_blocks)
 
     _verify_method_returns(ssa_blocks, method_ir.return_type)
 
