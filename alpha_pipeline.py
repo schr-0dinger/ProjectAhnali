@@ -17,17 +17,28 @@ from passes.dce import eliminate_dead_code
 from passes.type_inference import TypeInferencePass
 from passes.liveness import compute_liveness
 from passes.regalloc_linear import LinearScanAllocator
+from ir.method import MethodIR
+
+def build_program(frontend_ir):
+    return {
+        "methods": [
+            MethodIR(
+                name="main",
+                params=[],
+                body=frontend_ir
+            )
+        ]
+    }
 
 
-
-def alpha_pipeline(frontend_ir):
+def compile_method(method_ir):
     """
     Complete Alpha pipeline:
     Structured IR → CFG → Dominance → Phi → SSA → Verify
     """
 
     # 1. CFG
-    cfg = CFGBuilder().build(frontend_ir)
+    cfg = CFGBuilder().build(method_ir.body)
     validate_cfg(cfg)
 
     # 2. Dominance
@@ -99,4 +110,23 @@ def alpha_pipeline(frontend_ir):
         "dalvik": dalvik_blocks,
         "liveness": liveness,
         "regalloc": allocator,
+    }
+
+def alpha_pipeline(frontend_ir):
+    program = build_program(frontend_ir)
+
+    compiled = {}
+    for method in program["methods"]:
+        compiled[method.name] = compile_method(method)
+
+    # Eta-1 compatibility shim
+    if len(compiled) == 1 and "main" in compiled:
+        main = compiled["main"]
+        return {
+            **main,
+            "methods": compiled,
+        }
+
+    return {
+        "methods": compiled
     }

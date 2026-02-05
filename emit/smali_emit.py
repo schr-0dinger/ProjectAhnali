@@ -1,5 +1,23 @@
 # emit/smali_emit.py
 
+from dalvik.method import DalvikMethod
+
+
+def emit_method(method: DalvikMethod):
+    lines = []
+
+    lines.append(f".method public static {method.name}()V")
+    lines.append(f"    .locals {method.locals_count}")
+
+    for block in method.blocks.values():
+        for instr in block.instructions:
+            lines.append(f"    {instr}")
+
+    lines.append("    return-void")
+    lines.append(".end method")
+
+    return lines
+
 def emit_smali(dalvik_blocks, reg_map, locals_count):
     lines = []
 
