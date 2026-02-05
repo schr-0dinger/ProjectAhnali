@@ -31,3 +31,17 @@ class TryCatch:
 
     def __repr__(self):
         return "TryCatch(...)"
+
+
+class CallStmt:
+    def __init__(self, expr):
+        self.expr = expr
+
+    def defines(self):
+        return None
+
+    def uses(self):
+        return []
+
+    def __repr__(self):
+        return f"CallStmt({self.expr})"

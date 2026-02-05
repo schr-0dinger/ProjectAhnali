@@ -37,6 +37,18 @@ def verify_types(ssa_blocks):
                 required.add(stmt.defines())
 
             elif isinstance(expr, Call):
+                if expr.arg_types is not None and len(expr.arg_types) != len(expr.args):
+                    raise TypeVerificationError(
+                        "Call arg_types length does not match args"
+                    )
+                if expr.return_type is None and isinstance(stmt.defines(), SSAValue):
+                    raise TypeVerificationError(
+                        "Void call cannot assign to a destination"
+                    )
+                if expr.return_type is not None and not isinstance(stmt.defines(), SSAValue):
+                    raise TypeVerificationError(
+                        "Non-void call must assign to a destination"
+                    )
                 continue #UNKNOWN allowed at this stage
                 
     # ---------------------------------

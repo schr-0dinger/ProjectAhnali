@@ -3,7 +3,7 @@
 from ir.program import ProgramIR
 from ir.method import MethodIR
 from ir.expr import Call, Const, Var, BinaryOp, Compare
-from ir.stmt import Return, TryCatch
+from ir.stmt import Return, TryCatch, CallStmt
 from tests.ir_stub import Assign, If, While
 
 
@@ -49,6 +49,27 @@ def call(
         arg_types=arg_types,
         invoke_kind=invoke_kind,
         owner=owner,
+    )
+
+
+def call_stmt(
+    name,
+    args,
+    *,
+    return_type=None,
+    arg_types=None,
+    invoke_kind="static",
+    owner="LTest;",
+):
+    return CallStmt(
+        Call(
+            name,
+            args=args,
+            return_type=return_type,
+            arg_types=arg_types,
+            invoke_kind=invoke_kind,
+            owner=owner,
+        )
     )
 
 

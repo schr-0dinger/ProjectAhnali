@@ -48,6 +48,10 @@ def compile_method(method_ir):
     Structured IR → CFG → Dominance → Phi → SSA → Verify
     """
 
+    # 0. Method signature sanity
+    if method_ir.param_types and len(method_ir.param_types) != len(method_ir.params):
+        raise RuntimeError("param_types length must match params length")
+
     # 1. CFG
     cfg = CFGBuilder().build(method_ir.body)
     validate_cfg(cfg)
@@ -72,7 +76,13 @@ def compile_method(method_ir):
     phi_nodes = insert_phi_nodes(cfg, df, def_blocks)
 
     # 6. SSA renaming
-    renamer = SSARenamer(cfg, dom_tree, phi_nodes)
+    renamer = SSARenamer(
+        cfg,
+        dom_tree,
+        phi_nodes,
+        params=method_ir.params,
+        param_types=method_ir.param_types,
+    )
     ssa_blocks = renamer.run()
 
     # 7. SSA verification (hard gate)
@@ -82,6 +92,8 @@ def compile_method(method_ir):
     TypeInferencePass(cfg, ssa_blocks).run()
 
     verify_types(ssa_blocks)
+
+    _verify_method_returns(ssa_blocks, method_ir.return_type)
 
     # 9. SSA → Dalvik lowering (no registers)
     dalvik_blocks = LowerSSAToDalvik(cfg, ssa_blocks).run()
@@ -163,3 +175,39 @@ def alpha_pipeline(frontend_ir):
         "methods": compiled,
         "smali_class": smali_class,
     }
+
+
+def _infer_value_type(val):
+    from ir.expr import Const
+    from ssa.value import SSAValue
+    from ir.types import AnaliType
+
+    if isinstance(val, SSAValue):
+        return val.type
+    if isinstance(val, Const):
+        v = val.value
+        if isinstance(v, bool):
+            return AnaliType.BOOL
+        if isinstance(v, int):
+            return AnaliType.INT
+        if isinstance(v, float):
+            return AnaliType.FLOAT
+    return AnaliType.UNKNOWN
+
+
+def _verify_method_returns(ssa_blocks, return_type):
+    from ir.stmt import Return
+    from ir.types import AnaliType
+
+    for block in ssa_blocks.values():
+        for stmt in block.statements:
+            if isinstance(stmt, Return):
+                if return_type is None:
+                    if stmt.value is not None:
+                        raise RuntimeError("Void method cannot return a value")
+                    continue
+                if stmt.value is None:
+                    raise RuntimeError("Non-void method must return a value")
+                vtype = _infer_value_type(stmt.value)
+                if vtype == AnaliType.UNKNOWN or vtype != return_type:
+                    raise RuntimeError("Return type mismatch")

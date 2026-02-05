@@ -7,18 +7,35 @@ from ir.expr import Compare, Var, Call, BinaryOp
 
 
 class SSARenamer:
-    def __init__(self, cfg, dom_tree, phi_nodes):
+    def __init__(self, cfg, dom_tree, phi_nodes, params=None, param_types=None):
         self.cfg = cfg
         self.dom_tree = dom_tree
         self.phi_nodes = phi_nodes
+        self.params = params or []
+        self.param_types = param_types or []
 
         self.stacks = defaultdict(list)
         self.counters = defaultdict(int)
         self.ssa_blocks = {}
 
     def run(self):
+        self._seed_params()
         self._rename_block(self.cfg.entry)
         return self.ssa_blocks
+
+    def _seed_params(self):
+        if not self.params:
+            return
+        if self.param_types and len(self.param_types) != len(self.params):
+            raise RuntimeError("param_types length must match params length")
+
+        for idx, name in enumerate(self.params):
+            version = self._new_version(name)
+            val = SSAValue(name, version)
+            val.def_block = self.cfg.entry
+            if self.param_types:
+                val.type = self.param_types[idx]
+            self.stacks[name].append(val)
 
     def _rename_block(self, block):
         ssa_block = self._get_ssa_block(block)
