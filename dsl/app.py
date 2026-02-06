@@ -97,34 +97,105 @@ def hello_world_activity(message="Hello, Anali!"):
             param_types=["Landroid/app/Activity;"],
             return_type=None,
             body=[
-                assign(
-                    "tv",
-                    new(
-                        "Landroid/widget/TextView;",
-                        args=[var("ctx")],
-                        arg_types=["Landroid/content/Context;"],
-                    ),
-                ),
-                call_stmt(
-                    "setText",
-                    args=[var("tv"), const(message)],
-                    return_type=None,
-                    arg_types=["Ljava/lang/CharSequence;"],
-                    invoke_kind="virtual",
-                    owner="Landroid/widget/TextView;",
-                ),
-                call_stmt(
-                    "setContentView",
-                    args=[var("ctx"), var("tv")],
-                    return_type=None,
-                    arg_types=["Landroid/view/View;"],
-                    invoke_kind="virtual",
-                    owner="Landroid/app/Activity;",
-                ),
+                *text_view("tv", var("ctx"), message),
+                set_content_view(var("ctx"), var("tv")),
                 ret(),
             ],
         )
     ])
+
+
+def text_view(name, ctx, text):
+    """
+    Build a TextView and set text.
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/TextView;",
+                args=[ctx],
+                arg_types=["Landroid/content/Context;"],
+            ),
+        ),
+        call_stmt(
+            "setText",
+            args=[var(name), const(text)],
+            return_type=None,
+            arg_types=["Ljava/lang/CharSequence;"],
+            invoke_kind="virtual",
+            owner="Landroid/widget/TextView;",
+        ),
+    ]
+
+
+def button(name, ctx, text):
+    """
+    Build a Button and set text.
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/Button;",
+                args=[ctx],
+                arg_types=["Landroid/content/Context;"],
+            ),
+        ),
+        call_stmt(
+            "setText",
+            args=[var(name), const(text)],
+            return_type=None,
+            arg_types=["Ljava/lang/CharSequence;"],
+            invoke_kind="virtual",
+            owner="Landroid/widget/Button;",
+        ),
+    ]
+
+
+def set_content_view(ctx, view):
+    return call_stmt(
+        "setContentView",
+        args=[ctx, view],
+        return_type=None,
+        arg_types=["Landroid/view/View;"],
+        invoke_kind="virtual",
+        owner="Landroid/app/Activity;",
+    )
+
+
+def toast(name, ctx, text, duration=0):
+    """
+    Create and show a Toast. duration: 0 (SHORT) or 1 (LONG).
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            name,
+            call(
+                "makeText",
+                args=[ctx, const(text), const(duration)],
+                return_type="Landroid/widget/Toast;",
+                arg_types=[
+                    "Landroid/content/Context;",
+                    "Ljava/lang/CharSequence;",
+                    "I",
+                ],
+                invoke_kind="static",
+                owner="Landroid/widget/Toast;",
+            ),
+        ),
+        call_stmt(
+            "show",
+            args=[var(name)],
+            return_type=None,
+            arg_types=[],
+            invoke_kind="virtual",
+            owner="Landroid/widget/Toast;",
+        ),
+    ]
 
 
 def if_(cond, then, else_):

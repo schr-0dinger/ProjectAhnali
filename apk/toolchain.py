@@ -211,6 +211,18 @@ def _tool_path(name: str) -> str:
     raise RuntimeError(f"{name} not found on PATH or in Android build-tools")
 
 
+def _adb_path() -> str:
+    path = shutil.which("adb")
+    if path:
+        return path
+    sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
+    if sdk:
+        candidate = Path(sdk) / "platform-tools" / "adb"
+        if candidate.exists():
+            return str(candidate)
+    raise RuntimeError("adb not found on PATH or in Android SDK platform-tools")
+
+
 def _ensure_debug_keystore(keystore_path: Path, alias: str = "androiddebugkey") -> None:
     if keystore_path.exists():
         return
@@ -353,4 +365,70 @@ def package_apk_from_dex(
         check=True,
     )
 
+    return signed_apk
+
+
+def build_install_run(
+    frontend_ir,
+    *,
+    out_dir: str | Path = "build",
+    class_name: str = "LTest;",
+    emit_wrapper: bool = True,
+    wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
+    wrapper_target_desc: str | None = None,
+    wrapper_target_sig: str = "(Landroid/app/Activity;)V",
+    application_id: str = "com.anali.preview",
+    min_sdk: int = 21,
+    target_sdk: int = 33,
+    api: int | None = 21,
+    smali_jar: str | None = None,
+    keystore_path: str | Path | None = None,
+    keystore_alias: str = "androiddebugkey",
+    output_apk: str | Path | None = None,
+    uninstall_first: bool = True,
+) -> Path:
+    """
+    One-command flow: compile -> smali -> dex -> apk -> install -> run.
+    Returns the signed APK path.
+    """
+    out_dir = Path(out_dir)
+    build_dir = emit_build_dir_from_program(
+        frontend_ir,
+        out_dir=out_dir,
+        class_name=class_name,
+        emit_wrapper=emit_wrapper,
+        wrapper_class_desc=wrapper_class_desc,
+        wrapper_target_desc=wrapper_target_desc,
+        wrapper_target_sig=wrapper_target_sig,
+    )
+
+    dex_path = run_smali(
+        build_dir / "smali",
+        out_dir=build_dir / "classes.dex",
+        smali_jar=smali_jar,
+        api=api,
+    )
+
+    signed_apk = package_apk_from_dex(
+        dex_path,
+        out_dir=build_dir,
+        application_id=application_id,
+        min_sdk=min_sdk,
+        target_sdk=target_sdk,
+        api=api,
+        keystore_path=keystore_path,
+        keystore_alias=keystore_alias,
+        output_apk=output_apk,
+        activity_class_desc=wrapper_class_desc,
+    )
+
+    adb = _adb_path()
+    activity_name = _activity_name_from_desc(wrapper_class_desc, application_id)
+    if uninstall_first:
+        subprocess.run([adb, "uninstall", application_id], check=False)
+    subprocess.run([adb, "install", "-r", str(signed_apk)], check=True)
+    subprocess.run(
+        [adb, "shell", "am", "start", "-n", f"{application_id}/{activity_name}"],
+        check=True,
+    )
     return signed_apk

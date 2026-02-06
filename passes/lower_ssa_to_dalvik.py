@@ -239,11 +239,17 @@ class LowerSSAToDalvik:
         if expr is None:
             return
 
-        # Literal
+        # Literal / Const
         if isinstance(expr, int):
             if dst is None:
                 raise RuntimeError("Literal must be assigned to a destination")
             db.emit(DConst(dst, expr))
+            return
+
+        if isinstance(expr, Const):
+            if dst is None:
+                raise RuntimeError("Const must be assigned to a destination")
+            db.emit(DConst(dst, expr.value))
             return
 
         # Binary arithmetic
@@ -322,6 +328,8 @@ class LowerSSAToDalvik:
                         return AnaliType.INT
                     if isinstance(v, float):
                         return AnaliType.FLOAT
+                    if isinstance(v, str):
+                        return AnaliType.STRING
                 return AnaliType.UNKNOWN
 
             if expr.arg_types is None:
