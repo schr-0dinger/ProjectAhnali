@@ -60,10 +60,11 @@ Phases completed:
 - Epsilon-3: CFG simplification (redundant goto removal, block merging)
 
 Active:
-- Zeta refinement and Omega prep
+- Zeta refinement (spill + determinism stress)
+- Omega toolchain prep
 
 Test status:
-- `74` passing tests (`python -m pytest -q`)
+- `77` passing tests (`python -m pytest`)
 
 ## DSL Surface (Current)
 
@@ -177,8 +178,8 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Zeta refinement: register pressure + spill correctness
-2) Method-level determinism checks for regalloc output
+1) Zeta refinement: spill coverage on exceptional edges and try/catch joins
+2) Deterministic Smali label/ordering for whole-class emission
 3) APK toolchain integration scaffolding for Omega
 
 ## Completion Roadmap (Detailed)
@@ -196,8 +197,8 @@ Work items:
   - `DInvoke` argument and result paths
   - try/catch handler transitions
 - Add deterministic-output tests:
-  - same input program -> identical register assignment and Smali text.
-  - multiple methods compiled in one program remain deterministic independently.
+  - same input program -> identical register assignment and normalized Smali.
+  - multi-method programs compile deterministically per-method.
 
 Exit criteria:
 - No allocator regressions under stress.
