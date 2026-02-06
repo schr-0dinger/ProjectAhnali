@@ -3,7 +3,8 @@
 from collections import defaultdict
 from typing import Optional
 from ssa.value import SSAValue
-from ir.expr import Compare, Var, Call, BinaryOp, New
+from ir.expr import Compare, Var, Call, BinaryOp, New, StaticFieldGet
+from ir.stmt import StaticFieldSet
 
 
 class SSARenamer:
@@ -80,6 +81,11 @@ class SSARenamer:
                 expr.right = self._rename_expr(expr.right)
             elif isinstance(expr, New):
                 expr.args = [self._rename_expr(a) for a in expr.args]
+            elif isinstance(expr, StaticFieldGet):
+                pass
+
+            if isinstance(stmt, StaticFieldSet):
+                stmt.value = self._rename_expr(stmt.value)
 
             # Rename definitions
             defines = stmt.defines() if hasattr(stmt, "defines") else None

@@ -61,3 +61,20 @@ class CallStmt:
 
     def __repr__(self):
         return f"CallStmt({self.expr})"
+
+
+class StaticFieldSet:
+    def __init__(self, owner: str, name: str, desc: str, value):
+        self.owner = owner
+        self.name = name
+        self.desc = desc
+        self.value = value
+
+    def defines(self):
+        return None
+
+    def uses(self):
+        return [self.value]
+
+    def __repr__(self):
+        return f"sput {self.owner}->{self.name}:{self.desc} {self.value}"

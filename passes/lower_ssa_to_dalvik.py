@@ -12,8 +12,11 @@ from dalvik.ir import (
     DInvoke,
     DThrow,
     DNew,
+    DStaticGet,
+    DStaticPut,
 )
-from ir.expr import Compare, BinaryOp, Const, Var, Call, New
+from ir.expr import Compare, BinaryOp, Const, Var, Call, New, StaticFieldGet
+from ir.stmt import StaticFieldSet
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
@@ -231,6 +234,17 @@ class LowerSSAToDalvik:
         - binary arithmetic
         - calls (Eta-2 scaffolding)
         """
+        if isinstance(stmt, StaticFieldSet):
+            db.emit(
+                DStaticPut(
+                    self._as_dvalue(stmt.value, db),
+                    stmt.owner,
+                    stmt.name,
+                    stmt.desc,
+                )
+            )
+            return
+
         defines = stmt.defines() if hasattr(stmt, "defines") else None
         dst = DValue(defines) if defines is not None else None
 
@@ -374,6 +388,13 @@ class LowerSSAToDalvik:
                     owner=expr.class_desc,
                 )
             )
+            return
+
+        # Static field get
+        if isinstance(expr, StaticFieldGet):
+            if dst is None:
+                raise RuntimeError("StaticFieldGet must be assigned to a destination")
+            db.emit(DStaticGet(dst, expr.owner, expr.name, expr.desc))
             return
 
         # Symbolic move (x = y)

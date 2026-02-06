@@ -11,7 +11,7 @@ import zipfile
 
 from alpha_pipeline import alpha_pipeline
 from apk.project import render_manifest
-from emit.smali_activity import emit_activity_wrapper_smali
+from emit.smali_activity import emit_activity_wrapper_smali, emit_click_listener_smali
 
 
 def _class_desc_from_smali(smali_text: str) -> str:
@@ -47,6 +47,9 @@ def emit_build_dir(
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
+    emit_support_classes: bool = False,
+    click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    click_listener_target_method: str = "onClick",
 ) -> Path:
     out_dir = Path(out_dir)
     smali_dir = out_dir / "smali"
@@ -76,6 +79,19 @@ def emit_build_dir(
             encoding="utf-8",
         )
 
+    if emit_support_classes:
+        listener_path = _class_desc_to_path(click_listener_class_desc).with_suffix(".smali")
+        listener_out = smali_dir / listener_path
+        listener_out.parent.mkdir(parents=True, exist_ok=True)
+        listener_out.write_text(
+            emit_click_listener_smali(
+                class_desc=click_listener_class_desc,
+                target_desc=wrapper_target_desc or class_name,
+                target_method=click_listener_target_method,
+            ),
+            encoding="utf-8",
+        )
+
     return out_dir
 
 
@@ -88,6 +104,9 @@ def emit_build_dir_from_program(
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
+    emit_support_classes: bool = False,
+    click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    click_listener_target_method: str = "onClick",
 ) -> Path:
     result = alpha_pipeline(frontend_ir)
     smali_text = result["smali_class"]
@@ -99,6 +118,9 @@ def emit_build_dir_from_program(
         wrapper_class_desc=wrapper_class_desc,
         wrapper_target_desc=wrapper_target_desc,
         wrapper_target_sig=wrapper_target_sig,
+        emit_support_classes=emit_support_classes,
+        click_listener_class_desc=click_listener_class_desc,
+        click_listener_target_method=click_listener_target_method,
     )
 
 
@@ -377,6 +399,9 @@ def build_install_run(
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "(Landroid/app/Activity;)V",
+    emit_support_classes: bool = True,
+    click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    click_listener_target_method: str = "onClick",
     application_id: str = "com.anali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
@@ -400,6 +425,9 @@ def build_install_run(
         wrapper_class_desc=wrapper_class_desc,
         wrapper_target_desc=wrapper_target_desc,
         wrapper_target_sig=wrapper_target_sig,
+        emit_support_classes=emit_support_classes,
+        click_listener_class_desc=click_listener_class_desc,
+        click_listener_target_method=click_listener_target_method,
     )
 
     dex_path = run_smali(

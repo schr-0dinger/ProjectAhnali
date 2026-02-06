@@ -26,12 +26,13 @@ from dalvik.method import DalvikMethod
 def build_program(frontend_ir):
     if isinstance(frontend_ir, ProgramIR):
         return {
-            "methods": frontend_ir.methods
+            "methods": frontend_ir.methods,
+            "fields": getattr(frontend_ir, "fields", []),
         }
 
     if isinstance(frontend_ir, list) and frontend_ir:
         if all(isinstance(m, MethodIR) for m in frontend_ir):
-            return {"methods": frontend_ir}
+            return {"methods": frontend_ir, "fields": []}
 
     return {
         "methods": [
@@ -40,7 +41,8 @@ def build_program(frontend_ir):
                 params=[],
                 body=frontend_ir
             )
-        ]
+        ],
+        "fields": [],
     }
 
 
@@ -171,7 +173,7 @@ def alpha_pipeline(frontend_ir, *, ssa_opt=None):
 
     if len(compiled) == 1 and "main" in compiled:
         main = compiled["main"]
-        smali_class = emit_program_smali([main["dalvik_method"]])
+        smali_class = emit_program_smali([main["dalvik_method"]], fields=program.get("fields", []))
         return {
             **main,
             "smali": smali_class,
@@ -180,7 +182,7 @@ def alpha_pipeline(frontend_ir, *, ssa_opt=None):
         }
 
     methods = [m["dalvik_method"] for m in compiled.values()]
-    smali_class = emit_program_smali(methods)
+    smali_class = emit_program_smali(methods, fields=program.get("fields", []))
 
     return {
         "methods": compiled,

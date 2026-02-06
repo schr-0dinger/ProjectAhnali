@@ -10,6 +10,8 @@ from dalvik.ir import (
     DInvoke,
     DReturn,
     DThrow,
+    DStaticGet,
+    DStaticPut,
 )
 from ssa.value import SSAValue
 
@@ -92,6 +94,11 @@ def eliminate_dead_code(dalvik_blocks):
                         if v:
                             read.add(v)
 
+                elif isinstance(instr, DStaticPut):
+                    v = _ssa_of(instr.value)
+                    if v:
+                        read.add(v)
+
                 elif isinstance(instr, DReturn):
                     v = _ssa_of(instr.value)
                     if v:
@@ -144,7 +151,7 @@ def eliminate_dead_code(dalvik_blocks):
                         read.add(src)
                         worklist.append(src)
 
-            # DConst has no operands; nothing to propagate
+            # DConst/DStaticGet have no operands; nothing to propagate
 
         return read
 
@@ -175,6 +182,11 @@ def eliminate_dead_code(dalvik_blocks):
 
                 # Const: removable if its result is unused
                 elif isinstance(instr, DConst):
+                    dst = _ssa_of(instr.dst)
+                    if dst and dst not in read:
+                        is_dead = True
+                        changed = True
+                elif isinstance(instr, DStaticGet):
                     dst = _ssa_of(instr.dst)
                     if dst and dst not in read:
                         is_dead = True

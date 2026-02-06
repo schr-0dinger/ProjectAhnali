@@ -1,7 +1,7 @@
 # emit/smali_emit.py
 
 from dalvik.method import DalvikMethod
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow, DNew
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow, DNew, DStaticGet, DStaticPut
 from ir.types import AnaliType
 from ir.expr import Const
 
@@ -90,6 +90,14 @@ def emit_method_smali(method: DalvikMethod):
             elif isinstance(instr, DNew):
                 r = reg_map[instr.dst.ssa]
                 lines.append(f"    new-instance {r}, {instr.class_desc}")
+            elif isinstance(instr, DStaticGet):
+                r = reg_map[instr.dst.ssa]
+                op = "sget-object" if instr.desc.startswith("L") else "sget"
+                lines.append(f"    {op} {r}, {instr.owner}->{instr.name}:{instr.desc}")
+            elif isinstance(instr, DStaticPut):
+                r = reg_map[instr.value.ssa]
+                op = "sput-object" if instr.desc.startswith("L") else "sput"
+                lines.append(f"    {op} {r}, {instr.owner}->{instr.name}:{instr.desc}")
 
             elif instr.__class__.__name__ == "DMove":
                 rd = reg_map[instr.dst.ssa]
@@ -268,11 +276,16 @@ def emit_method_smali(method: DalvikMethod):
     return lines
 
 
-def emit_program_smali(methods, class_name="LTest;"):
+def emit_program_smali(methods, class_name="LTest;", fields=None):
     lines = []
     lines.append(f".class public {class_name}")
     lines.append(".super Ljava/lang/Object;")
     lines.append("")
+
+    for field in fields or []:
+        lines.append(f".field {field.access} {field.name}:{field.desc}")
+    if fields:
+        lines.append("")
 
     for method in methods:
         lines.extend(emit_method_smali(method))

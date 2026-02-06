@@ -233,3 +233,31 @@ def emit_activity_wrapper_smali(
     lines.append(".end method")
 
     return "\n".join(lines)
+
+
+def emit_click_listener_smali(
+    class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    target_desc: str = "LTest;",
+    target_method: str = "onClick",
+):
+    lines = []
+
+    lines.append(f".class public {class_desc}")
+    lines.append(".super Ljava/lang/Object;")
+    lines.append(".implements Landroid/view/View$OnClickListener;")
+    lines.append("")
+
+    lines.append(".method public constructor <init>()V")
+    lines.append("    .locals 0")
+    lines.append("    invoke-direct {p0}, Ljava/lang/Object;-><init>()V")
+    lines.append("    return-void")
+    lines.append(".end method")
+    lines.append("")
+
+    lines.append(".method public onClick(Landroid/view/View;)V")
+    lines.append("    .locals 0")
+    lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/view/View;)V")
+    lines.append("    return-void")
+    lines.append(".end method")
+
+    return "\n".join(lines)

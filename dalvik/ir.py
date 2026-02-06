@@ -28,6 +28,28 @@ class DConst(DInstr):
         return f"{self.dst} = const {self.value}"
 
 
+class DStaticGet(DInstr):
+    def __init__(self, dst, owner, name, desc):
+        self.dst = dst
+        self.owner = owner
+        self.name = name
+        self.desc = desc
+
+    def __repr__(self):
+        return f"{self.dst} = sget {self.owner}->{self.name}:{self.desc}"
+
+
+class DStaticPut(DInstr):
+    def __init__(self, value, owner, name, desc):
+        self.value = value
+        self.owner = owner
+        self.name = name
+        self.desc = desc
+
+    def __repr__(self):
+        return f"sput {self.owner}->{self.name}:{self.desc} {self.value}"
+
+
 class DNew(DInstr):
     def __init__(self, dst, class_desc):
         self.dst = dst

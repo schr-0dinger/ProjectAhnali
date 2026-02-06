@@ -1,5 +1,5 @@
 from ir.types import AnaliType
-from ir.expr import Const, BinaryOp, Var, Compare, Call, New
+from ir.expr import Const, BinaryOp, Var, Compare, Call, New, StaticFieldGet
 from ssa.value import SSAValue
 
 
@@ -124,5 +124,17 @@ class TypeInferencePass:
             return AnaliType.UNKNOWN
         if isinstance(expr, New):
             return expr.class_desc
+        if isinstance(expr, StaticFieldGet):
+            desc = expr.desc
+            if desc == "I":
+                return AnaliType.INT
+            if desc == "Z":
+                return AnaliType.BOOL
+            if desc == "F":
+                return AnaliType.FLOAT
+            if desc == "Ljava/lang/String;":
+                return AnaliType.STRING
+            if desc.startswith("L") and desc.endswith(";"):
+                return AnaliType.OBJECT
 
         return AnaliType.UNKNOWN

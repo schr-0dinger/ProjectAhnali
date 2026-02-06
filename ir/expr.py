@@ -127,3 +127,16 @@ class New(Expr):
 
     def __repr__(self):
         return f"new {self.class_desc}({len(self.args)} args)"
+
+
+class StaticFieldGet(Expr):
+    """
+    Static field read.
+    """
+    def __init__(self, owner: str, name: str, desc: str):
+        self.owner = owner
+        self.name = name
+        self.desc = desc
+
+    def __repr__(self):
+        return f"sget {self.owner}->{self.name}:{self.desc}"
