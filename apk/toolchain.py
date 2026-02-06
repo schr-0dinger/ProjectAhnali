@@ -10,7 +10,8 @@ import tempfile
 import zipfile
 
 from alpha_pipeline import alpha_pipeline
-from apk.project import ANDROID_MANIFEST
+from apk.project import render_manifest
+from emit.smali_activity import emit_activity_wrapper_smali
 
 
 def _class_desc_from_smali(smali_text: str) -> str:
@@ -28,13 +29,32 @@ def _class_desc_to_path(desc: str) -> Path:
     return Path(*desc.split("/"))
 
 
-def emit_build_dir(smali_text: str, out_dir: str | Path = "build", class_name: str | None = None) -> Path:
+def _activity_name_from_desc(desc: str, application_id: str) -> str:
+    if desc.startswith("L") and desc.endswith(";"):
+        desc = desc[1:-1]
+    fqcn = desc.replace("/", ".")
+    if fqcn.startswith(application_id + "."):
+        return "." + fqcn[len(application_id) + 1 :]
+    return fqcn
+
+
+def emit_build_dir(
+    smali_text: str,
+    out_dir: str | Path = "build",
+    class_name: str | None = None,
+    *,
+    emit_wrapper: bool = False,
+    wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
+    wrapper_target_desc: str | None = None,
+) -> Path:
     out_dir = Path(out_dir)
     smali_dir = out_dir / "smali"
     smali_dir.mkdir(parents=True, exist_ok=True)
 
     if class_name is None:
         class_name = _class_desc_from_smali(smali_text)
+    if wrapper_target_desc is None:
+        wrapper_target_desc = class_name
 
     class_path = _class_desc_to_path(class_name)
     smali_path = smali_dir / class_path
@@ -42,13 +62,51 @@ def emit_build_dir(smali_text: str, out_dir: str | Path = "build", class_name: s
     smali_path.parent.mkdir(parents=True, exist_ok=True)
     smali_path.write_text(smali_text, encoding="utf-8")
 
+    if emit_wrapper:
+        wrapper_path = _class_desc_to_path(wrapper_class_desc).with_suffix(".smali")
+        wrapper_out = smali_dir / wrapper_path
+        wrapper_out.parent.mkdir(parents=True, exist_ok=True)
+        wrapper_out.write_text(
+            emit_activity_wrapper_smali(
+                activity_desc=wrapper_class_desc,
+                target_desc=wrapper_target_desc,
+            ),
+            encoding="utf-8",
+        )
+
     return out_dir
 
 
-def emit_build_dir_from_program(frontend_ir, out_dir: str | Path = "build", class_name: str = "LTest;") -> Path:
+def emit_build_dir_from_program(
+    frontend_ir,
+    out_dir: str | Path = "build",
+    class_name: str = "LTest;",
+    *,
+    emit_wrapper: bool = False,
+    wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
+    wrapper_target_desc: str | None = None,
+) -> Path:
     result = alpha_pipeline(frontend_ir)
     smali_text = result["smali_class"]
-    return emit_build_dir(smali_text, out_dir=out_dir, class_name=class_name)
+    return emit_build_dir(
+        smali_text,
+        out_dir=out_dir,
+        class_name=class_name,
+        emit_wrapper=emit_wrapper,
+        wrapper_class_desc=wrapper_class_desc,
+        wrapper_target_desc=wrapper_target_desc,
+    )
+
+
+def _which_tool(name: str) -> str | None:
+    path = shutil.which(name)
+    if path:
+        return path
+    home = Path.home()
+    local_bin = home / ".local" / "bin" / name
+    if local_bin.exists():
+        return str(local_bin)
+    return None
 
 
 def run_smali(smali_dir: str | Path, out_dir: str | Path | None = None, smali_jar: str | None = None) -> Path:
@@ -58,11 +116,16 @@ def run_smali(smali_dir: str | Path, out_dir: str | Path | None = None, smali_ja
     out_dir = Path(out_dir)
 
     if smali_jar:
-        cmd = ["java", "-jar", smali_jar, "assemble", str(smali_dir), "-o", str(out_dir)]
+        jar_path = Path(smali_jar)
+        if jar_path.suffix == ".jar":
+            cmd = ["java", "-jar", str(jar_path), "assemble", str(smali_dir), "-o", str(out_dir)]
+        else:
+            cmd = [str(jar_path), "assemble", str(smali_dir), "-o", str(out_dir)]
     else:
-        if shutil.which("smali") is None:
+        smali = _which_tool("smali")
+        if smali is None:
             raise RuntimeError("smali not found on PATH and smali_jar not provided")
-        cmd = ["smali", "assemble", str(smali_dir), "-o", str(out_dir)]
+        cmd = [smali, "assemble", str(smali_dir), "-o", str(out_dir)]
 
     subprocess.run(cmd, check=True)
     return out_dir
@@ -74,11 +137,16 @@ def run_baksmali(dex_path: str | Path, out_dir: str | Path, baksmali_jar: str | 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if baksmali_jar:
-        cmd = ["java", "-jar", baksmali_jar, "disassemble", str(dex_path), "-o", str(out_dir)]
+        jar_path = Path(baksmali_jar)
+        if jar_path.suffix == ".jar":
+            cmd = ["java", "-jar", str(jar_path), "disassemble", str(dex_path), "-o", str(out_dir)]
+        else:
+            cmd = [str(jar_path), "disassemble", str(dex_path), "-o", str(out_dir)]
     else:
-        if shutil.which("baksmali") is None:
+        baksmali = _which_tool("baksmali")
+        if baksmali is None:
             raise RuntimeError("baksmali not found on PATH and baksmali_jar not provided")
-        cmd = ["baksmali", "disassemble", str(dex_path), "-o", str(out_dir)]
+        cmd = [baksmali, "disassemble", str(dex_path), "-o", str(out_dir)]
 
     subprocess.run(cmd, check=True)
     return out_dir
@@ -173,6 +241,8 @@ def package_apk_from_dex(
     keystore_path: str | Path | None = None,
     keystore_alias: str = "androiddebugkey",
     output_apk: str | Path | None = None,
+    activity_name: str | None = None,
+    activity_class_desc: str | None = None,
 ) -> Path:
     """
     Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
@@ -191,7 +261,22 @@ def package_apk_from_dex(
 
     manifest_path = out_dir / "AndroidManifest.xml"
     if not manifest_path.exists():
-        manifest_path.write_text(ANDROID_MANIFEST, encoding="utf-8")
+        if activity_name is None and activity_class_desc is not None:
+            activity_name = _activity_name_from_desc(
+                activity_class_desc,
+                application_id,
+            )
+        if activity_name is None:
+            activity_name = ".MainActivity"
+        manifest_path.write_text(
+            render_manifest(
+                application_id=application_id,
+                min_sdk=min_sdk,
+                target_sdk=target_sdk,
+                activity_name=activity_name,
+            ),
+            encoding="utf-8",
+        )
 
     with tempfile.TemporaryDirectory(dir=out_dir) as tmp:
         tmp = Path(tmp)
@@ -222,8 +307,10 @@ def package_apk_from_dex(
             str(manifest_path),
             "-I",
             str(android_jar),
-            f"--min-sdk-version={min_sdk}",
-            f"--target-sdk-version={target_sdk}",
+            "--min-sdk-version",
+            str(min_sdk),
+            "--target-sdk-version",
+            str(target_sdk),
             "--auto-add-overlay",
         ]
         for f in flat_files:

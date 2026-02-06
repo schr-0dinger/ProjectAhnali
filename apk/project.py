@@ -10,22 +10,30 @@ from emit.smali_activity import emit_activity_smali
 # AndroidManifest.xml (LAUNCHABLE)
 # ------------------------------------------------------------
 
-ANDROID_MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
+def render_manifest(
+    *,
+    application_id: str = "com.anali.preview",
+    min_sdk: int = 21,
+    target_sdk: int = 33,
+    activity_name: str = ".MainActivity",
+    label: str = "AnaliPreview",
+) -> str:
+    return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.anali.preview"
+    package="{application_id}"
     android:versionCode="1"
     android:versionName="1.0">
 
     <uses-sdk
-        android:minSdkVersion="21"
-        android:targetSdkVersion="33" />
+        android:minSdkVersion="{min_sdk}"
+        android:targetSdkVersion="{target_sdk}" />
 
     <application
-        android:label="AnaliPreview"
+        android:label="{label}"
         android:allowBackup="false">
 
         <activity
-            android:name=".MainActivity"
+            android:name="{activity_name}"
             android:exported="true">
 
             <intent-filter>
@@ -39,6 +47,9 @@ ANDROID_MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
 
 </manifest>
 """
+
+
+ANDROID_MANIFEST = render_manifest()
 
 
 # ------------------------------------------------------------

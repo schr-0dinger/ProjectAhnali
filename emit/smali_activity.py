@@ -174,3 +174,30 @@ def emit_activity_smali(
     lines.append(".end method")
 
     return "\n".join(lines)
+
+
+def emit_activity_wrapper_smali(
+    activity_desc: str = "Lcom/anali/preview/MainActivity;",
+    target_desc: str = "LTest;",
+):
+    lines = []
+
+    lines.append(f".class public {activity_desc}")
+    lines.append(".super Landroid/app/Activity;")
+    lines.append("")
+
+    lines.append(".method public <init>()V")
+    lines.append("    .locals 1")
+    lines.append("    invoke-direct {p0}, Landroid/app/Activity;-><init>()V")
+    lines.append("    return-void")
+    lines.append(".end method")
+    lines.append("")
+
+    lines.append(".method protected onCreate(Landroid/os/Bundle;)V")
+    lines.append("    .locals 0")
+    lines.append("    invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V")
+    lines.append(f"    invoke-static {{}}, {target_desc}->main()V")
+    lines.append("    return-void")
+    lines.append(".end method")
+
+    return "\n".join(lines)
