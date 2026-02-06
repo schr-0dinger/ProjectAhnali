@@ -4,7 +4,7 @@ Anali is a Python DSL -> IR -> CFG -> SSA -> Typed SSA -> Dalvik IR -> Smali com
 This repository contains the compiler pipeline, validation gates, and tests for a
 phase-by-phase architecture-first build.
 
-Last updated: 2026-02-05
+Last updated: 2026-02-06
 
 ## Goals
 
@@ -60,7 +60,10 @@ Phases completed:
 - Epsilon-3: CFG simplification (redundant goto removal, block merging)
 
 Active:
-- Epsilon-3 polish and regression coverage
+- Zeta refinement and Omega prep
+
+Test status:
+- `74` passing tests (`python -m pytest -q`)
 
 ## DSL Surface (Current)
 
@@ -163,6 +166,9 @@ Implemented:
 - Redundant goto elimination
 - Empty block removal with single successor
 - Block merging into single predecessor (safe)
+- Dalvik branch/goto target retargeting during CFG rewrites
+- Smali label emission filtering for unreferenced empty blocks
+- Label-integrity regression tests (all branch/catch references resolve to defined labels)
 
 Constraints:
 - Do not simplify entry/exit blocks
@@ -171,25 +177,90 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Add regression tests for CFG simplification on branch-heavy graphs
-2) Validate simplification does not break try/catch regions
-3) Add a small Dalvik-level equivalence test for block merging
+1) Zeta refinement: register pressure + spill correctness
+2) Method-level determinism checks for regalloc output
+3) APK toolchain integration scaffolding for Omega
 
-## Future Plan (Sketch)
+## Completion Roadmap (Detailed)
 
-Epsilon-3 finish:
-- Branch target cleanup after simplification
-- Remove dead labels in Smali emission
+### Phase 1: Zeta Refinement (current)
 
-Zeta refinements:
-- Register pressure stress tests
-- Spill correctness across calls and branches
-- Deterministic regalloc across multiple methods
+Objectives:
+- Prove allocator stability under stress and complex control flow.
+- Validate spills across branches, invokes, and exception paths.
 
-Omega endgame:
-- Smali -> APK build integration
-- APK install + runtime smoke tests
-- Full DSL program end-to-end tests
+Work items:
+- Add register-pressure stress tests with >16 live intervals.
+- Add spill/reload tests around:
+  - `DIf` branch joins
+  - `DInvoke` argument and result paths
+  - try/catch handler transitions
+- Add deterministic-output tests:
+  - same input program -> identical register assignment and Smali text.
+  - multiple methods compiled in one program remain deterministic independently.
+
+Exit criteria:
+- No allocator regressions under stress.
+- Spill correctness verified in branch/call/handler scenarios.
+- Determinism tests stable across repeated runs.
+
+### Phase 2: Omega Toolchain Integration
+
+Objectives:
+- Move from compiler output validation to executable artifact validation.
+
+Work items:
+- Build integration:
+  - emit complete class/method files to a build directory.
+  - integrate `smali`/`baksmali` invocation flow.
+- Packaging:
+  - generate a minimal APK from emitted Smali.
+  - establish reproducible build commands and output paths.
+- Runtime smoke:
+  - install APK on emulator/device.
+  - run minimal startup path and verify no verifier/runtime crashes.
+
+Exit criteria:
+- One-command compile-to-APK workflow.
+- APK installs and launches for baseline test apps.
+- Runtime smoke suite green.
+
+### Phase 3: End-to-End DSL Validation
+
+Objectives:
+- Validate language surface against real build/runtime behavior.
+
+Work items:
+- Add end-to-end fixtures:
+  - typed method calls/returns
+  - nested branches and loops
+  - try/catch with multi-handlers
+  - throw/catch paths
+- Golden checks:
+  - expected Smali fragments for each fixture
+  - expected runtime behavior for smoke scenarios
+
+Exit criteria:
+- DSL-to-APK flow validated for representative programs.
+- No phase-local workaround required to pass runtime checks.
+
+### Phase 4: Stabilization and Release Readiness
+
+Objectives:
+- Lock behavior and make future changes safe.
+
+Work items:
+- CI matrix for unit + integration + end-to-end tests.
+- Regression dashboard for optimization and lowering changes.
+- Developer docs:
+  - architecture invariants
+  - pass ordering constraints
+  - adding a new IR feature checklist
+
+Exit criteria:
+- Stable CI on all critical paths.
+- Regression turnaround is quick and actionable.
+- Architecture and contribution path documented.
 
 ## How to Run Tests
 
