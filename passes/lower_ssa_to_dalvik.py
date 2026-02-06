@@ -14,9 +14,14 @@ from dalvik.ir import (
     DNew,
     DStaticGet,
     DStaticPut,
+    DInstanceGet,
+    DInstancePut,
+    DArrayGet,
+    DArrayPut,
+    DCheckCast,
 )
-from ir.expr import Compare, BinaryOp, Const, Var, Call, New, StaticFieldGet
-from ir.stmt import StaticFieldSet
+from ir.expr import Compare, BinaryOp, Const, Var, Call, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
@@ -244,6 +249,27 @@ class LowerSSAToDalvik:
                 )
             )
             return
+        if isinstance(stmt, FieldSet):
+            db.emit(
+                DInstancePut(
+                    self._as_dvalue(stmt.obj, db),
+                    self._as_dvalue(stmt.value, db),
+                    stmt.owner,
+                    stmt.name,
+                    stmt.desc,
+                )
+            )
+            return
+        if isinstance(stmt, ArraySet):
+            db.emit(
+                DArrayPut(
+                    self._as_dvalue(stmt.array, db),
+                    self._as_dvalue(stmt.index, db),
+                    stmt.elem_desc,
+                    self._as_dvalue(stmt.value, db),
+                )
+            )
+            return
 
         defines = stmt.defines() if hasattr(stmt, "defines") else None
         dst = DValue(defines) if defines is not None else None
@@ -395,6 +421,38 @@ class LowerSSAToDalvik:
             if dst is None:
                 raise RuntimeError("StaticFieldGet must be assigned to a destination")
             db.emit(DStaticGet(dst, expr.owner, expr.name, expr.desc))
+            return
+        if isinstance(expr, FieldGet):
+            if dst is None:
+                raise RuntimeError("FieldGet must be assigned to a destination")
+            db.emit(
+                DInstanceGet(
+                    dst,
+                    self._as_dvalue(expr.obj, db),
+                    expr.owner,
+                    expr.name,
+                    expr.desc,
+                )
+            )
+            return
+        if isinstance(expr, ArrayGet):
+            if dst is None:
+                raise RuntimeError("ArrayGet must be assigned to a destination")
+            db.emit(
+                DArrayGet(
+                    dst,
+                    self._as_dvalue(expr.array, db),
+                    self._as_dvalue(expr.index, db),
+                    expr.elem_desc,
+                )
+            )
+            return
+        if isinstance(expr, CheckCast):
+            if dst is None:
+                raise RuntimeError("CheckCast must be assigned to a destination")
+            # emit move + check-cast on the same reg
+            db.emit(DMove(dst, self._as_dvalue(expr.value, db)))
+            db.emit(DCheckCast(dst, expr.desc))
             return
 
         # Symbolic move (x = y)

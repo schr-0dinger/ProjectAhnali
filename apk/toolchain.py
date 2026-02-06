@@ -110,7 +110,7 @@ def emit_build_dir_from_program(
 ) -> Path:
     result = alpha_pipeline(frontend_ir)
     smali_text = result["smali_class"]
-    return emit_build_dir(
+    build_dir = emit_build_dir(
         smali_text,
         out_dir=out_dir,
         class_name=class_name,
@@ -118,10 +118,27 @@ def emit_build_dir_from_program(
         wrapper_class_desc=wrapper_class_desc,
         wrapper_target_desc=wrapper_target_desc,
         wrapper_target_sig=wrapper_target_sig,
-        emit_support_classes=emit_support_classes,
+        emit_support_classes=emit_support_classes or bool(getattr(frontend_ir, "support_classes", [])),
         click_listener_class_desc=click_listener_class_desc,
         click_listener_target_method=click_listener_target_method,
     )
+    # Emit per-handler support classes if present
+    support_classes = getattr(frontend_ir, "support_classes", [])
+    if support_classes:
+        for class_desc, target_method in support_classes:
+            listener_path = _class_desc_to_path(class_desc).with_suffix(".smali")
+            listener_out = build_dir / "smali" / listener_path
+            listener_out.parent.mkdir(parents=True, exist_ok=True)
+            listener_out.write_text(
+                emit_click_listener_smali(
+                    class_desc=class_desc,
+                    target_desc=wrapper_target_desc or class_name,
+                    target_method=target_method,
+                ),
+                encoding="utf-8",
+            )
+
+    return build_dir
 
 
 def _which_tool(name: str) -> str | None:
@@ -405,7 +422,7 @@ def build_install_run(
     application_id: str = "com.anali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
-    api: int | None = 21,
+    api: int | None = None,
     smali_jar: str | None = None,
     keystore_path: str | Path | None = None,
     keystore_alias: str = "androiddebugkey",

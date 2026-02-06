@@ -1,7 +1,7 @@
 # emit/smali_emit.py
 
 from dalvik.method import DalvikMethod
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow, DNew, DStaticGet, DStaticPut
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow, DNew, DStaticGet, DStaticPut, DInstanceGet, DInstancePut, DArrayGet, DArrayPut, DCheckCast
 from ir.types import AnaliType
 from ir.expr import Const
 
@@ -98,6 +98,31 @@ def emit_method_smali(method: DalvikMethod):
                 r = reg_map[instr.value.ssa]
                 op = "sput-object" if instr.desc.startswith("L") else "sput"
                 lines.append(f"    {op} {r}, {instr.owner}->{instr.name}:{instr.desc}")
+            elif isinstance(instr, DInstanceGet):
+                r = reg_map[instr.dst.ssa]
+                o = reg_map[instr.obj.ssa]
+                op = "iget-object" if instr.desc.startswith("L") else "iget"
+                lines.append(f"    {op} {r}, {o}, {instr.owner}->{instr.name}:{instr.desc}")
+            elif isinstance(instr, DInstancePut):
+                o = reg_map[instr.obj.ssa]
+                v = reg_map[instr.value.ssa]
+                op = "iput-object" if instr.desc.startswith("L") else "iput"
+                lines.append(f"    {op} {v}, {o}, {instr.owner}->{instr.name}:{instr.desc}")
+            elif isinstance(instr, DArrayGet):
+                r = reg_map[instr.dst.ssa]
+                a = reg_map[instr.array.ssa]
+                i = reg_map[instr.index.ssa]
+                op = "aget-object" if instr.elem_desc.startswith("L") else "aget"
+                lines.append(f"    {op} {r}, {a}, {i}")
+            elif isinstance(instr, DArrayPut):
+                a = reg_map[instr.array.ssa]
+                i = reg_map[instr.index.ssa]
+                v = reg_map[instr.value.ssa]
+                op = "aput-object" if instr.elem_desc.startswith("L") else "aput"
+                lines.append(f"    {op} {v}, {a}, {i}")
+            elif isinstance(instr, DCheckCast):
+                r = reg_map[instr.obj.ssa]
+                lines.append(f"    check-cast {r}, {instr.desc}")
 
             elif instr.__class__.__name__ == "DMove":
                 rd = reg_map[instr.dst.ssa]
@@ -124,6 +149,7 @@ def emit_method_smali(method: DalvikMethod):
                     "static": "invoke-static",
                     "virtual": "invoke-virtual",
                     "direct": "invoke-direct",
+                    "interface": "invoke-interface",
                 }.get(instr.invoke_kind)
                 if invoke is None:
                     raise RuntimeError(
@@ -131,7 +157,7 @@ def emit_method_smali(method: DalvikMethod):
                     )
 
                 arg_types = instr.arg_types or [None] * len(instr.args)
-                if instr.invoke_kind in ("virtual", "direct"):
+                if instr.invoke_kind in ("virtual", "direct", "interface"):
                     if len(arg_types) == len(instr.args):
                         arg_types = arg_types[1:]
                     elif len(arg_types) != len(instr.args) - 1:

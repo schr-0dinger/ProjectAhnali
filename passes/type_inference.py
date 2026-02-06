@@ -1,5 +1,5 @@
 from ir.types import AnaliType
-from ir.expr import Const, BinaryOp, Var, Compare, Call, New, StaticFieldGet
+from ir.expr import Const, BinaryOp, Var, Compare, Call, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
 from ssa.value import SSAValue
 
 
@@ -132,6 +132,36 @@ class TypeInferencePass:
                 return AnaliType.BOOL
             if desc == "F":
                 return AnaliType.FLOAT
+            if desc == "Ljava/lang/String;":
+                return AnaliType.STRING
+            if desc.startswith("L") and desc.endswith(";"):
+                return AnaliType.OBJECT
+        if isinstance(expr, FieldGet):
+            desc = expr.desc
+            if desc == "I":
+                return AnaliType.INT
+            if desc == "Z":
+                return AnaliType.BOOL
+            if desc == "F":
+                return AnaliType.FLOAT
+            if desc == "Ljava/lang/String;":
+                return AnaliType.STRING
+            if desc.startswith("L") and desc.endswith(";"):
+                return AnaliType.OBJECT
+        if isinstance(expr, ArrayGet):
+            desc = expr.elem_desc
+            if desc == "I":
+                return AnaliType.INT
+            if desc == "Z":
+                return AnaliType.BOOL
+            if desc == "F":
+                return AnaliType.FLOAT
+            if desc == "Ljava/lang/String;":
+                return AnaliType.STRING
+            if desc.startswith("L") and desc.endswith(";"):
+                return AnaliType.OBJECT
+        if isinstance(expr, CheckCast):
+            desc = expr.desc
             if desc == "Ljava/lang/String;":
                 return AnaliType.STRING
             if desc.startswith("L") and desc.endswith(";"):

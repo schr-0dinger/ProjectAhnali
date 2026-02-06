@@ -13,17 +13,17 @@ def test_pythonic_dsl_counter_smali():
                 button("-", id="dec"),
             ),
             on_click("inc", [
-                "count += 1",
+                "count = count + 1",
                 "label.text = f'Count: {count}'",
             ]),
             on_click("dec", [
-                "count -= 1",
+                "count = count - 1",
                 "label.text = f'Count: {count}'",
             ]),
         )
     )
 
-    smali = alpha_pipeline(prog)["smali_class"]
+    smali = alpha_pipeline(prog.build())["smali_class"]
     assert ".field private static count:I" in smali
     assert "sget" in smali
     assert "sput" in smali

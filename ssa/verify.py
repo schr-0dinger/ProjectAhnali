@@ -1,8 +1,8 @@
 # ssa/verify.py
 
 from ssa.value import SSAValue
-from ir.expr import Compare, Const, BinaryOp, Call, Var, New, StaticFieldGet
-from ir.stmt import StaticFieldSet
+from ir.expr import Compare, Const, BinaryOp, Call, Var, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 
 
 class SSAVerificationError(RuntimeError):
@@ -52,6 +52,13 @@ def _iter_ssa_uses(value):
             yield from _iter_ssa_uses(arg)
     elif isinstance(value, StaticFieldGet):
         return
+    elif isinstance(value, FieldGet):
+        yield from _iter_ssa_uses(value.obj)
+    elif isinstance(value, ArrayGet):
+        yield from _iter_ssa_uses(value.array)
+        yield from _iter_ssa_uses(value.index)
+    elif isinstance(value, CheckCast):
+        yield from _iter_ssa_uses(value.value)
 
     # Const and unknown leaf nodes produce no SSA uses
 
@@ -90,6 +97,48 @@ def _verify_uses_dominated(ssa_blocks, dominators):
         # ---- Statement uses ----
         for stmt in block.statements:
             if isinstance(stmt, StaticFieldSet):
+                for val in _iter_ssa_uses(stmt.value):
+                    if getattr(val, "is_undef", False):
+                        continue
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} not dominated by its definition"
+                        )
+            if isinstance(stmt, FieldSet):
+                for val in _iter_ssa_uses(stmt.obj):
+                    if getattr(val, "is_undef", False):
+                        continue
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} not dominated by its definition"
+                        )
+                for val in _iter_ssa_uses(stmt.value):
+                    if getattr(val, "is_undef", False):
+                        continue
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} not dominated by its definition"
+                        )
+            if isinstance(stmt, ArraySet):
+                for val in _iter_ssa_uses(stmt.array):
+                    if getattr(val, "is_undef", False):
+                        continue
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} not dominated by its definition"
+                        )
+                for val in _iter_ssa_uses(stmt.index):
+                    if getattr(val, "is_undef", False):
+                        continue
+                    def_block = val.def_block
+                    if def_block not in dominators[cfg_block]:
+                        raise SSAVerificationError(
+                            f"Use of {val} not dominated by its definition"
+                        )
                 for val in _iter_ssa_uses(stmt.value):
                     if getattr(val, "is_undef", False):
                         continue

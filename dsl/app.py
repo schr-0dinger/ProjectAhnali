@@ -10,8 +10,8 @@ from ir.stmt import Return, TryCatch, CallStmt, Throw, StaticFieldSet
 from tests.ir_stub import Assign, If, While
 
 
-def program(methods, fields=None):
-    return ProgramIR(methods, fields=fields or [])
+def program(methods, fields=None, support_classes=None):
+    return ProgramIR(methods, fields=fields or [], support_classes=support_classes or [])
 
 
 def method(name, *, params=None, param_types=None, return_type=None, body=None):
@@ -114,10 +114,15 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
     if arg_types is None:
         arg_types = sig_args
     elif sig_args is not None and list(arg_types) != list(sig_args):
-        raise RuntimeError(
-            f"Call arg_types mismatch for {owner}->{name}: "
-            f"{arg_types} vs {sig_args}"
-        )
+        # Allow StringBuilder.append overload (int vs string)
+        if key == ("Ljava/lang/StringBuilder;", "append", "virtual") and list(arg_types) == ["I"]:
+            key = ("Ljava/lang/StringBuilder;", "append", "virtual#int")
+            sig_ret, sig_args = _METHOD_SIGS[key]
+        else:
+            raise RuntimeError(
+                f"Call arg_types mismatch for {owner}->{name}: "
+                f"{arg_types} vs {sig_args}"
+            )
 
     # Basic arity sanity
     if arg_types is not None:
@@ -155,6 +160,15 @@ _METHOD_SIGS = {
         None,
         ["Landroid/view/View$OnClickListener;"],
     ),
+    ("Landroid/view/View;", "setPadding", "virtual"): (
+        None,
+        ["I", "I", "I", "I"],
+    ),
+    ("Landroid/widget/TextView;", "setGravity", "virtual"): (None, ["I"]),
+    ("Landroid/view/View;", "setLayoutParams", "virtual"): (
+        None,
+        ["Landroid/view/ViewGroup$LayoutParams;"],
+    ),
     ("Landroid/util/Log;", "d", "static"): (
         "I",
         ["Ljava/lang/String;", "Ljava/lang/String;"],
@@ -163,6 +177,10 @@ _METHOD_SIGS = {
         "Ljava/lang/String;",
         ["I"],
     ),
+    ("Ljava/lang/StringBuilder;", "<init>", "direct"): (None, []),
+    ("Ljava/lang/StringBuilder;", "append", "virtual"): ("Ljava/lang/StringBuilder;", ["Ljava/lang/String;"]),
+    ("Ljava/lang/StringBuilder;", "append", "virtual#int"): ("Ljava/lang/StringBuilder;", ["I"]),
+    ("Ljava/lang/StringBuilder;", "toString", "virtual"): ("Ljava/lang/String;", []),
 }
 
 
@@ -172,6 +190,11 @@ _CTOR_SIGS = {
     "Landroid/widget/LinearLayout;": ["Landroid/content/Context;"],
     "Lcom/anali/preview/AnaliClickListener;": [],
     "Ljava/lang/StringBuilder;": [],
+    "Landroid/widget/RelativeLayout;": ["Landroid/content/Context;"],
+    "Landroidx/constraintlayout/widget/ConstraintLayout;": ["Landroid/content/Context;"],
+    "Landroid/widget/LinearLayout$LayoutParams;": ["I", "I"],
+    "Landroid/widget/RelativeLayout$LayoutParams;": ["I", "I"],
+    "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;": ["I", "I"],
 }
 
 
@@ -192,6 +215,31 @@ def static_get(name, desc, owner="LTest;"):
 
 def static_set(name, desc, value, owner="LTest;"):
     return StaticFieldSet(owner, name, desc, value)
+
+
+def field_get(obj, owner, name, desc):
+    from ir.expr import FieldGet
+    return FieldGet(obj, name, desc, owner)
+
+
+def field_set(obj, owner, name, desc, value):
+    from ir.stmt import FieldSet
+    return FieldSet(obj, name, desc, owner, value)
+
+
+def array_get(array, index, elem_desc):
+    from ir.expr import ArrayGet
+    return ArrayGet(array, index, elem_desc)
+
+
+def array_set(array, index, elem_desc, value):
+    from ir.stmt import ArraySet
+    return ArraySet(array, index, elem_desc, value)
+
+
+def check_cast(value, desc):
+    from ir.expr import CheckCast
+    return CheckCast(value, desc)
 
 
 def hello_world_activity(message="Hello, Anali!"):
@@ -501,8 +549,24 @@ class _ActivitySpec:
         self.parts = parts
 
 
+class AppSpec:
+    def __init__(self, activity_spec: _ActivitySpec):
+        self.activity_spec = activity_spec
+
+    def build(self):
+        return _build_pythonic_app(self.activity_spec)
+
+    def run(self, **kwargs):
+        from apk.toolchain import build_install_run
+        return build_install_run(self.build(), **kwargs)
+
+
 def app(activity_spec: _ActivitySpec):
-    return _build_pythonic_app(activity_spec)
+    return AppSpec(activity_spec)
+
+
+def run(app_spec: AppSpec, **kwargs):
+    return app_spec.run(**kwargs)
 
 
 def activity(name, *parts):
@@ -596,9 +660,12 @@ class _PythonicContext:
 
         # Wire click handlers
         handler_methods = []
+        support_classes = []
         for spec in click_specs:
             handler_name = f"onClick_{spec.button_id}"
-            body.extend(on_click_view(var(spec.button_id), handler_name=handler_name))
+            listener_desc = f"Lcom/anali/preview/AnaliClickListener_{spec.button_id};"
+            body.extend(on_click_view(var(spec.button_id), handler_name=handler_name, listener_class_desc=listener_desc))
+            support_classes.append((listener_desc, handler_name))
             handler_methods.append((handler_name, self._compile_stmts(spec.stmts)))
 
         # Main method
@@ -619,7 +686,7 @@ class _PythonicContext:
         for name, hbody in handler_methods:
             methods.append(click_handler(name, hbody))
 
-        return program(methods, fields=fields)
+        return program(methods, fields=fields, support_classes=support_classes)
 
     def _compile_stmts(self, stmts):
         out = []
@@ -627,6 +694,8 @@ class _PythonicContext:
             stmt = stmt.strip()
             if "+=" in stmt or "-=" in stmt:
                 out.extend(self._compile_inc(stmt))
+            elif "=" in stmt and any(op in stmt for op in ["+", "-"]) and "f" not in stmt:
+                out.extend(self._compile_assign_binary(stmt))
             elif ".text" in stmt and "=" in stmt:
                 out.extend(self._compile_set_text(stmt))
             else:
@@ -647,6 +716,27 @@ class _PythonicContext:
             assign("x", static_get(name, "I")),
             assign("x", binary(op, var("x"), const(delta))),
             static_set(name, "I", var("x")),
+        ]
+
+    def _compile_assign_binary(self, stmt):
+        # e.g., count = count + 1
+        lhs, rhs = [s.strip() for s in stmt.split("=", 1)]
+        if "+" in rhs:
+            a, b = [s.strip() for s in rhs.split("+", 1)]
+            op = "+"
+        elif "-" in rhs:
+            a, b = [s.strip() for s in rhs.split("-", 1)]
+            op = "-"
+        else:
+            raise RuntimeError(f"Unsupported binary assignment: {stmt}")
+
+        if a != lhs:
+            raise RuntimeError(f"Only self-assign supported: {stmt}")
+        delta = int(b)
+        return [
+            assign("x", static_get(lhs, "I")),
+            assign("x", binary(op, var("x"), const(delta))),
+            static_set(lhs, "I", var("x")),
         ]
 
     def _compile_set_text(self, stmt):
@@ -676,60 +766,54 @@ class _PythonicContext:
         ]
 
     def _compile_fstring_set_text(self, view_desc, view_field, text):
-        # support a single {var} placeholder
+        # support one or more {var} placeholders
         import re
-        m = re.search(r"{([^}]+)}", text)
-        if not m:
-            return self._compile_set_text(f"label.text = '{text}'")
+        parts = []
+        last = 0
+        for m in re.finditer(r"{([^}]+)}", text):
+            if m.start() > last:
+                parts.append(("str", text[last:m.start()]))
+            parts.append(("var", m.group(1).strip()))
+            last = m.end()
+        if last < len(text):
+            parts.append(("str", text[last:]))
 
-        var_name = m.group(1).strip()
-        prefix = text[: m.start()]
-        suffix = text[m.end() :]
-
-        stmts = []
-        stmts.append(assign("sb", new("Ljava/lang/StringBuilder;", args=[])))
-        if prefix:
-            stmts.append(
-                assign(
-                    "sb",
-                    call(
-                        "append",
-                        args=[var("sb"), const(prefix)],
-                        return_type="Ljava/lang/StringBuilder;",
-                        arg_types=["Ljava/lang/String;"],
-                        invoke_kind="virtual",
-                        owner="Ljava/lang/StringBuilder;",
-                    ),
-                )
-            )
-        stmts.append(assign("x", static_get(var_name, "I")))
-        stmts.append(
+        stmts = [
             assign(
                 "sb",
-                call(
-                    "append",
-                    args=[var("sb"), var("x")],
-                    return_type="Ljava/lang/StringBuilder;",
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Ljava/lang/StringBuilder;",
-                ),
+                new("Ljava/lang/StringBuilder;", args=[], arg_types=[]),
             )
-        )
-        if suffix:
-            stmts.append(
-                assign(
-                    "sb",
-                    call(
-                        "append",
-                        args=[var("sb"), const(suffix)],
-                        return_type="Ljava/lang/StringBuilder;",
-                        arg_types=["Ljava/lang/String;"],
-                        invoke_kind="virtual",
-                        owner="Ljava/lang/StringBuilder;",
-                    ),
+        ]
+        for kind, value in parts:
+            if kind == "str" and value:
+                stmts.append(
+                    assign(
+                        "sb",
+                        call(
+                            "append",
+                            args=[var("sb"), const(value)],
+                            return_type="Ljava/lang/StringBuilder;",
+                            arg_types=["Ljava/lang/String;"],
+                            invoke_kind="virtual",
+                            owner="Ljava/lang/StringBuilder;",
+                        ),
+                    )
                 )
-            )
+            elif kind == "var":
+                stmts.append(assign("x", static_get(value, "I")))
+                stmts.append(
+                    assign(
+                        "sb",
+                        call(
+                            "append",
+                            args=[var("sb"), var("x")],
+                            return_type="Ljava/lang/StringBuilder;",
+                            arg_types=["I"],
+                            invoke_kind="virtual",
+                            owner="Ljava/lang/StringBuilder;",
+                        ),
+                    )
+                )
         stmts.append(
             assign(
                 "s",
@@ -791,6 +875,73 @@ def add_view(parent, child):
     )
 
 
+def padding(view, left, top, right, bottom):
+    return call_stmt(
+        "setPadding",
+        args=[view, const(left), const(top), const(right), const(bottom)],
+        return_type=None,
+        invoke_kind="virtual",
+        owner="Landroid/view/View;",
+    )
+
+
+def gravity(view, value):
+    return call_stmt(
+        "setGravity",
+        args=[view, const(value)],
+        return_type=None,
+        invoke_kind="virtual",
+        owner="Landroid/widget/TextView;",
+    )
+
+
+def layout_params(width, height, parent="LinearLayout"):
+    if parent == "RelativeLayout":
+        desc = "Landroid/widget/RelativeLayout$LayoutParams;"
+    elif parent == "ConstraintLayout":
+        desc = "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;"
+    else:
+        desc = "Landroid/widget/LinearLayout$LayoutParams;"
+    return new(
+        desc,
+        args=[const(width), const(height)],
+    )
+
+
+def set_layout_params(view, params, owner="Landroid/view/View;"):
+    return call_stmt(
+        "setLayoutParams",
+        args=[view, params],
+        return_type=None,
+        invoke_kind="virtual",
+        owner=owner,
+    )
+
+
+def relative_layout(name, ctx):
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/RelativeLayout;",
+                args=[ctx],
+            ),
+        )
+    ]
+
+
+def constraint_layout(name, ctx):
+    return [
+        assign(
+            name,
+            new(
+                "Landroidx/constraintlayout/widget/ConstraintLayout;",
+                args=[ctx],
+            ),
+        )
+    ]
+
+
 def click_handler(name, body):
     """
     Define a click handler method with signature:
@@ -805,7 +956,7 @@ def click_handler(name, body):
     )
 
 
-def on_click_view(view, handler_name="onClick", listener_var="listener"):
+def on_click_view(view, handler_name="onClick", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliClickListener;"):
     """
     Wire a click listener that calls LTest;->handler_name(View)V.
     Requires support class AnaliClickListener to be emitted by toolchain.
@@ -815,7 +966,7 @@ def on_click_view(view, handler_name="onClick", listener_var="listener"):
         assign(
             listener_var,
             new(
-                "Lcom/anali/preview/AnaliClickListener;",
+                listener_class_desc,
                 args=[],
             ),
         ),

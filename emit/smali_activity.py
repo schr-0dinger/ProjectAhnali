@@ -119,6 +119,7 @@ def emit_activity_smali(
                     "static": "invoke-static",
                     "virtual": "invoke-virtual",
                     "direct": "invoke-direct",
+                    "interface": "invoke-interface",
                 }.get(instr.invoke_kind)
                 if invoke is None:
                     raise RuntimeError(
@@ -126,7 +127,7 @@ def emit_activity_smali(
                     )
 
                 arg_types = instr.arg_types or [None] * len(instr.args)
-                if instr.invoke_kind in ("virtual", "direct"):
+                if instr.invoke_kind in ("virtual", "direct", "interface"):
                     if len(arg_types) == len(instr.args):
                         arg_types = arg_types[1:]
                     elif len(arg_types) != len(instr.args) - 1:

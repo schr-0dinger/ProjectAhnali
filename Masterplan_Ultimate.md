@@ -109,6 +109,28 @@ app(
 - `new-array`, `aget`, `aput`
 - `move-object`, `move-result-object`
 
+### 3.1.a Bytecode Expansion Plan (Detailed)
+**Step 1: Arrays**
+- IR: `NewArray`, `ArrayGet`, `ArraySet` (+ element type)
+- Dalvik: `new-array`, `filled-new-array` (optional), `aget/aget-object`, `aput/aput-object`
+- Emit: choose op by elem descriptor (`I/Z/F/L...;`)
+- Tests: golden smali + runtime sanity
+
+**Step 2: Invoke Variants**
+- `invoke-interface`, `invoke-super`, `invoke-virtual`, `invoke-static`, `invoke-direct`
+- Validate args: receiver rules for instance invokes
+- Support `move-result-object` / `move-result` mapping by return type
+
+**Step 3: Exceptions**
+- Explicit try/catch blocks (already supported)
+- Validate range labels + handler descriptors
+- Add tests for multiple handlers ordering and catchall
+
+**Step 4: Primitive Conversions**
+- IR: `Cast` / `Convert`
+- Dalvik: `int-to-float`, `float-to-int`, `int-to-long`, `long-to-int`, etc.
+- Verify type inference + type-verify gate
+
 ### 3.2 Medium Priority
 - `switch` (packed/sparse)
 - `monitor-enter/exit` (synchronization)
@@ -151,6 +173,28 @@ app(
 - Resource DSL:
   - string resources, icons, styles
 
+### 4.5 Signature Database (Detailed Plan)
+**Goal:** Map Pythonic calls → exact Android signatures automatically.
+
+**Phase A: Minimal Curated Table**
+- YAML/JSON in repo: `signatures/android_core.json`
+- Hand‑curated entries for UI + core services
+- Loaded by DSL at import time
+
+**Phase B: SDK Extraction**
+- Parse `android.jar` / public stubs to generate signature index:
+  - `class -> method -> [overloads]`
+- Generate a compact JSON for fast lookup
+
+**Phase C: Overload Resolution**
+- Use arg count + known types to pick overload
+- If ambiguous, require explicit annotation
+- Emit user‑friendly error with suggested signatures
+
+**Phase D: Caching + Versioning**
+- Cache by SDK version in build dir
+- Allow `target_sdk` selection
+
 ---
 
 ## 5) Toolchain Polish (Production‑ready)
@@ -160,15 +204,33 @@ app(
 - Deterministic APK output
 - Versioning + reproducible builds
 
+### 5.1.a Build Variants + Signing
+- `debug` uses auto‑generated keystore
+- `release` requires user keystore + alias + passwords
+- Support v2/v3 signing (apksigner options)
+- Store keystore config in `build.toml` or env vars
+
 ### 5.2 Resource Pipeline
 - aapt2 resource staging
 - icons, strings, themes
 - layout XML (optional)
 
+### 5.2.a aapt2 Integration (Detailed)
+- Generate `AndroidManifest.xml` from DSL + permissions
+- Generate resource folders:
+  - `res/layout`, `res/drawable`, `res/values/strings.xml`
+- Invoke `aapt2 compile` and `aapt2 link`
+- Track `R.txt` equivalent mapping for resource IDs
+
 ### 5.3 Lint + Diagnostics
 - Type/arity verification (expanded)
 - Signature validation warnings
 - Smali verifier checks pre‑APK
+
+### 5.3.a Conversion/Lint Passes
+- Primitive conversion correctness checks
+- Illegal invoke types flagged early
+- Array bounds warnings (optional)
 
 ### 5.4 CI + Regression
 - Unit + integration + device smoke tests

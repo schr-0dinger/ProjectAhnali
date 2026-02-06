@@ -140,3 +140,42 @@ class StaticFieldGet(Expr):
 
     def __repr__(self):
         return f"sget {self.owner}->{self.name}:{self.desc}"
+
+
+class FieldGet(Expr):
+    """
+    Instance field read.
+    """
+    def __init__(self, obj, name: str, desc: str, owner: str):
+        self.obj = obj
+        self.name = name
+        self.desc = desc
+        self.owner = owner
+
+    def __repr__(self):
+        return f"iget {self.owner}->{self.name}:{self.desc}"
+
+
+class ArrayGet(Expr):
+    """
+    Array element read.
+    """
+    def __init__(self, array, index, elem_desc: str):
+        self.array = array
+        self.index = index
+        self.elem_desc = elem_desc
+
+    def __repr__(self):
+        return f"aget {self.elem_desc}"
+
+
+class CheckCast(Expr):
+    """
+    Check-cast.
+    """
+    def __init__(self, value, desc: str):
+        self.value = value
+        self.desc = desc
+
+    def __repr__(self):
+        return f"check-cast {self.desc}"

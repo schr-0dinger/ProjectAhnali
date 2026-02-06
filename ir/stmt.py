@@ -78,3 +78,38 @@ class StaticFieldSet:
 
     def __repr__(self):
         return f"sput {self.owner}->{self.name}:{self.desc} {self.value}"
+
+
+class FieldSet:
+    def __init__(self, obj, name: str, desc: str, owner: str, value):
+        self.obj = obj
+        self.name = name
+        self.desc = desc
+        self.owner = owner
+        self.value = value
+
+    def defines(self):
+        return None
+
+    def uses(self):
+        return [self.obj, self.value]
+
+    def __repr__(self):
+        return f"iput {self.owner}->{self.name}:{self.desc} {self.value}"
+
+
+class ArraySet:
+    def __init__(self, array, index, elem_desc: str, value):
+        self.array = array
+        self.index = index
+        self.elem_desc = elem_desc
+        self.value = value
+
+    def defines(self):
+        return None
+
+    def uses(self):
+        return [self.array, self.index, self.value]
+
+    def __repr__(self):
+        return f"aput {self.elem_desc} {self.value}"

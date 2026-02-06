@@ -50,6 +50,61 @@ class DStaticPut(DInstr):
         return f"sput {self.owner}->{self.name}:{self.desc} {self.value}"
 
 
+class DInstanceGet(DInstr):
+    def __init__(self, dst, obj, owner, name, desc):
+        self.dst = dst
+        self.obj = obj
+        self.owner = owner
+        self.name = name
+        self.desc = desc
+
+    def __repr__(self):
+        return f"{self.dst} = iget {self.owner}->{self.name}:{self.desc}"
+
+
+class DInstancePut(DInstr):
+    def __init__(self, obj, value, owner, name, desc):
+        self.obj = obj
+        self.value = value
+        self.owner = owner
+        self.name = name
+        self.desc = desc
+
+    def __repr__(self):
+        return f"iput {self.owner}->{self.name}:{self.desc} {self.value}"
+
+
+class DArrayGet(DInstr):
+    def __init__(self, dst, array, index, elem_desc):
+        self.dst = dst
+        self.array = array
+        self.index = index
+        self.elem_desc = elem_desc
+
+    def __repr__(self):
+        return f"{self.dst} = aget {self.elem_desc}"
+
+
+class DArrayPut(DInstr):
+    def __init__(self, array, index, elem_desc, value):
+        self.array = array
+        self.index = index
+        self.elem_desc = elem_desc
+        self.value = value
+
+    def __repr__(self):
+        return f"aput {self.elem_desc} {self.value}"
+
+
+class DCheckCast(DInstr):
+    def __init__(self, obj, desc):
+        self.obj = obj
+        self.desc = desc
+
+    def __repr__(self):
+        return f"check-cast {self.desc} {self.obj}"
+
+
 class DNew(DInstr):
     def __init__(self, dst, class_desc):
         self.dst = dst

@@ -3,8 +3,8 @@
 from collections import defaultdict
 from typing import Optional
 from ssa.value import SSAValue
-from ir.expr import Compare, Var, Call, BinaryOp, New, StaticFieldGet
-from ir.stmt import StaticFieldSet
+from ir.expr import Compare, Var, Call, BinaryOp, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 
 
 class SSARenamer:
@@ -83,8 +83,22 @@ class SSARenamer:
                 expr.args = [self._rename_expr(a) for a in expr.args]
             elif isinstance(expr, StaticFieldGet):
                 pass
+            elif isinstance(expr, FieldGet):
+                expr.obj = self._rename_expr(expr.obj)
+            elif isinstance(expr, ArrayGet):
+                expr.array = self._rename_expr(expr.array)
+                expr.index = self._rename_expr(expr.index)
+            elif isinstance(expr, CheckCast):
+                expr.value = self._rename_expr(expr.value)
 
             if isinstance(stmt, StaticFieldSet):
+                stmt.value = self._rename_expr(stmt.value)
+            if isinstance(stmt, FieldSet):
+                stmt.obj = self._rename_expr(stmt.obj)
+                stmt.value = self._rename_expr(stmt.value)
+            if isinstance(stmt, ArraySet):
+                stmt.array = self._rename_expr(stmt.array)
+                stmt.index = self._rename_expr(stmt.index)
                 stmt.value = self._rename_expr(stmt.value)
 
             # Rename definitions

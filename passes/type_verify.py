@@ -39,7 +39,7 @@ def verify_types(ssa_blocks):
             elif isinstance(expr, Call):
                 if expr.arg_types is not None:
                     expected = len(expr.args)
-                    if expr.invoke_kind in ("virtual", "direct"):
+                    if expr.invoke_kind in ("virtual", "direct", "interface"):
                         if len(expr.arg_types) not in (expected, expected - 1):
                             raise TypeVerificationError(
                                 "Call arg_types length does not match args for instance invoke"
