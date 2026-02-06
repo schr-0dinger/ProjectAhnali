@@ -37,7 +37,20 @@ def emit_activity_smali(
     lines.append("")
 
     # ---- Body (lowered code) ----
+    referenced = set()
     for block in dalvik_blocks.values():
+        for instr in block.instructions:
+            name = instr.__class__.__name__
+            if name == "DGoto":
+                referenced.add(instr.target.id)
+            elif name == "DIf":
+                referenced.add(instr.true.id)
+                referenced.add(instr.false.id)
+
+    for block in dalvik_blocks.values():
+        if block.id not in referenced and not block.instructions:
+            continue
+
         lines.append(f"  :B{block.id}")
 
         for instr in block.instructions:

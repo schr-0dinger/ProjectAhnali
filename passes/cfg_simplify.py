@@ -21,6 +21,17 @@ def simplify_cfg(cfg, dalvik_blocks):
         for succ in b.exceptional_successors:
             exceptional_preds[succ].add(b)
 
+    def _retarget_dalvik(old_block, new_block):
+        for db in dalvik_blocks.values():
+            for instr in db.instructions:
+                if isinstance(instr, DGoto) and instr.target is old_block:
+                    instr.target = new_block
+                if instr.__class__.__name__ == "DIf":
+                    if getattr(instr, "true", None) is old_block:
+                        instr.true = new_block
+                    if getattr(instr, "false", None) is old_block:
+                        instr.false = new_block
+
     def _remove_block(block):
         # Remove from cfg.blocks (keyed by id)
         for k, v in list(cfg.blocks.items()):
@@ -65,6 +76,7 @@ def simplify_cfg(cfg, dalvik_blocks):
                         term.true = succ
                     if getattr(term, "false", None) is block:
                         term.false = succ
+            _retarget_dalvik(block, succ)
 
             if block in succ.predecessors:
                 succ.predecessors.remove(block)
@@ -152,6 +164,7 @@ def simplify_cfg(cfg, dalvik_blocks):
                         term.true = succ
                     if getattr(term, "false", None) is block:
                         term.false = succ
+            _retarget_dalvik(block, succ)
 
             if block in succ.predecessors:
                 succ.predecessors.remove(block)

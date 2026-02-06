@@ -50,7 +50,23 @@ def emit_method_smali(method: DalvikMethod):
     lines.append(f"    .locals {locals_count}")
     lines.append("")
 
+    referenced = set()
     for block in method.blocks.values():
+        for instr in block.instructions:
+            if instr.__class__.__name__ == "DGoto":
+                referenced.add(instr.target.id)
+            elif instr.__class__.__name__ == "DIf":
+                referenced.add(instr.true.id)
+                referenced.add(instr.false.id)
+
+    for start, end, handler, _ in method.try_regions:
+        referenced.update({start.id, end.id, handler.id})
+
+    for block in method.blocks.values():
+        has_instr = bool(block.instructions)
+        if block.id not in referenced and not has_instr:
+            continue
+
         lines.append(f"  :B{block.id}")
 
         for instr in block.instructions:
