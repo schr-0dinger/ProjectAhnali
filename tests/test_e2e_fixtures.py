@@ -8,7 +8,7 @@ from dsl.app import (
     try_catch,
     throw,
     hello_world_activity,
-    button,
+    button_view,
     set_content_view,
     var,
     linear_layout,
@@ -63,7 +63,7 @@ def test_e2e_widgets_button_smali_golden():
             param_types=["Landroid/app/Activity;"],
             return_type=None,
             body=[
-                *button("btn", var("ctx"), "Click"),
+                *button_view("btn", var("ctx"), "Click"),
                 set_content_view(var("ctx"), var("btn")),
                 ret(),
             ],
@@ -85,7 +85,7 @@ def test_e2e_linear_layout_add_view_smali_golden():
             return_type=None,
             body=[
                 *linear_layout("root", var("ctx"), "vertical"),
-                *button("btn", var("ctx"), "Click"),
+                *button_view("btn", var("ctx"), "Click"),
                 add_view(var("root"), var("btn")),
                 set_content_view(var("ctx"), var("root")),
                 ret(),

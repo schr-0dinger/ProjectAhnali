@@ -1,5 +1,5 @@
 from apk.toolchain import emit_build_dir_from_program
-from dsl.app import program, method, ret, var, button, set_content_view, on_click, click_handler
+from dsl.app import program, method, ret, var, button_view, set_content_view, on_click_view, click_handler
 
 
 def test_emit_click_listener_support_class(tmp_path):
@@ -10,8 +10,8 @@ def test_emit_click_listener_support_class(tmp_path):
             param_types=["Landroid/app/Activity;"],
             return_type=None,
             body=[
-                *button("btn", var("ctx"), "Tap"),
-                *on_click(var("btn"), handler_name="onClick"),
+                *button_view("btn", var("ctx"), "Tap"),
+                *on_click_view(var("btn"), handler_name="onClick"),
                 set_content_view(var("ctx"), var("btn")),
                 ret(),
             ],

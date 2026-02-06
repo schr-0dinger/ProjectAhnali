@@ -1,9 +1,11 @@
 # dsl/app.py
 
+import ast
+from typing import List, Dict, Any
 from ir.program import ProgramIR
 from ir.field import StaticField
 from ir.method import MethodIR
-from ir.expr import Call, Const, Var, BinaryOp, Compare, New
+from ir.expr import Call, Const, Var, BinaryOp, Compare, New, StaticFieldGet
 from ir.stmt import Return, TryCatch, CallStmt, Throw, StaticFieldSet
 from tests.ir_stub import Assign, If, While
 
@@ -169,6 +171,7 @@ _CTOR_SIGS = {
     "Landroid/widget/Button;": ["Landroid/content/Context;"],
     "Landroid/widget/LinearLayout;": ["Landroid/content/Context;"],
     "Lcom/anali/preview/AnaliClickListener;": [],
+    "Ljava/lang/StringBuilder;": [],
 }
 
 
@@ -238,7 +241,7 @@ def text_view(name, ctx, text):
     ]
 
 
-def button(name, ctx, text):
+def button_view(name, ctx, text):
     """
     Build a Button and set text.
     Returns a list of statements.
@@ -370,12 +373,12 @@ class _SimpleActivity:
             if kind == "text":
                 body.extend(text_view(vid, var("ctx"), text))
             elif kind == "button":
-                body.extend(button(vid, var("ctx"), text))
+                body.extend(button_view(vid, var("ctx"), text))
             body.append(add_view(var(self._root_id), var(vid)))
 
         for kind, button_id, text in self._handlers:
             handler_name = f"onClick_{button_id}"
-            body.extend(on_click(var(button_id), handler_name=handler_name))
+            body.extend(on_click_view(var(button_id), handler_name=handler_name))
 
             owner = "Landroid/widget/Button;"
 
@@ -460,6 +463,299 @@ def simple_activity():
     return _SimpleActivity()
 
 
+# ------------------------------------------------------------
+# Pythonic DSL layer (Phase 1)
+# ------------------------------------------------------------
+
+class _StateSpec:
+    def __init__(self, **kwargs):
+        self.values = kwargs
+
+
+class _UIText:
+    def __init__(self, text, *, id="label"):
+        self.id = id
+        self.text = text
+
+
+class _UIButton:
+    def __init__(self, text, *, id="button"):
+        self.id = id
+        self.text = text
+
+
+class _UISpec:
+    def __init__(self, *items):
+        self.items = items
+
+
+class _OnClickSpec:
+    def __init__(self, button_id, stmts):
+        self.button_id = button_id
+        self.stmts = stmts
+
+
+class _ActivitySpec:
+    def __init__(self, name, *parts):
+        self.name = name
+        self.parts = parts
+
+
+def app(activity_spec: _ActivitySpec):
+    return _build_pythonic_app(activity_spec)
+
+
+def activity(name, *parts):
+    return _ActivitySpec(name, *parts)
+
+
+def state(**kwargs):
+    return _StateSpec(**kwargs)
+
+
+def ui(*items):
+    return _UISpec(*items)
+
+
+def text(text, *, id="label"):
+    return _UIText(text, id=id)
+
+
+def button(text, *, id="button"):
+    return _UIButton(text, id=id)
+
+
+def on_click(button_id, stmts):
+    return _OnClickSpec(button_id, stmts)
+
+
+def _build_pythonic_app(activity_spec: _ActivitySpec):
+    state_spec = None
+    ui_spec = None
+    click_specs = []
+
+    for part in activity_spec.parts:
+        if isinstance(part, _StateSpec):
+            state_spec = part
+        elif isinstance(part, _UISpec):
+            ui_spec = part
+        elif isinstance(part, _OnClickSpec):
+            click_specs.append(part)
+
+    state_spec = state_spec or _StateSpec()
+    ui_spec = ui_spec or _UISpec()
+
+    ctx = _PythonicContext(state_spec, ui_spec)
+    return ctx.build_program(click_specs)
+
+
+class _PythonicContext:
+    def __init__(self, state_spec: _StateSpec, ui_spec: _UISpec):
+        self.state_spec = state_spec
+        self.ui_spec = ui_spec
+        self.view_types = {}
+        self.view_fields = {}
+        self.root_id = "root"
+
+    def _view_desc(self, kind):
+        if kind == "text":
+            return "Landroid/widget/TextView;"
+        if kind == "button":
+            return "Landroid/widget/Button;"
+        return "Landroid/view/View;"
+
+    def build_program(self, click_specs):
+        body = []
+        fields = []
+
+        body.extend(linear_layout(self.root_id, var("ctx"), "vertical"))
+
+        # UI creation
+        for item in self.ui_spec.items:
+            if isinstance(item, _UIText):
+                self.view_types[item.id] = "text"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(text_view(item.id, var("ctx"), item.text))
+                body.append(add_view(var(self.root_id), var(item.id)))
+            elif isinstance(item, _UIButton):
+                self.view_types[item.id] = "button"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(button_view(item.id, var("ctx"), item.text))
+                body.append(add_view(var(self.root_id), var(item.id)))
+
+        # Store static refs for views
+        for vid, field_name in self.view_fields.items():
+            desc = self._view_desc(self.view_types[vid])
+            fields.append(static_field(field_name, desc, access="private static"))
+            body.append(static_set(field_name, desc, var(vid)))
+
+        # State fields
+        for name, value in self.state_spec.values.items():
+            fields.append(static_field(name, "I", access="private static"))
+            body.append(static_set(name, "I", const(value)))
+
+        # Wire click handlers
+        handler_methods = []
+        for spec in click_specs:
+            handler_name = f"onClick_{spec.button_id}"
+            body.extend(on_click_view(var(spec.button_id), handler_name=handler_name))
+            handler_methods.append((handler_name, self._compile_stmts(spec.stmts)))
+
+        # Main method
+        methods = [
+            method(
+                "main",
+                params=["ctx"],
+                param_types=["Landroid/app/Activity;"],
+                return_type=None,
+                body=[
+                    *body,
+                    set_content_view(var("ctx"), var(self.root_id)),
+                    ret(),
+                ],
+            )
+        ]
+
+        for name, hbody in handler_methods:
+            methods.append(click_handler(name, hbody))
+
+        return program(methods, fields=fields)
+
+    def _compile_stmts(self, stmts):
+        out = []
+        for stmt in stmts:
+            stmt = stmt.strip()
+            if "+=" in stmt or "-=" in stmt:
+                out.extend(self._compile_inc(stmt))
+            elif ".text" in stmt and "=" in stmt:
+                out.extend(self._compile_set_text(stmt))
+            else:
+                raise RuntimeError(f"Unsupported statement: {stmt}")
+        out.append(ret())
+        return out
+
+    def _compile_inc(self, stmt):
+        # e.g., count += 1
+        if "+=" in stmt:
+            name, value = [s.strip() for s in stmt.split("+=")]
+            op = "+"
+        else:
+            name, value = [s.strip() for s in stmt.split("-=")]
+            op = "-"
+        delta = int(value)
+        return [
+            assign("x", static_get(name, "I")),
+            assign("x", binary(op, var("x"), const(delta))),
+            static_set(name, "I", var("x")),
+        ]
+
+    def _compile_set_text(self, stmt):
+        # e.g., label.text = f"Count: {count}"
+        lhs, rhs = [s.strip() for s in stmt.split("=", 1)]
+        view_id = lhs.split(".")[0].strip()
+        view_desc = self._view_desc(self.view_types.get(view_id, "text"))
+        view_field = self.view_fields.get(view_id)
+        if view_field is None:
+            raise RuntimeError(f"Unknown view id: {view_id}")
+
+        if rhs.startswith("f\"") or rhs.startswith("f'"):
+            text = rhs[2:-1]
+            return self._compile_fstring_set_text(view_desc, view_field, text)
+
+        # plain string
+        plain = rhs.strip("'\"")
+        return [
+            assign("v", static_get(view_field, view_desc)),
+            call_stmt(
+                "setText",
+                args=[var("v"), const(plain)],
+                return_type=None,
+                invoke_kind="virtual",
+                owner=view_desc,
+            ),
+        ]
+
+    def _compile_fstring_set_text(self, view_desc, view_field, text):
+        # support a single {var} placeholder
+        import re
+        m = re.search(r"{([^}]+)}", text)
+        if not m:
+            return self._compile_set_text(f"label.text = '{text}'")
+
+        var_name = m.group(1).strip()
+        prefix = text[: m.start()]
+        suffix = text[m.end() :]
+
+        stmts = []
+        stmts.append(assign("sb", new("Ljava/lang/StringBuilder;", args=[])))
+        if prefix:
+            stmts.append(
+                assign(
+                    "sb",
+                    call(
+                        "append",
+                        args=[var("sb"), const(prefix)],
+                        return_type="Ljava/lang/StringBuilder;",
+                        arg_types=["Ljava/lang/String;"],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/StringBuilder;",
+                    ),
+                )
+            )
+        stmts.append(assign("x", static_get(var_name, "I")))
+        stmts.append(
+            assign(
+                "sb",
+                call(
+                    "append",
+                    args=[var("sb"), var("x")],
+                    return_type="Ljava/lang/StringBuilder;",
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Ljava/lang/StringBuilder;",
+                ),
+            )
+        )
+        if suffix:
+            stmts.append(
+                assign(
+                    "sb",
+                    call(
+                        "append",
+                        args=[var("sb"), const(suffix)],
+                        return_type="Ljava/lang/StringBuilder;",
+                        arg_types=["Ljava/lang/String;"],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/StringBuilder;",
+                    ),
+                )
+            )
+        stmts.append(
+            assign(
+                "s",
+                call(
+                    "toString",
+                    args=[var("sb")],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[],
+                    invoke_kind="virtual",
+                    owner="Ljava/lang/StringBuilder;",
+                ),
+            )
+        )
+        stmts.append(assign("v", static_get(view_field, view_desc)))
+        stmts.append(
+            call_stmt(
+                "setText",
+                args=[var("v"), var("s")],
+                return_type=None,
+                invoke_kind="virtual",
+                owner=view_desc,
+            )
+        )
+        return stmts
+
+
 def linear_layout(name, ctx, orientation="vertical"):
     """
     Build a LinearLayout and set orientation.
@@ -509,7 +805,7 @@ def click_handler(name, body):
     )
 
 
-def on_click(view, handler_name="onClick", listener_var="listener"):
+def on_click_view(view, handler_name="onClick", listener_var="listener"):
     """
     Wire a click listener that calls LTest;->handler_name(View)V.
     Requires support class AnaliClickListener to be emitted by toolchain.
