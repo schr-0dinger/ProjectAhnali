@@ -69,6 +69,7 @@ def apply_spills(dalvik_blocks, intervals):
 
 def _apply_registers(dalvik_blocks, intervals):
     regmap = {i.value: i.reg for i in intervals}
+    spill_slots = {i.value: i.stack_slot for i in intervals if i.spilled}
 
     for block in dalvik_blocks.values():
         for instr in block.instructions:
@@ -76,11 +77,19 @@ def _apply_registers(dalvik_blocks, intervals):
                 if hasattr(instr, attr):
                     d = getattr(instr, attr)
                     if d and hasattr(d, "ssa") and d.ssa in regmap:
-                        d.reg = regmap[d.ssa]
+                        reg = regmap[d.ssa]
+                        if reg is not None:
+                            d.reg = reg
+                        elif d.reg is None and d.ssa in spill_slots:
+                            d.reg = spill_slots[d.ssa]
             if hasattr(instr, "args"):
                 for d in instr.args:
                     if d and hasattr(d, "ssa") and d.ssa in regmap:
-                        d.reg = regmap[d.ssa]
+                        reg = regmap[d.ssa]
+                        if reg is not None:
+                            d.reg = reg
+                        elif d.reg is None and d.ssa in spill_slots:
+                            d.reg = spill_slots[d.ssa]
 
 
 class LowerSSAToDalvik:

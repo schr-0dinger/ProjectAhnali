@@ -109,6 +109,8 @@ def validate_cfg(cfg):
 
     can_reach_exit = set()
     work = deque([exit])
+    work.extend(return_blocks)
+    work.extend(throw_blocks)
 
     while work:
         b = work.popleft()
