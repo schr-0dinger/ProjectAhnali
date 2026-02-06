@@ -5,6 +5,7 @@ class AnaliType(Enum):
     INT = auto()
     FLOAT = auto()
     BOOL = auto()
+    STRING = auto()
     OBJECT = auto()
     UNKNOWN = auto()
 

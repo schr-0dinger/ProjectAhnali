@@ -28,6 +28,15 @@ class DConst(DInstr):
         return f"{self.dst} = const {self.value}"
 
 
+class DNew(DInstr):
+    def __init__(self, dst, class_desc):
+        self.dst = dst
+        self.class_desc = class_desc
+
+    def __repr__(self):
+        return f"{self.dst} = new-instance {self.class_desc}"
+
+
 class DMove(DInstr):
     """
     Used for Phi elimination.

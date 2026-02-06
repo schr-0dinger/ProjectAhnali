@@ -46,6 +46,7 @@ def emit_build_dir(
     emit_wrapper: bool = False,
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
+    wrapper_target_sig: str = "()V",
 ) -> Path:
     out_dir = Path(out_dir)
     smali_dir = out_dir / "smali"
@@ -70,6 +71,7 @@ def emit_build_dir(
             emit_activity_wrapper_smali(
                 activity_desc=wrapper_class_desc,
                 target_desc=wrapper_target_desc,
+                target_sig=wrapper_target_sig,
             ),
             encoding="utf-8",
         )
@@ -85,6 +87,7 @@ def emit_build_dir_from_program(
     emit_wrapper: bool = False,
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
+    wrapper_target_sig: str = "()V",
 ) -> Path:
     result = alpha_pipeline(frontend_ir)
     smali_text = result["smali_class"]
@@ -95,6 +98,7 @@ def emit_build_dir_from_program(
         emit_wrapper=emit_wrapper,
         wrapper_class_desc=wrapper_class_desc,
         wrapper_target_desc=wrapper_target_desc,
+        wrapper_target_sig=wrapper_target_sig,
     )
 
 
@@ -109,23 +113,30 @@ def _which_tool(name: str) -> str | None:
     return None
 
 
-def run_smali(smali_dir: str | Path, out_dir: str | Path | None = None, smali_jar: str | None = None) -> Path:
+def run_smali(
+    smali_dir: str | Path,
+    out_dir: str | Path | None = None,
+    smali_jar: str | None = None,
+    *,
+    api: int | None = None,
+) -> Path:
     smali_dir = Path(smali_dir)
     if out_dir is None:
         out_dir = smali_dir.parent / "classes.dex"
     out_dir = Path(out_dir)
 
+    api_args = ["--api", str(api)] if api is not None else []
     if smali_jar:
         jar_path = Path(smali_jar)
         if jar_path.suffix == ".jar":
-            cmd = ["java", "-jar", str(jar_path), "assemble", str(smali_dir), "-o", str(out_dir)]
+            cmd = ["java", "-jar", str(jar_path), "assemble", *api_args, str(smali_dir), "-o", str(out_dir)]
         else:
-            cmd = [str(jar_path), "assemble", str(smali_dir), "-o", str(out_dir)]
+            cmd = [str(jar_path), "assemble", *api_args, str(smali_dir), "-o", str(out_dir)]
     else:
         smali = _which_tool("smali")
         if smali is None:
             raise RuntimeError("smali not found on PATH and smali_jar not provided")
-        cmd = [smali, "assemble", str(smali_dir), "-o", str(out_dir)]
+        cmd = [smali, "assemble", *api_args, str(smali_dir), "-o", str(out_dir)]
 
     subprocess.run(cmd, check=True)
     return out_dir

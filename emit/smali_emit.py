@@ -1,12 +1,12 @@
 # emit/smali_emit.py
 
 from dalvik.method import DalvikMethod
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow, DNew
 from ir.types import AnaliType
 from ir.expr import Const
 
 
-def _build_reg_map(intervals):
+def _build_reg_map(intervals, param_ssa=None):
     reg_map = {}
     max_reg = max(
         (i.reg for i in intervals if i.reg is not None),
@@ -23,20 +23,30 @@ def _build_reg_map(intervals):
         reg_map[interval.value] = f"v{reg}"
 
     locals_count = (max_reg + 1) + len(spill_slots)
+    if param_ssa:
+        for idx, ssa in enumerate(param_ssa):
+            reg_map[ssa] = f"p{idx}"
+
     return reg_map, locals_count
 
 
 def emit_method_smali(method: DalvikMethod):
-    reg_map, locals_count = _build_reg_map(method.allocator.intervals)
+    reg_map, locals_count = _build_reg_map(method.allocator.intervals, method.param_ssa)
 
     lines = []
     def _type_desc(t):
+        if isinstance(t, str):
+            if len(t) == 1:
+                return t
+            return t
         if t == AnaliType.INT:
             return "I"
         if t == AnaliType.FLOAT:
             return "F"
         if t == AnaliType.BOOL:
             return "Z"
+        if t == AnaliType.STRING:
+            return "Ljava/lang/String;"
         if t == AnaliType.OBJECT:
             return "Ljava/lang/Object;"
         if t is None:
@@ -72,7 +82,14 @@ def emit_method_smali(method: DalvikMethod):
         for instr in block.instructions:
             if instr.__class__.__name__ == "DConst":
                 r = reg_map[instr.dst.ssa]
-                lines.append(f"    const/4 {r}, {instr.value}")
+                if isinstance(instr.value, str):
+                    s = instr.value.replace("\\", "\\\\").replace("\"", "\\\"")
+                    lines.append(f"    const-string {r}, \"{s}\"")
+                else:
+                    lines.append(f"    const/4 {r}, {instr.value}")
+            elif isinstance(instr, DNew):
+                r = reg_map[instr.dst.ssa]
+                lines.append(f"    new-instance {r}, {instr.class_desc}")
 
             elif instr.__class__.__name__ == "DMove":
                 rd = reg_map[instr.dst.ssa]
@@ -98,6 +115,7 @@ def emit_method_smali(method: DalvikMethod):
                 invoke = {
                     "static": "invoke-static",
                     "virtual": "invoke-virtual",
+                    "direct": "invoke-direct",
                 }.get(instr.invoke_kind)
                 if invoke is None:
                     raise RuntimeError(
@@ -105,12 +123,23 @@ def emit_method_smali(method: DalvikMethod):
                     )
 
                 arg_types = instr.arg_types or [None] * len(instr.args)
-                if len(arg_types) != len(instr.args):
+                if instr.invoke_kind in ("virtual", "direct"):
+                    if len(arg_types) == len(instr.args):
+                        arg_types = arg_types[1:]
+                    elif len(arg_types) != len(instr.args) - 1:
+                        raise RuntimeError(
+                            "Call arg_types length does not match args for instance invoke"
+                        )
+                elif len(arg_types) != len(instr.args):
                     raise RuntimeError(
                         "Call arg_types length does not match args"
                     )
 
                 def _type_desc(t):
+                    if isinstance(t, str):
+                        if len(t) == 1:
+                            return t
+                        return t
                     if t is None:
                         raise RuntimeError("Call arg type missing")
                     if t == AnaliType.INT:
@@ -119,6 +148,8 @@ def emit_method_smali(method: DalvikMethod):
                         return "F"
                     if t == AnaliType.BOOL:
                         return "Z"
+                    if t == AnaliType.STRING:
+                        return "Ljava/lang/String;"
                     if t == AnaliType.OBJECT:
                         return "Ljava/lang/Object;"
                     raise RuntimeError(f"Unsupported type {t}")
@@ -133,8 +164,12 @@ def emit_method_smali(method: DalvikMethod):
                     ret_desc = "F"
                 elif instr.return_type == AnaliType.BOOL:
                     ret_desc = "Z"
+                elif instr.return_type == AnaliType.STRING:
+                    ret_desc = "Ljava/lang/String;"
                 elif instr.return_type == AnaliType.OBJECT:
                     ret_desc = "Ljava/lang/Object;"
+                elif isinstance(instr.return_type, str):
+                    ret_desc = instr.return_type
                 else:
                     raise RuntimeError(f"Unsupported return type {instr.return_type}")
 
@@ -145,7 +180,11 @@ def emit_method_smali(method: DalvikMethod):
 
                 if instr.dst and instr.return_type is not None:
                     rd = reg_map[instr.dst.ssa]
-                    if instr.return_type == AnaliType.OBJECT:
+                    if (
+                        instr.return_type == AnaliType.OBJECT
+                        or instr.return_type == AnaliType.STRING
+                        or (isinstance(instr.return_type, str) and instr.return_type.startswith("L"))
+                    ):
                         lines.append(f"    move-result-object {rd}")
                     else:
                         lines.append(f"    move-result {rd}")
@@ -197,9 +236,15 @@ def emit_method_smali(method: DalvikMethod):
                             value_type = AnaliType.INT
                         elif isinstance(v, float):
                             value_type = AnaliType.FLOAT
+                        elif isinstance(v, str):
+                            value_type = AnaliType.STRING
                     if value_type in (None, AnaliType.UNKNOWN):
                         raise RuntimeError("Return type UNKNOWN; cannot emit Smali")
-                if value_type == AnaliType.OBJECT:
+                if (
+                    value_type == AnaliType.OBJECT
+                    or value_type == AnaliType.STRING
+                    or (isinstance(value_type, str) and value_type.startswith("L"))
+                ):
                     lines.append(f"    return-object {rd}")
                 else:
                     lines.append(f"    return {rd}")

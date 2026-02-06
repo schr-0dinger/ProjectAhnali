@@ -3,3 +3,6 @@ __pycache__
 *.txt
 out_apk
 .venv
+/build*
+
+

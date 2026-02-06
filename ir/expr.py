@@ -111,3 +111,19 @@ class BinaryOp(Expr):
 
     def __repr__(self):
         return f"({self.left} {self.op} {self.right})"
+
+
+class New(Expr):
+    """
+    Object construction (new-instance + invoke-direct <init>).
+    class_desc: e.g. "Landroid/widget/TextView;"
+    """
+    def __init__(self, class_desc: str, args=None, arg_types=None):
+        if not isinstance(class_desc, str):
+            raise TypeError("New.class_desc must be str")
+        self.class_desc = class_desc
+        self.args = args or []
+        self.arg_types = arg_types or []
+
+    def __repr__(self):
+        return f"new {self.class_desc}({len(self.args)} args)"

@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import time
 import pytest
 
 from apk.toolchain import (
@@ -45,6 +46,7 @@ def test_omega_apk_packaging_integration(tmp_path):
         out_dir / "smali",
         out_dir=out_dir / "classes.dex",
         smali_jar=smali_jar,
+        api=21,
     )
     signed_apk = package_apk_from_dex(dex_path, out_dir=out_dir)
 
@@ -73,6 +75,7 @@ def test_omega_apk_packaging_manifest_activity(tmp_path):
         out_dir / "smali",
         out_dir=out_dir / "classes.dex",
         smali_jar=smali_jar,
+        api=21,
     )
     activity_desc = "Lcom/example/app/EntryActivity;"
     signed_apk = package_apk_from_dex(
@@ -157,6 +160,7 @@ def test_omega_apk_adb_smoke(tmp_path):
         out_dir / "smali",
         out_dir=out_dir / "classes.dex",
         smali_jar=smali_jar,
+        api=21,
     )
     signed_apk = package_apk_from_dex(
         dex_path,
@@ -166,8 +170,19 @@ def test_omega_apk_adb_smoke(tmp_path):
     )
 
     adb = _adb_path()
+    subprocess.run([adb, "uninstall", "com.anali.preview"], check=False)
     subprocess.run([adb, "install", "-r", str(signed_apk)], check=True)
+    subprocess.run([adb, "logcat", "-c"], check=True)
     subprocess.run(
         [adb, "shell", "am", "start", "-n", "com.anali.preview/.MainActivity"],
         check=True,
     )
+    time.sleep(1.0)
+    logcat = subprocess.run(
+        [adb, "logcat", "-d", "-s", "AndroidRuntime", "ActivityManager"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    if "FATAL EXCEPTION" in logcat or "Process: com.anali.preview" in logcat:
+        raise AssertionError(f"App crash detected in logcat:\n{logcat}")

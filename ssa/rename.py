@@ -3,7 +3,7 @@
 from collections import defaultdict
 from typing import Optional
 from ssa.value import SSAValue
-from ir.expr import Compare, Var, Call, BinaryOp
+from ir.expr import Compare, Var, Call, BinaryOp, New
 
 
 class SSARenamer:
@@ -13,6 +13,7 @@ class SSARenamer:
         self.phi_nodes = phi_nodes
         self.params = params or []
         self.param_types = param_types or []
+        self.param_ssa = []
 
         self.stacks = defaultdict(list)
         self.counters = defaultdict(int)
@@ -36,6 +37,7 @@ class SSARenamer:
             if self.param_types:
                 val.type = self.param_types[idx]
             self.stacks[name].append(val)
+            self.param_ssa.append(val)
 
     def _rename_block(self, block):
         ssa_block = self._get_ssa_block(block)
@@ -76,6 +78,8 @@ class SSARenamer:
             elif isinstance(expr, BinaryOp):
                 expr.left = self._rename_expr(expr.left)
                 expr.right = self._rename_expr(expr.right)
+            elif isinstance(expr, New):
+                expr.args = [self._rename_expr(a) for a in expr.args]
 
             # Rename definitions
             defines = stmt.defines() if hasattr(stmt, "defines") else None

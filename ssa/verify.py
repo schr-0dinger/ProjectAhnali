@@ -1,7 +1,7 @@
 # ssa/verify.py
 
 from ssa.value import SSAValue
-from ir.expr import Compare, Const, BinaryOp, Call, Var
+from ir.expr import Compare, Const, BinaryOp, Call, Var, New
 
 
 class SSAVerificationError(RuntimeError):
@@ -46,6 +46,9 @@ def _iter_ssa_uses(value):
     elif isinstance(value, Call):
         for arg in value.args:
             yield from _iter_ssa_uses(arg)
+    elif isinstance(value, New):
+        for arg in value.args:
+            yield from _iter_ssa_uses(arg)
 
     # Const and unknown leaf nodes produce no SSA uses
 
@@ -68,6 +71,8 @@ def _verify_single_definition(ssa_blocks):
         for stmt in block.statements:
             if hasattr(stmt, "defines"):
                 val = stmt.defines()
+                if val is None:
+                    continue
                 if val in seen:
                     raise SSAVerificationError(
                         f"Multiple definitions of {val}"

@@ -11,8 +11,9 @@ from dalvik.ir import (
     DReturn,
     DInvoke,
     DThrow,
+    DNew,
 )
-from ir.expr import Compare, BinaryOp, Const, Var, Call
+from ir.expr import Compare, BinaryOp, Const, Var, Call, New
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
@@ -343,6 +344,26 @@ class LowerSSAToDalvik:
                     arg_types=arg_types,
                     invoke_kind=expr.invoke_kind,
                     owner=expr.owner,
+                )
+            )
+            return
+
+        # New instance (constructor)
+        if isinstance(expr, New):
+            if dst is None:
+                raise RuntimeError("New must be assigned to a destination")
+            db.emit(DNew(dst, expr.class_desc))
+            ctor_args = [dst]
+            ctor_args.extend(self._as_dvalue(a, db) for a in expr.args)
+            db.emit(
+                DInvoke(
+                    method="<init>",
+                    args=ctor_args,
+                    dst=None,
+                    return_type=None,
+                    arg_types=expr.arg_types,
+                    invoke_kind="direct",
+                    owner=expr.class_desc,
                 )
             )
             return

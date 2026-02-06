@@ -17,7 +17,7 @@ def emit_activity_smali(
     lines.append("")
 
     # ---- Constructor ----
-    lines.append(".method public <init>()V")
+    lines.append(".method public constructor <init>()V")
     lines.append("    .locals 1")
     lines.append("    invoke-direct {p0}, Landroid/app/Activity;-><init>()V")
     lines.append("    return-void")
@@ -58,7 +58,14 @@ def emit_activity_smali(
 
             if name == "DConst":
                 r = reg_map[instr.dst]
-                lines.append(f"    const/4 {r}, {instr.value}")
+                if isinstance(instr.value, str):
+                    s = instr.value.replace("\\", "\\\\").replace("\"", "\\\"")
+                    lines.append(f"    const-string {r}, \"{s}\"")
+                else:
+                    lines.append(f"    const/4 {r}, {instr.value}")
+            elif name == "DNew":
+                r = reg_map[instr.dst]
+                lines.append(f"    new-instance {r}, {instr.class_desc}")
 
             elif name == "DMove":
                 rd = reg_map[instr.dst]
@@ -108,10 +115,10 @@ def emit_activity_smali(
                     )
 
             elif name == "DInvoke":
-                # Eta-2 scaffolding: only static calls supported here
                 invoke = {
                     "static": "invoke-static",
                     "virtual": "invoke-virtual",
+                    "direct": "invoke-direct",
                 }.get(instr.invoke_kind)
                 if invoke is None:
                     raise RuntimeError(
@@ -119,13 +126,24 @@ def emit_activity_smali(
                     )
 
                 arg_types = instr.arg_types or [None] * len(instr.args)
-                if len(arg_types) != len(instr.args):
+                if instr.invoke_kind in ("virtual", "direct"):
+                    if len(arg_types) == len(instr.args):
+                        arg_types = arg_types[1:]
+                    elif len(arg_types) != len(instr.args) - 1:
+                        raise RuntimeError(
+                            "Call arg_types length does not match args for instance invoke"
+                        )
+                elif len(arg_types) != len(instr.args):
                     raise RuntimeError(
                         "Call arg_types length does not match args"
                     )
 
                 def _type_desc(t):
                     from ir.types import AnaliType
+                    if isinstance(t, str):
+                        if len(t) == 1:
+                            return t
+                        return t
                     if t is None:
                         raise RuntimeError("Call arg type missing")
                     if t == AnaliType.INT:
@@ -134,6 +152,8 @@ def emit_activity_smali(
                         return "F"
                     if t == AnaliType.BOOL:
                         return "Z"
+                    if t == AnaliType.STRING:
+                        return "Ljava/lang/String;"
                     if t == AnaliType.OBJECT:
                         return "Ljava/lang/Object;"
                     raise RuntimeError(f"Unsupported type {t}")
@@ -149,8 +169,12 @@ def emit_activity_smali(
                     ret_desc = "F"
                 elif instr.return_type == AnaliType.BOOL:
                     ret_desc = "Z"
+                elif instr.return_type == AnaliType.STRING:
+                    ret_desc = "Ljava/lang/String;"
                 elif instr.return_type == AnaliType.OBJECT:
                     ret_desc = "Ljava/lang/Object;"
+                elif isinstance(instr.return_type, str):
+                    ret_desc = instr.return_type
                 else:
                     raise RuntimeError(f"Unsupported return type {instr.return_type}")
 
@@ -161,7 +185,11 @@ def emit_activity_smali(
 
                 if instr.dst and instr.return_type is not None:
                     rd = reg_map[instr.dst.ssa]
-                    if instr.return_type == AnaliType.OBJECT:
+                    if (
+                        instr.return_type == AnaliType.OBJECT
+                        or instr.return_type == AnaliType.STRING
+                        or (isinstance(instr.return_type, str) and instr.return_type.startswith("L"))
+                    ):
                         lines.append(f"    move-result-object {rd}")
                     else:
                         lines.append(f"    move-result {rd}")
@@ -179,6 +207,7 @@ def emit_activity_smali(
 def emit_activity_wrapper_smali(
     activity_desc: str = "Lcom/anali/preview/MainActivity;",
     target_desc: str = "LTest;",
+    target_sig: str = "()V",
 ):
     lines = []
 
@@ -186,7 +215,7 @@ def emit_activity_wrapper_smali(
     lines.append(".super Landroid/app/Activity;")
     lines.append("")
 
-    lines.append(".method public <init>()V")
+    lines.append(".method public constructor <init>()V")
     lines.append("    .locals 1")
     lines.append("    invoke-direct {p0}, Landroid/app/Activity;-><init>()V")
     lines.append("    return-void")
@@ -196,7 +225,10 @@ def emit_activity_wrapper_smali(
     lines.append(".method protected onCreate(Landroid/os/Bundle;)V")
     lines.append("    .locals 0")
     lines.append("    invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V")
-    lines.append(f"    invoke-static {{}}, {target_desc}->main()V")
+    if target_sig.startswith("()"):
+        lines.append(f"    invoke-static {{}}, {target_desc}->main{target_sig}")
+    else:
+        lines.append(f"    invoke-static {{p0}}, {target_desc}->main{target_sig}")
     lines.append("    return-void")
     lines.append(".end method")
 

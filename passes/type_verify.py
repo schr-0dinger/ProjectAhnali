@@ -37,10 +37,17 @@ def verify_types(ssa_blocks):
                 required.add(stmt.defines())
 
             elif isinstance(expr, Call):
-                if expr.arg_types is not None and len(expr.arg_types) != len(expr.args):
-                    raise TypeVerificationError(
-                        "Call arg_types length does not match args"
-                    )
+                if expr.arg_types is not None:
+                    expected = len(expr.args)
+                    if expr.invoke_kind in ("virtual", "direct"):
+                        if len(expr.arg_types) not in (expected, expected - 1):
+                            raise TypeVerificationError(
+                                "Call arg_types length does not match args for instance invoke"
+                            )
+                    elif len(expr.arg_types) != expected:
+                        raise TypeVerificationError(
+                            "Call arg_types length does not match args"
+                        )
                 if expr.return_type is None and isinstance(stmt.defines(), SSAValue):
                     raise TypeVerificationError(
                         "Void call cannot assign to a destination"

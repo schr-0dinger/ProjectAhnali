@@ -137,6 +137,7 @@ def compile_method(method_ir, *, ssa_opt=None):
         try_regions=getattr(cfg, "try_regions", []),
         return_type=getattr(method_ir, "return_type", None),
         param_types=getattr(method_ir, "param_types", None),
+        param_ssa=getattr(renamer, "param_ssa", []),
     )
     from emit.smali_emit import emit_method_smali
     smali_method = "\n".join(emit_method_smali(dalvik_method))
@@ -202,6 +203,8 @@ def _infer_value_type(val):
             return AnaliType.INT
         if isinstance(v, float):
             return AnaliType.FLOAT
+        if isinstance(v, str):
+            return AnaliType.STRING
     return AnaliType.UNKNOWN
 
 

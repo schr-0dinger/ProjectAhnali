@@ -2,7 +2,7 @@
 
 from ir.program import ProgramIR
 from ir.method import MethodIR
-from ir.expr import Call, Const, Var, BinaryOp, Compare
+from ir.expr import Call, Const, Var, BinaryOp, Compare, New
 from ir.stmt import Return, TryCatch, CallStmt, Throw
 from tests.ir_stub import Assign, If, While
 
@@ -75,6 +75,56 @@ def call_stmt(
 
 def ret(value=None):
     return Return(value)
+
+
+def new(class_desc, args=None, arg_types=None):
+    return New(class_desc, args=args or [], arg_types=arg_types or [])
+
+
+def hello_world_activity(message="Hello, Anali!"):
+    """
+    Compiler-driven HelloWorld Activity:
+    - new TextView(ctx)
+    - setText(message)
+    - setContentView(view)
+    """
+    from ir.types import AnaliType
+
+    return program([
+        method(
+            "main",
+            params=["ctx"],
+            param_types=["Landroid/app/Activity;"],
+            return_type=None,
+            body=[
+                assign(
+                    "tv",
+                    new(
+                        "Landroid/widget/TextView;",
+                        args=[var("ctx")],
+                        arg_types=["Landroid/content/Context;"],
+                    ),
+                ),
+                call_stmt(
+                    "setText",
+                    args=[var("tv"), const(message)],
+                    return_type=None,
+                    arg_types=["Ljava/lang/CharSequence;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/TextView;",
+                ),
+                call_stmt(
+                    "setContentView",
+                    args=[var("ctx"), var("tv")],
+                    return_type=None,
+                    arg_types=["Landroid/view/View;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/app/Activity;",
+                ),
+                ret(),
+            ],
+        )
+    ])
 
 
 def if_(cond, then, else_):

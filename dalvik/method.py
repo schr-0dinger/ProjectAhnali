@@ -9,6 +9,7 @@ class DalvikMethod:
         try_regions=None,
         return_type=None,
         param_types=None,
+        param_ssa=None,
     ):
         self.name = name
         self.blocks = blocks
@@ -16,6 +17,7 @@ class DalvikMethod:
         self.try_regions = try_regions or []
         self.return_type = return_type
         self.param_types = param_types or []
+        self.param_ssa = param_ssa or []
 
     @property
     def locals_count(self):
