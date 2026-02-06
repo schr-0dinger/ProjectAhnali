@@ -60,11 +60,11 @@ Phases completed:
 - Epsilon-3: CFG simplification (redundant goto removal, block merging)
 
 Active:
-- Zeta refinement (spill + determinism stress)
+- Zeta refinement wrap-up (exceptional-edge spill + determinism done)
 - Omega toolchain prep
 
 Test status:
-- `77` passing tests (`python -m pytest`)
+- Last full run: `77` passing tests (`python -m pytest`)
 
 ## DSL Surface (Current)
 
@@ -178,9 +178,9 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Zeta refinement: spill coverage on exceptional edges and try/catch joins
-2) Deterministic Smali label/ordering for whole-class emission
-3) APK toolchain integration scaffolding for Omega
+1) Omega toolchain scaffolding (emit build dir + integrate smali/baksmali entrypoints)
+2) APK packaging for a minimal class
+3) Runtime smoke test harness
 
 ## Completion Roadmap (Detailed)
 
