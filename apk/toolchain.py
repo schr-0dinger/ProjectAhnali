@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import shutil
 import subprocess
+import tempfile
+import zipfile
 
 from alpha_pipeline import alpha_pipeline
+from apk.project import ANDROID_MANIFEST
 
 
 def _class_desc_from_smali(smali_text: str) -> str:
@@ -78,3 +82,177 @@ def run_baksmali(dex_path: str | Path, out_dir: str | Path, baksmali_jar: str | 
 
     subprocess.run(cmd, check=True)
     return out_dir
+
+
+def _find_android_sdk() -> Path:
+    sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
+    if not sdk:
+        raise RuntimeError("ANDROID_HOME or ANDROID_SDK_ROOT must be set for aapt2/apksigner")
+    return Path(sdk)
+
+
+def _find_build_tools(sdk: Path) -> Path:
+    bt_dir = sdk / "build-tools"
+    if not bt_dir.exists():
+        raise RuntimeError("Android build-tools not found under SDK")
+    versions = sorted([p for p in bt_dir.iterdir() if p.is_dir()])
+    if not versions:
+        raise RuntimeError("No build-tools versions found under SDK")
+    return versions[-1]
+
+
+def _find_android_jar(sdk: Path, api: int | None = None) -> Path:
+    platforms = sdk / "platforms"
+    if not platforms.exists():
+        raise RuntimeError("Android platforms not found under SDK")
+    if api is not None:
+        jar = platforms / f"android-{api}" / "android.jar"
+        if not jar.exists():
+            raise RuntimeError(f"android.jar not found for API {api}")
+        return jar
+    candidates = sorted([p for p in platforms.iterdir() if p.is_dir() and p.name.startswith("android-")])
+    if not candidates:
+        raise RuntimeError("No android-* platform directories found under SDK")
+    jar = candidates[-1] / "android.jar"
+    if not jar.exists():
+        raise RuntimeError("android.jar not found in latest platform directory")
+    return jar
+
+
+def _tool_path(name: str) -> str:
+    path = shutil.which(name)
+    if path:
+        return path
+    sdk = _find_android_sdk()
+    bt = _find_build_tools(sdk)
+    exe = f"{name}.bat" if os.name == "nt" else name
+    candidate = bt / exe
+    if candidate.exists():
+        return str(candidate)
+    raise RuntimeError(f"{name} not found on PATH or in Android build-tools")
+
+
+def _ensure_debug_keystore(keystore_path: Path, alias: str = "androiddebugkey") -> None:
+    if keystore_path.exists():
+        return
+    keystore_path.parent.mkdir(parents=True, exist_ok=True)
+    keytool = shutil.which("keytool")
+    if not keytool:
+        raise RuntimeError("keytool not found on PATH (Java JDK required)")
+    cmd = [
+        keytool,
+        "-genkeypair",
+        "-keystore",
+        str(keystore_path),
+        "-storepass",
+        "android",
+        "-keypass",
+        "android",
+        "-alias",
+        alias,
+        "-keyalg",
+        "RSA",
+        "-keysize",
+        "2048",
+        "-validity",
+        "10000",
+        "-dname",
+        "CN=Android Debug,O=Android,C=US",
+    ]
+    subprocess.run(cmd, check=True)
+
+
+def package_apk_from_dex(
+    dex_path: str | Path,
+    out_dir: str | Path = "build",
+    *,
+    application_id: str = "com.anali.preview",
+    min_sdk: int = 21,
+    target_sdk: int = 33,
+    api: int | None = None,
+    keystore_path: str | Path | None = None,
+    keystore_alias: str = "androiddebugkey",
+    output_apk: str | Path | None = None,
+) -> Path:
+    """
+    Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
+    Requires ANDROID_HOME or ANDROID_SDK_ROOT pointing to an SDK with build-tools.
+    """
+    dex_path = Path(dex_path)
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    aapt2 = _tool_path("aapt2")
+    apksigner = _tool_path("apksigner")
+    android_jar = _find_android_jar(_find_android_sdk(), api=api)
+
+    unsigned_apk = out_dir / "unsigned.apk"
+    signed_apk = Path(output_apk) if output_apk else (out_dir / "signed.apk")
+
+    manifest_path = out_dir / "AndroidManifest.xml"
+    if not manifest_path.exists():
+        manifest_path.write_text(ANDROID_MANIFEST, encoding="utf-8")
+
+    with tempfile.TemporaryDirectory(dir=out_dir) as tmp:
+        tmp = Path(tmp)
+        res_dir = tmp / "res" / "values"
+        res_dir.mkdir(parents=True, exist_ok=True)
+        (res_dir / "strings.xml").write_text(
+            '<resources><string name="app_name">Anali</string></resources>',
+            encoding="utf-8",
+        )
+
+        compiled_res = tmp / "compiled"
+        compiled_res.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            [aapt2, "compile", "--dir", str(tmp / "res"), "-o", str(compiled_res)],
+            check=True,
+        )
+
+        flat_files = list(compiled_res.rglob("*.flat"))
+        if not flat_files:
+            raise RuntimeError("aapt2 compile produced no resources")
+
+        link_cmd = [
+            aapt2,
+            "link",
+            "-o",
+            str(unsigned_apk),
+            "--manifest",
+            str(manifest_path),
+            "-I",
+            str(android_jar),
+            f"--min-sdk-version={min_sdk}",
+            f"--target-sdk-version={target_sdk}",
+            "--auto-add-overlay",
+        ]
+        for f in flat_files:
+            link_cmd.extend(["-R", str(f)])
+        subprocess.run(link_cmd, check=True)
+
+    with zipfile.ZipFile(unsigned_apk, "a") as zf:
+        zf.write(dex_path, "classes.dex")
+
+    if keystore_path is None:
+        keystore_path = out_dir / "debug.keystore"
+    keystore_path = Path(keystore_path)
+    _ensure_debug_keystore(keystore_path, alias=keystore_alias)
+
+    subprocess.run(
+        [
+            apksigner,
+            "sign",
+            "--ks",
+            str(keystore_path),
+            "--ks-pass",
+            "pass:android",
+            "--key-pass",
+            "pass:android",
+            "--out",
+            str(signed_apk),
+            str(unsigned_apk),
+        ],
+        check=True,
+    )
+
+    return signed_apk
