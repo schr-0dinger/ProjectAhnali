@@ -37,6 +37,7 @@ DSL
 -> SSA optimizations (Epsilon-2)
 -> Dalvik lowering
 -> Dead code elimination
+-> CFG simplification (Epsilon-3)
 -> Liveness
 -> Linear scan allocation
 -> Spilling
@@ -56,9 +57,10 @@ Phases completed:
 - Eta-2: typed calls and returns
 - Eta-3: try/catch + throw + smali emission
 - Epsilon-2: SSA constant/copy propagation + coalescing
+- Epsilon-3: CFG simplification (redundant goto removal, block merging)
 
 Active:
-- Epsilon-2 polish and regression coverage
+- Epsilon-3 polish and regression coverage
 
 ## DSL Surface (Current)
 
@@ -155,10 +157,39 @@ Implemented:
 Flags:
 - alpha_pipeline(..., ssa_opt={"enable_folding": True})
 
-## Immediate Step (Highlighted)
+## Epsilon-3 Details (CFG simplification)
 
-- Expand Epsilon-2 with safe constant folding coverage + targeted correctness tests
-- Add more SSA/Dalvik equivalence tests to guard coalescing
+Implemented:
+- Redundant goto elimination
+- Empty block removal with single successor
+- Block merging into single predecessor (safe)
+
+Constraints:
+- Do not simplify entry/exit blocks
+- Do not simplify blocks in try regions
+- Do not cross exceptional edges
+
+## Immediate Plan (Next)
+
+1) Add regression tests for CFG simplification on branch-heavy graphs
+2) Validate simplification does not break try/catch regions
+3) Add a small Dalvik-level equivalence test for block merging
+
+## Future Plan (Sketch)
+
+Epsilon-3 finish:
+- Branch target cleanup after simplification
+- Remove dead labels in Smali emission
+
+Zeta refinements:
+- Register pressure stress tests
+- Spill correctness across calls and branches
+- Deterministic regalloc across multiple methods
+
+Omega endgame:
+- Smali -> APK build integration
+- APK install + runtime smoke tests
+- Full DSL program end-to-end tests
 
 ## How to Run Tests
 
@@ -177,32 +208,9 @@ prog = program([
     ])
 ])
 
-
 result = alpha_pipeline(prog)
 print(result["smali_class"])
 ```
-
-## Future Plans (Detailed)
-
-Epsilon-2 (finish):
-- Add broader constant folding test coverage (multi-op chains, nested ops)
-- Add SSA/Dalvik equivalence tests for coalescing + DCE in branch-heavy CFGs
-- Add negative tests ensuring coalescing doesn�t break phi edges
-
-Epsilon-3 (next optimization tier):
-- Control-flow simplification (remove redundant gotos)
-- Simple block merging (fallthrough merges)
-- CFG cleanup after DCE
-
-Zeta refinements:
-- Register pressure stress tests
-- Spill correctness across calls and branches
-- Deterministic regalloc across multiple methods
-
-Omega endgame:
-- Smali -> APK build integration
-- APK install + runtime smoke tests
-- Full DSL program end-to-end tests
 
 ## Philosophy Summary
 
