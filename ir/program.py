@@ -7,10 +7,11 @@ class ProgramIR:
     """
     Container for multiple methods.
     """
-    def __init__(self, methods=None, fields=None, support_classes=None):
+    def __init__(self, methods=None, fields=None, support_classes=None, resources=None):
         self.methods = methods or []
         self.fields = fields or []
         self.support_classes = support_classes or []
+        self.resources = resources or {}
 
     def add_method(self, method: MethodIR):
         self.methods.append(method)
@@ -20,3 +21,6 @@ class ProgramIR:
 
     def add_support_class(self, class_desc: str, target_method: str):
         self.support_classes.append((class_desc, target_method))
+
+    def add_resource_string(self, name: str, value: str):
+        self.resources[name] = value

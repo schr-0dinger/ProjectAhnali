@@ -108,7 +108,9 @@ class _UIColumn:
 
 
 class _UIAppBar(_UIText):
-    pass
+    def __init__(self, text, *, inline=False, **kwargs):
+        super().__init__(text, **kwargs)
+        self.inline = inline
 
 
 class _UIFloatingActionButton(_UIButton):

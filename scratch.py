@@ -97,7 +97,7 @@ app_spec = app(
 
             # ── Button Variants ────────────────────
             Column(
-                RaisedButton("Raised"),
+                RaisedButton("Raised", id="raised", style=presets().PrimaryButton()),
                 FlatButton("Flat"),
                 IconButton("★"),
                 id="button_variants",

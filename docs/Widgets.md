@@ -50,7 +50,7 @@ Switch widget. Runtime class: `android.widget.Switch`.
 Slider widget. Runtime class: `android.widget.SeekBar` (framework fallback).
 
 `DropdownButton(id="dropdown", items=None, ...)`  
-Dropdown widget. Runtime class: `android.widget.Spinner`.
+Dropdown widget. Runtime class: `android.widget.Button` (fallback).
 
 `ButtonBar(*items, id="button_bar", ...)`  
 Button row widget. Runtime class: horizontal `LinearLayout`.
@@ -131,7 +131,7 @@ Requested Material widgets are exposed in DSL now. Current runtime uses framewor
 | Slider | `android.widget.SeekBar` |
 | SimpleDialog | `android.app.AlertDialog$Builder` |
 | PopupMenuButton | `android.widget.Button` |
-| DropdownButton | `android.widget.Spinner` |
+| DropdownButton | `android.widget.Button` |
 | ButtonBar | `android.widget.LinearLayout` |
 | Toast | `android.widget.Toast` |
 | Snackbar | `Toast` fallback |

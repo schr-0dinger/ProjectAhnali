@@ -16,7 +16,7 @@ def render_manifest(
     min_sdk: int = 21,
     target_sdk: int = 33,
     activity_name: str = ".MainActivity",
-    label: str = "AnaliPreview",
+    label: str = "@string/app_name",
 ) -> str:
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"

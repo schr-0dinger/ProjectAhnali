@@ -11,6 +11,7 @@ import zipfile
 
 from alpha_pipeline import alpha_pipeline
 from apk.project import render_manifest
+from apk.resources import AndroidResources, resources_from_mapping
 from emit.smali_activity import emit_activity_wrapper_smali, emit_click_listener_smali
 
 
@@ -137,6 +138,11 @@ def emit_build_dir_from_program(
                 ),
                 encoding="utf-8",
             )
+
+    # Emit resources from ProgramIR if present.
+    res_mapping = getattr(frontend_ir, "resources", None)
+    if res_mapping:
+        resources_from_mapping(res_mapping).write_to_dir(build_dir)
 
     return build_dir
 
@@ -305,6 +311,7 @@ def package_apk_from_dex(
     output_apk: str | Path | None = None,
     activity_name: str | None = None,
     activity_class_desc: str | None = None,
+    resources: AndroidResources | dict[str, str] | None = None,
 ) -> Path:
     """
     Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
@@ -330,24 +337,31 @@ def package_apk_from_dex(
             )
         if activity_name is None:
             activity_name = ".MainActivity"
+        if resources is None and not (out_dir / "res").exists():
+            resources = {"app_name": "AnaliPreview"}
+        label = "@string/app_name" if (resources is not None or (out_dir / "res").exists()) else "AnaliPreview"
         manifest_path.write_text(
             render_manifest(
                 application_id=application_id,
                 min_sdk=min_sdk,
                 target_sdk=target_sdk,
                 activity_name=activity_name,
+                label=label,
             ),
             encoding="utf-8",
         )
 
     with tempfile.TemporaryDirectory(dir=out_dir) as tmp:
         tmp = Path(tmp)
-        res_dir = tmp / "res" / "values"
-        res_dir.mkdir(parents=True, exist_ok=True)
-        (res_dir / "strings.xml").write_text(
-            '<resources><string name="app_name">Anali</string></resources>',
-            encoding="utf-8",
-        )
+        existing_res = out_dir / "res"
+        if existing_res.exists():
+            shutil.copytree(existing_res, tmp / "res")
+        else:
+            if isinstance(resources, dict):
+                resources = resources_from_mapping(resources)
+            if resources is None:
+                resources = AndroidResources(strings={"app_name": "AnaliPreview"})
+            resources.write_to_dir(tmp)
 
         compiled_res = tmp / "compiled"
         compiled_res.mkdir(parents=True, exist_ok=True)
@@ -465,6 +479,7 @@ def build_install_run(
         keystore_alias=keystore_alias,
         output_apk=output_apk,
         activity_class_desc=wrapper_class_desc,
+        resources=getattr(frontend_ir, "resources", None),
     )
 
     adb = _adb_path()
