@@ -128,6 +128,7 @@ def test_snackbar_uses_material_when_available_with_toast_fallback():
         )
     ).build()
 
-    smali = alpha_pipeline(prog)["smali_class"]
+    result = alpha_pipeline(prog)
+    smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
     assert "Landroid/widget/Toast;->makeText" in smali
     assert "Lcom/google/android/material/snackbar/Snackbar;->make" not in smali

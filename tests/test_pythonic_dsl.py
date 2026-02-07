@@ -4,6 +4,15 @@ from dsl.widgets import fill, size, wrap
 import pytest
 
 
+def _first_layout_params_ctor_args(frontend):
+    for m in frontend.methods:
+        for s in m.body:
+            expr = getattr(s, "expr", None)
+            if getattr(expr, "class_desc", "").endswith("LinearLayout$LayoutParams;"):
+                return [a.value for a in expr.args]
+    raise AssertionError("No LinearLayout$LayoutParams constructor found")
+
+
 @on_click("inc")
 def inc():
     count = count + step
@@ -73,13 +82,7 @@ def test_pythonic_dsl_row_defaults_to_match_parent_width():
     )
 
     frontend = prog.build()
-    main = next(m for m in frontend.methods if m.name == "main")
-    layout_new = next(
-        s.expr
-        for s in main.body
-        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
-    )
-    assert [a.value for a in layout_new.args] == [-1, -2]
+    assert _first_layout_params_ctor_args(frontend) == [-1, -2]
 
 
 def test_pythonic_dsl_width_height_widget_params():
@@ -93,13 +96,7 @@ def test_pythonic_dsl_width_height_widget_params():
     )
 
     frontend = prog.build()
-    main = next(m for m in frontend.methods if m.name == "main")
-    layout_new = next(
-        s.expr
-        for s in main.body
-        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
-    )
-    assert [a.value for a in layout_new.args] == [-1, 48]
+    assert _first_layout_params_ctor_args(frontend) == [-1, 48]
 
 
 def test_pythonic_dsl_explicit_sizing_helpers():
@@ -112,13 +109,7 @@ def test_pythonic_dsl_explicit_sizing_helpers():
         )
     )
     frontend = prog.build()
-    main = next(m for m in frontend.methods if m.name == "main")
-    layout_new = next(
-        s.expr
-        for s in main.body
-        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
-    )
-    assert [a.value for a in layout_new.args] == [-1, -2]
+    assert _first_layout_params_ctor_args(frontend) == [-1, -2]
 
 
 def test_pythonic_dsl_max_width_alias():
@@ -132,13 +123,14 @@ def test_pythonic_dsl_max_width_alias():
     )
 
     frontend = prog.build()
-    main = next(m for m in frontend.methods if m.name == "main")
-    layout_new = next(
-        s.expr
-        for s in main.body
-        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
-    )
-    assert [a.value for a in layout_new.args] == [-1, -2]
+    assert _first_layout_params_ctor_args(frontend) == [-1, -2]
+
+
+def test_pythonic_dsl_splits_ui_build_into_helper_methods():
+    prog = app(activity("MainActivity", ui(text("A", id="a"), button("B", id="b"))))
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert ".method public static buildUi_0(Landroid/app/Activity;Landroid/view/ViewGroup;)V" in smali
+    assert ".method public static buildUi_1(Landroid/app/Activity;Landroid/view/ViewGroup;)V" in smali
 
 
 def test_pythonic_dsl_row_weight_and_alignment():
@@ -220,7 +212,8 @@ def test_pythonic_dsl_if_while_boolops_lowering():
         )
     )
 
-    smali = alpha_pipeline(prog.build())["smali_class"]
+    result = alpha_pipeline(prog.build())
+    smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
     assert ".method public static onClick_inc_flow(Landroid/view/View;)V" in smali
     assert "if-" in smali
     assert "goto" in smali

@@ -28,11 +28,13 @@ def build_program(frontend_ir):
         return {
             "methods": frontend_ir.methods,
             "fields": getattr(frontend_ir, "fields", []),
+            "support_classes": getattr(frontend_ir, "support_classes", []),
+            "method_class_map": getattr(frontend_ir, "method_class_map", {}),
         }
 
     if isinstance(frontend_ir, list) and frontend_ir:
         if all(isinstance(m, MethodIR) for m in frontend_ir):
-            return {"methods": frontend_ir, "fields": []}
+            return {"methods": frontend_ir, "fields": [], "support_classes": [], "method_class_map": {}}
 
     return {
         "methods": [
@@ -43,6 +45,8 @@ def build_program(frontend_ir):
             )
         ],
         "fields": [],
+        "support_classes": [],
+        "method_class_map": {},
     }
 
 
@@ -170,6 +174,7 @@ def alpha_pipeline(frontend_ir, *, ssa_opt=None):
 
     # Eta-1 compatibility shim
     from emit.smali_emit import emit_program_smali
+    method_class_map = program.get("method_class_map", {}) or {}
 
     if len(compiled) == 1 and "main" in compiled:
         main = compiled["main"]
@@ -181,12 +186,32 @@ def alpha_pipeline(frontend_ir, *, ssa_opt=None):
             "methods": compiled,
         }
 
-    methods = [m["dalvik_method"] for m in compiled.values()]
-    smali_class = emit_program_smali(methods, fields=program.get("fields", []))
+    default_class = "LTest;"
+    grouped = {}
+    for method_name, out in compiled.items():
+        cls = method_class_map.get(method_name, default_class)
+        grouped.setdefault(cls, []).append(out["dalvik_method"])
+
+    smali_class = emit_program_smali(
+        grouped.get(default_class, []),
+        class_name=default_class,
+        fields=program.get("fields", []),
+    )
+    extra_smali_classes = {}
+    for class_desc, methods in grouped.items():
+        if class_desc == default_class:
+            continue
+        extra_smali_classes[class_desc] = emit_program_smali(
+            methods,
+            class_name=class_desc,
+            fields=[],
+        )
 
     return {
         "methods": compiled,
         "smali_class": smali_class,
+        "extra_smali_classes": extra_smali_classes,
+        "support_classes": program.get("support_classes", []),
     }
 
 

@@ -125,15 +125,29 @@ def emit_build_dir_from_program(
     )
     # Emit per-handler support classes if present
     support_classes = getattr(frontend_ir, "support_classes", [])
+    if not support_classes:
+        support_classes = result.get("support_classes", [])
+    extra_smali_classes = result.get("extra_smali_classes", {})
+    if extra_smali_classes:
+        for class_desc, extra_smali in extra_smali_classes.items():
+            extra_path = _class_desc_to_path(class_desc).with_suffix(".smali")
+            extra_out = build_dir / "smali" / extra_path
+            extra_out.parent.mkdir(parents=True, exist_ok=True)
+            extra_out.write_text(extra_smali, encoding="utf-8")
     if support_classes:
-        for class_desc, target_method in support_classes:
+        for entry in support_classes:
+            if len(entry) == 2:
+                class_desc, target_method = entry
+                target_desc = wrapper_target_desc or class_name
+            else:
+                class_desc, target_method, target_desc = entry
             listener_path = _class_desc_to_path(class_desc).with_suffix(".smali")
             listener_out = build_dir / "smali" / listener_path
             listener_out.parent.mkdir(parents=True, exist_ok=True)
             listener_out.write_text(
                 emit_click_listener_smali(
                     class_desc=class_desc,
-                    target_desc=wrapper_target_desc or class_name,
+                    target_desc=target_desc,
                     target_method=target_method,
                 ),
                 encoding="utf-8",
@@ -502,9 +516,13 @@ def build_install_run(
     activity_name = _activity_name_from_desc(wrapper_class_desc, application_id)
     if uninstall_first:
         subprocess.run([adb, "uninstall", application_id], check=False)
-    subprocess.run([adb, "install", "-r", str(signed_apk)], check=True)
-    subprocess.run(
-        [adb, "shell", "am", "start", "-n", f"{application_id}/{activity_name}"],
-        check=True,
-    )
-    return signed_apk
+    try :
+        subprocess.run([adb, "install", "-r", str(signed_apk)], check=True)  
+        subprocess.run(
+            [adb, "shell", "am", "start", "-n", f"{application_id}/{activity_name}"],
+            check=True,
+        )
+        return signed_apk
+
+    except subprocess.CalledProcessError as e:
+        print(e.output)

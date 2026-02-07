@@ -3,7 +3,7 @@
 
 from apk.toolchain import emit_build_dir_from_program
 from apk.project import render_manifest
-from dsl.app import assign, const, method, program, ret
+from dsl.app import app, activity, assign, button, const, method, on_click, program, ret, state, text, ui
 
 
 def test_emit_build_dir_writes_smali(tmp_path):
@@ -107,3 +107,38 @@ def test_emit_build_dir_writes_typed_resources_from_program(tmp_path):
 def test_manifest_defaults_to_app_name_resource_label():
     manifest = render_manifest()
     assert 'android:label="@string/app_name"' in manifest
+
+
+@on_click("inc")
+def _inc():
+    count += 1
+    label.text = f"Count: {count}"
+
+
+def test_emit_build_dir_writes_split_handler_class_and_listener_target(tmp_path):
+    prog = app(
+        activity(
+            "MainActivity",
+            state(count=0),
+            ui(
+                text("Count: 0", id="label"),
+                button("+", id="inc"),
+            ),
+            _inc,
+        )
+    ).build()
+
+    out_dir = emit_build_dir_from_program(
+        prog,
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+        emit_wrapper=True,
+        wrapper_target_sig="(Landroid/app/Activity;)V",
+    )
+
+    handlers_path = out_dir / "smali" / "TestHandlers.smali"
+    listener_path = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliClickListener_inc.smali"
+    assert handlers_path.exists()
+    assert listener_path.exists()
+    listener_text = listener_path.read_text(encoding="utf-8")
+    assert "invoke-static {p1}, LTestHandlers;->onClick_inc(Landroid/view/View;)V" in listener_text

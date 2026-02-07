@@ -12,6 +12,7 @@ class ProgramIR:
         methods=None,
         fields=None,
         support_classes=None,
+        method_class_map=None,
         resources=None,
         resource_ids=None,
         resource_colors=None,
@@ -24,6 +25,7 @@ class ProgramIR:
         self.methods = methods or []
         self.fields = fields or []
         self.support_classes = support_classes or []
+        self.method_class_map = method_class_map or {}
         self.resources = resources or {}
         self.resource_ids = resource_ids or {}
         self.resource_colors = resource_colors or {}
@@ -39,8 +41,11 @@ class ProgramIR:
     def add_field(self, field):
         self.fields.append(field)
 
-    def add_support_class(self, class_desc: str, target_method: str):
-        self.support_classes.append((class_desc, target_method))
+    def add_support_class(self, class_desc: str, target_method: str, target_desc: str | None = None):
+        if target_desc is None:
+            self.support_classes.append((class_desc, target_method))
+        else:
+            self.support_classes.append((class_desc, target_method, target_desc))
 
     def add_resource_string(self, name: str, value: str):
         self.resources[name] = value
