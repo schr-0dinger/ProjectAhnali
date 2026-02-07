@@ -179,3 +179,34 @@ class CheckCast(Expr):
 
     def __repr__(self):
         return f"check-cast {self.desc}"
+
+
+class NewArray(Expr):
+    """
+    new-array instruction.
+    elem_desc: element descriptor (e.g. I, Z, Ljava/lang/String;)
+    array_desc: optional full array descriptor; defaults to [elem_desc
+    """
+
+    def __init__(self, length, elem_desc: str, array_desc: str = None):
+        self.length = length
+        self.elem_desc = elem_desc
+        self.array_desc = array_desc or f"[{elem_desc}"
+
+    def __repr__(self):
+        return f"new-array {self.array_desc}"
+
+
+class PrimitiveCast(Expr):
+    """
+    Primitive conversion (e.g. int-to-float, float-to-int).
+    from_desc/to_desc use Dalvik primitive descriptors (I, F, J, D, B, C, S).
+    """
+
+    def __init__(self, value, from_desc: str, to_desc: str):
+        self.value = value
+        self.from_desc = from_desc
+        self.to_desc = to_desc
+
+    def __repr__(self):
+        return f"cast {self.from_desc}->{self.to_desc}"

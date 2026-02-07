@@ -1,4 +1,5 @@
 import hashlib
+import copy
 from typing import Any
 
 from ir.expr import Var
@@ -6,14 +7,19 @@ from ir.expr import Var
 from dsl.android.resources import _float_bits, _parse_color
 from dsl.ast import (
     _ExprBinary,
+    _ExprBoolOp,
+    _ExprCompare,
     _ExprConst,
     _ExprFormat,
     _ExprSymbol,
+    _ExprUnary,
     _StmtAssign,
+    _StmtIf,
     _StmtSetText,
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtWhile,
 )
 from dsl.ir_helpers import (
     add_view,
@@ -22,8 +28,10 @@ from dsl.ir_helpers import (
     call,
     call_stmt,
     click_handler,
+    compare,
     const,
     gravity,
+    if_,
     layout_params,
     linear_layout,
     method,
@@ -39,6 +47,7 @@ from dsl.ir_helpers import (
     static_get,
     static_set,
     var,
+    while_,
 )
 from dsl.widgets import (
     Style,
@@ -75,6 +84,7 @@ class _PythonicContext:
         self._tmp_counter = 0
         self._resources = {}
         self._resource_ids = {}
+        self._local_vars = set()
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -129,6 +139,10 @@ class _PythonicContext:
 
         # State fields
         for name, value in self.state_spec.values.items():
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise RuntimeError(
+                    f"State '{name}' must be an integer literal, got {value!r} ({type(value).__name__})"
+                )
             fields.append(static_field(name, "I", access="private static"))
             body.append(static_set(name, "I", const(value)))
 
@@ -583,24 +597,39 @@ class _PythonicContext:
         return body
 
     def _compile_stmts(self, stmts):
+        prev_locals = self._local_vars
+        try:
+            self._local_vars = set()
+            out = self._compile_stmt_block(stmts)
+            out.append(ret())
+            return out
+        finally:
+            self._local_vars = prev_locals
+
+    def _compile_stmt_block(self, stmts):
         out = []
         for stmt in stmts:
-            if isinstance(stmt, str):
-                raise RuntimeError("String statements are deprecated; use AST builder objects.")
-            if isinstance(stmt, _StmtAssign):
-                out.extend(self._compile_assign_stmt(stmt))
-            elif isinstance(stmt, _StmtSetText):
-                out.extend(self._compile_set_text_stmt(stmt))
-            elif isinstance(stmt, _StmtToast):
-                out.extend(self._compile_toast_stmt(stmt))
-            elif isinstance(stmt, _StmtSnackbar):
-                out.extend(self._compile_snackbar_stmt(stmt))
-            elif isinstance(stmt, _StmtSimpleDialog):
-                out.extend(self._compile_dialog_stmt(stmt))
-            else:
-                raise RuntimeError(f"Unsupported statement: {stmt}")
-        out.append(ret())
+            out.extend(self.lower_stmt(stmt))
         return out
+
+    def lower_stmt(self, stmt):
+        if isinstance(stmt, str):
+            raise RuntimeError("String statements are deprecated; use AST builder objects.")
+        if isinstance(stmt, _StmtAssign):
+            return self._compile_assign_stmt(stmt)
+        if isinstance(stmt, _StmtSetText):
+            return self._compile_set_text_stmt(stmt)
+        if isinstance(stmt, _StmtIf):
+            return self._compile_if_stmt(stmt)
+        if isinstance(stmt, _StmtWhile):
+            return self._compile_while_stmt(stmt)
+        if isinstance(stmt, _StmtToast):
+            return self._compile_toast_stmt(stmt)
+        if isinstance(stmt, _StmtSnackbar):
+            return self._compile_snackbar_stmt(stmt)
+        if isinstance(stmt, _StmtSimpleDialog):
+            return self._compile_dialog_stmt(stmt)
+        raise RuntimeError(f"Unsupported statement: {stmt}")
 
     def _apply_view_layout(self, item):
         out = []
@@ -626,7 +655,11 @@ class _PythonicContext:
         radius_value = item.radius if getattr(item, "radius", None) is not None else style.radius
         text_size_value = item.text_size if getattr(item, "text_size", None) is not None else style.text_size
 
-        if padding_value:
+        padding_value = self._normalize_box_spacing(padding_value, "padding")
+        margin_value = self._normalize_box_spacing(margin_value, "margin")
+        layout_value = self._normalize_layout_value(layout_value)
+
+        if padding_value is not None:
             left, top, right, bottom = padding_value
             out.append(padding(var(item.id), left, top, right, bottom))
         if gravity_value is not None:
@@ -739,13 +772,53 @@ class _PythonicContext:
             out.append(set_layout_params(var(item.id), var(lp_name)))
         return out
 
+    def _normalize_box_spacing(self, value, attr_name):
+        if value is None:
+            return None
+        if isinstance(value, int):
+            return (value, value, value, value)
+        if isinstance(value, (tuple, list)):
+            if len(value) == 2:
+                h, v = value
+                return (int(h), int(v), int(h), int(v))
+            if len(value) == 4:
+                l, t, r, b = value
+                return (int(l), int(t), int(r), int(b))
+        raise RuntimeError(
+            f"Invalid {attr_name} value {value!r}. Expected int, (h, v), or (l, t, r, b)."
+        )
+
+    def _normalize_layout_value(self, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            # Allow shorthand: layout=\"match\" or layout=\"wrap\".
+            return (value, value)
+        if isinstance(value, (tuple, list)) and len(value) == 2:
+            return (value[0], value[1])
+        raise RuntimeError(
+            f"Invalid layout value {value!r}. Expected \"match\"/\"wrap\" or (width, height)."
+        )
+
     def _compile_assign_stmt(self, stmt):
-        if isinstance(stmt.value, _ExprConst):
-            return [static_set(stmt.target.name, "I", const(stmt.value.value))]
-        if isinstance(stmt.value, _ExprBinary):
+        if not isinstance(stmt.target, _ExprSymbol):
+            raise RuntimeError("Assignment target must be a symbol")
+        name = stmt.target.name
+
+        if isinstance(stmt.value, (_ExprConst, _ExprSymbol, _ExprBinary)):
             prefix, result = self._compile_int_expr(stmt.value)
-            return [*prefix, static_set(stmt.target.name, "I", result)]
-        raise RuntimeError("Only arithmetic/const assignments are supported")
+        else:
+            raise RuntimeError(
+                f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
+                "Expected int const/symbol/arithmetic expression."
+            )
+
+        if name in self.state_spec.values:
+            return [*prefix, static_set(name, "I", result)]
+
+        self._local_vars.add(name)
+        local_expr = result.name if isinstance(result, Var) else result
+        return [*prefix, assign(name, local_expr)]
 
     def _next_tmp(self, prefix="tmp"):
         self._tmp_counter += 1
@@ -753,10 +826,21 @@ class _PythonicContext:
 
     def _compile_int_expr(self, expr):
         if isinstance(expr, _ExprConst):
+            if not isinstance(expr.value, int) or isinstance(expr.value, bool):
+                raise RuntimeError(
+                    f"Integer expression expected an int constant, got {expr.value!r} ({type(expr.value).__name__})"
+                )
             return [], const(expr.value)
         if isinstance(expr, _ExprSymbol):
-            t = self._next_tmp("s")
-            return [assign(t, static_get(expr.name, "I"))], var(t)
+            if expr.name in self.state_spec.values:
+                t = self._next_tmp("s")
+                return [assign(t, static_get(expr.name, "I"))], var(t)
+            if expr.name in self._local_vars:
+                return [], var(expr.name)
+            raise RuntimeError(
+                f"Undefined variable '{expr.name}' in arithmetic expression. "
+                "Declare it earlier in the handler or add it to state(...)."
+            )
         if isinstance(expr, _ExprBinary):
             left_stmts, left_expr = self._compile_int_expr(expr.lhs)
             right_stmts, right_expr = self._compile_int_expr(expr.rhs)
@@ -775,6 +859,10 @@ class _PythonicContext:
         if view_field is None:
             raise RuntimeError(f"Unknown view id: {view_id}")
         if isinstance(stmt.value, _ExprConst):
+            if not isinstance(stmt.value.value, str):
+                raise RuntimeError(
+                    f"{view_id}.text expects a string or f-string, got {stmt.value.value!r} ({type(stmt.value.value).__name__})"
+                )
             return [
                 assign("v", static_get(view_field, view_desc)),
                 call_stmt(
@@ -788,6 +876,108 @@ class _PythonicContext:
         if isinstance(stmt.value, _ExprFormat):
             return self._compile_format_set_text(view_desc, view_field, stmt.value)
         raise RuntimeError("Unsupported set_text value")
+
+    def _compile_if_stmt(self, stmt):
+        then_ir = self._compile_stmt_block(stmt.then)
+        else_ir = self._compile_stmt_block(stmt.else_)
+        return self._lower_condition_branch(stmt.cond, then_ir, else_ir)
+
+    def _compile_while_stmt(self, stmt):
+        body_ir = self._compile_stmt_block(stmt.body)
+        if isinstance(stmt.cond, _ExprBoolOp):
+            guard = self._next_tmp("cond")
+            pre = self._compile_bool_to_guard(stmt.cond, guard)
+            tail = self._compile_bool_to_guard(stmt.cond, guard)
+            self._local_vars.add(guard)
+            return [*pre, while_(guard, [*body_ir, *tail])]
+        prefix, cond = self._compile_condition(stmt.cond)
+        return [*prefix, while_(cond, body_ir)]
+
+    def _compile_bool_to_guard(self, expr, guard_name):
+        return self._lower_condition_branch(
+            expr,
+            [assign(guard_name, const(1))],
+            [assign(guard_name, const(0))],
+        )
+
+    def _lower_condition_branch(self, cond_expr, then_ir, else_ir):
+        if isinstance(cond_expr, _ExprBoolOp):
+            if cond_expr.op == "and":
+                rhs_ir = self._lower_condition_branch(
+                    cond_expr.rhs,
+                    self._clone_ir_block(then_ir),
+                    self._clone_ir_block(else_ir),
+                )
+                return self._lower_condition_branch(cond_expr.lhs, rhs_ir, self._clone_ir_block(else_ir))
+            if cond_expr.op == "or":
+                rhs_ir = self._lower_condition_branch(
+                    cond_expr.rhs,
+                    self._clone_ir_block(then_ir),
+                    self._clone_ir_block(else_ir),
+                )
+                return self._lower_condition_branch(cond_expr.lhs, self._clone_ir_block(then_ir), rhs_ir)
+            raise RuntimeError(f"Unsupported boolean operator: {cond_expr.op}")
+        if isinstance(cond_expr, _ExprUnary):
+            if cond_expr.op != "not":
+                raise RuntimeError(f"Unsupported unary condition operator: {cond_expr.op}")
+            return self._lower_condition_branch(cond_expr.value, else_ir, then_ir)
+
+        prefix, cond = self._compile_condition(cond_expr)
+        return [*prefix, if_(cond, then_ir, else_ir)]
+
+    def _clone_ir_block(self, stmts):
+        return copy.deepcopy(stmts)
+
+    def _compile_condition(self, expr):
+        if isinstance(expr, _ExprCompare):
+            left_stmts, left_expr = self._compile_int_expr(expr.lhs)
+            right_stmts, right_expr = self._compile_int_expr(expr.rhs)
+            return [
+                *left_stmts,
+                *right_stmts,
+            ], compare(expr.op, left_expr, right_expr)
+        if isinstance(expr, _ExprSymbol):
+            if expr.name in self.state_spec.values or expr.name in self._local_vars:
+                return [], expr.name
+            raise RuntimeError(
+                f"Undefined variable '{expr.name}' in condition. "
+                "Declare it earlier in the handler or add it to state(...)."
+            )
+        if isinstance(expr, _ExprConst):
+            if isinstance(expr.value, bool):
+                v = 1 if expr.value else 0
+            elif isinstance(expr.value, int):
+                v = expr.value
+            else:
+                raise RuntimeError(
+                    f"Condition constants must be bool/int, got {expr.value!r} ({type(expr.value).__name__})"
+                )
+            return [], compare("!=", const(v), const(0))
+        if isinstance(expr, _ExprUnary):
+            if expr.op != "not":
+                raise RuntimeError(f"Unsupported unary condition operator: {expr.op}")
+            prefix, cond = self._compile_condition(expr.value)
+            return prefix, self._negate_condition(cond)
+        if isinstance(expr, _ExprBoolOp):
+            raise RuntimeError("Boolean conditions must be lowered through branch builder")
+        raise RuntimeError(f"Unsupported condition expression: {type(expr).__name__}")
+
+    def _negate_condition(self, cond):
+        if isinstance(cond, str):
+            return compare("==", var(cond), const(0))
+        if hasattr(cond, "op") and hasattr(cond, "left") and hasattr(cond, "right"):
+            flip = {
+                "==": "!=",
+                "!=": "==",
+                "<": ">=",
+                "<=": ">",
+                ">": "<=",
+                ">=": "<",
+            }
+            if cond.op not in flip:
+                raise RuntimeError(f"Cannot negate condition operator: {cond.op}")
+            return compare(flip[cond.op], cond.left, cond.right)
+        raise RuntimeError(f"Cannot negate condition of type: {type(cond).__name__}")
 
     def _compile_toast_stmt(self, stmt):
         msg_key = self._add_string_resource("toast_msg", stmt.message)
@@ -885,7 +1075,15 @@ class _PythonicContext:
                         )
                     )
             elif isinstance(part, _ExprSymbol):
-                stmts.append(assign("x", static_get(part.name, "I")))
+                if part.name in self.state_spec.values:
+                    stmts.append(assign("x", static_get(part.name, "I")))
+                elif part.name in self._local_vars:
+                    stmts.append(assign("x", var(part.name)))
+                else:
+                    raise RuntimeError(
+                        f"Undefined variable '{part.name}' in f-string. "
+                        "Declare it earlier in the handler or add it to state(...)."
+                    )
                 stmts.append(
                     assign(
                         "sb",

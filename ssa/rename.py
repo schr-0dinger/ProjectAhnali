@@ -3,7 +3,19 @@
 from collections import defaultdict
 from typing import Optional
 from ssa.value import SSAValue
-from ir.expr import Compare, Var, Call, BinaryOp, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.expr import (
+    Compare,
+    Var,
+    Call,
+    BinaryOp,
+    New,
+    NewArray,
+    PrimitiveCast,
+    StaticFieldGet,
+    FieldGet,
+    ArrayGet,
+    CheckCast,
+)
 from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 
 
@@ -81,6 +93,10 @@ class SSARenamer:
                 expr.right = self._rename_expr(expr.right)
             elif isinstance(expr, New):
                 expr.args = [self._rename_expr(a) for a in expr.args]
+            elif isinstance(expr, NewArray):
+                expr.length = self._rename_expr(expr.length)
+            elif isinstance(expr, PrimitiveCast):
+                expr.value = self._rename_expr(expr.value)
             elif isinstance(expr, StaticFieldGet):
                 pass
             elif isinstance(expr, FieldGet):
@@ -177,6 +193,9 @@ class SSARenamer:
             return obj
         if isinstance(obj, Var):
             return obj.name
-        if hasattr(obj, "name") and not isinstance(obj, (StaticFieldGet, FieldGet, ArrayGet, CheckCast)):
+        if hasattr(obj, "name") and not isinstance(
+            obj,
+            (StaticFieldGet, FieldGet, ArrayGet, CheckCast, NewArray, PrimitiveCast),
+        ):
             return obj.name
         return None

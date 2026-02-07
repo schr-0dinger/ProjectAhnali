@@ -1,4 +1,4 @@
-from ir.expr import BinaryOp, Call, Compare, Const, New, StaticFieldGet, Var
+from ir.expr import BinaryOp, Call, Compare, Const, New, NewArray, PrimitiveCast, StaticFieldGet, Var
 from ir.field import StaticField
 from ir.method import MethodIR
 from ir.program import ProgramIR
@@ -142,6 +142,14 @@ def array_set(array, index, elem_desc, value):
 def check_cast(value, desc):
     from ir.expr import CheckCast
     return CheckCast(value, desc)
+
+
+def new_array(length, elem_desc, array_desc=None):
+    return NewArray(length=length, elem_desc=elem_desc, array_desc=array_desc)
+
+
+def primitive_cast(value, from_desc, to_desc):
+    return PrimitiveCast(value=value, from_desc=from_desc, to_desc=to_desc)
 
 
 def hello_world_activity(message="Hello, Anali!"):

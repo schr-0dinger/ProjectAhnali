@@ -11,6 +11,7 @@ from apk.toolchain import (
     _tool_path,
 )
 from dsl.app import assign, const
+from dsl.app import app, activity, ui, text, button, row
 
 
 def _has_android_sdk():
@@ -186,3 +187,52 @@ def test_omega_apk_adb_smoke(tmp_path):
     ).stdout
     if "FATAL EXCEPTION" in logcat or "Process: com.anali.preview" in logcat:
         raise AssertionError(f"App crash detected in logcat:\n{logcat}")
+
+
+def test_omega_smali_register_nibble_safety_integration(tmp_path):
+    if not _has_android_sdk():
+        pytest.skip("ANDROID_HOME/ANDROID_SDK_ROOT not set")
+    try:
+        _tool_path("aapt2")
+        _tool_path("apksigner")
+    except RuntimeError:
+        pytest.skip("aapt2/apksigner not found on PATH or in Android build-tools")
+    smali_jar = os.environ.get("SMALI_JAR")
+    if not _has_tool("smali") and not smali_jar:
+        pytest.skip("smali not found on PATH and SMALI_JAR not set")
+
+    rows = []
+    for i in range(20):
+        rows.append(
+            row(
+                button(f"B{i}a", id=f"b_{i}_a", padding=12, margin=8, layout=("wrap", "wrap")),
+                button(f"B{i}b", id=f"b_{i}_b", padding=12, margin=8, layout=("wrap", "wrap")),
+                id=f"row_{i}",
+                margin=8,
+                layout=("match", "wrap"),
+            )
+        )
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Register safety", id="title", margin=8, padding=8),
+                *rows,
+            ),
+        )
+    )
+
+    out_dir = emit_build_dir_from_program(
+        prog.build(),
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+        emit_wrapper=True,
+        wrapper_class_desc="Lcom/anali/preview/MainActivity;",
+    )
+    dex_path = run_smali(
+        out_dir / "smali",
+        out_dir=out_dir / "classes.dex",
+        smali_jar=smali_jar,
+        api=21,
+    )
+    assert dex_path.exists()

@@ -1,7 +1,20 @@
 # ssa/verify.py
 
 from ssa.value import SSAValue
-from ir.expr import Compare, Const, BinaryOp, Call, Var, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.expr import (
+    Compare,
+    Const,
+    BinaryOp,
+    Call,
+    Var,
+    New,
+    NewArray,
+    PrimitiveCast,
+    StaticFieldGet,
+    FieldGet,
+    ArrayGet,
+    CheckCast,
+)
 from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 
 
@@ -50,6 +63,10 @@ def _iter_ssa_uses(value):
     elif isinstance(value, New):
         for arg in value.args:
             yield from _iter_ssa_uses(arg)
+    elif isinstance(value, NewArray):
+        yield from _iter_ssa_uses(value.length)
+    elif isinstance(value, PrimitiveCast):
+        yield from _iter_ssa_uses(value.value)
     elif isinstance(value, StaticFieldGet):
         return
     elif isinstance(value, FieldGet):

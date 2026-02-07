@@ -46,6 +46,19 @@ class _ExprCompare:
         self.rhs = rhs
 
 
+class _ExprBoolOp:
+    def __init__(self, op, lhs, rhs):
+        self.op = op
+        self.lhs = lhs
+        self.rhs = rhs
+
+
+class _ExprUnary:
+    def __init__(self, op, value):
+        self.op = op
+        self.value = value
+
+
 class _ExprFormat:
     def __init__(self, parts):
         self.parts = parts
@@ -81,6 +94,19 @@ class _StmtSimpleDialog:
         self.message = message
 
 
+class _StmtIf:
+    def __init__(self, cond, then, else_):
+        self.cond = cond
+        self.then = then
+        self.else_ = else_
+
+
+class _StmtWhile:
+    def __init__(self, cond, body):
+        self.cond = cond
+        self.body = body
+
+
 class _ExprRoot:
     def __getattr__(self, name):
         return _ExprSymbol(name)
@@ -109,6 +135,9 @@ def set_text(view, value):
 
 
 def _coerce_expr(value):
-    if isinstance(value, (_ExprSymbol, _ExprBinary, _ExprCompare, _ExprFormat, _ExprConst)):
+    if isinstance(
+        value,
+        (_ExprSymbol, _ExprBinary, _ExprCompare, _ExprBoolOp, _ExprUnary, _ExprFormat, _ExprConst),
+    ):
         return value
     return _ExprConst(value)

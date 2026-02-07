@@ -4,7 +4,7 @@ from ir.expr import Const
 def _normalize_sig_args(sig_args, invoke_kind, argc):
     if sig_args is None:
         return None
-    if invoke_kind in ("virtual", "direct", "interface"):
+    if invoke_kind in ("virtual", "direct", "interface", "super"):
         if len(sig_args) == argc:
             return list(sig_args[1:])
         if len(sig_args) == argc - 1:
@@ -216,4 +216,3 @@ _CTOR_SIGS = {
     "Landroid/widget/RelativeLayout$LayoutParams;": ["I", "I"],
     "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;": ["I", "I"],
 }
-

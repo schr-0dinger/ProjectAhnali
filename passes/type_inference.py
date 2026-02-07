@@ -1,5 +1,18 @@
 from ir.types import AnaliType
-from ir.expr import Const, BinaryOp, Var, Compare, Call, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.expr import (
+    Const,
+    BinaryOp,
+    Var,
+    Compare,
+    Call,
+    New,
+    NewArray,
+    PrimitiveCast,
+    StaticFieldGet,
+    FieldGet,
+    ArrayGet,
+    CheckCast,
+)
 from ssa.value import SSAValue
 
 
@@ -13,67 +26,57 @@ class TypeInferencePass:
         self.ssa_blocks = ssa_blocks
 
     def run(self):
-        # -----------------------------
-        # 1. Phi nodes FIRST
-        # -----------------------------
-        for _, ssa_block in self.ssa_blocks.items():
-            for phi in ssa_block.phis:
-                incoming_vals = list(phi.incoming.values())
+        # Fixpoint: branch/loop locals can require multiple rounds
+        # before phi and move types stabilize.
+        for _ in range(8):
+            changed = False
 
-                # Structural phi (no incoming edges)
-                if not incoming_vals:
-                    continue
+            # 1) Phi nodes
+            for _, ssa_block in self.ssa_blocks.items():
+                for phi in ssa_block.phis:
+                    incoming_vals = list(phi.incoming.values())
+                    if not incoming_vals:
+                        continue
 
-                incoming_types = {
-                    v.type
-                    for v in incoming_vals
-                    if isinstance(v, SSAValue)
-                    and v.type not in (None, AnaliType.UNKNOWN)
-                }
+                    incoming_types = {
+                        v.type
+                        for v in incoming_vals
+                        if isinstance(v, SSAValue) and v.type not in (None, AnaliType.UNKNOWN)
+                    }
+                    if not incoming_types:
+                        continue
+                    if len(incoming_types) != 1:
+                        raise TypeInferenceError(
+                            f"Cannot infer phi type for {phi.target}: {incoming_types}"
+                        )
 
+                    inferred = incoming_types.pop()
+                    if phi.target.type != inferred:
+                        phi.target.type = inferred
+                        changed = True
 
-                # Undetermined phi (all inputs UNKNOWN) → skip for now
-                if not incoming_types:
-                    continue
+            # 2) Statements
+            for _, ssa_block in self.ssa_blocks.items():
+                for stmt in ssa_block.statements:
+                    target = stmt.defines()
+                    if not isinstance(target, SSAValue):
+                        continue
 
-                # Conflicting concrete types → error
-                if len(incoming_types) != 1:
-                    raise TypeInferenceError(
-                        f"Cannot infer phi type for {phi.target}: {incoming_types}"
-                    )
+                    expr = stmt.expr
+                    if expr is None:
+                        continue
+                    if isinstance(expr, SSAValue) and expr.type == AnaliType.UNKNOWN:
+                        continue
 
-                # Exactly one concrete type
-                phi.target.type = incoming_types.pop()
+                    inferred = self._infer_expr_type(expr)
+                    if inferred in (None, AnaliType.UNKNOWN):
+                        continue
+                    if target.type != inferred:
+                        target.type = inferred
+                        changed = True
 
-        # -----------------------------
-        # 2. Statements
-        # -----------------------------
-        for _, ssa_block in self.ssa_blocks.items():
-            for stmt in ssa_block.statements:
-                target = stmt.defines()
-                if not isinstance(target, SSAValue):
-                    continue
-
-                expr = stmt.expr
-
-                # Structural / placeholder assignment
-                if expr is None:
-                    continue
-
-                # Pure move: y = x → propagate later
-                if isinstance(expr, SSAValue) and expr.type == AnaliType.UNKNOWN:
-                    continue
-
-                inferred = self._infer_expr_type(expr)
-
-                if inferred in (None, AnaliType.UNKNOWN):
-                    raise TypeInferenceError(
-                        f"Could not infer type for {target}"
-                    )
-
-                target.type = inferred
-
-
+            if not changed:
+                break
 
         return self.ssa_blocks
 
@@ -106,6 +109,8 @@ class TypeInferencePass:
             right_t = self._infer_expr_type(expr.right)
 
             if expr.op in {"+", "-", "*", "/", "%"}:
+                if AnaliType.UNKNOWN in (left_t, right_t):
+                    return AnaliType.UNKNOWN
                 if left_t == right_t == AnaliType.INT:
                     return AnaliType.INT
                 if left_t == right_t == AnaliType.FLOAT:
@@ -124,47 +129,30 @@ class TypeInferencePass:
             return AnaliType.UNKNOWN
         if isinstance(expr, New):
             return expr.class_desc
+        if isinstance(expr, NewArray):
+            return expr.array_desc
+        if isinstance(expr, PrimitiveCast):
+            return self._type_from_desc(expr.to_desc)
         if isinstance(expr, StaticFieldGet):
-            desc = expr.desc
-            if desc == "I":
-                return AnaliType.INT
-            if desc == "Z":
-                return AnaliType.BOOL
-            if desc == "F":
-                return AnaliType.FLOAT
-            if desc == "Ljava/lang/String;":
-                return AnaliType.STRING
-            if desc.startswith("L") and desc.endswith(";"):
-                return AnaliType.OBJECT
+            return self._type_from_desc(expr.desc)
         if isinstance(expr, FieldGet):
-            desc = expr.desc
-            if desc == "I":
-                return AnaliType.INT
-            if desc == "Z":
-                return AnaliType.BOOL
-            if desc == "F":
-                return AnaliType.FLOAT
-            if desc == "Ljava/lang/String;":
-                return AnaliType.STRING
-            if desc.startswith("L") and desc.endswith(";"):
-                return AnaliType.OBJECT
+            return self._type_from_desc(expr.desc)
         if isinstance(expr, ArrayGet):
-            desc = expr.elem_desc
-            if desc == "I":
-                return AnaliType.INT
-            if desc == "Z":
-                return AnaliType.BOOL
-            if desc == "F":
-                return AnaliType.FLOAT
-            if desc == "Ljava/lang/String;":
-                return AnaliType.STRING
-            if desc.startswith("L") and desc.endswith(";"):
-                return AnaliType.OBJECT
+            return self._type_from_desc(expr.elem_desc)
         if isinstance(expr, CheckCast):
-            desc = expr.desc
-            if desc == "Ljava/lang/String;":
-                return AnaliType.STRING
-            if desc.startswith("L") and desc.endswith(";"):
-                return AnaliType.OBJECT
+            return self._type_from_desc(expr.desc)
 
+        return AnaliType.UNKNOWN
+
+    def _type_from_desc(self, desc):
+        if desc in ("I", "J", "B", "C", "S"):
+            return AnaliType.INT
+        if desc == "Z":
+            return AnaliType.BOOL
+        if desc in ("F", "D"):
+            return AnaliType.FLOAT
+        if desc == "Ljava/lang/String;":
+            return AnaliType.STRING
+        if isinstance(desc, str) and (desc.startswith("L") or desc.startswith("[")):
+            return AnaliType.OBJECT
         return AnaliType.UNKNOWN

@@ -3,7 +3,14 @@
 from cfg.graph import ControlFlowGraph
 from cfg.validate import validate_cfg
 from tests.ir_stub import Assign, If, While, TryCatch as StubTryCatch, Throw as StubThrow
-from ir.stmt import Return, TryCatch as IRTryCatch, Throw as IRThrow, StaticFieldSet
+from ir.stmt import (
+    Return,
+    TryCatch as IRTryCatch,
+    Throw as IRThrow,
+    StaticFieldSet,
+    FieldSet,
+    ArraySet,
+)
 from ir.expr import Compare, Call, Const, Var
 from ir.stmt import Return
 
@@ -52,7 +59,7 @@ class CFGBuilder:
             elif hasattr(stmt, "expr") and isinstance(stmt.expr, Call):
                 current.statements.append(stmt)
 
-            elif isinstance(stmt, StaticFieldSet):
+            elif isinstance(stmt, (StaticFieldSet, FieldSet, ArraySet)):
                 current.statements.append(stmt)
 
             elif isinstance(stmt, If):

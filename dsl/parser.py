@@ -4,15 +4,19 @@ import textwrap
 
 from .ast import (
     _ExprBinary,
+    _ExprBoolOp,
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
     _ExprSymbol,
+    _ExprUnary,
     _StmtAssign,
+    _StmtIf,
     _StmtSetText,
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtWhile,
 )
 
 
@@ -43,8 +47,6 @@ def _parse_stmt(stmt):
         target = _ExprSymbol(stmt.target.id)
         op = _binop_symbol(stmt.op)
         value = _parse_expr(stmt.value)
-        if not isinstance(value, (_ExprConst, _ExprSymbol)):
-            raise RuntimeError("Only const or name increments are supported")
         return _StmtAssign(target, _ExprBinary(target, op, value))
     if isinstance(stmt, ast.Assign):
         if len(stmt.targets) != 1:
@@ -96,7 +98,28 @@ def _parse_stmt(stmt):
         return None
     if isinstance(stmt, ast.Pass):
         return None
+    if isinstance(stmt, ast.If):
+        return _StmtIf(
+            _parse_expr(stmt.test),
+            _parse_stmt_block(stmt.body),
+            _parse_stmt_block(stmt.orelse),
+        )
+    if isinstance(stmt, ast.While):
+        return _StmtWhile(
+            _parse_expr(stmt.test),
+            _parse_stmt_block(stmt.body),
+        )
     raise RuntimeError(f"Unsupported statement: {ast.dump(stmt)}")
+
+
+def _parse_stmt_block(stmts):
+    out = []
+    for stmt in stmts:
+        parsed = _parse_stmt(stmt)
+        if parsed is None:
+            continue
+        out.append(parsed)
+    return out
 
 
 def _parse_expr(node):
@@ -116,6 +139,26 @@ def _parse_expr(node):
         if not isinstance(lhs, (_ExprSymbol, _ExprConst)) or not isinstance(rhs, (_ExprSymbol, _ExprConst)):
             raise RuntimeError("Only simple name/const comparisons are supported")
         return _ExprCompare(lhs, _cmpop_symbol(node.ops[0]), rhs)
+    if isinstance(node, ast.BoolOp):
+        op = _boolop_symbol(node.op)
+        values = [_parse_expr(v) for v in node.values]
+        if len(values) < 2:
+            raise RuntimeError("BoolOp requires at least two operands")
+        out = values[0]
+        for rhs in values[1:]:
+            out = _ExprBoolOp(op, out, rhs)
+        return out
+    if isinstance(node, ast.UnaryOp):
+        if isinstance(node.op, ast.Not):
+            return _ExprUnary("not", _parse_expr(node.operand))
+        if isinstance(node.op, ast.USub):
+            v = _parse_expr(node.operand)
+            if isinstance(v, _ExprConst):
+                if not isinstance(v.value, int) or isinstance(v.value, bool):
+                    raise RuntimeError("Unary '-' supports integer constants only")
+                return _ExprConst(-v.value)
+            return _ExprBinary(_ExprConst(0), "-", v)
+        raise RuntimeError("Unsupported unary operator")
     if isinstance(node, ast.JoinedStr):
         parts = []
         for value in node.values:
@@ -157,3 +200,11 @@ def _cmpop_symbol(op):
     if isinstance(op, ast.GtE):
         return ">="
     raise RuntimeError("Unsupported comparison operator")
+
+
+def _boolop_symbol(op):
+    if isinstance(op, ast.And):
+        return "and"
+    if isinstance(op, ast.Or):
+        return "or"
+    raise RuntimeError("Unsupported boolean operator")

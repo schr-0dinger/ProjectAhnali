@@ -105,6 +105,17 @@ class DCheckCast(DInstr):
         return f"check-cast {self.desc} {self.obj}"
 
 
+class DPrimitiveCast(DInstr):
+    def __init__(self, dst, src, from_desc, to_desc):
+        self.dst = dst
+        self.src = src
+        self.from_desc = from_desc
+        self.to_desc = to_desc
+
+    def __repr__(self):
+        return f"{self.dst} = cast {self.from_desc}->{self.to_desc} {self.src}"
+
+
 class DNew(DInstr):
     def __init__(self, dst, class_desc):
         self.dst = dst
@@ -112,6 +123,16 @@ class DNew(DInstr):
 
     def __repr__(self):
         return f"{self.dst} = new-instance {self.class_desc}"
+
+
+class DNewArray(DInstr):
+    def __init__(self, dst, src, array_desc):
+        self.dst = dst
+        self.src = src
+        self.array_desc = array_desc
+
+    def __repr__(self):
+        return f"{self.dst} = new-array {self.array_desc} {self.src}"
 
 
 class DMove(DInstr):

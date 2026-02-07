@@ -1,6 +1,21 @@
 # passes/liveness.py
 
-from dalvik.ir import DMove, DBinaryOp, DIf, DInvoke, DReturn, DThrow
+from dalvik.ir import (
+    DMove,
+    DBinaryOp,
+    DIf,
+    DInvoke,
+    DReturn,
+    DThrow,
+    DStaticPut,
+    DInstanceGet,
+    DInstancePut,
+    DArrayGet,
+    DArrayPut,
+    DCheckCast,
+    DPrimitiveCast,
+    DNewArray,
+)
 from ssa.value import SSAValue
 
 
@@ -94,6 +109,38 @@ def _block_uses_defs(dblock):
                 v = _ssa_of(arg)
                 if isinstance(v, SSAValue):
                     uses.add(v)
+        elif isinstance(instr, DStaticPut):
+            v = _ssa_of(instr.value)
+            if isinstance(v, SSAValue):
+                uses.add(v)
+        elif isinstance(instr, DInstanceGet):
+            v = _ssa_of(instr.obj)
+            if isinstance(v, SSAValue):
+                uses.add(v)
+        elif isinstance(instr, DInstancePut):
+            for v in (_ssa_of(instr.obj), _ssa_of(instr.value)):
+                if isinstance(v, SSAValue):
+                    uses.add(v)
+        elif isinstance(instr, DArrayGet):
+            for v in (_ssa_of(instr.array), _ssa_of(instr.index)):
+                if isinstance(v, SSAValue):
+                    uses.add(v)
+        elif isinstance(instr, DArrayPut):
+            for v in (_ssa_of(instr.array), _ssa_of(instr.index), _ssa_of(instr.value)):
+                if isinstance(v, SSAValue):
+                    uses.add(v)
+        elif isinstance(instr, DCheckCast):
+            v = _ssa_of(instr.obj)
+            if isinstance(v, SSAValue):
+                uses.add(v)
+        elif isinstance(instr, DPrimitiveCast):
+            v = _ssa_of(instr.src)
+            if isinstance(v, SSAValue):
+                uses.add(v)
+        elif isinstance(instr, DNewArray):
+            v = _ssa_of(instr.src)
+            if isinstance(v, SSAValue):
+                uses.add(v)
 
         elif isinstance(instr, DReturn):
             v = _ssa_of(instr.value)

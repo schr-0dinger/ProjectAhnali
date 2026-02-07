@@ -1,7 +1,26 @@
 # emit/smali_emit.py
 
 from dalvik.method import DalvikMethod
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DInvoke, DReturn, DThrow, DNew, DStaticGet, DStaticPut, DInstanceGet, DInstancePut, DArrayGet, DArrayPut, DCheckCast
+from dalvik.ir import (
+    DAdd,
+    DSub,
+    DMul,
+    DDiv,
+    DRem,
+    DInvoke,
+    DReturn,
+    DThrow,
+    DNew,
+    DNewArray,
+    DStaticGet,
+    DStaticPut,
+    DInstanceGet,
+    DInstancePut,
+    DArrayGet,
+    DArrayPut,
+    DCheckCast,
+    DPrimitiveCast,
+)
 from ir.types import AnaliType
 from ir.expr import Const
 
@@ -63,6 +82,39 @@ def emit_method_smali(method: DalvikMethod):
         if max(src_idx, dst_idx) > 15:
             return "move-object/from16" if is_obj else "move/from16"
         return "move-object" if is_obj else "move"
+
+    def _is_reference_desc(desc):
+        return isinstance(desc, str) and (desc.startswith("L") or desc.startswith("["))
+
+    def _field_opcode(prefix, desc):
+        if _is_reference_desc(desc):
+            return f"{prefix}-object"
+        if desc in ("J", "D"):
+            return f"{prefix}-wide"
+        if desc == "Z":
+            return f"{prefix}-boolean"
+        if desc == "B":
+            return f"{prefix}-byte"
+        if desc == "C":
+            return f"{prefix}-char"
+        if desc == "S":
+            return f"{prefix}-short"
+        return prefix
+
+    def _array_opcode(prefix, elem_desc):
+        if _is_reference_desc(elem_desc):
+            return f"{prefix}-object"
+        if elem_desc in ("J", "D"):
+            return f"{prefix}-wide"
+        if elem_desc == "Z":
+            return f"{prefix}-boolean"
+        if elem_desc == "B":
+            return f"{prefix}-byte"
+        if elem_desc == "C":
+            return f"{prefix}-char"
+        if elem_desc == "S":
+            return f"{prefix}-short"
+        return prefix
 
     for block in method.blocks.values():
         for instr in block.instructions:
@@ -137,39 +189,48 @@ def emit_method_smali(method: DalvikMethod):
             elif isinstance(instr, DNew):
                 r = reg_map[instr.dst.ssa]
                 lines.append(f"    new-instance {r}, {instr.class_desc}")
+            elif isinstance(instr, DNewArray):
+                r = reg_map[instr.dst.ssa]
+                n = reg_map[instr.src.ssa]
+                lines.append(f"    new-array {r}, {n}, {instr.array_desc}")
             elif isinstance(instr, DStaticGet):
                 r = reg_map[instr.dst.ssa]
-                op = "sget-object" if instr.desc.startswith("L") else "sget"
+                op = _field_opcode("sget", instr.desc)
                 lines.append(f"    {op} {r}, {instr.owner}->{instr.name}:{instr.desc}")
             elif isinstance(instr, DStaticPut):
                 r = reg_map[instr.value.ssa]
-                op = "sput-object" if instr.desc.startswith("L") else "sput"
+                op = _field_opcode("sput", instr.desc)
                 lines.append(f"    {op} {r}, {instr.owner}->{instr.name}:{instr.desc}")
             elif isinstance(instr, DInstanceGet):
                 r = reg_map[instr.dst.ssa]
                 o = reg_map[instr.obj.ssa]
-                op = "iget-object" if instr.desc.startswith("L") else "iget"
+                op = _field_opcode("iget", instr.desc)
                 lines.append(f"    {op} {r}, {o}, {instr.owner}->{instr.name}:{instr.desc}")
             elif isinstance(instr, DInstancePut):
                 o = reg_map[instr.obj.ssa]
                 v = reg_map[instr.value.ssa]
-                op = "iput-object" if instr.desc.startswith("L") else "iput"
+                op = _field_opcode("iput", instr.desc)
                 lines.append(f"    {op} {v}, {o}, {instr.owner}->{instr.name}:{instr.desc}")
             elif isinstance(instr, DArrayGet):
                 r = reg_map[instr.dst.ssa]
                 a = reg_map[instr.array.ssa]
                 i = reg_map[instr.index.ssa]
-                op = "aget-object" if instr.elem_desc.startswith("L") else "aget"
+                op = _array_opcode("aget", instr.elem_desc)
                 lines.append(f"    {op} {r}, {a}, {i}")
             elif isinstance(instr, DArrayPut):
                 a = reg_map[instr.array.ssa]
                 i = reg_map[instr.index.ssa]
                 v = reg_map[instr.value.ssa]
-                op = "aput-object" if instr.elem_desc.startswith("L") else "aput"
+                op = _array_opcode("aput", instr.elem_desc)
                 lines.append(f"    {op} {v}, {a}, {i}")
             elif isinstance(instr, DCheckCast):
                 r = reg_map[instr.obj.ssa]
                 lines.append(f"    check-cast {r}, {instr.desc}")
+            elif isinstance(instr, DPrimitiveCast):
+                rd = reg_map[instr.dst.ssa]
+                rs = reg_map[instr.src.ssa]
+                cast_op = f"{instr.from_desc.lower()}-to-{instr.to_desc.lower()}"
+                lines.append(f"    {cast_op} {rd}, {rs}")
 
             elif instr.__class__.__name__ == "DMove":
                 rd = reg_map[instr.dst.ssa]
@@ -198,6 +259,7 @@ def emit_method_smali(method: DalvikMethod):
                     "static": "invoke-static",
                     "virtual": "invoke-virtual",
                     "direct": "invoke-direct",
+                    "super": "invoke-super",
                     "interface": "invoke-interface",
                 }.get(instr.invoke_kind)
                 if invoke is None:
@@ -206,7 +268,7 @@ def emit_method_smali(method: DalvikMethod):
                     )
 
                 arg_types = instr.arg_types or [None] * len(instr.args)
-                if instr.invoke_kind in ("virtual", "direct", "interface"):
+                if instr.invoke_kind in ("virtual", "direct", "interface", "super"):
                     if len(arg_types) == len(instr.args):
                         arg_types = arg_types[1:]
                     elif len(arg_types) != len(instr.args) - 1:
@@ -264,7 +326,7 @@ def emit_method_smali(method: DalvikMethod):
                     range_invoke = f"{invoke}/range"
 
                     # Build arg type list aligned to args
-                    if instr.invoke_kind in ("virtual", "direct", "interface"):
+                    if instr.invoke_kind in ("virtual", "direct", "interface", "super"):
                         if len(arg_types) == len(instr.args):
                             arg_types_for_args = arg_types
                         else:
@@ -297,7 +359,10 @@ def emit_method_smali(method: DalvikMethod):
                     if (
                         instr.return_type == AnaliType.OBJECT
                         or instr.return_type == AnaliType.STRING
-                        or (isinstance(instr.return_type, str) and instr.return_type.startswith("L"))
+                        or (
+                            isinstance(instr.return_type, str)
+                            and (instr.return_type.startswith("L") or instr.return_type.startswith("["))
+                        )
                     ):
                         lines.append(f"    move-result-object {rd}")
                     else:

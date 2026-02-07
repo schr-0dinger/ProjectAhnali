@@ -19,8 +19,23 @@ from dalvik.ir import (
     DArrayGet,
     DArrayPut,
     DCheckCast,
+    DPrimitiveCast,
+    DNewArray,
 )
-from ir.expr import Compare, BinaryOp, Const, Var, Call, New, StaticFieldGet, FieldGet, ArrayGet, CheckCast
+from ir.expr import (
+    Compare,
+    BinaryOp,
+    Const,
+    Var,
+    Call,
+    New,
+    NewArray,
+    PrimitiveCast,
+    StaticFieldGet,
+    FieldGet,
+    ArrayGet,
+    CheckCast,
+)
 from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
@@ -39,7 +54,7 @@ def apply_spills(dalvik_blocks, intervals):
 
         for instr in block.instructions:
             # ---- reload before uses ----
-            for field in ("src", "lhs", "rhs", "cond", "value"):
+            for field in ("src", "lhs", "rhs", "cond", "value", "obj", "array", "index"):
                 if hasattr(instr, field):
                     d = getattr(instr, field)
                     if d and hasattr(d, "ssa") and d.ssa in spill_map:
@@ -82,7 +97,7 @@ def _apply_registers(dalvik_blocks, intervals):
 
     for block in dalvik_blocks.values():
         for instr in block.instructions:
-            for attr in ("dst", "src", "lhs", "rhs", "cond", "value"):
+            for attr in ("dst", "src", "lhs", "rhs", "cond", "value", "obj", "array", "index"):
                 if hasattr(instr, attr):
                     d = getattr(instr, attr)
                     if d and hasattr(d, "ssa") and d.ssa in regmap:
@@ -415,6 +430,17 @@ class LowerSSAToDalvik:
                 )
             )
             return
+        if isinstance(expr, NewArray):
+            if dst is None:
+                raise RuntimeError("NewArray must be assigned to a destination")
+            db.emit(
+                DNewArray(
+                    dst,
+                    self._as_dvalue(expr.length, db),
+                    expr.array_desc,
+                )
+            )
+            return
 
         # Static field get
         if isinstance(expr, StaticFieldGet):
@@ -453,6 +479,18 @@ class LowerSSAToDalvik:
             # emit move + check-cast on the same reg
             db.emit(DMove(dst, self._as_dvalue(expr.value, db)))
             db.emit(DCheckCast(dst, expr.desc))
+            return
+        if isinstance(expr, PrimitiveCast):
+            if dst is None:
+                raise RuntimeError("PrimitiveCast must be assigned to a destination")
+            db.emit(
+                DPrimitiveCast(
+                    dst,
+                    self._as_dvalue(expr.value, db),
+                    expr.from_desc,
+                    expr.to_desc,
+                )
+            )
             return
 
         # Symbolic move (x = y)

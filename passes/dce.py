@@ -12,6 +12,13 @@ from dalvik.ir import (
     DThrow,
     DStaticGet,
     DStaticPut,
+    DInstanceGet,
+    DInstancePut,
+    DArrayGet,
+    DArrayPut,
+    DCheckCast,
+    DPrimitiveCast,
+    DNewArray,
 )
 from ssa.value import SSAValue
 
@@ -96,6 +103,34 @@ def eliminate_dead_code(dalvik_blocks):
 
                 elif isinstance(instr, DStaticPut):
                     v = _ssa_of(instr.value)
+                    if v:
+                        read.add(v)
+                elif isinstance(instr, DInstanceGet):
+                    v = _ssa_of(instr.obj)
+                    if v:
+                        read.add(v)
+                elif isinstance(instr, DInstancePut):
+                    for v in (_ssa_of(instr.obj), _ssa_of(instr.value)):
+                        if v:
+                            read.add(v)
+                elif isinstance(instr, DArrayGet):
+                    for v in (_ssa_of(instr.array), _ssa_of(instr.index)):
+                        if v:
+                            read.add(v)
+                elif isinstance(instr, DArrayPut):
+                    for v in (_ssa_of(instr.array), _ssa_of(instr.index), _ssa_of(instr.value)):
+                        if v:
+                            read.add(v)
+                elif isinstance(instr, DCheckCast):
+                    v = _ssa_of(instr.obj)
+                    if v:
+                        read.add(v)
+                elif isinstance(instr, DPrimitiveCast):
+                    v = _ssa_of(instr.src)
+                    if v:
+                        read.add(v)
+                elif isinstance(instr, DNewArray):
+                    v = _ssa_of(instr.src)
                     if v:
                         read.add(v)
 

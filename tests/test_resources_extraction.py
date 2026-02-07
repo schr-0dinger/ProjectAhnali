@@ -1,5 +1,5 @@
 from alpha_pipeline import alpha_pipeline
-from dsl.app import app, activity, ui, on_click
+from dsl.app import app, activity, ui, on_click, state
 from dsl.widgets import AppBar, Button, Text, TextField
 
 
@@ -65,6 +65,7 @@ def test_fstring_static_fragments_are_resource_backed():
     prog = app(
         activity(
             "MainActivity",
+            state(count=0, step=1),
             ui(
                 Text("x", id="label"),
                 Button("Go", id="go"),
