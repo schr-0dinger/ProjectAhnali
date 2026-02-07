@@ -22,16 +22,56 @@ def _build_reg_map(intervals, param_ssa=None):
             reg = interval.reg
         reg_map[interval.value] = f"v{reg}"
 
-    locals_count = (max_reg + 1) + len(spill_slots)
     if param_ssa:
         for idx, ssa in enumerate(param_ssa):
             reg_map[ssa] = f"p{idx}"
+
+    max_vreg = -1
+    for reg in reg_map.values():
+        if reg.startswith("v"):
+            max_vreg = max(max_vreg, int(reg[1:]))
+    locals_count = max_vreg + 1 if max_vreg >= 0 else 0
 
     return reg_map, locals_count
 
 
 def emit_method_smali(method: DalvikMethod):
     reg_map, locals_count = _build_reg_map(method.allocator.intervals, method.param_ssa)
+    param_count = len(method.param_types or [])
+    range_temp_count = 0
+
+    def _reg_index(reg):
+        if reg.startswith("v"):
+            return int(reg[1:])
+        if reg.startswith("p"):
+            return locals_count + int(reg[1:])
+        return -1
+
+    def _is_object_ssa(ssa):
+        t = getattr(ssa, "type", None)
+        if t in (AnaliType.OBJECT, AnaliType.STRING):
+            return True
+        if isinstance(t, str) and (t.startswith("L") or t.startswith("[")):
+            return True
+        return False
+
+    def _move_opcode(src_reg, dst_reg, is_obj):
+        src_idx = _reg_index(src_reg)
+        dst_idx = _reg_index(dst_reg)
+        if max(src_idx, dst_idx) > 255:
+            return "move-object/16" if is_obj else "move/16"
+        if max(src_idx, dst_idx) > 15:
+            return "move-object/from16" if is_obj else "move/from16"
+        return "move-object" if is_obj else "move"
+
+    for block in method.blocks.values():
+        for instr in block.instructions:
+            if not isinstance(instr, DInvoke):
+                continue
+            regs = [reg_map[a.ssa] for a in instr.args]
+            needs_range = len(regs) > 5 or any(_reg_index(r) > 15 for r in regs)
+            if needs_range:
+                range_temp_count = max(range_temp_count, len(regs))
 
     lines = []
     def _type_desc(t):
@@ -56,8 +96,9 @@ def emit_method_smali(method: DalvikMethod):
     params_desc = "".join(_type_desc(t) for t in (method.param_types or []))
     ret_desc = _type_desc(method.return_type)
 
+    total_regs = locals_count + param_count + range_temp_count
     lines.append(f".method public static {method.name}({params_desc}){ret_desc}")
-    lines.append(f"    .locals {locals_count}")
+    lines.append(f"    .registers {total_regs}")
     lines.append("")
 
     referenced = set()
@@ -86,7 +127,13 @@ def emit_method_smali(method: DalvikMethod):
                     s = instr.value.replace("\\", "\\\\").replace("\"", "\\\"")
                     lines.append(f"    const-string {r}, \"{s}\"")
                 else:
-                    lines.append(f"    const/4 {r}, {instr.value}")
+                    val = int(instr.value)
+                    if -8 <= val <= 7:
+                        lines.append(f"    const/4 {r}, {val}")
+                    elif -32768 <= val <= 32767:
+                        lines.append(f"    const/16 {r}, {val}")
+                    else:
+                        lines.append(f"    const {r}, {val}")
             elif isinstance(instr, DNew):
                 r = reg_map[instr.dst.ssa]
                 lines.append(f"    new-instance {r}, {instr.class_desc}")
@@ -127,7 +174,9 @@ def emit_method_smali(method: DalvikMethod):
             elif instr.__class__.__name__ == "DMove":
                 rd = reg_map[instr.dst.ssa]
                 rs = reg_map[instr.src.ssa]
-                lines.append(f"    move {rd}, {rs}")
+                if rd != rs:
+                    op = _move_opcode(rs, rd, _is_object_ssa(instr.src.ssa))
+                    lines.append(f"    {op} {rd}, {rs}")
 
             elif isinstance(instr, (DAdd, DSub, DMul, DDiv, DRem)):
                 rd = reg_map[instr.dst.ssa]
@@ -207,10 +256,41 @@ def emit_method_smali(method: DalvikMethod):
                 else:
                     raise RuntimeError(f"Unsupported return type {instr.return_type}")
 
-                regs = ", ".join(reg_map[a.ssa] for a in instr.args)
-                lines.append(
-                    f"    {invoke} {{{regs}}}, {instr.owner}->{instr.method}({arg_desc}){ret_desc}"
-                )
+                regs_list = [reg_map[a.ssa] for a in instr.args]
+                needs_range = len(regs_list) > 5 or any(_reg_index(r) > 15 for r in regs_list)
+
+                if needs_range:
+                    temp_base = locals_count
+                    range_invoke = f"{invoke}/range"
+
+                    # Build arg type list aligned to args
+                    if instr.invoke_kind in ("virtual", "direct", "interface"):
+                        if len(arg_types) == len(instr.args):
+                            arg_types_for_args = arg_types
+                        else:
+                            arg_types_for_args = [instr.owner] + arg_types
+                    else:
+                        arg_types_for_args = arg_types
+
+                    for i, (arg, arg_t) in enumerate(zip(instr.args, arg_types_for_args)):
+                        src = reg_map[arg.ssa]
+                        dst = f"v{temp_base + i}"
+                        if src == dst:
+                            continue
+                        is_obj = isinstance(arg_t, str) and (arg_t.startswith("L") or arg_t.startswith("["))
+                        move_op = _move_opcode(src, dst, is_obj)
+                        lines.append(f"    {move_op} {dst}, {src}")
+
+                    start = f"v{temp_base}"
+                    end = f"v{temp_base + len(regs_list) - 1}"
+                    lines.append(
+                        f"    {range_invoke} {{{start} .. {end}}}, {instr.owner}->{instr.method}({arg_desc}){ret_desc}"
+                    )
+                else:
+                    regs = ", ".join(regs_list)
+                    lines.append(
+                        f"    {invoke} {{{regs}}}, {instr.owner}->{instr.method}({arg_desc}){ret_desc}"
+                    )
 
                 if instr.dst and instr.return_type is not None:
                     rd = reg_map[instr.dst.ssa]

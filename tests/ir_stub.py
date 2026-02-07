@@ -28,14 +28,13 @@ class Assign:
             
         if isinstance(self.expr, BinaryOp):
             uses_list = []
-            # Check left operand (Var or SSAValue)
-            if hasattr(self.expr.left, "name"):
+            # Only treat IR Var as SSA-renamable
+            if isinstance(self.expr.left, IRVar):
                 uses_list.append(Ref(self.expr, 'left'))
-            
-            # Check right operand
-            if hasattr(self.expr.right, "name"):
+
+            if isinstance(self.expr.right, IRVar):
                 uses_list.append(Ref(self.expr, 'right'))
-                
+
             return uses_list
 
         return []

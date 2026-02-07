@@ -2,24 +2,30 @@ from alpha_pipeline import alpha_pipeline
 from dsl.app import app, activity, state, ui, text, button, on_click
 
 
+@on_click("inc")
+def inc():
+    count = count + step
+    label.text = f"Count: {count} step {step}"
+
+
+@on_click("dec")
+def dec():
+    count -= 1
+    label.text = f"Count: {count}"
+
+
 def test_pythonic_dsl_counter_smali():
     prog = app(
         activity(
             "MainActivity",
-            state(count=0),
+            state(count=0, step=2),
             ui(
                 text("Count: 0", id="label"),
                 button("+", id="inc"),
                 button("-", id="dec"),
             ),
-            on_click("inc", [
-                "count = count + 1",
-                "label.text = f'Count: {count}'",
-            ]),
-            on_click("dec", [
-                "count = count - 1",
-                "label.text = f'Count: {count}'",
-            ]),
+            inc,
+            dec,
         )
     )
 

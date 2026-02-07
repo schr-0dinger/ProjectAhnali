@@ -175,6 +175,8 @@ class SSARenamer:
             return obj.name
         if isinstance(obj, str):
             return obj
-        if hasattr(obj, "name"):
+        if isinstance(obj, Var):
+            return obj.name
+        if hasattr(obj, "name") and not isinstance(obj, (StaticFieldGet, FieldGet, ArrayGet, CheckCast)):
             return obj.name
         return None

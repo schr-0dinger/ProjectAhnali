@@ -1,7 +1,60 @@
 # dsl/app.py
 
 import ast
+import inspect
+import textwrap
 from typing import List, Dict, Any
+from .widgets import (
+    _UIText,
+    _UIButton,
+    _UIRow,
+    _UIColumn,
+    _UIAppBar,
+    _UIFloatingActionButton,
+    _UIRaisedButton,
+    _UIFlatButton,
+    _UIIconButton,
+    _UITextField,
+    _UICheckbox,
+    _UIRadio,
+    _UISwitch,
+    _UISlider,
+    _UIDropdownButton,
+    _UIButtonBar,
+    _UIPopupMenuButton,
+    _UISimpleDialog,
+    _UIToast,
+    _UISnackbar,
+    Text,
+    Button,
+    Row,
+    Column,
+    AppBar,
+    FloatingActionButton,
+    RaisedButton,
+    FlatButton,
+    IconButton,
+    TextField,
+    Checkbox,
+    Radio,
+    Switch,
+    Slider,
+    DropdownButton,
+    ButtonBar,
+    PopupMenuButton,
+    State,
+    Style,
+    Theme,
+    Presets,
+    text,
+    button,
+    row,
+    column,
+    state as state_widget,
+    style as style_widget,
+    theme as theme_widget,
+    presets as presets_widget,
+)
 from ir.program import ProgramIR
 from ir.field import StaticField
 from ir.method import MethodIR
@@ -144,6 +197,26 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
 _METHOD_SIGS = {
     ("Landroid/widget/TextView;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/widget/TextView;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/widget/EditText;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/EditText;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/widget/EditText;", "setHint", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/widget/CheckBox;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/CheckBox;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/widget/CheckBox;", "setChecked", "virtual"): (None, ["Z"]),
+    ("Landroid/widget/RadioButton;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/RadioButton;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/widget/RadioButton;", "setChecked", "virtual"): (None, ["Z"]),
+    ("Landroid/widget/Switch;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/Switch;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/widget/Switch;", "setChecked", "virtual"): (None, ["Z"]),
+    ("Landroid/widget/SeekBar;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/SeekBar;", "setMax", "virtual"): (None, ["I"]),
+    ("Landroid/widget/SeekBar;", "setProgress", "virtual"): (None, ["I"]),
+    ("Landroid/widget/Spinner;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/ImageButton;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/Toolbar;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/Toolbar;", "setTitle", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/view/View;", "setContentDescription", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
     ("Landroid/widget/Button;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/widget/Button;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
     ("Landroid/app/Activity;", "setContentView", "virtual"): (None, ["Landroid/view/View;"]),
@@ -169,6 +242,10 @@ _METHOD_SIGS = {
         None,
         ["Landroid/view/ViewGroup$LayoutParams;"],
     ),
+    ("Landroid/app/AlertDialog$Builder;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/app/AlertDialog$Builder;", "setTitle", "virtual"): ("Landroid/app/AlertDialog$Builder;", ["Ljava/lang/CharSequence;"]),
+    ("Landroid/app/AlertDialog$Builder;", "setMessage", "virtual"): ("Landroid/app/AlertDialog$Builder;", ["Ljava/lang/CharSequence;"]),
+    ("Landroid/app/AlertDialog$Builder;", "show", "virtual"): ("Landroid/app/AlertDialog;", []),
     ("Landroid/util/Log;", "d", "static"): (
         "I",
         ["Ljava/lang/String;", "Ljava/lang/String;"],
@@ -187,6 +264,15 @@ _METHOD_SIGS = {
 _CTOR_SIGS = {
     "Landroid/widget/TextView;": ["Landroid/content/Context;"],
     "Landroid/widget/Button;": ["Landroid/content/Context;"],
+    "Landroid/widget/EditText;": ["Landroid/content/Context;"],
+    "Landroid/widget/CheckBox;": ["Landroid/content/Context;"],
+    "Landroid/widget/RadioButton;": ["Landroid/content/Context;"],
+    "Landroid/widget/Switch;": ["Landroid/content/Context;"],
+    "Landroid/widget/SeekBar;": ["Landroid/content/Context;"],
+    "Landroid/widget/Spinner;": ["Landroid/content/Context;"],
+    "Landroid/widget/ImageButton;": ["Landroid/content/Context;"],
+    "Landroid/widget/Toolbar;": ["Landroid/content/Context;"],
+    "Landroid/app/AlertDialog$Builder;": ["Landroid/content/Context;"],
     "Landroid/widget/LinearLayout;": ["Landroid/content/Context;"],
     "Lcom/anali/preview/AnaliClickListener;": [],
     "Ljava/lang/StringBuilder;": [],
@@ -515,23 +601,6 @@ def simple_activity():
 # Pythonic DSL layer (Phase 1)
 # ------------------------------------------------------------
 
-class _StateSpec:
-    def __init__(self, **kwargs):
-        self.values = kwargs
-
-
-class _UIText:
-    def __init__(self, text, *, id="label"):
-        self.id = id
-        self.text = text
-
-
-class _UIButton:
-    def __init__(self, text, *, id="button"):
-        self.id = id
-        self.text = text
-
-
 class _UISpec:
     def __init__(self, *items):
         self.items = items
@@ -574,49 +643,63 @@ def activity(name, *parts):
 
 
 def state(**kwargs):
-    return _StateSpec(**kwargs)
+    return State(**kwargs)
 
 
 def ui(*items):
     return _UISpec(*items)
 
 
-def text(text, *, id="label"):
-    return _UIText(text, id=id)
-
-
-def button(text, *, id="button"):
-    return _UIButton(text, id=id)
-
-
-def on_click(button_id, stmts):
+def on_click(button_id, stmts=None):
+    if stmts is None:
+        def decorator(fn):
+            return _OnClickSpec(button_id, _parse_handler_ast(fn))
+        return decorator
+    if callable(stmts):
+        return _OnClickSpec(button_id, _parse_handler_ast(stmts))
     return _OnClickSpec(button_id, stmts)
+
+
+def style(**kwargs):
+    return style_widget(**kwargs)
+
+
+def theme(**kwargs):
+    return theme_widget(**kwargs)
+
+
+def presets(palette=None):
+    return presets_widget(palette=palette)
 
 
 def _build_pythonic_app(activity_spec: _ActivitySpec):
     state_spec = None
     ui_spec = None
+    theme_spec = Theme()
     click_specs = []
 
     for part in activity_spec.parts:
-        if isinstance(part, _StateSpec):
+        if isinstance(part, State):
             state_spec = part
         elif isinstance(part, _UISpec):
             ui_spec = part
+        elif isinstance(part, Theme):
+            theme_spec = part
         elif isinstance(part, _OnClickSpec):
             click_specs.append(part)
 
-    state_spec = state_spec or _StateSpec()
+    state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
 
-    ctx = _PythonicContext(state_spec, ui_spec)
+    ctx = _PythonicContext(state_spec, ui_spec, theme_spec)
     return ctx.build_program(click_specs)
 
 
 class _PythonicContext:
-    def __init__(self, state_spec: _StateSpec, ui_spec: _UISpec):
+    def __init__(self, state_spec: State, ui_spec: _UISpec, theme_spec: Theme):
         self.state_spec = state_spec
         self.ui_spec = ui_spec
+        self.theme_spec = theme_spec
         self.view_types = {}
         self.view_fields = {}
         self.root_id = "root"
@@ -626,6 +709,30 @@ class _PythonicContext:
             return "Landroid/widget/TextView;"
         if kind == "button":
             return "Landroid/widget/Button;"
+        if kind == "app_bar":
+            return "Landroid/widget/Toolbar;"
+        if kind == "fab":
+            return "Landroid/widget/ImageButton;"
+        if kind == "raised_button":
+            return "Landroid/widget/Button;"
+        if kind == "flat_button":
+            return "Landroid/widget/Button;"
+        if kind == "icon_button":
+            return "Landroid/widget/ImageButton;"
+        if kind == "text_field":
+            return "Landroid/widget/EditText;"
+        if kind == "checkbox":
+            return "Landroid/widget/CheckBox;"
+        if kind == "radio":
+            return "Landroid/widget/RadioButton;"
+        if kind == "switch":
+            return "Landroid/widget/Switch;"
+        if kind == "slider":
+            return "Landroid/widget/SeekBar;"
+        if kind == "dropdown":
+            return "Landroid/widget/Spinner;"
+        if kind == "popup_button":
+            return "Landroid/widget/Button;"
         return "Landroid/view/View;"
 
     def build_program(self, click_specs):
@@ -634,24 +741,17 @@ class _PythonicContext:
 
         body.extend(linear_layout(self.root_id, var("ctx"), "vertical"))
 
-        # UI creation
-        for item in self.ui_spec.items:
-            if isinstance(item, _UIText):
-                self.view_types[item.id] = "text"
-                self.view_fields[item.id] = f"view_{item.id}"
-                body.extend(text_view(item.id, var("ctx"), item.text))
-                body.append(add_view(var(self.root_id), var(item.id)))
-            elif isinstance(item, _UIButton):
-                self.view_types[item.id] = "button"
-                self.view_fields[item.id] = f"view_{item.id}"
-                body.extend(button_view(item.id, var("ctx"), item.text))
-                body.append(add_view(var(self.root_id), var(item.id)))
+        # UI creation (recursive)
+        body.extend(self._build_ui_items(self.root_id, self.ui_spec.items))
 
         # Store static refs for views
         for vid, field_name in self.view_fields.items():
             desc = self._view_desc(self.view_types[vid])
             fields.append(static_field(field_name, desc, access="private static"))
             body.append(static_set(field_name, desc, var(vid)))
+
+        fields.append(static_field("app_ctx", "Landroid/app/Activity;", access="private static"))
+        body.append(static_set("app_ctx", "Landroid/app/Activity;", var("ctx")))
 
         # State fields
         for name, value in self.state_spec.values.items():
@@ -662,6 +762,24 @@ class _PythonicContext:
         handler_methods = []
         support_classes = []
         for spec in click_specs:
+            if spec.button_id not in self.view_types:
+                known = ", ".join(sorted(self.view_types.keys()))
+                raise RuntimeError(
+                    f"on_click target '{spec.button_id}' not found in ui() ids. "
+                    f"Known ids: [{known}]"
+                )
+            clickable_kinds = {
+                "button",
+                "raised_button",
+                "flat_button",
+                "icon_button",
+                "fab",
+                "popup_button",
+            }
+            if self.view_types.get(spec.button_id) not in clickable_kinds:
+                raise RuntimeError(
+                    f"on_click target '{spec.button_id}' is not a button (kind={self.view_types.get(spec.button_id)})."
+                )
             handler_name = f"onClick_{spec.button_id}"
             listener_desc = f"Lcom/anali/preview/AnaliClickListener_{spec.button_id};"
             body.extend(on_click_view(var(spec.button_id), handler_name=handler_name, listener_class_desc=listener_desc))
@@ -688,119 +806,494 @@ class _PythonicContext:
 
         return program(methods, fields=fields, support_classes=support_classes)
 
+    def _build_ui_items(self, parent_id, items):
+        body = []
+        for item in items:
+            if isinstance(item, _UIText):
+                self.view_types[item.id] = "text"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(text_view(item.id, var("ctx"), item.text))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIButton):
+                self.view_types[item.id] = "button"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(button_view(item.id, var("ctx"), item.text))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIAppBar):
+                self.view_types[item.id] = "app_bar"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/Toolbar;", args=[var("ctx")])),
+                        call_stmt(
+                            "setTitle",
+                            args=[var(item.id), const(item.text)],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/Toolbar;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIFloatingActionButton):
+                self.view_types[item.id] = "fab"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/ImageButton;", args=[var("ctx")])),
+                        call_stmt(
+                            "setContentDescription",
+                            args=[var(item.id), const(item.text)],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/view/View;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIRaisedButton):
+                self.view_types[item.id] = "raised_button"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(button_view(item.id, var("ctx"), item.text))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIFlatButton):
+                self.view_types[item.id] = "flat_button"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(button_view(item.id, var("ctx"), item.text))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIIconButton):
+                self.view_types[item.id] = "icon_button"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/ImageButton;", args=[var("ctx")])),
+                        call_stmt(
+                            "setContentDescription",
+                            args=[var(item.id), const(item.text)],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/view/View;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UITextField):
+                self.view_types[item.id] = "text_field"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/EditText;", args=[var("ctx")])),
+                        call_stmt(
+                            "setText",
+                            args=[var(item.id), const(item.text or "")],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/EditText;",
+                        ),
+                    ]
+                )
+                if item.hint:
+                    body.append(
+                        call_stmt(
+                            "setHint",
+                            args=[var(item.id), const(item.hint)],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/EditText;",
+                        )
+                    )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UICheckbox):
+                self.view_types[item.id] = "checkbox"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/CheckBox;", args=[var("ctx")])),
+                        call_stmt(
+                            "setText",
+                            args=[var(item.id), const(item.text or "")],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/CheckBox;",
+                        ),
+                        call_stmt(
+                            "setChecked",
+                            args=[var(item.id), const(1 if item.checked else 0)],
+                            return_type=None,
+                            arg_types=["Z"],
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/CheckBox;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIRadio):
+                self.view_types[item.id] = "radio"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/RadioButton;", args=[var("ctx")])),
+                        call_stmt(
+                            "setText",
+                            args=[var(item.id), const(item.text or "")],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/RadioButton;",
+                        ),
+                        call_stmt(
+                            "setChecked",
+                            args=[var(item.id), const(1 if item.checked else 0)],
+                            return_type=None,
+                            arg_types=["Z"],
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/RadioButton;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UISwitch):
+                self.view_types[item.id] = "switch"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/Switch;", args=[var("ctx")])),
+                        call_stmt(
+                            "setText",
+                            args=[var(item.id), const(item.text or "")],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/Switch;",
+                        ),
+                        call_stmt(
+                            "setChecked",
+                            args=[var(item.id), const(1 if item.checked else 0)],
+                            return_type=None,
+                            arg_types=["Z"],
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/Switch;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UISlider):
+                self.view_types[item.id] = "slider"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(
+                    [
+                        assign(item.id, new("Landroid/widget/SeekBar;", args=[var("ctx")])),
+                        call_stmt(
+                            "setMax",
+                            args=[var(item.id), const(int(item.max) - int(item.min))],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/SeekBar;",
+                        ),
+                        call_stmt(
+                            "setProgress",
+                            args=[var(item.id), const(int(item.value) - int(item.min))],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/SeekBar;",
+                        ),
+                    ]
+                )
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIDropdownButton):
+                self.view_types[item.id] = "dropdown"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend([assign(item.id, new("Landroid/widget/Spinner;", args=[var("ctx")]))])
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIButtonBar):
+                self.view_types[item.id] = "row"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+                body.extend(self._build_ui_items(item.id, item.items))
+            elif isinstance(item, _UIPopupMenuButton):
+                self.view_types[item.id] = "popup_button"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(button_view(item.id, var("ctx"), item.text))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+            elif isinstance(item, _UIRow):
+                self.view_types[item.id] = "row"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+                body.extend(self._build_ui_items(item.id, item.items))
+            elif isinstance(item, _UIColumn):
+                self.view_types[item.id] = "column"
+                self.view_fields[item.id] = f"view_{item.id}"
+                body.extend(linear_layout(item.id, var("ctx"), "vertical"))
+                body.extend(self._apply_view_layout(item))
+                body.append(add_view(var(parent_id), var(item.id)))
+                body.extend(self._build_ui_items(item.id, item.items))
+            else:
+                raise RuntimeError(f"Unsupported UI item: {item}")
+        return body
+
     def _compile_stmts(self, stmts):
         out = []
         for stmt in stmts:
-            stmt = stmt.strip()
-            if "+=" in stmt or "-=" in stmt:
-                out.extend(self._compile_inc(stmt))
-            elif "=" in stmt and any(op in stmt for op in ["+", "-"]) and "f" not in stmt:
-                out.extend(self._compile_assign_binary(stmt))
-            elif ".text" in stmt and "=" in stmt:
-                out.extend(self._compile_set_text(stmt))
+            if isinstance(stmt, str):
+                raise RuntimeError("String statements are deprecated; use AST builder objects.")
+            if isinstance(stmt, _StmtAssign):
+                out.extend(self._compile_assign_stmt(stmt))
+            elif isinstance(stmt, _StmtSetText):
+                out.extend(self._compile_set_text_stmt(stmt))
+            elif isinstance(stmt, _StmtToast):
+                out.extend(self._compile_toast_stmt(stmt))
+            elif isinstance(stmt, _StmtSnackbar):
+                out.extend(self._compile_snackbar_stmt(stmt))
+            elif isinstance(stmt, _StmtSimpleDialog):
+                out.extend(self._compile_dialog_stmt(stmt))
             else:
                 raise RuntimeError(f"Unsupported statement: {stmt}")
         out.append(ret())
         return out
 
-    def _compile_inc(self, stmt):
-        # e.g., count += 1
-        if "+=" in stmt:
-            name, value = [s.strip() for s in stmt.split("+=")]
-            op = "+"
-        else:
-            name, value = [s.strip() for s in stmt.split("-=")]
-            op = "-"
-        delta = int(value)
-        return [
-            assign("x", static_get(name, "I")),
-            assign("x", binary(op, var("x"), const(delta))),
-            static_set(name, "I", var("x")),
-        ]
+    def _apply_view_layout(self, item):
+        out = []
+        theme_style = Style()
+        if isinstance(item, _UIText):
+            theme_style = self.theme_spec.text
+        elif isinstance(item, _UIButton):
+            theme_style = self.theme_spec.button
+        elif isinstance(item, _UIRow):
+            theme_style = self.theme_spec.row
+        elif isinstance(item, _UIColumn):
+            theme_style = self.theme_spec.column
 
-    def _compile_assign_binary(self, stmt):
-        # e.g., count = count + 1
-        lhs, rhs = [s.strip() for s in stmt.split("=", 1)]
-        if "+" in rhs:
-            a, b = [s.strip() for s in rhs.split("+", 1)]
-            op = "+"
-        elif "-" in rhs:
-            a, b = [s.strip() for s in rhs.split("-", 1)]
-            op = "-"
-        else:
-            raise RuntimeError(f"Unsupported binary assignment: {stmt}")
+        item_style = item.style if getattr(item, "style", None) else None
+        style = theme_style.merged(item_style)
 
-        if a != lhs:
-            raise RuntimeError(f"Only self-assign supported: {stmt}")
-        delta = int(b)
-        return [
-            assign("x", static_get(lhs, "I")),
-            assign("x", binary(op, var("x"), const(delta))),
-            static_set(lhs, "I", var("x")),
-        ]
+        padding_value = item.padding if item.padding is not None else style.padding
+        gravity_value = item.gravity if item.gravity is not None else style.gravity
+        layout_value = item.layout if item.layout is not None else style.layout
+        margin_value = item.margin if item.margin is not None else style.margin
+        text_color_value = item.text_color if getattr(item, "text_color", None) is not None else style.text_color
+        background_value = item.background if getattr(item, "background", None) is not None else style.background
+        radius_value = item.radius if getattr(item, "radius", None) is not None else style.radius
+        text_size_value = item.text_size if getattr(item, "text_size", None) is not None else style.text_size
 
-    def _compile_set_text(self, stmt):
-        # e.g., label.text = f"Count: {count}"
-        lhs, rhs = [s.strip() for s in stmt.split("=", 1)]
-        view_id = lhs.split(".")[0].strip()
+        if padding_value:
+            left, top, right, bottom = padding_value
+            out.append(padding(var(item.id), left, top, right, bottom))
+        if gravity_value is not None:
+            out.append(gravity(var(item.id), gravity_value))
+
+        palette = self.theme_spec.palette
+        bg_color = _parse_color(background_value, palette)
+        txt_color = _parse_color(text_color_value, palette)
+
+        if bg_color is not None and radius_value is not None:
+            bg_name = f"bg_{item.id}"
+            out.append(assign(bg_name, new("Landroid/graphics/drawable/GradientDrawable;", args=[])))
+            out.append(
+                call_stmt(
+                    "setColor",
+                    args=[var(bg_name), const(bg_color)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/drawable/GradientDrawable;",
+                )
+            )
+            out.append(
+                call_stmt(
+                    "setCornerRadius",
+                    args=[var(bg_name), const(_float_bits(radius_value))],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/drawable/GradientDrawable;",
+                )
+            )
+            out.append(
+                call_stmt(
+                    "setBackground",
+                    args=[var(item.id), var(bg_name)],
+                    return_type=None,
+                    arg_types=["Landroid/graphics/drawable/Drawable;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+        elif bg_color is not None:
+            out.append(
+                call_stmt(
+                    "setBackgroundColor",
+                    args=[var(item.id), const(bg_color)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+
+        if txt_color is not None:
+            out.append(
+                call_stmt(
+                    "setTextColor",
+                    args=[var(item.id), const(txt_color)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/TextView;",
+                )
+            )
+
+        if text_size_value is not None:
+            out.append(
+                call_stmt(
+                    "setTextSize",
+                    args=[var(item.id), const(_float_bits(text_size_value))],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/TextView;",
+                )
+            )
+
+        if layout_value:
+            width, height = layout_value
+            lp_name = f"lp_{item.id}"
+            out.append(assign(lp_name, layout_params(width, height, parent="LinearLayout")))
+            if margin_value:
+                ml, mt, mr, mb = margin_value
+                out.append(set_margins(var(lp_name), ml, mt, mr, mb))
+            out.append(set_layout_params(var(item.id), var(lp_name)))
+        return out
+
+    def _compile_assign_stmt(self, stmt):
+        if isinstance(stmt.value, _ExprConst):
+            return [static_set(stmt.target.name, "I", const(stmt.value.value))]
+        if isinstance(stmt.value, _ExprBinary):
+            # only support state = state +/- const
+            if stmt.value.lhs.name != stmt.target.name:
+                raise RuntimeError("Only self-assign supported")
+            op = stmt.value.op
+            rhs = stmt.value.rhs
+            prefix = []
+            if isinstance(rhs, _ExprConst):
+                rhs_expr = const(rhs.value)
+            elif isinstance(rhs, _ExprSymbol):
+                rhs_expr = var("rhs")
+                prefix.append(assign("rhs", static_get(rhs.name, "I")))
+            else:
+                raise RuntimeError("Only const or name RHS supported")
+            return [
+                *prefix,
+                assign("x", static_get(stmt.target.name, "I")),
+                assign("x", binary(op, var("x"), rhs_expr)),
+                static_set(stmt.target.name, "I", var("x")),
+            ]
+        raise RuntimeError("Only binary/const assignments are supported")
+
+    def _compile_set_text_stmt(self, stmt):
+        view_id = stmt.view.name
         view_desc = self._view_desc(self.view_types.get(view_id, "text"))
         view_field = self.view_fields.get(view_id)
         if view_field is None:
             raise RuntimeError(f"Unknown view id: {view_id}")
+        if isinstance(stmt.value, _ExprConst):
+            return [
+                assign("v", static_get(view_field, view_desc)),
+                call_stmt(
+                    "setText",
+                    args=[var("v"), const(stmt.value.value)],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner=view_desc,
+                ),
+            ]
+        if isinstance(stmt.value, _ExprFormat):
+            return self._compile_format_set_text(view_desc, view_field, stmt.value)
+        raise RuntimeError("Unsupported set_text value")
 
-        if rhs.startswith("f\"") or rhs.startswith("f'"):
-            text = rhs[2:-1]
-            return self._compile_fstring_set_text(view_desc, view_field, text)
-
-        # plain string
-        plain = rhs.strip("'\"")
+    def _compile_toast_stmt(self, stmt):
         return [
-            assign("v", static_get(view_field, view_desc)),
-            call_stmt(
-                "setText",
-                args=[var("v"), const(plain)],
-                return_type=None,
-                invoke_kind="virtual",
-                owner=view_desc,
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *toast("toast_obj", var("ctx"), stmt.message, stmt.duration),
+        ]
+
+    def _compile_snackbar_stmt(self, stmt):
+        # Framework fallback until Material dependency is bundled.
+        return self._compile_toast_stmt(_StmtToast(stmt.message, stmt.duration))
+
+    def _compile_dialog_stmt(self, stmt):
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign("dlg", new("Landroid/app/AlertDialog$Builder;", args=[var("ctx")])),
+            assign(
+                "dlg",
+                call(
+                    "setTitle",
+                    args=[var("dlg"), const(stmt.title)],
+                    invoke_kind="virtual",
+                    owner="Landroid/app/AlertDialog$Builder;",
+                ),
+            ),
+            assign(
+                "dlg",
+                call(
+                    "setMessage",
+                    args=[var("dlg"), const(stmt.message)],
+                    invoke_kind="virtual",
+                    owner="Landroid/app/AlertDialog$Builder;",
+                ),
+            ),
+            assign(
+                "_dlg_obj",
+                call(
+                    "show",
+                    args=[var("dlg")],
+                    invoke_kind="virtual",
+                    owner="Landroid/app/AlertDialog$Builder;",
+                ),
             ),
         ]
 
-    def _compile_fstring_set_text(self, view_desc, view_field, text):
-        # support one or more {var} placeholders
-        import re
-        parts = []
-        last = 0
-        for m in re.finditer(r"{([^}]+)}", text):
-            if m.start() > last:
-                parts.append(("str", text[last:m.start()]))
-            parts.append(("var", m.group(1).strip()))
-            last = m.end()
-        if last < len(text):
-            parts.append(("str", text[last:]))
-
+    def _compile_format_set_text(self, view_desc, view_field, fmt):
         stmts = [
             assign(
                 "sb",
                 new("Ljava/lang/StringBuilder;", args=[], arg_types=[]),
             )
         ]
-        for kind, value in parts:
-            if kind == "str" and value:
-                stmts.append(
-                    assign(
-                        "sb",
-                        call(
-                            "append",
-                            args=[var("sb"), const(value)],
-                            return_type="Ljava/lang/StringBuilder;",
-                            arg_types=["Ljava/lang/String;"],
-                            invoke_kind="virtual",
-                            owner="Ljava/lang/StringBuilder;",
-                        ),
+        for part in fmt.parts:
+            if isinstance(part, _ExprConst):
+                if part.value:
+                    stmts.append(
+                        assign(
+                            "sb",
+                            call(
+                                "append",
+                                args=[var("sb"), const(part.value)],
+                                return_type="Ljava/lang/StringBuilder;",
+                                arg_types=["Ljava/lang/String;"],
+                                invoke_kind="virtual",
+                                owner="Ljava/lang/StringBuilder;",
+                            ),
+                        )
                     )
-                )
-            elif kind == "var":
-                stmts.append(assign("x", static_get(value, "I")))
+            elif isinstance(part, _ExprSymbol):
+                stmts.append(assign("x", static_get(part.name, "I")))
                 stmts.append(
                     assign(
                         "sb",
@@ -840,6 +1333,255 @@ class _PythonicContext:
         return stmts
 
 
+# -------------------------------
+# AST-based expression builder
+# -------------------------------
+
+class _ExprSymbol:
+    def __init__(self, name):
+        self.name = name
+
+    def __add__(self, other):
+        return _ExprBinary(self, "+", _coerce_expr(other))
+
+    def __sub__(self, other):
+        return _ExprBinary(self, "-", _coerce_expr(other))
+
+    def __lshift__(self, other):
+        return _StmtAssign(self, _coerce_expr(other))
+
+    def set_text(self, value):
+        return _StmtSetText(self, value)
+
+
+class _ExprConst:
+    def __init__(self, value):
+        self.value = value
+
+
+class _ExprBinary:
+    def __init__(self, lhs, op, rhs):
+        self.lhs = lhs
+        self.op = op
+        self.rhs = rhs
+
+
+class _ExprCompare:
+    def __init__(self, lhs, op, rhs):
+        self.lhs = lhs
+        self.op = op
+        self.rhs = rhs
+
+
+class _ExprFormat:
+    def __init__(self, parts):
+        self.parts = parts
+
+
+class _StmtAssign:
+    def __init__(self, target, value):
+        self.target = target
+        self.value = value
+
+
+class _StmtSetText:
+    def __init__(self, view, value):
+        self.view = view
+        self.value = value
+
+
+class _StmtToast:
+    def __init__(self, message, duration=0):
+        self.message = message
+        self.duration = duration
+
+
+class _StmtSnackbar:
+    def __init__(self, message, duration=0):
+        self.message = message
+        self.duration = duration
+
+
+class _StmtSimpleDialog:
+    def __init__(self, title, message):
+        self.title = title
+        self.message = message
+
+
+class _ExprRoot:
+    def __getattr__(self, name):
+        return _ExprSymbol(name)
+
+    def f(self, template, *args):
+        # template with {} placeholders
+        parts = []
+        segments = template.split("{}")
+        for i, seg in enumerate(segments):
+            if seg:
+                parts.append(_ExprConst(seg))
+            if i < len(args):
+                parts.append(args[i])
+        return _ExprFormat(parts)
+
+
+expr = _ExprRoot()
+
+
+def assign_stmt(target, value):
+    return _StmtAssign(target, value)
+
+
+def set_text(view, value):
+    return _StmtSetText(view, value)
+
+
+def _coerce_expr(value):
+    if isinstance(value, (_ExprSymbol, _ExprBinary, _ExprCompare, _ExprFormat, _ExprConst)):
+        return value
+    return _ExprConst(value)
+
+
+def _parse_handler_ast(fn):
+    src = textwrap.dedent(inspect.getsource(fn))
+    tree = ast.parse(src)
+    fn_def = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            fn_def = node
+            break
+    if fn_def is None:
+        raise RuntimeError("Handler must be a function")
+
+    out = []
+    for stmt in fn_def.body:
+        parsed = _parse_stmt(stmt)
+        if parsed is None:
+            continue
+        out.append(parsed)
+    return out
+
+
+def _parse_stmt(stmt):
+    if isinstance(stmt, ast.AugAssign):
+        if not isinstance(stmt.target, ast.Name):
+            raise RuntimeError("Only name targets are supported in +=/-=")
+        target = _ExprSymbol(stmt.target.id)
+        op = _binop_symbol(stmt.op)
+        value = _parse_expr(stmt.value)
+        if not isinstance(value, (_ExprConst, _ExprSymbol)):
+            raise RuntimeError("Only const or name increments are supported")
+        return _StmtAssign(target, _ExprBinary(target, op, value))
+    if isinstance(stmt, ast.Assign):
+        if len(stmt.targets) != 1:
+            raise RuntimeError("Only single-target assignments are supported")
+        target = stmt.targets[0]
+        value = _parse_expr(stmt.value)
+        if isinstance(target, ast.Name):
+            return _StmtAssign(_ExprSymbol(target.id), value)
+        if isinstance(target, ast.Attribute) and target.attr == "text" and isinstance(target.value, ast.Name):
+            return _StmtSetText(_ExprSymbol(target.value.id), value)
+        raise RuntimeError("Unsupported assignment target")
+    if isinstance(stmt, ast.Expr):
+        call = stmt.value
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):
+            fn = call.func.id
+            if fn == "toast":
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("toast requires message")
+                msg = args[0].value if isinstance(args[0], _ExprConst) else None
+                if msg is None:
+                    raise RuntimeError("toast message must be a constant string")
+                duration = 0
+                if len(args) > 1:
+                    if not isinstance(args[1], _ExprConst):
+                        raise RuntimeError("toast duration must be constant")
+                    duration = int(args[1].value)
+                return _StmtToast(msg, duration)
+            if fn == "snackbar":
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("snackbar requires message")
+                msg = args[0].value if isinstance(args[0], _ExprConst) else None
+                if msg is None:
+                    raise RuntimeError("snackbar message must be a constant string")
+                duration = 0
+                if len(args) > 1:
+                    if not isinstance(args[1], _ExprConst):
+                        raise RuntimeError("snackbar duration must be constant")
+                    duration = int(args[1].value)
+                return _StmtSnackbar(msg, duration)
+            if fn == "simple_dialog":
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) < 2:
+                    raise RuntimeError("simple_dialog requires title and message")
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[1], _ExprConst):
+                    raise RuntimeError("simple_dialog args must be constants")
+                return _StmtSimpleDialog(args[0].value, args[1].value)
+        return None
+    if isinstance(stmt, ast.Pass):
+        return None
+    raise RuntimeError(f"Unsupported statement: {ast.dump(stmt)}")
+
+
+def _parse_expr(node):
+    if isinstance(node, ast.Constant):
+        return _ExprConst(node.value)
+    if isinstance(node, ast.Name):
+        return _ExprSymbol(node.id)
+    if isinstance(node, ast.BinOp):
+        lhs = _parse_expr(node.left)
+        rhs = _parse_expr(node.right)
+        if not isinstance(lhs, _ExprSymbol):
+            raise RuntimeError("Only binary ops with a name on the left are supported")
+        if not isinstance(rhs, (_ExprConst, _ExprSymbol)):
+            raise RuntimeError("Only binary ops with a const or name on the right are supported")
+        return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
+    if isinstance(node, ast.Compare):
+        if len(node.ops) != 1 or len(node.comparators) != 1:
+            raise RuntimeError("Only single comparisons are supported")
+        lhs = _parse_expr(node.left)
+        rhs = _parse_expr(node.comparators[0])
+        if not isinstance(lhs, (_ExprSymbol, _ExprConst)) or not isinstance(rhs, (_ExprSymbol, _ExprConst)):
+            raise RuntimeError("Only simple name/const comparisons are supported")
+        return _ExprCompare(lhs, _cmpop_symbol(node.ops[0]), rhs)
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for value in node.values:
+            if isinstance(value, ast.Constant):
+                parts.append(_ExprConst(value.value))
+            elif isinstance(value, ast.FormattedValue):
+                parts.append(_parse_expr(value.value))
+            else:
+                raise RuntimeError("Unsupported f-string part")
+        return _ExprFormat(parts)
+    raise RuntimeError(f"Unsupported expression: {ast.dump(node)}")
+
+
+def _binop_symbol(op):
+    if isinstance(op, ast.Add):
+        return "+"
+    if isinstance(op, ast.Sub):
+        return "-"
+    raise RuntimeError("Only + and - are supported")
+
+
+def _cmpop_symbol(op):
+    if isinstance(op, ast.Eq):
+        return "=="
+    if isinstance(op, ast.NotEq):
+        return "!="
+    if isinstance(op, ast.Lt):
+        return "<"
+    if isinstance(op, ast.LtE):
+        return "<="
+    if isinstance(op, ast.Gt):
+        return ">"
+    if isinstance(op, ast.GtE):
+        return ">="
+    raise RuntimeError("Unsupported comparison operator")
+
+
 def linear_layout(name, ctx, orientation="vertical"):
     """
     Build a LinearLayout and set orientation.
@@ -863,6 +1605,14 @@ def linear_layout(name, ctx, orientation="vertical"):
             owner="Landroid/widget/LinearLayout;",
         ),
     ]
+
+
+def row_layout(name, ctx):
+    return linear_layout(name, ctx, "horizontal")
+
+
+def column_layout(name, ctx):
+    return linear_layout(name, ctx, "vertical")
 
 
 def add_view(parent, child):
@@ -895,6 +1645,17 @@ def gravity(view, value):
     )
 
 
+def _lp_size(value):
+    if isinstance(value, str):
+        key = value.lower().strip()
+        if key in ("match", "match_parent", "fill"):
+            return -1
+        if key in ("wrap", "wrap_content"):
+            return -2
+        raise RuntimeError(f"Unknown layout size: {value}")
+    return int(value)
+
+
 def layout_params(width, height, parent="LinearLayout"):
     if parent == "RelativeLayout":
         desc = "Landroid/widget/RelativeLayout$LayoutParams;"
@@ -904,7 +1665,7 @@ def layout_params(width, height, parent="LinearLayout"):
         desc = "Landroid/widget/LinearLayout$LayoutParams;"
     return new(
         desc,
-        args=[const(width), const(height)],
+        args=[const(_lp_size(width)), const(_lp_size(height))],
     )
 
 
@@ -916,6 +1677,41 @@ def set_layout_params(view, params, owner="Landroid/view/View;"):
         invoke_kind="virtual",
         owner=owner,
     )
+
+
+def set_margins(params, left, top, right, bottom):
+    return call_stmt(
+        "setMargins",
+        args=[params, const(left), const(top), const(right), const(bottom)],
+        return_type=None,
+        arg_types=["I", "I", "I", "I"],
+        invoke_kind="virtual",
+        owner="Landroid/view/ViewGroup$MarginLayoutParams;",
+    )
+
+
+def _parse_color(value, palette):
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        key = value.strip()
+        if key in palette:
+            key = palette[key]
+        if key.startswith("#"):
+            hexstr = key[1:]
+            if len(hexstr) == 6:
+                return int("FF" + hexstr, 16)
+            if len(hexstr) == 8:
+                return int(hexstr, 16)
+        raise RuntimeError(f"Unsupported color: {value}")
+    raise RuntimeError(f"Unsupported color type: {type(value)}")
+
+
+def _float_bits(value):
+    import struct
+    return struct.unpack(">I", struct.pack(">f", float(value)))[0]
 
 
 def relative_layout(name, ctx):
