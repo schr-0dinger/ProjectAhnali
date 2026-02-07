@@ -166,6 +166,10 @@ class _PythonicContext:
             return []
         if raw_value is None:
             return []
+        if meta.supported_kinds is not None:
+            kind = self.view_types.get(view_id)
+            if kind not in meta.supported_kinds:
+                return []
 
         stmts = []
 
@@ -187,10 +191,19 @@ class _PythonicContext:
                     prefix=f"{view_id}_{attr_name}_{side}")
                 stmts.extend(load)
                 args.append(expr)
+        elif meta.value_loader == "dimen_sp_float":
+            key = self._add_dimen_resource(f"{view_id}_{attr_name}", float(raw_value), unit="sp")
+            load, value_expr = self._load_dimen_float_expr(key, ctx_expr=var("ctx"), prefix=f"{view_id}_{attr_name}")
+            stmts.extend(load)
+            args = [var(view_id), value_expr]
 
         else:
             # simple literal
             args = [var(view_id), const(raw_value)]
+
+        if meta.arg_prefix:
+            prefix_args = [const(v) for v in meta.arg_prefix]
+            args = [args[0], *prefix_args, *args[1:]]
 
         owner = meta.owner
 
@@ -1043,13 +1056,13 @@ class _PythonicContext:
             )
 
         if gravity_value is not None:
-                out.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="gravity",
-                        raw_value=gravity_value,
-                    )
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="gravity",
+                    raw_value=gravity_value,
                 )
+            )
 
 
         palette = self.theme_spec.palette
@@ -1111,17 +1124,6 @@ class _PythonicContext:
                 )
             )
 
-        text_like_kinds = {
-            "text",
-            "button",
-            "raised_button",
-            "flat_button",
-            "text_field",
-            "checkbox",
-            "radio",
-            "switch",
-            "popup_button",
-        }
         if txt_color is not None:
             out.extend(
                 self._emit_attr_call(
@@ -1132,20 +1134,12 @@ class _PythonicContext:
             )
 
 
-        if text_size_value is not None and kind in text_like_kinds:
-            # Keep historical semantics: text_size numbers are SP-like values.
-            # Load as PX from resources and call the 2-arg overload with unit=PX.
-            size_key = self._add_dimen_resource(f"{item.id}_text_size", float(text_size_value), unit="sp")
-            size_load, size_expr = self._load_dimen_float_expr(size_key, ctx_expr=var("ctx"), prefix=f"{item.id}_text_size")
-            out.extend(size_load)
-            out.append(
-                call_stmt(
-                    "setTextSize",
-                    args=[var(item.id), const(0), size_expr],
-                    return_type=None,
-                    arg_types=["I", "F"],
-                    invoke_kind="virtual",
-                    owner="Landroid/widget/TextView;",
+        if text_size_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="text_size",
+                    raw_value=text_size_value,
                 )
             )
 
