@@ -25,6 +25,7 @@ def _sanitize_name(name: str) -> str:
 @dataclass
 class AndroidResources:
     strings: dict[str, str] = field(default_factory=dict)
+    string_ids: dict[str, int] = field(default_factory=dict)
 
     def add_string(self, name: str, value: str) -> str:
         key = _sanitize_name(name)
@@ -58,6 +59,23 @@ class AndroidResources:
         strings_path.write_text(self.render_strings_xml(), encoding="utf-8")
         return strings_path
 
+    def ensure_string_id(self, name: str, value: int) -> int:
+        self.string_ids[name] = int(value)
+        return self.string_ids[name]
+
+    def render_stable_ids(self, application_id: str) -> str:
+        lines = []
+        for name in sorted(self.string_ids.keys()):
+            rid = self.string_ids[name]
+            lines.append(f"{application_id}:string/{name} = 0x{rid:08x}")
+        return "\n".join(lines) + ("\n" if lines else "")
+
+    def write_stable_ids(self, out_path: str | Path, application_id: str) -> Path:
+        out_path = Path(out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(self.render_stable_ids(application_id), encoding="utf-8")
+        return out_path
+
 
 def resources_from_mapping(mapping: dict[str, str] | None) -> AndroidResources:
     res = AndroidResources()
@@ -65,4 +83,12 @@ def resources_from_mapping(mapping: dict[str, str] | None) -> AndroidResources:
         return res
     for k, v in mapping.items():
         res.add_string(k, str(v))
+    return res
+
+
+def resources_from_program(program) -> AndroidResources:
+    res = resources_from_mapping(getattr(program, "resources", None))
+    rid_map = getattr(program, "resource_ids", None) or {}
+    for k, v in rid_map.items():
+        res.ensure_string_id(k, int(v))
     return res

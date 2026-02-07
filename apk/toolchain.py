@@ -11,7 +11,7 @@ import zipfile
 
 from alpha_pipeline import alpha_pipeline
 from apk.project import render_manifest
-from apk.resources import AndroidResources, resources_from_mapping
+from apk.resources import AndroidResources, resources_from_mapping, resources_from_program
 from emit.smali_activity import emit_activity_wrapper_smali, emit_click_listener_smali
 
 
@@ -142,7 +142,8 @@ def emit_build_dir_from_program(
     # Emit resources from ProgramIR if present.
     res_mapping = getattr(frontend_ir, "resources", None)
     if res_mapping:
-        resources_from_mapping(res_mapping).write_to_dir(build_dir)
+        res = resources_from_program(frontend_ir)
+        res.write_to_dir(build_dir)
 
     return build_dir
 
@@ -312,6 +313,7 @@ def package_apk_from_dex(
     activity_name: str | None = None,
     activity_class_desc: str | None = None,
     resources: AndroidResources | dict[str, str] | None = None,
+    stable_ids_path: str | Path | None = None,
 ) -> Path:
     """
     Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
@@ -389,6 +391,19 @@ def package_apk_from_dex(
             str(target_sdk),
             "--auto-add-overlay",
         ]
+        auto_stable_ids = None
+        if isinstance(resources, AndroidResources) and resources.string_ids:
+            auto_stable_ids = tmp / "stable_ids.txt"
+            resources.write_stable_ids(auto_stable_ids, application_id)
+
+        if stable_ids_path is None:
+            candidate_ids = out_dir / "stable_ids.txt"
+            if candidate_ids.exists():
+                stable_ids_path = candidate_ids
+            elif auto_stable_ids is not None:
+                stable_ids_path = auto_stable_ids
+        if stable_ids_path is not None:
+            link_cmd.extend(["--stable-ids", str(stable_ids_path)])
         for f in flat_files:
             link_cmd.extend(["-R", str(f)])
         subprocess.run(link_cmd, check=True)
@@ -468,6 +483,7 @@ def build_install_run(
         api=api,
     )
 
+    res_obj = resources_from_program(frontend_ir)
     signed_apk = package_apk_from_dex(
         dex_path,
         out_dir=build_dir,
@@ -479,7 +495,7 @@ def build_install_run(
         keystore_alias=keystore_alias,
         output_apk=output_apk,
         activity_class_desc=wrapper_class_desc,
-        resources=getattr(frontend_ir, "resources", None),
+        resources=res_obj,
     )
 
     adb = _adb_path()

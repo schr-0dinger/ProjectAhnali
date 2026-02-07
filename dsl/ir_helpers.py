@@ -1,0 +1,461 @@
+from ir.expr import BinaryOp, Call, Compare, Const, New, StaticFieldGet, Var
+from ir.field import StaticField
+from ir.method import MethodIR
+from ir.program import ProgramIR
+from ir.stmt import CallStmt, Return, StaticFieldSet, Throw, TryCatch
+from tests.ir_stub import Assign, If, While
+
+from .android.signatures import _CTOR_SIGS, _resolve_signature
+
+
+def program(methods, fields=None, support_classes=None, resources=None, resource_ids=None):
+    return ProgramIR(
+        methods,
+        fields=fields or [],
+        support_classes=support_classes or [],
+        resources=resources or {},
+        resource_ids=resource_ids or {},
+    )
+
+
+def method(name, *, params=None, param_types=None, return_type=None, body=None):
+    return MethodIR(
+        name=name,
+        params=params or [],
+        body=body or [],
+        return_type=return_type,
+        param_types=param_types or [],
+    )
+
+
+def const(value):
+    return Const(value)
+
+
+def var(name):
+    return Var(name)
+
+
+def assign(name, expr):
+    return Assign(name, expr)
+
+
+def call(
+    name,
+    args,
+    *,
+    return_type=None,
+    arg_types=None,
+    invoke_kind="static",
+    owner="LTest;",
+):
+    return_type, arg_types = _resolve_signature(
+        name,
+        args,
+        return_type=return_type,
+        arg_types=arg_types,
+        invoke_kind=invoke_kind,
+        owner=owner,
+    )
+    return Call(
+        name,
+        args=args,
+        return_type=return_type,
+        arg_types=arg_types,
+        invoke_kind=invoke_kind,
+        owner=owner,
+    )
+
+
+def call_stmt(
+    name,
+    args,
+    *,
+    return_type=None,
+    arg_types=None,
+    invoke_kind="static",
+    owner="LTest;",
+):
+    return_type, arg_types = _resolve_signature(
+        name,
+        args,
+        return_type=return_type,
+        arg_types=arg_types,
+        invoke_kind=invoke_kind,
+        owner=owner,
+    )
+    return CallStmt(
+        Call(
+            name,
+            args=args,
+            return_type=return_type,
+            arg_types=arg_types,
+            invoke_kind=invoke_kind,
+            owner=owner,
+        )
+    )
+
+
+def ret(value=None):
+    return Return(value)
+
+
+def new(class_desc, args=None, arg_types=None):
+    if arg_types is None:
+        arg_types = _CTOR_SIGS.get(class_desc)
+    return New(class_desc, args=args or [], arg_types=arg_types or [])
+
+
+def static_field(name, desc, access="private static"):
+    return StaticField(name, desc, access=access)
+
+
+def static_get(name, desc, owner="LTest;"):
+    from ir.expr import StaticFieldGet
+    return StaticFieldGet(owner, name, desc)
+
+
+def static_set(name, desc, value, owner="LTest;"):
+    return StaticFieldSet(owner, name, desc, value)
+
+
+def field_get(obj, owner, name, desc):
+    from ir.expr import FieldGet
+    return FieldGet(obj, name, desc, owner)
+
+
+def field_set(obj, owner, name, desc, value):
+    from ir.stmt import FieldSet
+    return FieldSet(obj, name, desc, owner, value)
+
+
+def array_get(array, index, elem_desc):
+    from ir.expr import ArrayGet
+    return ArrayGet(array, index, elem_desc)
+
+
+def array_set(array, index, elem_desc, value):
+    from ir.stmt import ArraySet
+    return ArraySet(array, index, elem_desc, value)
+
+
+def check_cast(value, desc):
+    from ir.expr import CheckCast
+    return CheckCast(value, desc)
+
+
+def hello_world_activity(message="Hello, Anali!"):
+    """
+    Compiler-driven HelloWorld Activity:
+    - new TextView(ctx)
+    - setText(message)
+    - setContentView(view)
+    """
+    from ir.types import AnaliType
+
+    return program([
+        method(
+            "main",
+            params=["ctx"],
+            param_types=["Landroid/app/Activity;"],
+            return_type=None,
+            body=[
+                *text_view("tv", var("ctx"), message),
+                set_content_view(var("ctx"), var("tv")),
+                ret(),
+            ],
+        )
+    ])
+
+
+def text_view(name, ctx, text):
+    """
+    Build a TextView and set text.
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/TextView;",
+                args=[ctx],
+            ),
+        ),
+        call_stmt(
+            "setText",
+            args=[var(name), const(text)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/TextView;",
+        ),
+    ]
+
+
+def button_view(name, ctx, text):
+    """
+    Build a Button and set text.
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/Button;",
+                args=[ctx],
+            ),
+        ),
+        call_stmt(
+            "setText",
+            args=[var(name), const(text)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/Button;",
+        ),
+    ]
+
+
+def set_content_view(ctx, view):
+    return call_stmt(
+        "setContentView",
+        args=[ctx, view],
+        return_type=None,
+        invoke_kind="virtual",
+        owner="Landroid/app/Activity;",
+    )
+
+
+def toast(name, ctx, text, duration=0):
+    """
+    Create and show a Toast. duration: 0 (SHORT) or 1 (LONG).
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            name,
+            call(
+                "makeText",
+                args=[ctx, const(text), const(duration)],
+                invoke_kind="static",
+                owner="Landroid/widget/Toast;",
+            ),
+        ),
+        call_stmt(
+            "show",
+            args=[var(name)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/Toast;",
+        ),
+    ]
+
+
+def log_d(tag, msg, name="_log"):
+    """
+    Log.d(tag, msg) with return value ignored.
+    Returns a list with a single assign to a dummy name.
+    """
+    return [
+        assign(
+            name,
+            call(
+                "d",
+                args=[const(tag), const(msg)],
+                invoke_kind="static",
+                owner="Landroid/util/Log;",
+            ),
+        )
+    ]
+
+
+def linear_layout(name, ctx, orientation="vertical"):
+    """
+    Build a LinearLayout and set orientation.
+    orientation: "vertical" or "horizontal"
+    Returns a list of statements.
+    """
+    orient = 1 if orientation == "vertical" else 0
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/LinearLayout;",
+                args=[ctx],
+            ),
+        ),
+        call_stmt(
+            "setOrientation",
+            args=[var(name), const(orient)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/LinearLayout;",
+        ),
+    ]
+
+
+def row_layout(name, ctx):
+    return linear_layout(name, ctx, "horizontal")
+
+
+def column_layout(name, ctx):
+    return linear_layout(name, ctx, "vertical")
+
+
+def add_view(parent, child):
+    return call_stmt(
+        "addView",
+        args=[parent, child],
+        return_type=None,
+        invoke_kind="virtual",
+        owner="Landroid/view/ViewGroup;",
+    )
+
+
+def padding(view, left, top, right, bottom):
+    return call_stmt(
+        "setPadding",
+        args=[view, const(left), const(top), const(right), const(bottom)],
+        return_type=None,
+        invoke_kind="virtual",
+        owner="Landroid/view/View;",
+    )
+
+
+def gravity(view, value):
+    return call_stmt(
+        "setGravity",
+        args=[view, const(value)],
+        return_type=None,
+        invoke_kind="virtual",
+        owner="Landroid/widget/TextView;",
+    )
+
+
+def _lp_size(value):
+    if isinstance(value, str):
+        key = value.lower().strip()
+        if key in ("match", "match_parent", "fill"):
+            return -1
+        if key in ("wrap", "wrap_content"):
+            return -2
+        raise RuntimeError(f"Unknown layout size: {value}")
+    return int(value)
+
+
+def layout_params(width, height, parent="LinearLayout"):
+    if parent == "RelativeLayout":
+        desc = "Landroid/widget/RelativeLayout$LayoutParams;"
+    elif parent == "ConstraintLayout":
+        desc = "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;"
+    else:
+        desc = "Landroid/widget/LinearLayout$LayoutParams;"
+    return new(
+        desc,
+        args=[const(_lp_size(width)), const(_lp_size(height))],
+    )
+
+
+def set_layout_params(view, params, owner="Landroid/view/View;"):
+    return call_stmt(
+        "setLayoutParams",
+        args=[view, params],
+        return_type=None,
+        invoke_kind="virtual",
+        owner=owner,
+    )
+
+
+def set_margins(params, left, top, right, bottom):
+    return call_stmt(
+        "setMargins",
+        args=[params, const(left), const(top), const(right), const(bottom)],
+        return_type=None,
+        arg_types=["I", "I", "I", "I"],
+        invoke_kind="virtual",
+        owner="Landroid/view/ViewGroup$MarginLayoutParams;",
+    )
+
+
+def relative_layout(name, ctx):
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/RelativeLayout;",
+                args=[ctx],
+            ),
+        )
+    ]
+
+
+def constraint_layout(name, ctx):
+    return [
+        assign(
+            name,
+            new(
+                "Landroidx/constraintlayout/widget/ConstraintLayout;",
+                args=[ctx],
+            ),
+        )
+    ]
+
+
+def click_handler(name, body):
+    """
+    Define a click handler method with signature:
+    static name(Landroid/view/View;)V
+    """
+    return method(
+        name,
+        params=["view"],
+        param_types=["Landroid/view/View;"],
+        return_type=None,
+        body=body,
+    )
+
+
+def on_click_view(view, handler_name="onClick", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliClickListener;"):
+    """
+    Wire a click listener that calls LTest;->handler_name(View)V.
+    Requires support class AnaliClickListener to be emitted by toolchain.
+    Returns a list of statements.
+    """
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnClickListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/view/View;",
+        ),
+    ]
+
+
+def if_(cond, then, else_):
+    return If(cond, then, else_)
+
+
+def while_(cond, body):
+    return While(cond, body)
+
+
+def binary(op, left, right):
+    return BinaryOp(op, left, right)
+
+
+def compare(op, left, right):
+    return Compare(op, left, right)
+
+
+def try_catch(try_body, except_body=None, exception_type=None, handlers=None):
+    return TryCatch(try_body, except_body, exception_type, handlers)
+
+
+def throw(value):
+    return Throw(value)

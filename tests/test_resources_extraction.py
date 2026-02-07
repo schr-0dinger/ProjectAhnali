@@ -1,5 +1,5 @@
 from alpha_pipeline import alpha_pipeline
-from dsl.app import app, activity, ui
+from dsl.app import app, activity, ui, on_click
 from dsl.widgets import AppBar, Button, Text, TextField
 
 
@@ -23,7 +23,61 @@ def test_widget_strings_extracted_to_resources_and_loaded_via_getstring():
     assert "Type something" in values
 
     smali = alpha_pipeline(prog)["smali_class"]
-    assert "Landroid/content/res/Resources;->getIdentifier" in smali
     assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
+    assert "Landroid/content/res/Resources;->getIdentifier" not in smali
     assert '"Hello"' not in smali
     assert '"Go"' not in smali
+
+
+@on_click("go")
+def _go():
+    toast("Saved")
+    simple_dialog("Done", "Saved successfully")
+
+
+def test_click_handler_literals_are_resource_backed():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(Button("Go", id="go")),
+            _go,
+        )
+    ).build()
+
+    values = set(prog.resources.values())
+    assert "Saved" in values
+    assert "Done" in values
+    assert "Saved successfully" in values
+    assert prog.resource_ids
+
+    smali = alpha_pipeline(prog)["smali_class"]
+    assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
+    assert '"Saved"' not in smali
+    assert '"Done"' not in smali
+
+
+@on_click("go")
+def _fmt():
+    label.text = f"Count: {count} step {step}"
+
+
+def test_fstring_static_fragments_are_resource_backed():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                Text("x", id="label"),
+                Button("Go", id="go"),
+            ),
+            _fmt,
+        )
+    ).build()
+
+    values = set(prog.resources.values())
+    assert "Count: " in values
+    assert " step " in values
+
+    smali = alpha_pipeline(prog)["smali_class"]
+    assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
+    assert '"Count: "' not in smali
+    assert '" step "' not in smali
