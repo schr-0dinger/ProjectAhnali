@@ -30,7 +30,7 @@ from dsl.ir_helpers import (
     click_handler,
     compare,
     const,
-    gravity,
+    field_set,
     if_,
     layout_params,
     linear_layout,
@@ -38,6 +38,7 @@ from dsl.ir_helpers import (
     new,
     on_click_view,
     program,
+    primitive_cast,
     ret,
     set_content_view,
     set_layout_params,
@@ -89,6 +90,7 @@ class _PythonicContext:
         self._resource_styles = {}
         self._resource_style_ids = {}
         self._local_vars = set()
+        self._container_orientation = {self.root_id: "vertical"}
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -168,6 +170,7 @@ class _PythonicContext:
         self._resource_dimen_ids = {}
         self._resource_styles = {}
         self._resource_style_ids = {}
+        self._container_orientation = {self.root_id: "vertical"}
         self._build_theme_resources()
 
         body.extend(linear_layout(self.root_id, var("ctx"), "vertical"))
@@ -552,7 +555,7 @@ class _PythonicContext:
                             method_name="setTitle",
                         )
                     )
-                    body.extend(self._apply_view_layout(item))
+                    body.extend(self._apply_view_layout(item, parent_id))
                     body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIFloatingActionButton):
                 item.id = self._register_view(item.id, "fab")
@@ -562,25 +565,25 @@ class _PythonicContext:
                     ]
                 )
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIRaisedButton):
                 item.id = self._register_view(item.id, "raised_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIFlatButton):
                 item.id = self._register_view(item.id, "flat_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIIconButton):
                 item.id = self._register_view(item.id, "icon_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UITextField):
                 item.id = self._register_view(item.id, "text_field")
@@ -605,7 +608,7 @@ class _PythonicContext:
                             owner="Landroid/widget/EditText;",
                         )
                     )
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UICheckbox):
                 item.id = self._register_view(item.id, "checkbox")
@@ -623,7 +626,7 @@ class _PythonicContext:
                     ]
                 )
                 body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/CheckBox;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIRadio):
                 item.id = self._register_view(item.id, "radio")
@@ -641,7 +644,7 @@ class _PythonicContext:
                     ]
                 )
                 body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/RadioButton;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UISwitch):
                 item.id = self._register_view(item.id, "switch")
@@ -659,7 +662,7 @@ class _PythonicContext:
                     ]
                 )
                 body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/Switch;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UISlider):
                 item.id = self._register_view(item.id, "slider")
@@ -684,7 +687,7 @@ class _PythonicContext:
                         ),
                     ]
                 )
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIDropdownButton):
                 item.id = self._register_view(item.id, "dropdown")
@@ -733,63 +736,52 @@ class _PythonicContext:
                         ),
                     ]
                 )
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIButtonBar):
                 item.id = self._register_view(item.id, "row")
+                self._container_orientation[item.id] = "horizontal"
                 body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
-                if item.gravity is None:
-                    body.append(
-                        call_stmt(
-                            "setGravity",
-                            args=[var(item.id), const(1)],
-                            return_type=None,
-                            invoke_kind="virtual",
-                            owner="Landroid/widget/LinearLayout;",
-                        )
-                    )
-                body.extend(self._apply_view_layout(item))
+                if item.weight_sum is not None:
+                    body.extend(self._emit_linear_weight_sum(item.id, item.weight_sum))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._build_ui_items(item.id, item.items))
             elif isinstance(item, _UIPopupMenuButton):
                 item.id = self._register_view(item.id, "popup_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIRow):
                 item.id = self._register_view(item.id, "row")
+                self._container_orientation[item.id] = "horizontal"
                 body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
-                if item.gravity is None:
-                    body.append(
-                        call_stmt(
-                            "setGravity",
-                            args=[var(item.id), const(1)],
-                            return_type=None,
-                            invoke_kind="virtual",
-                            owner="Landroid/widget/LinearLayout;",
-                        )
-                    )
-                body.extend(self._apply_view_layout(item))
+                if item.weight_sum is not None:
+                    body.extend(self._emit_linear_weight_sum(item.id, item.weight_sum))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._build_ui_items(item.id, item.items))
             elif isinstance(item, _UIColumn):
                 item.id = self._register_view(item.id, "column")
+                self._container_orientation[item.id] = "vertical"
                 body.extend(linear_layout(item.id, var("ctx"), "vertical"))
-                body.extend(self._apply_view_layout(item))
+                if item.weight_sum is not None:
+                    body.extend(self._emit_linear_weight_sum(item.id, item.weight_sum))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._build_ui_items(item.id, item.items))
             elif isinstance(item, _UIText):
                 item.id = self._register_view(item.id, "text")
                 body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/TextView;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIButton):
                 item.id = self._register_view(item.id, "button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-                body.extend(self._apply_view_layout(item))
+                body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
             else:
                 raise RuntimeError(f"Unsupported UI item: {item}")
@@ -830,7 +822,48 @@ class _PythonicContext:
             return self._compile_dialog_stmt(stmt)
         raise RuntimeError(f"Unsupported statement: {stmt}")
 
-    def _apply_view_layout(self, item):
+    def _float_const_expr(self, value, prefix="f"):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise RuntimeError(f"Expected numeric float value, got {value!r}")
+        raw_name = self._next_tmp(f"{prefix}_i")
+        flt_name = self._next_tmp(prefix)
+        iv = int(value)
+        if float(iv) != float(value):
+            raise RuntimeError(f"Only integer-compatible float values are currently supported, got {value!r}")
+        return [
+            assign(raw_name, const(iv)),
+            assign(flt_name, primitive_cast(var(raw_name), "I", "F")),
+        ], var(flt_name)
+
+    def _emit_linear_weight_sum(self, view_id, weight_sum):
+        setup, weight_expr = self._float_const_expr(weight_sum, prefix=f"{view_id}_wsum")
+        return [
+            *setup,
+            call_stmt(
+                "setWeightSum",
+                args=[var(view_id), weight_expr],
+                return_type=None,
+                arg_types=["F"],
+                invoke_kind="virtual",
+                owner="Landroid/widget/LinearLayout;",
+            ),
+        ]
+
+    def _container_gravity(self, item, align_value, arrangement_value):
+        h_map = {"start": 3, "left": 3, "center": 1, "end": 5, "right": 5}
+        v_map = {"top": 48, "center": 16, "bottom": 80}
+        is_row = isinstance(item, _UIRow)
+        if is_row:
+            h = h_map.get(str(arrangement_value).lower(), 3) if arrangement_value is not None else None
+            v = v_map.get(str(align_value).lower(), 16) if align_value is not None else None
+        else:
+            h = h_map.get(str(align_value).lower(), 3) if align_value is not None else None
+            v = v_map.get(str(arrangement_value).lower(), 48) if arrangement_value is not None else None
+        if h is None and v is None:
+            return None
+        return (h or 0) | (v or 0)
+
+    def _apply_view_layout(self, item, parent_id):
         out = []
         theme_style = Style()
         if isinstance(item, _UIText):
@@ -847,6 +880,13 @@ class _PythonicContext:
 
         padding_value = item.padding if item.padding is not None else style.padding
         gravity_value = item.gravity if item.gravity is not None else style.gravity
+        align_value = getattr(item, "align", None) if getattr(item, "align", None) is not None else getattr(style, "align", None)
+        arrangement_value = (
+            getattr(item, "arrangement", None)
+            if getattr(item, "arrangement", None) is not None
+            else getattr(style, "arrangement", None)
+        )
+        weight_value = getattr(item, "weight", None) if getattr(item, "weight", None) is not None else getattr(style, "weight", None)
         layout_value = item.layout if item.layout is not None else style.layout
         width_value = getattr(item, "width", None)
         if width_value is None:
@@ -863,6 +903,8 @@ class _PythonicContext:
         padding_value = self._normalize_box_spacing(padding_value, "padding")
         margin_value = self._normalize_box_spacing(margin_value, "margin")
         layout_value = self._normalize_layout_value(layout_value)
+        if gravity_value is None and isinstance(item, (_UIRow, _UIColumn)):
+            gravity_value = self._container_gravity(item, align_value, arrangement_value)
         if width_value is not None or height_value is not None:
             base_layout = layout_value if layout_value is not None else ("wrap", "wrap")
             layout_value = (
@@ -871,6 +913,13 @@ class _PythonicContext:
             )
         if layout_value is None and isinstance(item, _UIRow):
             layout_value = ("match_parent", "wrap")
+        if weight_value is not None and layout_value is None:
+            parent_orientation = self._container_orientation.get(parent_id, "vertical")
+            if parent_orientation == "horizontal":
+                layout_value = (0, "wrap")
+            else:
+                layout_value = ("match_parent", 0)
+        gravity_value = self._normalize_gravity(gravity_value)
 
         if padding_value is not None:
             left, top, right, bottom = padding_value
@@ -896,7 +945,16 @@ class _PythonicContext:
                 )
             )
         if gravity_value is not None:
-            out.append(gravity(var(item.id), gravity_value))
+            gravity_owner = "Landroid/widget/LinearLayout;" if isinstance(item, (_UIRow, _UIColumn)) else "Landroid/widget/TextView;"
+            out.append(
+                call_stmt(
+                    "setGravity",
+                    args=[var(item.id), const(gravity_value)],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner=gravity_owner,
+                )
+            )
 
         palette = self.theme_spec.palette
         bg_color = _parse_color(background_value, palette)
@@ -1012,10 +1070,22 @@ class _PythonicContext:
                 )
             )
 
-        if layout_value or margin_value:
+        if layout_value or margin_value or weight_value is not None:
             width, height = layout_value if layout_value else ("wrap", "wrap")
             lp_name = f"lp_{item.id}"
             out.append(assign(lp_name, layout_params(width, height, parent="LinearLayout")))
+            if weight_value is not None:
+                weight_setup, weight_expr = self._float_const_expr(weight_value, prefix=f"{item.id}_w")
+                out.extend(weight_setup)
+                out.append(
+                    field_set(
+                        var(lp_name),
+                        "Landroid/widget/LinearLayout$LayoutParams;",
+                        "weight",
+                        "F",
+                        weight_expr,
+                    )
+                )
             if margin_value:
                 ml, mt, mr, mb = margin_value
                 ml_key = self._add_dimen_resource(f"{item.id}_margin_l", ml)
@@ -1069,6 +1139,30 @@ class _PythonicContext:
             return (value[0], value[1])
         raise RuntimeError(
             f"Invalid layout value {value!r}. Expected \"match\"/\"wrap\" or (width, height)."
+        )
+
+    def _normalize_gravity(self, value):
+        if value is None:
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            key = value.lower().strip()
+            mapping = {
+                "center": 17,
+                "center_horizontal": 1,
+                "center_vertical": 16,
+                "start": 3,
+                "left": 3,
+                "end": 5,
+                "right": 5,
+                "top": 48,
+                "bottom": 80,
+            }
+            if key in mapping:
+                return mapping[key]
+        raise RuntimeError(
+            f"Invalid gravity value {value!r}. Expected int or one of center/start/end/top/bottom variants."
         )
 
     def _compile_assign_stmt(self, stmt):
@@ -1275,7 +1369,9 @@ class _PythonicContext:
         ]
 
     def _compile_snackbar_stmt(self, stmt):
-        # Framework fallback until Material dependency is bundled.
+        # Runtime-safe default: do not reference Material classes unless they are
+        # bundled into the APK. Direct references can trigger verifier/linker
+        # failures on devices without the dependency.
         return self._compile_toast_stmt(_StmtToast(stmt.message, stmt.duration))
 
     def _compile_dialog_stmt(self, stmt):

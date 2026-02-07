@@ -40,7 +40,8 @@ def decrement():
 
 @on_click("fab")
 def fab_click():
-    toast("FAB clicked!")
+    # toast("FAB clicked!")
+    snackbar("hello") # Fallback into toast.. TODO snackbar - needs Material.
 
 
 @on_click("menu")

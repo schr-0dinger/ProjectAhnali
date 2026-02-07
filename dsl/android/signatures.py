@@ -149,6 +149,7 @@ _METHOD_SIGS = {
     ("Landroid/widget/Button;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
     ("Landroid/app/Activity;", "setContentView", "virtual"): (None, ["Landroid/view/View;"]),
     ("Landroid/app/Activity;", "setTitle", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
+    ("Landroid/app/Activity;", "findViewById", "virtual"): ("Landroid/view/View;", ["I"]),
     ("Landroid/content/Context;", "getPackageName", "virtual"): ("Ljava/lang/String;", []),
     ("Landroid/content/Context;", "getResources", "virtual"): ("Landroid/content/res/Resources;", []),
     ("Landroid/content/res/Resources;", "getIdentifier", "virtual"): (
@@ -164,10 +165,16 @@ _METHOD_SIGS = {
         ["Landroid/content/Context;", "Ljava/lang/CharSequence;", "I"],
     ),
     ("Landroid/widget/Toast;", "show", "virtual"): (None, []),
+    ("Lcom/google/android/material/snackbar/Snackbar;", "make", "static"): (
+        "Lcom/google/android/material/snackbar/Snackbar;",
+        ["Landroid/view/View;", "Ljava/lang/CharSequence;", "I"],
+    ),
+    ("Lcom/google/android/material/snackbar/Snackbar;", "show", "virtual"): (None, []),
     ("Landroid/widget/LinearLayout;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/widget/ScrollView;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/widget/LinearLayout;", "setOrientation", "virtual"): (None, ["I"]),
     ("Landroid/widget/LinearLayout;", "setGravity", "virtual"): (None, ["I"]),
+    ("Landroid/widget/LinearLayout;", "setWeightSum", "virtual"): (None, ["F"]),
     ("Landroid/view/ViewGroup;", "addView", "virtual"): (None, ["Landroid/view/View;"]),
     ("Landroid/view/View;", "setOnClickListener", "virtual"): (
         None,

@@ -112,3 +112,22 @@ def test_widget_style_values_extracted_to_typed_resources():
     assert "Landroid/content/res/Resources;->getDimensionPixelSize(I)I" in smali
     assert "Landroid/content/res/Resources;->getDimension(I)F" in smali
     assert "Landroid/widget/TextView;->setTextSize(IF)V" in smali
+
+
+@on_click("go")
+def _snack():
+    snackbar("Saved")
+
+
+def test_snackbar_uses_material_when_available_with_toast_fallback():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(Button("Go", id="go")),
+            _snack,
+        )
+    ).build()
+
+    smali = alpha_pipeline(prog)["smali_class"]
+    assert "Landroid/widget/Toast;->makeText" in smali
+    assert "Lcom/google/android/material/snackbar/Snackbar;->make" not in smali

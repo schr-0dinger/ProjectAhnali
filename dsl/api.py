@@ -40,12 +40,20 @@ from .widgets import (
     Theme,
     button,
     column,
+    dp,
+    fill,
+    max_height,
+    max_width,
     presets as presets_widget,
     row,
+    size,
     state as state_widget,
     style as style_widget,
     text,
     theme as theme_widget,
+    wrap,
+    wrap_height,
+    wrap_width,
 )
 
 

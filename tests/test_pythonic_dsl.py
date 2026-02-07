@@ -1,5 +1,6 @@
 from alpha_pipeline import alpha_pipeline
 from dsl.app import app, activity, state, ui, text, button, row, on_click
+from dsl.widgets import fill, size, wrap
 import pytest
 
 
@@ -101,6 +102,25 @@ def test_pythonic_dsl_width_height_widget_params():
     assert [a.value for a in layout_new.args] == [-1, 48]
 
 
+def test_pythonic_dsl_explicit_sizing_helpers():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("A", id="a", layout=size(fill(), wrap())),
+            ),
+        )
+    )
+    frontend = prog.build()
+    main = next(m for m in frontend.methods if m.name == "main")
+    layout_new = next(
+        s.expr
+        for s in main.body
+        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
+    )
+    assert [a.value for a in layout_new.args] == [-1, -2]
+
+
 def test_pythonic_dsl_max_width_alias():
     prog = app(
         activity(
@@ -119,6 +139,28 @@ def test_pythonic_dsl_max_width_alias():
         if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
     )
     assert [a.value for a in layout_new.args] == [-1, -2]
+
+
+def test_pythonic_dsl_row_weight_and_alignment():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                row(
+                    button("A", id="a", weight=1),
+                    button("B", id="b", weight=1),
+                    id="r",
+                    align="center",
+                    arrangement="center",
+                    weight_sum=2,
+                ),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/widget/LinearLayout;->setWeightSum(F)V" in smali
+    assert "Landroid/widget/LinearLayout$LayoutParams;->weight:F" in smali
+    assert "Landroid/widget/LinearLayout;->setGravity(I)V" in smali
 
 
 def test_pythonic_dsl_duplicate_widget_ids_fail():

@@ -6,6 +6,22 @@ wrap_width = "wrap"
 wrap_height = "wrap"
 
 
+def fill():
+    return "match_parent"
+
+
+def wrap():
+    return "wrap"
+
+
+def size(width, height):
+    return (width, height)
+
+
+def dp(value):
+    return int(value)
+
+
 class _UIText:
     def __init__(
         self,
@@ -18,6 +34,7 @@ class _UIText:
         padding=None,
         margin=None,
         gravity=None,
+        weight=None,
         text_color=None,
         background=None,
         text_size=None,
@@ -32,6 +49,7 @@ class _UIText:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.weight = weight
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
@@ -51,6 +69,7 @@ class _UIButton:
         padding=None,
         margin=None,
         gravity=None,
+        weight=None,
         text_color=None,
         background=None,
         text_size=None,
@@ -65,6 +84,7 @@ class _UIButton:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.weight = weight
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
@@ -83,6 +103,9 @@ class _UIRow:
         padding=None,
         margin=None,
         gravity=None,
+        align=None,
+        arrangement=None,
+        weight_sum=None,
         background=None,
         radius=None,
         style=None,
@@ -95,6 +118,9 @@ class _UIRow:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.align = align
+        self.arrangement = arrangement
+        self.weight_sum = weight_sum
         self.background = background
         self.radius = radius
         self.style = style
@@ -111,6 +137,9 @@ class _UIColumn:
         padding=None,
         margin=None,
         gravity=None,
+        align=None,
+        arrangement=None,
+        weight_sum=None,
         background=None,
         radius=None,
         style=None,
@@ -123,6 +152,9 @@ class _UIColumn:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.align = align
+        self.arrangement = arrangement
+        self.weight_sum = weight_sum
         self.background = background
         self.radius = radius
         self.style = style
@@ -249,6 +281,10 @@ class Style:
         padding=None,
         margin=None,
         gravity=None,
+        weight=None,
+        align=None,
+        arrangement=None,
+        weight_sum=None,
         text_color=None,
         background=None,
         text_size=None,
@@ -260,6 +296,10 @@ class Style:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.weight = weight
+        self.align = align
+        self.arrangement = arrangement
+        self.weight_sum = weight_sum
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
@@ -275,6 +315,10 @@ class Style:
             padding=override.padding if override.padding is not None else self.padding,
             margin=override.margin if override.margin is not None else self.margin,
             gravity=override.gravity if override.gravity is not None else self.gravity,
+            weight=override.weight if override.weight is not None else self.weight,
+            align=override.align if override.align is not None else self.align,
+            arrangement=override.arrangement if override.arrangement is not None else self.arrangement,
+            weight_sum=override.weight_sum if override.weight_sum is not None else self.weight_sum,
             text_color=override.text_color if override.text_color is not None else self.text_color,
             background=override.background if override.background is not None else self.background,
             text_size=override.text_size if override.text_size is not None else self.text_size,
@@ -431,6 +475,7 @@ def text(
     padding=None,
     margin=None,
     gravity=None,
+    weight=None,
     text_color=None,
     background=None,
     text_size=None,
@@ -446,6 +491,7 @@ def text(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        weight=weight,
         text_color=text_color,
         background=background,
         text_size=text_size,
@@ -464,6 +510,7 @@ def button(
     padding=None,
     margin=None,
     gravity=None,
+    weight=None,
     text_color=None,
     background=None,
     text_size=None,
@@ -479,6 +526,7 @@ def button(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        weight=weight,
         text_color=text_color,
         background=background,
         text_size=text_size,
@@ -496,6 +544,9 @@ def row(
     padding=None,
     margin=None,
     gravity=None,
+    align=None,
+    arrangement=None,
+    weight_sum=None,
     background=None,
     radius=None,
     style=None,
@@ -509,6 +560,9 @@ def row(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        align=align,
+        arrangement=arrangement,
+        weight_sum=weight_sum,
         background=background,
         radius=radius,
         style=style,
@@ -524,6 +578,9 @@ def column(
     padding=None,
     margin=None,
     gravity=None,
+    align=None,
+    arrangement=None,
+    weight_sum=None,
     background=None,
     radius=None,
     style=None,
@@ -537,6 +594,9 @@ def column(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        align=align,
+        arrangement=arrangement,
+        weight_sum=weight_sum,
         background=background,
         radius=radius,
         style=style,
