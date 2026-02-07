@@ -1,5 +1,10 @@
 # dsl/widgets.py
 
+max_width = "max_width"
+max_height = "max_height"
+wrap_width = "wrap"
+wrap_height = "wrap"
+
 
 class _UIText:
     def __init__(
@@ -8,6 +13,8 @@ class _UIText:
         *,
         id="label",
         layout=None,
+        width=None,
+        height=None,
         padding=None,
         margin=None,
         gravity=None,
@@ -19,7 +26,9 @@ class _UIText:
     ):
         self.id = id
         self.text = text
-        self.layout = layout
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height)
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
@@ -37,6 +46,8 @@ class _UIButton:
         *,
         id="button",
         layout=None,
+        width=None,
+        height=None,
         padding=None,
         margin=None,
         gravity=None,
@@ -48,7 +59,9 @@ class _UIButton:
     ):
         self.id = id
         self.text = text
-        self.layout = layout
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height)
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
@@ -65,6 +78,8 @@ class _UIRow:
         *items,
         id="row",
         layout=None,
+        width=None,
+        height=None,
         padding=None,
         margin=None,
         gravity=None,
@@ -74,7 +89,9 @@ class _UIRow:
     ):
         self.id = id
         self.items = items
-        self.layout = layout
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height, default=("match_parent", "wrap"))
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
@@ -89,6 +106,8 @@ class _UIColumn:
         *items,
         id="column",
         layout=None,
+        width=None,
+        height=None,
         padding=None,
         margin=None,
         gravity=None,
@@ -98,7 +117,9 @@ class _UIColumn:
     ):
         self.id = id
         self.items = items
-        self.layout = layout
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height)
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
@@ -108,53 +129,67 @@ class _UIColumn:
 
 
 class _UIAppBar(_UIText):
-    def __init__(self, text, *, inline=False, **kwargs):
+    def __init__(self, text, *, id="appbar", inline=False, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.inline = inline
 
 
 class _UIFloatingActionButton(_UIButton):
-    pass
+    def __init__(self, text="+", *, id="fab", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(text, **kwargs)
 
 
 class _UIRaisedButton(_UIButton):
-    pass
+    def __init__(self, text, *, id="raised_btn", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(text, **kwargs)
 
 
 class _UIFlatButton(_UIButton):
-    pass
+    def __init__(self, text, *, id="flat_btn", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(text, **kwargs)
 
 
 class _UIIconButton(_UIButton):
-    pass
+    def __init__(self, text="*", *, id="icon_btn", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(text, **kwargs)
 
 
 class _UITextField(_UIText):
-    def __init__(self, text="", *, hint=None, **kwargs):
+    def __init__(self, text="", *, id="input", hint=None, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.hint = hint
 
 
 class _UICheckbox(_UIText):
-    def __init__(self, text="", *, checked=False, **kwargs):
+    def __init__(self, text="", *, id="checkbox", checked=False, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.checked = checked
 
 
 class _UIRadio(_UIText):
-    def __init__(self, text="", *, checked=False, **kwargs):
+    def __init__(self, text="", *, id="radio", checked=False, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.checked = checked
 
 
 class _UISwitch(_UIText):
-    def __init__(self, text="", *, checked=False, **kwargs):
+    def __init__(self, text="", *, id="switch", checked=False, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.checked = checked
 
 
 class _UISlider(_UIButton):
-    def __init__(self, *, value=0, min=0, max=100, **kwargs):
+    def __init__(self, *, id="slider", value=0, min=0, max=100, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__("", **kwargs)
         self.value = value
         self.min = min
@@ -162,17 +197,21 @@ class _UISlider(_UIButton):
 
 
 class _UIDropdownButton(_UIButton):
-    def __init__(self, *, items=None, **kwargs):
+    def __init__(self, *, id="dropdown", items=None, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__("", **kwargs)
         self.items = items or []
 
 
 class _UIButtonBar(_UIRow):
-    pass
+    def __init__(self, *items, id="button_bar", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(*items, **kwargs)
 
 
 class _UIPopupMenuButton(_UIButton):
-    def __init__(self, text="Menu", *, items=None, **kwargs):
+    def __init__(self, text="Menu", *, id="popup", items=None, **kwargs):
+        kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.items = items or []
 
@@ -205,6 +244,8 @@ class Style:
         self,
         *,
         layout=None,
+        width=None,
+        height=None,
         padding=None,
         margin=None,
         gravity=None,
@@ -214,6 +255,8 @@ class Style:
         radius=None,
     ):
         self.layout = layout
+        self.width = width
+        self.height = height
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
@@ -227,6 +270,8 @@ class Style:
             return self
         return Style(
             layout=override.layout if override.layout is not None else self.layout,
+            width=override.width if override.width is not None else self.width,
+            height=override.height if override.height is not None else self.height,
             padding=override.padding if override.padding is not None else self.padding,
             margin=override.margin if override.margin is not None else self.margin,
             gravity=override.gravity if override.gravity is not None else self.gravity,
@@ -359,11 +404,30 @@ class PopupMenuButton(_UIPopupMenuButton):
     pass
 
 
+def _layout_with_size(layout, width, height, default=None):
+    if layout is None:
+        layout = default
+    if width is None and height is None:
+        return layout
+    if layout is None:
+        base = ("wrap", "wrap")
+    elif isinstance(layout, str):
+        base = (layout, layout)
+    else:
+        base = (layout[0], layout[1])
+    return (
+        width if width is not None else base[0],
+        height if height is not None else base[1],
+    )
+
+
 def text(
     text,
     *,
     id="label",
     layout=None,
+    width=None,
+    height=None,
     padding=None,
     margin=None,
     gravity=None,
@@ -377,6 +441,8 @@ def text(
         text,
         id=id,
         layout=layout,
+        width=width,
+        height=height,
         padding=padding,
         margin=margin,
         gravity=gravity,
@@ -393,6 +459,8 @@ def button(
     *,
     id="button",
     layout=None,
+    width=None,
+    height=None,
     padding=None,
     margin=None,
     gravity=None,
@@ -406,6 +474,8 @@ def button(
         text,
         id=id,
         layout=layout,
+        width=width,
+        height=height,
         padding=padding,
         margin=margin,
         gravity=gravity,
@@ -421,6 +491,8 @@ def row(
     *items,
     id="row",
     layout=None,
+    width=None,
+    height=None,
     padding=None,
     margin=None,
     gravity=None,
@@ -432,6 +504,8 @@ def row(
         *items,
         id=id,
         layout=layout,
+        width=width,
+        height=height,
         padding=padding,
         margin=margin,
         gravity=gravity,
@@ -445,6 +519,8 @@ def column(
     *items,
     id="column",
     layout=None,
+    width=None,
+    height=None,
     padding=None,
     margin=None,
     gravity=None,
@@ -456,6 +532,8 @@ def column(
         *items,
         id=id,
         layout=layout,
+        width=width,
+        height=height,
         padding=padding,
         margin=margin,
         gravity=gravity,

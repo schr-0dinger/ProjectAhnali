@@ -1,5 +1,6 @@
 from dsl.app import app, activity, ui, on_click, run
 from dsl.widgets import (
+    max_width,
     State,
     Text,
     Button,
@@ -83,27 +84,30 @@ app_spec = app(
                 "Counter demo",
                 id="label",
                 padding=(16, 16, 16, 16),
-                style=presets().MutedText(text_size=20),
+                style=presets().MutedText(text_size=30),
             ),
 
             # ── Buttons Row ────────────────────────
             Row(
-                Button("+", id="inc", style=presets().PrimaryButton()),
-                Button("-", id="dec", style=presets().DangerButton()),
+                Button("+", id="inc", style=presets().PrimaryButton()), # when max width is given, this button takes entire row - leaving the dec button not visible
+                Button("-", id="dec", style=presets().DangerButton(), width = max_width), # When only max_width is given to dec button, both buttons are visible in the row, but dec button spans more than inc button along the row
+            
                 id="counter_row",
+                width=max_width,
                 margin=(0, 0, 0, 16),
                 style=presets().Card(padding=(8, 8, 8, 8)),
             ),
 
             # ── Button Variants ────────────────────
+            Row(
             Column(
-                RaisedButton("Raised", id="raised", style=presets().PrimaryButton()),
+                RaisedButton("Raised", id="raised", style=presets().PrimaryButton(), width=max_width),
                 FlatButton("Flat"),
-                IconButton("★"),
+                IconButton("★", width=max_width),
                 id="button_variants",
                 margin=(0, 0, 0, 16),
                 style=presets().Card(padding=(12, 12, 12, 12)),
-            ),
+            )),
 
             # ── TextField ──────────────────────────
             TextField(
@@ -114,6 +118,7 @@ app_spec = app(
             ),
 
             # ── Check / Radio / Switch ─────────────
+            Row(
             Column(
                 Checkbox("Check me", checked=True),
                 Radio("Select me", checked=False),
@@ -121,7 +126,7 @@ app_spec = app(
                 id="toggles",
                 margin=(0, 0, 0, 16),
                 style=presets().Card(padding=(12, 12, 12, 12)),
-            ),
+            )),
 
             # ── Slider ─────────────────────────────
             Slider(
@@ -158,6 +163,7 @@ app_spec = app(
             # ── Footer Text ────────────────────────
             Text(
                 "Snackbar + Toast demo",
+                id="footer_text",
                 text_color="muted",
                 style=presets().MutedText(text_size=14),
             ),

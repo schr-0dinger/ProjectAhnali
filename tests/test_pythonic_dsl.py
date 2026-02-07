@@ -1,5 +1,5 @@
 from alpha_pipeline import alpha_pipeline
-from dsl.app import app, activity, state, ui, text, button, on_click
+from dsl.app import app, activity, state, ui, text, button, row, on_click
 import pytest
 
 
@@ -56,6 +56,100 @@ def test_pythonic_dsl_widget_style_attrs_lowering():
     smali = alpha_pipeline(prog.build())["smali_class"]
     assert "Landroid/view/View;->setPadding(IIII)V" in smali
     assert "Landroid/view/ViewGroup$MarginLayoutParams;->setMargins(IIII)V" in smali
+
+
+def test_pythonic_dsl_row_defaults_to_match_parent_width():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                row(
+                    button("Tap", id="inc"),
+                    id="button_row",
+                ),
+            ),
+        )
+    )
+
+    frontend = prog.build()
+    main = next(m for m in frontend.methods if m.name == "main")
+    layout_new = next(
+        s.expr
+        for s in main.body
+        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
+    )
+    assert [a.value for a in layout_new.args] == [-1, -2]
+
+
+def test_pythonic_dsl_width_height_widget_params():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Sized", id="sized", width="match_parent", height=48),
+            ),
+        )
+    )
+
+    frontend = prog.build()
+    main = next(m for m in frontend.methods if m.name == "main")
+    layout_new = next(
+        s.expr
+        for s in main.body
+        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
+    )
+    assert [a.value for a in layout_new.args] == [-1, 48]
+
+
+def test_pythonic_dsl_max_width_alias():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Alias", id="alias", width="max_width", height="wrap"),
+            ),
+        )
+    )
+
+    frontend = prog.build()
+    main = next(m for m in frontend.methods if m.name == "main")
+    layout_new = next(
+        s.expr
+        for s in main.body
+        if getattr(getattr(s, "expr", None), "class_desc", "").endswith("LinearLayout$LayoutParams;")
+    )
+    assert [a.value for a in layout_new.args] == [-1, -2]
+
+
+def test_pythonic_dsl_duplicate_widget_ids_fail():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("One", id="dup"),
+                text("Two", id="dup"),
+            ),
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="Duplicate widget id 'dup'"):
+        prog.build()
+
+
+def test_pythonic_dsl_root_is_scrollable():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("One", id="t1"),
+                text("Two", id="t2"),
+            ),
+        )
+    )
+
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/widget/ScrollView;" in smali
+    assert "Landroid/view/ViewGroup;->addView(Landroid/view/View;)V" in smali
 
 
 @on_click("inc_flow")

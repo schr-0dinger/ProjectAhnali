@@ -67,6 +67,43 @@ def test_emit_build_dir_writes_resources_from_program(tmp_path):
     assert '<string name="greeting">Hello</string>' in xml
 
 
+def test_emit_build_dir_writes_typed_resources_from_program(tmp_path):
+    prog = program(
+        [
+            method(
+                "main",
+                return_type=None,
+                body=[assign("x", const(1)), ret()],
+            )
+        ],
+        resources={"app_name": "Widget Zoo"},
+        resource_colors={"primary": "#FF112233"},
+        resource_dimens={"pad_md": "16dp"},
+        resource_styles={"AppTheme": {"android:colorPrimary": "@color/primary"}},
+    )
+
+    out_dir = emit_build_dir_from_program(
+        prog,
+        out_dir=tmp_path,
+        class_name="LTest;",
+    )
+
+    colors_path = out_dir / "res" / "values" / "colors.xml"
+    dimens_path = out_dir / "res" / "values" / "dimens.xml"
+    styles_path = out_dir / "res" / "values" / "styles.xml"
+
+    assert colors_path.exists()
+    assert dimens_path.exists()
+    assert styles_path.exists()
+
+    colors_xml = colors_path.read_text(encoding="utf-8")
+    dimens_xml = dimens_path.read_text(encoding="utf-8")
+    styles_xml = styles_path.read_text(encoding="utf-8")
+    assert '<color name="primary">#FF112233</color>' in colors_xml
+    assert '<dimen name="pad_md">16dp</dimen>' in dimens_xml
+    assert '<style name="apptheme">' in styles_xml
+
+
 def test_manifest_defaults_to_app_name_resource_label():
     manifest = render_manifest()
     assert 'android:label="@string/app_name"' in manifest

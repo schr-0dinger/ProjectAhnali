@@ -56,6 +56,9 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
     candidates = entry if isinstance(entry, list) else [entry]
     user_arg_types = list(arg_types) if arg_types is not None else None
     inferred_arg_types = [_infer_expr_type(a) for a in args]
+    inferred_norm = _normalize_sig_args(inferred_arg_types, invoke_kind, len(args))
+    if inferred_norm is None:
+        inferred_norm = inferred_arg_types
 
     best = None
     best_score = -1
@@ -66,16 +69,18 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
             continue
 
         provided = user_arg_types
+        check_types = inferred_norm
         if provided is not None:
             pnorm = _normalize_sig_args(provided, invoke_kind, len(args))
             if pnorm is None:
                 continue
             if any(p is not None and p != s for p, s in zip(pnorm, norm)):
                 continue
+            check_types = pnorm
 
         score = 0
         compatible = True
-        for inf, s in zip(inferred_arg_types, norm):
+        for inf, s in zip(check_types, norm):
             if _type_compatible(inf, s):
                 if inf == s:
                     score += 2
@@ -151,12 +156,16 @@ _METHOD_SIGS = {
         ["Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;"],
     ),
     ("Landroid/content/res/Resources;", "getString", "virtual"): ("Ljava/lang/String;", ["I"]),
+    ("Landroid/content/res/Resources;", "getColor", "virtual"): ("I", ["I"]),
+    ("Landroid/content/res/Resources;", "getDimensionPixelSize", "virtual"): ("I", ["I"]),
+    ("Landroid/content/res/Resources;", "getDimension", "virtual"): ("F", ["I"]),
     ("Landroid/widget/Toast;", "makeText", "static"): (
         "Landroid/widget/Toast;",
         ["Landroid/content/Context;", "Ljava/lang/CharSequence;", "I"],
     ),
     ("Landroid/widget/Toast;", "show", "virtual"): (None, []),
     ("Landroid/widget/LinearLayout;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
+    ("Landroid/widget/ScrollView;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/widget/LinearLayout;", "setOrientation", "virtual"): (None, ["I"]),
     ("Landroid/widget/LinearLayout;", "setGravity", "virtual"): (None, ["I"]),
     ("Landroid/view/ViewGroup;", "addView", "virtual"): (None, ["Landroid/view/View;"]),
@@ -169,6 +178,10 @@ _METHOD_SIGS = {
         ["I", "I", "I", "I"],
     ),
     ("Landroid/widget/TextView;", "setGravity", "virtual"): (None, ["I"]),
+    ("Landroid/widget/TextView;", "setTextSize", "virtual"): [
+        (None, ["F"]),
+        (None, ["I", "F"]),
+    ],
     ("Landroid/view/View;", "setLayoutParams", "virtual"): (
         None,
         ["Landroid/view/ViewGroup$LayoutParams;"],
@@ -208,6 +221,7 @@ _CTOR_SIGS = {
     "Landroid/widget/Toolbar;": ["Landroid/content/Context;"],
     "Landroid/app/AlertDialog$Builder;": ["Landroid/content/Context;"],
     "Landroid/widget/LinearLayout;": ["Landroid/content/Context;"],
+    "Landroid/widget/ScrollView;": ["Landroid/content/Context;"],
     "Lcom/anali/preview/AnaliClickListener;": [],
     "Ljava/lang/StringBuilder;": [],
     "Landroid/widget/RelativeLayout;": ["Landroid/content/Context;"],

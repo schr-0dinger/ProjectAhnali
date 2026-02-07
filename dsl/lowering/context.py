@@ -4,7 +4,7 @@ from typing import Any
 
 from ir.expr import Var
 
-from dsl.android.resources import _float_bits, _parse_color
+from dsl.android.resources import _parse_color
 from dsl.ast import (
     _ExprBinary,
     _ExprBoolOp,
@@ -37,12 +37,10 @@ from dsl.ir_helpers import (
     method,
     new,
     on_click_view,
-    padding,
     program,
     ret,
     set_content_view,
     set_layout_params,
-    set_margins,
     static_field,
     static_get,
     static_set,
@@ -84,6 +82,12 @@ class _PythonicContext:
         self._tmp_counter = 0
         self._resources = {}
         self._resource_ids = {}
+        self._resource_colors = {}
+        self._resource_color_ids = {}
+        self._resource_dimens = {}
+        self._resource_dimen_ids = {}
+        self._resource_styles = {}
+        self._resource_style_ids = {}
         self._local_vars = set()
 
     def _view_desc(self, kind):
@@ -94,7 +98,7 @@ class _PythonicContext:
         if kind == "app_bar":
             return "Landroid/widget/Toolbar;"
         if kind == "fab":
-            return "Landroid/widget/ImageButton;"
+            return "Landroid/widget/Button;"
         if kind == "raised_button":
             return "Landroid/widget/Button;"
         if kind == "flat_button":
@@ -117,11 +121,54 @@ class _PythonicContext:
             return "Landroid/widget/Button;"
         return "Landroid/view/View;"
 
+    def _register_view(self, item_id: str, kind: str):
+        default_like_ids = {
+            "label",
+            "button",
+            "row",
+            "column",
+            "appbar",
+            "fab",
+            "raised_btn",
+            "flat_btn",
+            "icon_btn",
+            "input",
+            "checkbox",
+            "radio",
+            "switch",
+            "slider",
+            "dropdown",
+            "button_bar",
+            "popup",
+        }
+        resolved_id = item_id
+        if resolved_id in self.view_types:
+            if resolved_id in default_like_ids:
+                i = 2
+                while f"{resolved_id}_{i}" in self.view_types:
+                    i += 1
+                resolved_id = f"{resolved_id}_{i}"
+            else:
+                raise RuntimeError(
+                    f"Duplicate widget id '{item_id}'. "
+                    "Widget ids must be unique; provide explicit id=... for repeated widget types."
+                )
+        self.view_types[resolved_id] = kind
+        self.view_fields[resolved_id] = f"view_{resolved_id}"
+        return resolved_id
+
     def build_program(self, click_specs, resources=None):
         body = []
         fields = []
         self._resources = dict(resources or {})
         self._resource_ids = {}
+        self._resource_colors = {}
+        self._resource_color_ids = {}
+        self._resource_dimens = {}
+        self._resource_dimen_ids = {}
+        self._resource_styles = {}
+        self._resource_style_ids = {}
+        self._build_theme_resources()
 
         body.extend(linear_layout(self.root_id, var("ctx"), "vertical"))
 
@@ -183,7 +230,9 @@ class _PythonicContext:
                 return_type=None,
                 body=[
                     *body,
-                    set_content_view(var("ctx"), var(self.root_id)),
+                    assign("_scroll_root", new("Landroid/widget/ScrollView;", args=[var("ctx")])),
+                    add_view(var("_scroll_root"), var(self.root_id)),
+                    set_content_view(var("ctx"), var("_scroll_root")),
                     ret(),
                 ],
             )
@@ -198,7 +247,39 @@ class _PythonicContext:
             support_classes=support_classes,
             resources=self._resources,
             resource_ids=self._resource_ids,
+            resource_colors=self._resource_colors,
+            resource_color_ids=self._resource_color_ids,
+            resource_dimens=self._resource_dimens,
+            resource_dimen_ids=self._resource_dimen_ids,
+            resource_styles=self._resource_styles,
+            resource_style_ids=self._resource_style_ids,
         )
+
+    def _build_theme_resources(self):
+        palette = self.theme_spec.palette or {}
+        if not palette:
+            return
+        style_items = {}
+        primary = palette.get("primary")
+        on_primary = palette.get("on_primary")
+        accent = palette.get("accent", primary)
+        if primary is not None:
+            argb = _parse_color(primary, {})
+            if argb is not None:
+                ckey = self._add_color_resource("theme_primary", argb)
+                style_items["android:colorPrimary"] = f"@color/{ckey}"
+        if on_primary is not None:
+            argb = _parse_color(on_primary, {})
+            if argb is not None:
+                ckey = self._add_color_resource("theme_on_primary", argb)
+                style_items["android:textColorPrimary"] = f"@color/{ckey}"
+        if accent is not None:
+            argb = _parse_color(accent, {})
+            if argb is not None:
+                ckey = self._add_color_resource("theme_accent", argb)
+                style_items["android:colorAccent"] = f"@color/{ckey}"
+        if style_items:
+            self._add_style_resource("AppTheme", style_items)
 
     def _resource_key(self, base: str, value: str = "") -> str:
         key = []
@@ -232,6 +313,32 @@ class _PythonicContext:
         self._resources[key] = str(value)
         if key not in self._resource_ids:
             self._resource_ids[key] = 0x7F010000 + len(self._resource_ids)
+        return key
+
+    def _add_color_resource(self, name_hint: str, argb: int) -> str:
+        key = self._resource_key(name_hint, f"{argb:08X}")
+        self._resource_colors[key] = f"#{argb & 0xFFFFFFFF:08X}"
+        if key not in self._resource_color_ids:
+            self._resource_color_ids[key] = 0x7F020000 + len(self._resource_color_ids)
+        return key
+
+    def _add_dimen_resource(self, name_hint: str, value: int | float, unit: str = "px") -> str:
+        normalized = float(value) if isinstance(value, float) else int(value)
+        key = self._resource_key(name_hint, f"{normalized}:{unit}")
+        if isinstance(normalized, float):
+            dimen_value = f"{normalized:g}{unit}"
+        else:
+            dimen_value = f"{int(normalized)}{unit}"
+        self._resource_dimens[key] = dimen_value
+        if key not in self._resource_dimen_ids:
+            self._resource_dimen_ids[key] = 0x7F030000 + len(self._resource_dimen_ids)
+        return key
+
+    def _add_style_resource(self, name_hint: str, items: dict[str, str]) -> str:
+        key = self._resource_key(name_hint, str(sorted(items.items())))
+        self._resource_styles[key] = dict(items)
+        if key not in self._resource_style_ids:
+            self._resource_style_ids[key] = 0x7F040000 + len(self._resource_style_ids)
         return key
 
     def _load_string_expr(self, res_name: str, *, ctx_expr=None, prefix="str"):
@@ -273,6 +380,120 @@ class _PythonicContext:
         )
         return stmts, var(sval)
 
+    def _load_color_expr(self, res_name: str, *, ctx_expr=None, prefix="color"):
+        p = self._next_tmp(prefix)
+        ctx_name = f"{p}_ctx"
+        res_obj = f"{p}_res"
+        cval = f"{p}_val"
+        stmts = []
+        if ctx_expr is None:
+            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
+        if not isinstance(ctx_expr, Var):
+            stmts.append(assign(ctx_name, ctx_expr))
+            ctx_expr = var(ctx_name)
+        rid_value = self._resource_color_ids.get(res_name)
+        if rid_value is None:
+            raise RuntimeError(f"Missing color id for '{res_name}'")
+        stmts.extend(
+            [
+                assign(
+                    res_obj,
+                    call(
+                        "getResources",
+                        args=[ctx_expr],
+                        invoke_kind="virtual",
+                        owner="Landroid/content/Context;",
+                    ),
+                ),
+                assign(
+                    cval,
+                    call(
+                        "getColor",
+                        args=[var(res_obj), const(rid_value)],
+                        invoke_kind="virtual",
+                        owner="Landroid/content/res/Resources;",
+                    ),
+                ),
+            ]
+        )
+        return stmts, var(cval)
+
+    def _load_dimen_px_expr(self, res_name: str, *, ctx_expr=None, prefix="dimen"):
+        p = self._next_tmp(prefix)
+        ctx_name = f"{p}_ctx"
+        res_obj = f"{p}_res"
+        dval = f"{p}_val"
+        stmts = []
+        if ctx_expr is None:
+            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
+        if not isinstance(ctx_expr, Var):
+            stmts.append(assign(ctx_name, ctx_expr))
+            ctx_expr = var(ctx_name)
+        rid_value = self._resource_dimen_ids.get(res_name)
+        if rid_value is None:
+            raise RuntimeError(f"Missing dimen id for '{res_name}'")
+        stmts.extend(
+            [
+                assign(
+                    res_obj,
+                    call(
+                        "getResources",
+                        args=[ctx_expr],
+                        invoke_kind="virtual",
+                        owner="Landroid/content/Context;",
+                    ),
+                ),
+                assign(
+                    dval,
+                    call(
+                        "getDimensionPixelSize",
+                        args=[var(res_obj), const(rid_value)],
+                        invoke_kind="virtual",
+                        owner="Landroid/content/res/Resources;",
+                    ),
+                ),
+            ]
+        )
+        return stmts, var(dval)
+
+    def _load_dimen_float_expr(self, res_name: str, *, ctx_expr=None, prefix="dimenf"):
+        p = self._next_tmp(prefix)
+        ctx_name = f"{p}_ctx"
+        res_obj = f"{p}_res"
+        dval = f"{p}_val"
+        stmts = []
+        if ctx_expr is None:
+            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
+        if not isinstance(ctx_expr, Var):
+            stmts.append(assign(ctx_name, ctx_expr))
+            ctx_expr = var(ctx_name)
+        rid_value = self._resource_dimen_ids.get(res_name)
+        if rid_value is None:
+            raise RuntimeError(f"Missing dimen id for '{res_name}'")
+        stmts.extend(
+            [
+                assign(
+                    res_obj,
+                    call(
+                        "getResources",
+                        args=[ctx_expr],
+                        invoke_kind="virtual",
+                        owner="Landroid/content/Context;",
+                    ),
+                ),
+                assign(
+                    dval,
+                    call(
+                        "getDimension",
+                        args=[var(res_obj), const(rid_value)],
+                        invoke_kind="virtual",
+                        owner="Landroid/content/res/Resources;",
+                    ),
+                ),
+            ]
+        )
+        return stmts, var(dval)
+
     def _set_text_from_resource(
         self,
         view_name: str,
@@ -300,7 +521,8 @@ class _PythonicContext:
         body = []
         for item in items:
             if isinstance(item, _UIAppBar):
-                self.view_types[item.id] = "app_bar"
+                if item.inline:
+                    item.id = self._register_view(item.id, "app_bar")
                 title_key = self._add_string_resource("app_name", item.text)
                 title_load, title_expr = self._load_string_expr(title_key, ctx_expr=var("ctx"), prefix="app_name")
                 body.extend(title_load)
@@ -315,7 +537,6 @@ class _PythonicContext:
                 )
                 # Default behavior is title-only to avoid duplicated bars.
                 if item.inline:
-                    self.view_fields[item.id] = f"view_{item.id}"
                     body.extend(
                         [
                             assign(item.id, new("Landroid/widget/Toolbar;", args=[var("ctx")])),
@@ -334,46 +555,35 @@ class _PythonicContext:
                     body.extend(self._apply_view_layout(item))
                     body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIFloatingActionButton):
-                self.view_types[item.id] = "fab"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "fab")
                 body.extend(
                     [
-                        assign(item.id, new("Landroid/widget/ImageButton;", args=[var("ctx")])),
-                        call_stmt(
-                            "setContentDescription",
-                            args=[var(item.id), const(item.text)],
-                            return_type=None,
-                            invoke_kind="virtual",
-                            owner="Landroid/view/View;",
-                        ),
+                        assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")])),
                     ]
                 )
+                body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIRaisedButton):
-                self.view_types[item.id] = "raised_button"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "raised_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIFlatButton):
-                self.view_types[item.id] = "flat_button"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "flat_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIIconButton):
-                self.view_types[item.id] = "icon_button"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "icon_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UITextField):
-                self.view_types[item.id] = "text_field"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "text_field")
                 if item.layout is None:
                     item.layout = ("match_parent", "wrap")
                 body.extend(
@@ -398,8 +608,7 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UICheckbox):
-                self.view_types[item.id] = "checkbox"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "checkbox")
                 body.extend(
                     [
                         assign(item.id, new("Landroid/widget/CheckBox;", args=[var("ctx")])),
@@ -417,8 +626,7 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIRadio):
-                self.view_types[item.id] = "radio"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "radio")
                 body.extend(
                     [
                         assign(item.id, new("Landroid/widget/RadioButton;", args=[var("ctx")])),
@@ -436,8 +644,7 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UISwitch):
-                self.view_types[item.id] = "switch"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "switch")
                 body.extend(
                     [
                         assign(item.id, new("Landroid/widget/Switch;", args=[var("ctx")])),
@@ -455,8 +662,7 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UISlider):
-                self.view_types[item.id] = "slider"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "slider")
                 if item.layout is None:
                     item.layout = ("match_parent", "wrap")
                 body.extend(
@@ -481,8 +687,7 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIDropdownButton):
-                self.view_types[item.id] = "dropdown"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "dropdown")
                 if item.layout is None:
                     item.layout = ("wrap", "wrap")
                 body.extend(
@@ -531,8 +736,7 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIButtonBar):
-                self.view_types[item.id] = "row"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "row")
                 body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
                 if item.gravity is None:
                     body.append(
@@ -548,15 +752,13 @@ class _PythonicContext:
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._build_ui_items(item.id, item.items))
             elif isinstance(item, _UIPopupMenuButton):
-                self.view_types[item.id] = "popup_button"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "popup_button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIRow):
-                self.view_types[item.id] = "row"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "row")
                 body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
                 if item.gravity is None:
                     body.append(
@@ -572,22 +774,19 @@ class _PythonicContext:
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._build_ui_items(item.id, item.items))
             elif isinstance(item, _UIColumn):
-                self.view_types[item.id] = "column"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "column")
                 body.extend(linear_layout(item.id, var("ctx"), "vertical"))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._build_ui_items(item.id, item.items))
             elif isinstance(item, _UIText):
-                self.view_types[item.id] = "text"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "text")
                 body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/TextView;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
                 body.append(add_view(var(parent_id), var(item.id)))
             elif isinstance(item, _UIButton):
-                self.view_types[item.id] = "button"
-                self.view_fields[item.id] = f"view_{item.id}"
+                item.id = self._register_view(item.id, "button")
                 body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
                 body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
                 body.extend(self._apply_view_layout(item))
@@ -649,6 +848,12 @@ class _PythonicContext:
         padding_value = item.padding if item.padding is not None else style.padding
         gravity_value = item.gravity if item.gravity is not None else style.gravity
         layout_value = item.layout if item.layout is not None else style.layout
+        width_value = getattr(item, "width", None)
+        if width_value is None:
+            width_value = getattr(style, "width", None)
+        height_value = getattr(item, "height", None)
+        if height_value is None:
+            height_value = getattr(style, "height", None)
         margin_value = item.margin if item.margin is not None else style.margin
         text_color_value = item.text_color if getattr(item, "text_color", None) is not None else style.text_color
         background_value = item.background if getattr(item, "background", None) is not None else style.background
@@ -658,10 +863,38 @@ class _PythonicContext:
         padding_value = self._normalize_box_spacing(padding_value, "padding")
         margin_value = self._normalize_box_spacing(margin_value, "margin")
         layout_value = self._normalize_layout_value(layout_value)
+        if width_value is not None or height_value is not None:
+            base_layout = layout_value if layout_value is not None else ("wrap", "wrap")
+            layout_value = (
+                width_value if width_value is not None else base_layout[0],
+                height_value if height_value is not None else base_layout[1],
+            )
+        if layout_value is None and isinstance(item, _UIRow):
+            layout_value = ("match_parent", "wrap")
 
         if padding_value is not None:
             left, top, right, bottom = padding_value
-            out.append(padding(var(item.id), left, top, right, bottom))
+            l_key = self._add_dimen_resource(f"{item.id}_pad_l", left)
+            t_key = self._add_dimen_resource(f"{item.id}_pad_t", top)
+            r_key = self._add_dimen_resource(f"{item.id}_pad_r", right)
+            b_key = self._add_dimen_resource(f"{item.id}_pad_b", bottom)
+            l_load, l_expr = self._load_dimen_px_expr(l_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_l")
+            t_load, t_expr = self._load_dimen_px_expr(t_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_t")
+            r_load, r_expr = self._load_dimen_px_expr(r_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_r")
+            b_load, b_expr = self._load_dimen_px_expr(b_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_b")
+            out.extend(l_load)
+            out.extend(t_load)
+            out.extend(r_load)
+            out.extend(b_load)
+            out.append(
+                call_stmt(
+                    "setPadding",
+                    args=[var(item.id), l_expr, t_expr, r_expr, b_expr],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
         if gravity_value is not None:
             out.append(gravity(var(item.id), gravity_value))
 
@@ -672,11 +905,17 @@ class _PythonicContext:
 
         if bg_color is not None and radius_value is not None:
             bg_name = f"bg_{item.id}"
+            color_key = self._add_color_resource(f"{item.id}_bg", bg_color)
+            color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{item.id}_bg")
+            radius_key = self._add_dimen_resource(f"{item.id}_radius", float(radius_value), unit="px")
+            radius_load, radius_expr = self._load_dimen_float_expr(radius_key, ctx_expr=var("ctx"), prefix=f"{item.id}_radius")
+            out.extend(color_load)
+            out.extend(radius_load)
             out.append(assign(bg_name, new("Landroid/graphics/drawable/GradientDrawable;", args=[])))
             out.append(
                 call_stmt(
                     "setColor",
-                    args=[var(bg_name), const(bg_color)],
+                    args=[var(bg_name), color_expr],
                     return_type=None,
                     arg_types=["I"],
                     invoke_kind="virtual",
@@ -686,7 +925,7 @@ class _PythonicContext:
             out.append(
                 call_stmt(
                     "setCornerRadius",
-                    args=[var(bg_name), const(_float_bits(radius_value))],
+                    args=[var(bg_name), radius_expr],
                     return_type=None,
                     arg_types=["F"],
                     invoke_kind="virtual",
@@ -704,10 +943,13 @@ class _PythonicContext:
                 )
             )
         elif bg_color is not None:
+            color_key = self._add_color_resource(f"{item.id}_bg", bg_color)
+            color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{item.id}_bg")
+            out.extend(color_load)
             out.append(
                 call_stmt(
                     "setBackgroundColor",
-                    args=[var(item.id), const(bg_color)],
+                    args=[var(item.id), color_expr],
                     return_type=None,
                     arg_types=["I"],
                     invoke_kind="virtual",
@@ -727,11 +969,14 @@ class _PythonicContext:
             "popup_button",
         }
         if txt_color is not None:
+            txt_key = self._add_color_resource(f"{item.id}_text_color", txt_color)
+            txt_load, txt_expr = self._load_color_expr(txt_key, ctx_expr=var("ctx"), prefix=f"{item.id}_text_color")
+            out.extend(txt_load)
             if kind == "app_bar":
                 out.append(
                     call_stmt(
                         "setTitleTextColor",
-                        args=[var(item.id), const(txt_color)],
+                        args=[var(item.id), txt_expr],
                         return_type=None,
                         arg_types=["I"],
                         invoke_kind="virtual",
@@ -742,7 +987,7 @@ class _PythonicContext:
                 out.append(
                     call_stmt(
                         "setTextColor",
-                        args=[var(item.id), const(txt_color)],
+                        args=[var(item.id), txt_expr],
                         return_type=None,
                         arg_types=["I"],
                         invoke_kind="virtual",
@@ -751,12 +996,17 @@ class _PythonicContext:
                 )
 
         if text_size_value is not None and kind in text_like_kinds:
+            # Keep historical semantics: text_size numbers are SP-like values.
+            # Load as PX from resources and call the 2-arg overload with unit=PX.
+            size_key = self._add_dimen_resource(f"{item.id}_text_size", float(text_size_value), unit="sp")
+            size_load, size_expr = self._load_dimen_float_expr(size_key, ctx_expr=var("ctx"), prefix=f"{item.id}_text_size")
+            out.extend(size_load)
             out.append(
                 call_stmt(
                     "setTextSize",
-                    args=[var(item.id), const(_float_bits(text_size_value))],
+                    args=[var(item.id), const(0), size_expr],
                     return_type=None,
-                    arg_types=["F"],
+                    arg_types=["I", "F"],
                     invoke_kind="virtual",
                     owner="Landroid/widget/TextView;",
                 )
@@ -768,7 +1018,28 @@ class _PythonicContext:
             out.append(assign(lp_name, layout_params(width, height, parent="LinearLayout")))
             if margin_value:
                 ml, mt, mr, mb = margin_value
-                out.append(set_margins(var(lp_name), ml, mt, mr, mb))
+                ml_key = self._add_dimen_resource(f"{item.id}_margin_l", ml)
+                mt_key = self._add_dimen_resource(f"{item.id}_margin_t", mt)
+                mr_key = self._add_dimen_resource(f"{item.id}_margin_r", mr)
+                mb_key = self._add_dimen_resource(f"{item.id}_margin_b", mb)
+                ml_load, ml_expr = self._load_dimen_px_expr(ml_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_l")
+                mt_load, mt_expr = self._load_dimen_px_expr(mt_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_t")
+                mr_load, mr_expr = self._load_dimen_px_expr(mr_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_r")
+                mb_load, mb_expr = self._load_dimen_px_expr(mb_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_b")
+                out.extend(ml_load)
+                out.extend(mt_load)
+                out.extend(mr_load)
+                out.extend(mb_load)
+                out.append(
+                    call_stmt(
+                        "setMargins",
+                        args=[var(lp_name), ml_expr, mt_expr, mr_expr, mb_expr],
+                        return_type=None,
+                        arg_types=["I", "I", "I", "I"],
+                        invoke_kind="virtual",
+                        owner="Landroid/view/ViewGroup$MarginLayoutParams;",
+                    )
+                )
             out.append(set_layout_params(var(item.id), var(lp_name)))
         return out
 

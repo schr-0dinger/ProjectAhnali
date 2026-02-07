@@ -82,3 +82,33 @@ def test_fstring_static_fragments_are_resource_backed():
     assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
     assert '"Count: "' not in smali
     assert '" step "' not in smali
+
+
+def test_widget_style_values_extracted_to_typed_resources():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                Text(
+                    "Styled",
+                    id="label",
+                    text_color="#112233",
+                    background="#FFEEDDCC",
+                    text_size=18,
+                    padding=12,
+                    margin=8,
+                    radius=10,
+                ),
+            ),
+        )
+    ).build()
+
+    assert prog.resource_colors
+    assert prog.resource_dimens
+    assert any(v.endswith("px") or v.endswith("sp") for v in prog.resource_dimens.values())
+
+    smali = alpha_pipeline(prog)["smali_class"]
+    assert "Landroid/content/res/Resources;->getColor(I)I" in smali
+    assert "Landroid/content/res/Resources;->getDimensionPixelSize(I)I" in smali
+    assert "Landroid/content/res/Resources;->getDimension(I)F" in smali
+    assert "Landroid/widget/TextView;->setTextSize(IF)V" in smali

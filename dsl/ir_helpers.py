@@ -8,13 +8,31 @@ from tests.ir_stub import Assign, If, While
 from .android.signatures import _CTOR_SIGS, _resolve_signature
 
 
-def program(methods, fields=None, support_classes=None, resources=None, resource_ids=None):
+def program(
+    methods,
+    fields=None,
+    support_classes=None,
+    resources=None,
+    resource_ids=None,
+    resource_colors=None,
+    resource_color_ids=None,
+    resource_dimens=None,
+    resource_dimen_ids=None,
+    resource_styles=None,
+    resource_style_ids=None,
+):
     return ProgramIR(
         methods,
         fields=fields or [],
         support_classes=support_classes or [],
         resources=resources or {},
         resource_ids=resource_ids or {},
+        resource_colors=resource_colors or {},
+        resource_color_ids=resource_color_ids or {},
+        resource_dimens=resource_dimens or {},
+        resource_dimen_ids=resource_dimen_ids or {},
+        resource_styles=resource_styles or {},
+        resource_style_ids=resource_style_ids or {},
     )
 
 
@@ -341,7 +359,7 @@ def gravity(view, value):
 def _lp_size(value):
     if isinstance(value, str):
         key = value.lower().strip()
-        if key in ("match", "match_parent", "fill"):
+        if key in ("match", "match_parent", "fill", "max", "max_width", "max_height"):
             return -1
         if key in ("wrap", "wrap_content"):
             return -2
