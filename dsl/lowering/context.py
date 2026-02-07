@@ -70,6 +70,7 @@ from dsl.widgets import (
     _UIText,
     _UITextField,
 )
+from dsl.lowering.attr_registry import ATTR_METHODS
 
 
 class _PythonicContext:
@@ -158,6 +159,64 @@ class _PythonicContext:
         self.view_types[resolved_id] = kind
         self.view_fields[resolved_id] = f"view_{resolved_id}"
         return resolved_id
+
+    def _emit_attr_call(self, *, view_id, attr_name, raw_value):
+        meta = ATTR_METHODS.get(attr_name)
+        if meta is None:
+            return []
+        if raw_value is None:
+            return []
+
+        stmts = []
+
+        # ---- value resolution ----
+        if meta.value_loader == "color":
+            key = self._add_color_resource(f"{view_id}_{attr_name}", raw_value)
+            load, value_expr = self._load_color_expr(key, ctx_expr=var("ctx"))
+            stmts.extend(load)
+            args = [var(view_id), value_expr]
+
+        elif meta.value_loader == "dimen_px_4":
+            l, t, r, b = raw_value
+            args = [var(view_id)]
+            for side, v in zip(("l", "t", "r", "b"), (l, t, r, b)):
+                key = self._add_dimen_resource(f"{view_id}_{attr_name}_{side}", v)
+                load, expr = self._load_dimen_px_expr(
+                    key,
+                    ctx_expr=var("ctx"),
+                    prefix=f"{view_id}_{attr_name}_{side}")
+                stmts.extend(load)
+                args.append(expr)
+
+        else:
+            # simple literal
+            args = [var(view_id), const(raw_value)]
+
+        owner = meta.owner
+
+        if getattr(meta, "owner_resolver", None) == "gravity_owner":
+            view_type = self.view_types.get(view_id)
+            if view_type in ("row", "column"):
+                owner = "Landroid/widget/LinearLayout;"
+            else:
+                owner = "Landroid/widget/TextView;"
+
+        if owner is None:
+            return []
+
+        stmts.append(
+            call_stmt(
+                meta.method,
+                args=args,
+                return_type=None,
+                arg_types=meta.arg_types,
+                invoke_kind=meta.invoke_kind,
+                owner=owner,
+            )
+        )
+
+        return stmts
+
 
     def _capture_view_static(self, item_id: str):
         field_name = self.view_fields[item_id]
@@ -975,39 +1034,23 @@ class _PythonicContext:
         gravity_value = self._normalize_gravity(gravity_value)
 
         if padding_value is not None:
-            left, top, right, bottom = padding_value
-            l_key = self._add_dimen_resource(f"{item.id}_pad_l", left)
-            t_key = self._add_dimen_resource(f"{item.id}_pad_t", top)
-            r_key = self._add_dimen_resource(f"{item.id}_pad_r", right)
-            b_key = self._add_dimen_resource(f"{item.id}_pad_b", bottom)
-            l_load, l_expr = self._load_dimen_px_expr(l_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_l")
-            t_load, t_expr = self._load_dimen_px_expr(t_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_t")
-            r_load, r_expr = self._load_dimen_px_expr(r_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_r")
-            b_load, b_expr = self._load_dimen_px_expr(b_key, ctx_expr=var("ctx"), prefix=f"{item.id}_pad_b")
-            out.extend(l_load)
-            out.extend(t_load)
-            out.extend(r_load)
-            out.extend(b_load)
-            out.append(
-                call_stmt(
-                    "setPadding",
-                    args=[var(item.id), l_expr, t_expr, r_expr, b_expr],
-                    return_type=None,
-                    invoke_kind="virtual",
-                    owner="Landroid/view/View;",
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="padding",
+                    raw_value=padding_value,
                 )
             )
+
         if gravity_value is not None:
-            gravity_owner = "Landroid/widget/LinearLayout;" if isinstance(item, (_UIRow, _UIColumn)) else "Landroid/widget/TextView;"
-            out.append(
-                call_stmt(
-                    "setGravity",
-                    args=[var(item.id), const(gravity_value)],
-                    return_type=None,
-                    invoke_kind="virtual",
-                    owner=gravity_owner,
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="gravity",
+                        raw_value=gravity_value,
+                    )
                 )
-            )
+
 
         palette = self.theme_spec.palette
         bg_color = _parse_color(background_value, palette)
@@ -1080,31 +1123,14 @@ class _PythonicContext:
             "popup_button",
         }
         if txt_color is not None:
-            txt_key = self._add_color_resource(f"{item.id}_text_color", txt_color)
-            txt_load, txt_expr = self._load_color_expr(txt_key, ctx_expr=var("ctx"), prefix=f"{item.id}_text_color")
-            out.extend(txt_load)
-            if kind == "app_bar":
-                out.append(
-                    call_stmt(
-                        "setTitleTextColor",
-                        args=[var(item.id), txt_expr],
-                        return_type=None,
-                        arg_types=["I"],
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/Toolbar;",
-                    )
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="text_color",
+                    raw_value=txt_color,
                 )
-            elif kind in text_like_kinds:
-                out.append(
-                    call_stmt(
-                        "setTextColor",
-                        args=[var(item.id), txt_expr],
-                        return_type=None,
-                        arg_types=["I"],
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/TextView;",
-                    )
-                )
+            )
+
 
         if text_size_value is not None and kind in text_like_kinds:
             # Keep historical semantics: text_size numbers are SP-like values.
