@@ -124,7 +124,19 @@ def ret(value=None):
 
 def new(class_desc, args=None, arg_types=None):
     if arg_types is None:
-        arg_types = _CTOR_SIGS.get(class_desc)
+        try:
+            _, arg_types = _resolve_signature(
+                "<init>",
+                args or [],
+                return_type=None,
+                arg_types=None,
+                invoke_kind="direct",
+                owner=class_desc,
+            )
+        except RuntimeError:
+            arg_types = None
+        if arg_types is None:
+            arg_types = _CTOR_SIGS.get(class_desc)
     return New(class_desc, args=args or [], arg_types=arg_types or [])
 
 

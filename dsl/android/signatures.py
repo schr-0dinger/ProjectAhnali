@@ -1,4 +1,6 @@
 from ir.expr import Const
+import json
+from pathlib import Path
 
 
 def _normalize_sig_args(sig_args, invoke_kind, argc):
@@ -117,7 +119,7 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
     return return_type, arg_types
 
 
-_METHOD_SIGS = {
+_METHOD_SIGS_MANUAL = {
     ("Landroid/widget/TextView;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/widget/TextView;", "setText", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
     ("Landroid/widget/EditText;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
@@ -216,7 +218,7 @@ _METHOD_SIGS = {
 }
 
 
-_CTOR_SIGS = {
+_CTOR_SIGS_MANUAL = {
     "Landroid/widget/TextView;": ["Landroid/content/Context;"],
     "Landroid/widget/Button;": ["Landroid/content/Context;"],
     "Landroid/widget/EditText;": ["Landroid/content/Context;"],
@@ -241,3 +243,36 @@ _CTOR_SIGS = {
     "Landroid/widget/RelativeLayout;": ["Landroid/content/Context;"],
     "Landroidx/constraintlayout/widget/ConstraintLayout;": ["Landroid/content/Context;"],
 }
+
+
+def _load_signature_db(path: str | Path) -> tuple[dict, dict]:
+    p = Path(path)
+    data = json.loads(p.read_text())
+    method_sigs: dict[tuple[str, str, str], list[tuple[str | None, list[str]]]] = {}
+    for row in data.get("methods", []):
+        key = (row["owner"], row["name"], row["invoke"])
+        method_sigs.setdefault(key, []).append((row.get("ret"), row.get("args", [])))
+    ctor_sigs: dict[str, list[str]] = {}
+    for row in data.get("ctors", []):
+        ctor_sigs.setdefault(row["owner"], row.get("args", []))
+    return method_sigs, ctor_sigs
+
+
+def load_signature_db(path: str | Path = "dsl/android/signatures_db.json") -> None:
+    global _METHOD_SIGS, _CTOR_SIGS
+    method_sigs, ctor_sigs = _load_signature_db(path)
+    method_sigs.update(_METHOD_SIGS_MANUAL)
+    ctor_sigs.update(_CTOR_SIGS_MANUAL)
+    _METHOD_SIGS = method_sigs
+    _CTOR_SIGS = ctor_sigs
+
+
+_METHOD_SIGS = dict(_METHOD_SIGS_MANUAL)
+_CTOR_SIGS = dict(_CTOR_SIGS_MANUAL)
+_db_path = Path(__file__).with_name("signatures_db.json")
+if _db_path.exists():
+    try:
+        load_signature_db(_db_path)
+    except Exception:
+        _METHOD_SIGS = dict(_METHOD_SIGS_MANUAL)
+        _CTOR_SIGS = dict(_CTOR_SIGS_MANUAL)
