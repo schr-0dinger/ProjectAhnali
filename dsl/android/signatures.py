@@ -175,6 +175,7 @@ _METHOD_SIGS = {
     ("Landroid/widget/LinearLayout;", "setOrientation", "virtual"): (None, ["I"]),
     ("Landroid/widget/LinearLayout;", "setGravity", "virtual"): (None, ["I"]),
     ("Landroid/widget/LinearLayout;", "setWeightSum", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setId", "virtual"): (None, ["I"]),
     ("Landroid/widget/RelativeLayout$LayoutParams;", "addRule", "virtual"): (None, ["I", "I"]),
     ("Landroid/view/ViewGroup;", "addView", "virtual"): (None, ["Landroid/view/View;"]),
     ("Landroid/view/View;", "setOnClickListener", "virtual"): (

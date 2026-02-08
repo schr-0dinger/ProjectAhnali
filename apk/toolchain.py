@@ -313,6 +313,59 @@ def _ensure_debug_keystore(keystore_path: Path, alias: str = "androiddebugkey") 
     subprocess.run(cmd, check=True)
 
 
+def _extract_aar_jars(extra_aars: list[str | Path], out_dir: Path) -> list[Path]:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    jar_paths = []
+    for aar_path in extra_aars:
+        aar_path = Path(aar_path)
+        if not aar_path.exists():
+            raise RuntimeError(f"AAR not found: {aar_path}")
+        prefix = out_dir / aar_path.stem
+        prefix.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(aar_path, "r") as zf:
+            for name in zf.namelist():
+                if name == "classes.jar":
+                    zf.extract(name, prefix)
+                    jar_paths.append(prefix / name)
+                elif name.startswith("libs/") and name.endswith(".jar"):
+                    zf.extract(name, prefix)
+                    jar_paths.append(prefix / name)
+    return jar_paths
+
+
+def _merge_dex_with_aars(
+    dex_path: Path,
+    *,
+    extra_aars: list[str | Path],
+    out_dir: Path,
+    api: int | None,
+) -> Path:
+    d8 = _tool_path("d8")
+    android_jar = _find_android_jar(_find_android_sdk(), api=api)
+    temp_dir = out_dir / "aar_tmp"
+    jar_paths = _extract_aar_jars(extra_aars, temp_dir)
+    if not jar_paths:
+        return dex_path
+    merged_dir = out_dir / "merged_dex"
+    merged_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        d8,
+        "--lib",
+        str(android_jar),
+        "--min-api",
+        str(api or 21),
+        "--output",
+        str(merged_dir),
+        str(dex_path),
+    ]
+    cmd.extend(str(p) for p in jar_paths)
+    subprocess.run(cmd, check=True)
+    merged_dex = merged_dir / "classes.dex"
+    if not merged_dex.exists():
+        raise RuntimeError("d8 did not produce classes.dex")
+    return merged_dex
+
+
 def package_apk_from_dex(
     dex_path: str | Path,
     out_dir: str | Path = "build",
@@ -328,6 +381,7 @@ def package_apk_from_dex(
     activity_class_desc: str | None = None,
     resources: AndroidResources | dict[str, str] | None = None,
     stable_ids_path: str | Path | None = None,
+    extra_aars: list[str | Path] | None = None,
 ) -> Path:
     """
     Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
@@ -379,12 +433,24 @@ def package_apk_from_dex(
                 resources = AndroidResources(strings={"app_name": "AnaliPreview"})
             resources.write_to_dir(tmp)
 
+        if extra_aars:
+            extra_res_dir = tmp / "res_extra"
+            for aar_path in extra_aars:
+                aar_path = Path(aar_path)
+                if not aar_path.exists():
+                    raise RuntimeError(f"AAR not found: {aar_path}")
+                with zipfile.ZipFile(aar_path, "r") as zf:
+                    for name in zf.namelist():
+                        if name.startswith("res/"):
+                            zf.extract(name, extra_res_dir)
+
         compiled_res = tmp / "compiled"
         compiled_res.mkdir(parents=True, exist_ok=True)
-        subprocess.run(
-            [aapt2, "compile", "--dir", str(tmp / "res"), "-o", str(compiled_res)],
-            check=True,
-        )
+        subprocess.run([aapt2, "compile", "--dir", str(tmp / "res"), "-o", str(compiled_res)], check=True)
+        if extra_aars:
+            extra_res = tmp / "res_extra" / "res"
+            if extra_res.exists():
+                subprocess.run([aapt2, "compile", "--dir", str(extra_res), "-o", str(compiled_res)], check=True)
 
         flat_files = list(compiled_res.rglob("*.flat"))
         if not flat_files:
@@ -471,6 +537,7 @@ def build_install_run(
     keystore_alias: str = "androiddebugkey",
     output_apk: str | Path | None = None,
     uninstall_first: bool = True,
+    extra_aars: list[str | Path] | None = None,
 ) -> Path:
     """
     One-command flow: compile -> smali -> dex -> apk -> install -> run.
@@ -496,6 +563,13 @@ def build_install_run(
         smali_jar=smali_jar,
         api=api,
     )
+    if extra_aars:
+        dex_path = _merge_dex_with_aars(
+            dex_path,
+            extra_aars=extra_aars,
+            out_dir=build_dir,
+            api=api,
+        )
 
     res_obj = resources_from_program(frontend_ir)
     signed_apk = package_apk_from_dex(
@@ -510,6 +584,7 @@ def build_install_run(
         output_apk=output_apk,
         activity_class_desc=wrapper_class_desc,
         resources=res_obj,
+        extra_aars=extra_aars,
     )
 
     adb = _adb_path()

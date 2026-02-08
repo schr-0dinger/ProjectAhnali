@@ -397,7 +397,18 @@ class _PythonicContext:
     def _capture_view_static(self, item_id: str):
         field_name = self.view_fields[item_id]
         desc = self._view_desc(self.view_types[item_id])
-        return [static_set(field_name, desc, var(item_id))]
+        view_id_value = self._numeric_id(item_id)
+        return [
+            call_stmt(
+                "setId",
+                args=[var(item_id), const(view_id_value)],
+                return_type=None,
+                arg_types=["I"],
+                invoke_kind="virtual",
+                owner="Landroid/view/View;",
+            ),
+            static_set(field_name, desc, var(item_id)),
+        ]
 
     def build_program(self, click_specs, resources=None):
         body = []
