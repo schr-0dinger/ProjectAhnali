@@ -182,7 +182,7 @@ def emit_method_smali(method: DalvikMethod):
                 elif isinstance(instr.value, float):
                     bits = struct.unpack(">I", struct.pack(">f", instr.value))[0]
                     if bits & 0xFFFF == 0:
-                        lines.append(f"    const/high16 {r}, 0x{bits >> 16:04x}")
+                        lines.append(f"    const/high16 {r}, 0x{bits & 0xFFFF0000:08x}")
                     else:
                         lines.append(f"    const {r}, 0x{bits:08x}")
                 else:

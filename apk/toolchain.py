@@ -476,7 +476,10 @@ def package_apk_from_dex(
             auto_stable_ids = tmp / "stable_ids.txt"
             resources.write_stable_ids(auto_stable_ids, application_id)
 
-        if stable_ids_path is None:
+        disable_stable_ids = bool(extra_aars)
+        if disable_stable_ids:
+            stable_ids_path = None
+        if stable_ids_path is None and not disable_stable_ids:
             candidate_ids = out_dir / "stable_ids.txt"
             if candidate_ids.exists():
                 stable_ids_path = candidate_ids

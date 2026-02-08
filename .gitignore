@@ -4,5 +4,5 @@ __pycache__
 out_apk
 .venv
 /build*
-
+/libs
 

@@ -14,6 +14,30 @@ class Dp:
         return f"dp({self.value})"
 
 
+class Sp:
+    def __init__(self, value):
+        self.value = float(value)
+
+    def __repr__(self):
+        return f"sp({self.value})"
+
+
+class Px:
+    def __init__(self, value):
+        self.value = float(value)
+
+    def __repr__(self):
+        return f"px({self.value})"
+
+
+class Percent:
+    def __init__(self, value):
+        self.value = float(value)
+
+    def __repr__(self):
+        return f"percent({self.value})"
+
+
 def fill():
     return "match_parent"
 
@@ -28,6 +52,18 @@ def size(width, height):
 
 def dp(value):
     return Dp(value)
+
+
+def sp(value):
+    return Sp(value)
+
+
+def px(value):
+    return Px(value)
+
+
+def percent(value):
+    return Percent(value)
 
 
 class _UIText:

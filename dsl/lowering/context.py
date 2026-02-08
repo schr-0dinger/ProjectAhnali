@@ -52,6 +52,9 @@ from dsl.ir_helpers import (
 )
 from dsl.widgets import (
     Dp,
+    Px,
+    Sp,
+    Percent,
     Style,
     State,
     Theme,
@@ -222,7 +225,10 @@ class _PythonicContext:
                 stmts.extend(load)
                 args.append(expr)
         elif meta.value_loader == "dimen_sp_float":
-            key = self._add_dimen_resource(f"{view_id}_{attr_name}", float(raw_value), unit="sp")
+            if isinstance(raw_value, Sp):
+                key = self._add_dimen_resource(f"{view_id}_{attr_name}", raw_value)
+            else:
+                key = self._add_dimen_resource(f"{view_id}_{attr_name}", float(raw_value), unit="sp")
             load, value_expr = self._load_dimen_float_expr(key, ctx_expr=var("ctx"), prefix=f"{view_id}_{attr_name}")
             stmts.extend(load)
             args = [var(view_id), value_expr]
@@ -522,7 +528,7 @@ class _PythonicContext:
         # Declare static refs for views
         for vid, field_name in self.view_fields.items():
             desc = self._view_desc(self.view_types[vid])
-            fields.append(static_field(field_name, desc, access="private static"))
+            fields.append(static_field(field_name, desc, access="public static"))
 
         # State fields
         for name, value in self.state_spec.values.items():
@@ -530,7 +536,7 @@ class _PythonicContext:
                 raise RuntimeError(
                     f"State '{name}' must be an integer literal, got {value!r} ({type(value).__name__})"
                 )
-            fields.append(static_field(name, "I", access="private static"))
+            fields.append(static_field(name, "I", access="public static"))
             body.append(static_set(name, "I", const(value)))
 
         # Wire click handlers
@@ -673,9 +679,15 @@ class _PythonicContext:
             self._resource_color_ids[key] = 0x7F020000 + len(self._resource_color_ids)
         return key
 
-    def _add_dimen_resource(self, name_hint: str, value: int | float | Dp, unit: str = "px") -> str:
+    def _add_dimen_resource(self, name_hint: str, value: int | float | Dp | Px | Sp, unit: str = "px") -> str:
         if isinstance(value, Dp):
             unit = "dp"
+            value = value.value
+        elif isinstance(value, Sp):
+            unit = "sp"
+            value = value.value
+        elif isinstance(value, Px):
+            unit = "px"
             value = value.value
         normalized = float(value) if isinstance(value, float) else int(value)
         key = self._resource_key(name_hint, f"{normalized}:{unit}")
@@ -1224,6 +1236,18 @@ class _PythonicContext:
         height_value = getattr(item, "height", None)
         if height_value is None:
             height_value = getattr(style, "height", None)
+        if isinstance(width_value, Percent):
+            parent_orientation = self._container_orientation.get(parent_id, "vertical")
+            if parent_orientation != "horizontal":
+                raise RuntimeError("Percent width is only supported in horizontal rows.")
+            weight_value = width_value.value / 100.0 if width_value.value > 1 else width_value.value
+            width_value = 0
+        if isinstance(height_value, Percent):
+            parent_orientation = self._container_orientation.get(parent_id, "vertical")
+            if parent_orientation != "vertical":
+                raise RuntimeError("Percent height is only supported in vertical columns.")
+            weight_value = height_value.value / 100.0 if height_value.value > 1 else height_value.value
+            height_value = 0
         margin_value = item.margin if item.margin is not None else style.margin
         relative_value = getattr(item, "relative", None) if getattr(item, "relative", None) is not None else getattr(style, "relative", None)
         constraints_value = getattr(item, "constraints", None) if getattr(item, "constraints", None) is not None else getattr(style, "constraints", None)
@@ -1321,7 +1345,9 @@ class _PythonicContext:
                 )
             )
 
-        if layout_value or margin_value or weight_value is not None:
+        if layout_value or margin_value or weight_value is not None or relative_value is not None or constraints_value is not None:
+            if layout_value is None:
+                layout_value = ("wrap", "wrap")
             width, height = layout_value if layout_value else ("wrap", "wrap")
             lp_name = f"lp_{item.id}"
             parent_kind = self.view_types.get(parent_id, "column")
@@ -1331,7 +1357,17 @@ class _PythonicContext:
                 parent_lp = "ConstraintLayout"
             else:
                 parent_lp = "LinearLayout"
-            out.append(assign(lp_name, layout_params(width, height, parent=parent_lp)))
+            if parent_lp == "RelativeLayout":
+                lp_desc = "Landroid/widget/RelativeLayout$LayoutParams;"
+            elif parent_lp == "ConstraintLayout":
+                lp_desc = "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;"
+            else:
+                lp_desc = "Landroid/widget/LinearLayout$LayoutParams;"
+            w_setup, w_expr = self._layout_size_expr(width, prefix=f"{item.id}_w")
+            h_setup, h_expr = self._layout_size_expr(height, prefix=f"{item.id}_h")
+            out.extend(w_setup)
+            out.extend(h_setup)
+            out.append(assign(lp_name, new(lp_desc, args=[w_expr, h_expr])))
             if weight_value is not None:
                 out.extend(
                     self._emit_attr_call(
@@ -1392,15 +1428,15 @@ class _PythonicContext:
     def _normalize_box_spacing(self, value, attr_name):
         if value is None:
             return None
-        if isinstance(value, int):
+        if isinstance(value, (int, Dp, Px)):
             return (value, value, value, value)
         if isinstance(value, (tuple, list)):
             if len(value) == 2:
                 h, v = value
-                return (int(h), int(v), int(h), int(v))
+                return (h, v, h, v)
             if len(value) == 4:
                 l, t, r, b = value
-                return (int(l), int(t), int(r), int(b))
+                return (l, t, r, b)
         raise RuntimeError(
             f"Invalid {attr_name} value {value!r}. Expected int, (h, v), or (l, t, r, b)."
         )
@@ -1416,6 +1452,26 @@ class _PythonicContext:
         raise RuntimeError(
             f"Invalid layout value {value!r}. Expected \"match\"/\"wrap\" or (width, height)."
         )
+
+    def _layout_size_expr(self, value, *, prefix):
+        if isinstance(value, str):
+            key = value.lower().strip()
+            if key in ("match", "match_parent", "fill", "max", "max_width", "max_height"):
+                return [], const(-1)
+            if key in ("wrap", "wrap_content"):
+                return [], const(-2)
+            raise RuntimeError(f"Unknown layout size: {value}")
+        if isinstance(value, Percent):
+            raise RuntimeError("Percent sizes must be handled by layout weight.")
+        if isinstance(value, (Dp, Px)):
+            key = self._add_dimen_resource(f"{prefix}_size", value)
+            stmts, expr = self._load_dimen_px_expr(key, ctx_expr=var("ctx"), prefix=f"{prefix}_size")
+            return stmts, expr
+        if isinstance(value, Sp):
+            raise RuntimeError("sp units are not valid for layout size.")
+        if isinstance(value, int):
+            return [], const(value)
+        raise RuntimeError(f"Unsupported layout size: {value!r}")
 
     def _normalize_relative_rules(self, value, *, parent_id):
         if value is None:
