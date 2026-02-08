@@ -2,6 +2,8 @@
 
 from collections import defaultdict
 
+from cfg.graph import stable_block_order
+
 
 class LiveInterval:
     def __init__(self, value):
@@ -35,7 +37,7 @@ class LinearScanAllocator:
         index = 0
         interval_map = {}
 
-        for block in cfg.blocks.values():
+        for block in stable_block_order(cfg):
             dblock = dalvik_blocks[block]
 
             for instr in dblock.instructions:
