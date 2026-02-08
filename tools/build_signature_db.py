@@ -220,8 +220,13 @@ def main() -> int:
     parser.add_argument(
         "--prefix",
         action="append",
-        default=["android.", "java.", "javax."],
+        default=None,
         help="Class name prefix to include (repeatable)",
+    )
+    parser.add_argument(
+        "--prefixes-file",
+        default="tools/signature_prefixes.json",
+        help="JSON file with {\"prefixes\": [...]}",
     )
     args = parser.parse_args()
 
@@ -229,7 +234,14 @@ def main() -> int:
     if not android_jar.exists():
         raise SystemExit(f"android.jar not found: {android_jar}")
 
-    method_sigs, ctor_sigs = build_signatures(android_jar, args.prefix)
+    prefixes = args.prefix
+    if prefixes is None:
+        pref_path = Path(args.prefixes_file)
+        if pref_path.exists():
+            prefixes = json.loads(pref_path.read_text()).get("prefixes", [])
+        else:
+            prefixes = ["android.widget.", "android.view.", "android.app.", "android.content.", "java.lang."]
+    method_sigs, ctor_sigs = build_signatures(android_jar, prefixes)
 
     payload = {
         "methods": _serialize_method_sigs(method_sigs),

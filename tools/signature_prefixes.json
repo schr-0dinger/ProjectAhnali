@@ -1,0 +1,13 @@
+{
+  "prefixes": [
+    "android.widget.",
+    "android.view.",
+    "android.app.",
+    "android.content.",
+    "android.content.res.",
+    "android.graphics.",
+    "android.util.",
+    "java.lang.",
+    "java.util."
+  ]
+}
