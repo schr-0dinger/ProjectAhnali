@@ -30,6 +30,7 @@ from dsl.ir_helpers import (
     click_handler,
     compare,
     const,
+    constraint_layout,
     field_set,
     if_,
     layout_params,
@@ -39,6 +40,7 @@ from dsl.ir_helpers import (
     on_click_view,
     program,
     primitive_cast,
+    relative_layout,
     ret,
     set_content_view,
     set_layout_params,
@@ -49,6 +51,7 @@ from dsl.ir_helpers import (
     while_,
 )
 from dsl.widgets import (
+    Dp,
     Style,
     State,
     Theme,
@@ -57,12 +60,14 @@ from dsl.widgets import (
     _UIButtonBar,
     _UICheckbox,
     _UIColumn,
+    _UIConstraint,
     _UIDropdownButton,
     _UIFlatButton,
     _UIFloatingActionButton,
     _UIIconButton,
     _UIPopupMenuButton,
     _UIRadio,
+    _UIRelative,
     _UIRaisedButton,
     _UIRow,
     _UISlider,
@@ -92,6 +97,7 @@ class _PythonicContext:
         self._resource_style_ids = {}
         self._local_vars = set()
         self._container_orientation = {self.root_id: "vertical"}
+        self._lint_warnings = []
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -108,6 +114,10 @@ class _PythonicContext:
             return "Landroid/widget/Button;"
         if kind == "icon_button":
             return "Landroid/widget/Button;"
+        if kind == "relative":
+            return "Landroid/widget/RelativeLayout;"
+        if kind == "constraint":
+            return "Landroidx/constraintlayout/widget/ConstraintLayout;"
         if kind == "text_field":
             return "Landroid/widget/EditText;"
         if kind == "checkbox":
@@ -130,6 +140,8 @@ class _PythonicContext:
             "button",
             "row",
             "column",
+            "relative",
+            "constraint",
             "appbar",
             "fab",
             "raised_btn",
@@ -151,6 +163,10 @@ class _PythonicContext:
                 while f"{resolved_id}_{i}" in self.view_types:
                     i += 1
                 resolved_id = f"{resolved_id}_{i}"
+                self._lint_warnings.append(
+                    f"Auto-suffixed duplicate default id '{item_id}' to '{resolved_id}'. "
+                    "Provide explicit unique ids to avoid this."
+                )
             else:
                 raise RuntimeError(
                     f"Duplicate widget id '{item_id}'. "
@@ -191,11 +207,124 @@ class _PythonicContext:
                     prefix=f"{view_id}_{attr_name}_{side}")
                 stmts.extend(load)
                 args.append(expr)
+        elif meta.value_loader == "margin_px_4":
+            if not (isinstance(raw_value, tuple) and len(raw_value) == 2):
+                raise RuntimeError("margin loader expects (layout_params_var, (l,t,r,b))")
+            lp_var, margin_tuple = raw_value
+            l, t, r, b = margin_tuple
+            args = [lp_var]
+            for side, v in zip(("l", "t", "r", "b"), (l, t, r, b)):
+                key = self._add_dimen_resource(f"{view_id}_{attr_name}_{side}", v)
+                load, expr = self._load_dimen_px_expr(
+                    key,
+                    ctx_expr=var("ctx"),
+                    prefix=f"{view_id}_{attr_name}_{side}")
+                stmts.extend(load)
+                args.append(expr)
         elif meta.value_loader == "dimen_sp_float":
             key = self._add_dimen_resource(f"{view_id}_{attr_name}", float(raw_value), unit="sp")
             load, value_expr = self._load_dimen_float_expr(key, ctx_expr=var("ctx"), prefix=f"{view_id}_{attr_name}")
             stmts.extend(load)
             args = [var(view_id), value_expr]
+        elif meta.value_loader == "float":
+            setup, value_expr = self._float_const_expr(raw_value, prefix=f"{view_id}_{attr_name}")
+            stmts.extend(setup)
+            args = [var(view_id), value_expr]
+        elif meta.value_loader == "layout_params":
+            args = [var(view_id), raw_value]
+        elif meta.value_loader == "layout_weight":
+            if not (isinstance(raw_value, tuple) and len(raw_value) == 2):
+                raise RuntimeError("weight loader expects (layout_params_var, weight_value)")
+            lp_var, weight_value = raw_value
+            setup, value_expr = self._float_const_expr(weight_value, prefix=f"{view_id}_{attr_name}")
+            stmts.extend(setup)
+            args = [lp_var, value_expr]
+        elif meta.value_loader == "relative_rules":
+            lp_var, rules = raw_value
+            if not isinstance(rules, (list, tuple)):
+                raise RuntimeError("relative rules must be list of (verb, anchor) pairs")
+            for verb, anchor in rules:
+                stmts.append(
+                    call_stmt(
+                        "addRule",
+                        args=[lp_var, const(int(verb)), const(int(anchor))],
+                        return_type=None,
+                        arg_types=["I", "I"],
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/RelativeLayout$LayoutParams;",
+                    )
+                )
+            return stmts
+        elif meta.value_loader == "constraint_fields":
+            lp_var, field_pairs = raw_value
+            if not isinstance(field_pairs, (list, tuple)):
+                raise RuntimeError("constraint fields must be list of (field, type, value)")
+            for field_name, field_type, value_expr in field_pairs:
+                stmts.append(
+                    field_set(
+                        lp_var,
+                        "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;",
+                        field_name,
+                        field_type,
+                        value_expr,
+                    )
+                )
+            return stmts
+        elif meta.value_loader == "background":
+            if not (isinstance(raw_value, tuple) and len(raw_value) == 2):
+                raise RuntimeError("background loader expects (bg_color, radius_value)")
+            bg_color, radius_value = raw_value
+            if bg_color is None:
+                return []
+            if radius_value is None:
+                out = []
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=view_id,
+                        attr_name="background_color",
+                        raw_value=bg_color,
+                    )
+                )
+                return out
+            bg_name = f"bg_{view_id}"
+            color_key = self._add_color_resource(f"{view_id}_bg", bg_color)
+            color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{view_id}_bg")
+            radius_key = self._add_dimen_resource(f"{view_id}_radius", radius_value, unit="px")
+            radius_load, radius_expr = self._load_dimen_float_expr(radius_key, ctx_expr=var("ctx"), prefix=f"{view_id}_radius")
+            stmts.extend(color_load)
+            stmts.extend(radius_load)
+            stmts.append(assign(bg_name, new("Landroid/graphics/drawable/GradientDrawable;", args=[])))
+            stmts.append(
+                call_stmt(
+                    "setColor",
+                    args=[var(bg_name), color_expr],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/drawable/GradientDrawable;",
+                )
+            )
+            stmts.append(
+                call_stmt(
+                    "setCornerRadius",
+                    args=[var(bg_name), radius_expr],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/drawable/GradientDrawable;",
+                )
+            )
+            stmts.append(
+                call_stmt(
+                    "setBackground",
+                    args=[var(view_id), var(bg_name)],
+                    return_type=None,
+                    arg_types=["Landroid/graphics/drawable/Drawable;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            return stmts
 
         else:
             # simple literal
@@ -217,16 +346,50 @@ class _PythonicContext:
         if owner is None:
             return []
 
-        stmts.append(
-            call_stmt(
-                meta.method,
-                args=args,
-                return_type=None,
-                arg_types=meta.arg_types,
-                invoke_kind=meta.invoke_kind,
-                owner=owner,
+        if meta.emit_kind == "field_set":
+            stmts.append(
+                field_set(
+                    args[0],
+                    owner,
+                    meta.field_name,
+                    meta.field_desc,
+                    args[1],
+                )
             )
-        )
+        elif meta.emit_kind == "custom" and meta.field_map is not None:
+            lp_var, value_map = args
+            if not isinstance(value_map, dict):
+                raise RuntimeError("custom attr mapping expects dict value")
+            for key, value in value_map.items():
+                if key not in meta.field_map:
+                    continue
+                field_name, field_desc = meta.field_map[key]
+                if field_desc == "F":
+                    setup, expr = self._float_const_expr(value, prefix=f"{view_id}_{key}")
+                    stmts.extend(setup)
+                    value_expr = expr
+                else:
+                    value_expr = const(int(value))
+                stmts.append(
+                    field_set(
+                        lp_var,
+                        "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;",
+                        field_name,
+                        field_desc,
+                        value_expr,
+                    )
+                )
+        else:
+            stmts.append(
+                call_stmt(
+                    meta.method,
+                    args=args,
+                    return_type=None,
+                    arg_types=meta.arg_types,
+                    invoke_kind=meta.invoke_kind,
+                    owner=owner,
+                )
+            )
 
         return stmts
 
@@ -251,13 +414,70 @@ class _PythonicContext:
         self._container_orientation = {self.root_id: "vertical"}
         self._build_theme_resources()
 
+        # Ensure app_ctx is available for resource helper calls.
+        fields.append(static_field("app_ctx", "Landroid/app/Activity;", access="public static"))
+        body.append(static_set("app_ctx", "Landroid/app/Activity;", var("ctx")))
         body.extend(linear_layout(self.root_id, var("ctx"), "vertical"))
 
-        # UI creation (split into helper methods to keep register pressure low)
-        for idx, item in enumerate(self.ui_spec.items):
-            helper_name = f"buildUi_{idx}"
-            helper_body = self._build_ui_items("parent", [item])
-            helper_body.append(ret())
+        # Resource helper methods (LTestRes)
+        res_methods = []
+        res_map = {}
+
+        def _res_method(name, ret_type, res_call):
+            res_methods.append(
+                method(
+                    name,
+                    params=["res_id"],
+                    param_types=["I"],
+                    return_type=ret_type,
+                    body=[
+                        assign("ctx", static_get("app_ctx", "Landroid/app/Activity;", owner="LTest;")),
+                        assign(
+                            "res",
+                            call(
+                                "getResources",
+                                args=[var("ctx")],
+                                invoke_kind="virtual",
+                                owner="Landroid/content/Context;",
+                            ),
+                        ),
+                        assign(
+                            "out",
+                            call(
+                                res_call,
+                                args=[var("res"), var("res_id")],
+                                return_type=ret_type,
+                                arg_types=["I"],
+                                invoke_kind="virtual",
+                                owner="Landroid/content/res/Resources;",
+                            ),
+                        ),
+                        ret(var("out")),
+                    ],
+                )
+            )
+            res_map[name] = "LTestRes;"
+
+        _res_method("res_get_string", "Ljava/lang/String;", "getString")
+        _res_method("res_get_color", "I", "getColor")
+        _res_method("res_get_dimen_px", "I", "getDimensionPixelSize")
+        _res_method("res_get_dimen_float", "F", "getDimension")
+
+        methods.extend(res_methods)
+
+        # UI creation (split by statement count)
+        max_stmts = 120
+        helper_idx = 0
+        pending = []
+        pending_count = 0
+
+        def _flush_helper():
+            nonlocal helper_idx, pending, pending_count
+            if not pending:
+                return
+            helper_name = f"buildUi_{helper_idx}"
+            helper_idx += 1
+            helper_body = [*pending, ret()]
             methods.append(
                 method(
                     helper_name,
@@ -277,14 +497,21 @@ class _PythonicContext:
                     owner="LTest;",
                 )
             )
+            pending = []
+            pending_count = 0
+
+        for item in self.ui_spec.items:
+            item_stmts = self._build_ui_items("parent", [item])
+            if pending and pending_count + len(item_stmts) > max_stmts:
+                _flush_helper()
+            pending.extend(item_stmts)
+            pending_count += len(item_stmts)
+        _flush_helper()
 
         # Declare static refs for views
         for vid, field_name in self.view_fields.items():
             desc = self._view_desc(self.view_types[vid])
             fields.append(static_field(field_name, desc, access="private static"))
-
-        fields.append(static_field("app_ctx", "Landroid/app/Activity;", access="private static"))
-        body.append(static_set("app_ctx", "Landroid/app/Activity;", var("ctx")))
 
         # State fields
         for name, value in self.state_spec.values.items():
@@ -329,6 +556,7 @@ class _PythonicContext:
             support_classes.append((listener_desc, handler_name, handler_owner_desc))
             handler_methods.append((handler_name, self._compile_stmts(spec.stmts)))
             method_class_map[handler_name] = handler_owner_desc
+        method_class_map.update(res_map)
 
         # Main method
         methods.insert(
@@ -356,6 +584,7 @@ class _PythonicContext:
             fields=fields,
             support_classes=support_classes,
             method_class_map=method_class_map,
+            lint_warnings=self._lint_warnings,
             resources=self._resources,
             resource_ids=self._resource_ids,
             resource_colors=self._resource_colors,
@@ -433,7 +662,10 @@ class _PythonicContext:
             self._resource_color_ids[key] = 0x7F020000 + len(self._resource_color_ids)
         return key
 
-    def _add_dimen_resource(self, name_hint: str, value: int | float, unit: str = "px") -> str:
+    def _add_dimen_resource(self, name_hint: str, value: int | float | Dp, unit: str = "px") -> str:
+        if isinstance(value, Dp):
+            unit = "dp"
+            value = value.value
         normalized = float(value) if isinstance(value, float) else int(value)
         key = self._resource_key(name_hint, f"{normalized}:{unit}")
         if isinstance(normalized, float):
@@ -454,154 +686,89 @@ class _PythonicContext:
 
     def _load_string_expr(self, res_name: str, *, ctx_expr=None, prefix="str"):
         p = self._next_tmp(prefix)
-        ctx_name = f"{p}_ctx"
-        res_obj = f"{p}_res"
         sval = f"{p}_val"
         stmts = []
-        if ctx_expr is None:
-            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
-        # Normalize context into an SSA variable for verifier cleanliness.
-        if not isinstance(ctx_expr, Var):
-            stmts.append(assign(ctx_name, ctx_expr))
-            ctx_expr = var(ctx_name)
         rid_value = self._resource_ids.get(res_name)
         if rid_value is None:
             raise RuntimeError(f"Missing resource id for string '{res_name}'")
-        stmts.extend(
-            [
-                assign(
-                    res_obj,
-                    call(
-                        "getResources",
-                        args=[ctx_expr],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/Context;",
-                    ),
+        stmts.append(
+            assign(
+                sval,
+                call(
+                    "res_get_string",
+                    args=[const(rid_value)],
+                    return_type="Ljava/lang/String;",
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner="LTestRes;",
                 ),
-                assign(
-                    sval,
-                    call(
-                        "getString",
-                        args=[var(res_obj), const(rid_value)],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/res/Resources;",
-                    ),
-                ),
-            ]
+            )
         )
         return stmts, var(sval)
 
     def _load_color_expr(self, res_name: str, *, ctx_expr=None, prefix="color"):
         p = self._next_tmp(prefix)
-        ctx_name = f"{p}_ctx"
-        res_obj = f"{p}_res"
         cval = f"{p}_val"
         stmts = []
-        if ctx_expr is None:
-            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
-        if not isinstance(ctx_expr, Var):
-            stmts.append(assign(ctx_name, ctx_expr))
-            ctx_expr = var(ctx_name)
         rid_value = self._resource_color_ids.get(res_name)
         if rid_value is None:
             raise RuntimeError(f"Missing color id for '{res_name}'")
-        stmts.extend(
-            [
-                assign(
-                    res_obj,
-                    call(
-                        "getResources",
-                        args=[ctx_expr],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/Context;",
-                    ),
+        stmts.append(
+            assign(
+                cval,
+                call(
+                    "res_get_color",
+                    args=[const(rid_value)],
+                    return_type="I",
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner="LTestRes;",
                 ),
-                assign(
-                    cval,
-                    call(
-                        "getColor",
-                        args=[var(res_obj), const(rid_value)],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/res/Resources;",
-                    ),
-                ),
-            ]
+            )
         )
         return stmts, var(cval)
 
     def _load_dimen_px_expr(self, res_name: str, *, ctx_expr=None, prefix="dimen"):
         p = self._next_tmp(prefix)
-        ctx_name = f"{p}_ctx"
-        res_obj = f"{p}_res"
         dval = f"{p}_val"
         stmts = []
-        if ctx_expr is None:
-            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
-        if not isinstance(ctx_expr, Var):
-            stmts.append(assign(ctx_name, ctx_expr))
-            ctx_expr = var(ctx_name)
         rid_value = self._resource_dimen_ids.get(res_name)
         if rid_value is None:
             raise RuntimeError(f"Missing dimen id for '{res_name}'")
-        stmts.extend(
-            [
-                assign(
-                    res_obj,
-                    call(
-                        "getResources",
-                        args=[ctx_expr],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/Context;",
-                    ),
+        stmts.append(
+            assign(
+                dval,
+                call(
+                    "res_get_dimen_px",
+                    args=[const(rid_value)],
+                    return_type="I",
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner="LTestRes;",
                 ),
-                assign(
-                    dval,
-                    call(
-                        "getDimensionPixelSize",
-                        args=[var(res_obj), const(rid_value)],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/res/Resources;",
-                    ),
-                ),
-            ]
+            )
         )
         return stmts, var(dval)
 
     def _load_dimen_float_expr(self, res_name: str, *, ctx_expr=None, prefix="dimenf"):
         p = self._next_tmp(prefix)
-        ctx_name = f"{p}_ctx"
-        res_obj = f"{p}_res"
         dval = f"{p}_val"
         stmts = []
-        if ctx_expr is None:
-            ctx_expr = static_get("app_ctx", "Landroid/app/Activity;")
-        if not isinstance(ctx_expr, Var):
-            stmts.append(assign(ctx_name, ctx_expr))
-            ctx_expr = var(ctx_name)
         rid_value = self._resource_dimen_ids.get(res_name)
         if rid_value is None:
             raise RuntimeError(f"Missing dimen id for '{res_name}'")
-        stmts.extend(
-            [
-                assign(
-                    res_obj,
-                    call(
-                        "getResources",
-                        args=[ctx_expr],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/Context;",
-                    ),
+        stmts.append(
+            assign(
+                dval,
+                call(
+                    "res_get_dimen_float",
+                    args=[const(rid_value)],
+                    return_type="F",
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner="LTestRes;",
                 ),
-                assign(
-                    dval,
-                    call(
-                        "getDimension",
-                        args=[var(res_obj), const(rid_value)],
-                        invoke_kind="virtual",
-                        owner="Landroid/content/res/Resources;",
-                    ),
-                ),
-            ]
+            )
         )
         return stmts, var(dval)
 
@@ -862,7 +1029,13 @@ class _PythonicContext:
                 self._container_orientation[item.id] = "horizontal"
                 body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
                 if item.weight_sum is not None:
-                    body.extend(self._emit_linear_weight_sum(item.id, item.weight_sum))
+                    body.extend(
+                        self._emit_attr_call(
+                            view_id=item.id,
+                            attr_name="weight_sum",
+                            raw_value=item.weight_sum,
+                        )
+                    )
                 body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._capture_view_static(item.id))
@@ -879,7 +1052,13 @@ class _PythonicContext:
                 self._container_orientation[item.id] = "horizontal"
                 body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
                 if item.weight_sum is not None:
-                    body.extend(self._emit_linear_weight_sum(item.id, item.weight_sum))
+                    body.extend(
+                        self._emit_attr_call(
+                            view_id=item.id,
+                            attr_name="weight_sum",
+                            raw_value=item.weight_sum,
+                        )
+                    )
                 body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._capture_view_static(item.id))
@@ -889,7 +1068,27 @@ class _PythonicContext:
                 self._container_orientation[item.id] = "vertical"
                 body.extend(linear_layout(item.id, var("ctx"), "vertical"))
                 if item.weight_sum is not None:
-                    body.extend(self._emit_linear_weight_sum(item.id, item.weight_sum))
+                    body.extend(
+                        self._emit_attr_call(
+                            view_id=item.id,
+                            attr_name="weight_sum",
+                            raw_value=item.weight_sum,
+                        )
+                    )
+                body.extend(self._apply_view_layout(item, parent_id))
+                body.append(add_view(var(parent_id), var(item.id)))
+                body.extend(self._capture_view_static(item.id))
+                body.extend(self._build_ui_items(item.id, item.items))
+            elif isinstance(item, _UIRelative):
+                item.id = self._register_view(item.id, "relative")
+                body.extend(relative_layout(item.id, var("ctx")))
+                body.extend(self._apply_view_layout(item, parent_id))
+                body.append(add_view(var(parent_id), var(item.id)))
+                body.extend(self._capture_view_static(item.id))
+                body.extend(self._build_ui_items(item.id, item.items))
+            elif isinstance(item, _UIConstraint):
+                item.id = self._register_view(item.id, "constraint")
+                body.extend(constraint_layout(item.id, var("ctx")))
                 body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._capture_view_static(item.id))
@@ -950,14 +1149,9 @@ class _PythonicContext:
     def _float_const_expr(self, value, prefix="f"):
         if not isinstance(value, (int, float)) or isinstance(value, bool):
             raise RuntimeError(f"Expected numeric float value, got {value!r}")
-        raw_name = self._next_tmp(f"{prefix}_i")
         flt_name = self._next_tmp(prefix)
-        iv = int(value)
-        if float(iv) != float(value):
-            raise RuntimeError(f"Only integer-compatible float values are currently supported, got {value!r}")
         return [
-            assign(raw_name, const(iv)),
-            assign(flt_name, primitive_cast(var(raw_name), "I", "F")),
+            assign(flt_name, const(float(value))),
         ], var(flt_name)
 
     def _emit_linear_weight_sum(self, view_id, weight_sum):
@@ -1020,6 +1214,8 @@ class _PythonicContext:
         if height_value is None:
             height_value = getattr(style, "height", None)
         margin_value = item.margin if item.margin is not None else style.margin
+        relative_value = getattr(item, "relative", None) if getattr(item, "relative", None) is not None else getattr(style, "relative", None)
+        constraints_value = getattr(item, "constraints", None) if getattr(item, "constraints", None) is not None else getattr(style, "constraints", None)
         text_color_value = item.text_color if getattr(item, "text_color", None) is not None else style.text_color
         background_value = item.background if getattr(item, "background", None) is not None else style.background
         radius_value = item.radius if getattr(item, "radius", None) is not None else style.radius
@@ -1028,7 +1224,7 @@ class _PythonicContext:
         padding_value = self._normalize_box_spacing(padding_value, "padding")
         margin_value = self._normalize_box_spacing(margin_value, "margin")
         layout_value = self._normalize_layout_value(layout_value)
-        if gravity_value is None and isinstance(item, (_UIRow, _UIColumn)):
+        if gravity_value is None and (align_value is not None or arrangement_value is not None):
             gravity_value = self._container_gravity(item, align_value, arrangement_value)
         if width_value is not None or height_value is not None:
             base_layout = layout_value if layout_value is not None else ("wrap", "wrap")
@@ -1044,6 +1240,16 @@ class _PythonicContext:
                 layout_value = (0, "wrap")
             else:
                 layout_value = ("match_parent", 0)
+        if weight_value is not None and layout_value is not None:
+            parent_orientation = self._container_orientation.get(parent_id, "vertical")
+            if parent_orientation == "horizontal" and layout_value[0] not in (0, "0"):
+                self._lint_warnings.append(
+                    f"weight on '{item.id}' in horizontal container should use width=0 for proper weight."
+                )
+            if parent_orientation == "vertical" and layout_value[1] not in (0, "0"):
+                self._lint_warnings.append(
+                    f"weight on '{item.id}' in vertical container should use height=0 for proper weight."
+                )
         gravity_value = self._normalize_gravity(gravity_value)
 
         if padding_value is not None:
@@ -1055,7 +1261,15 @@ class _PythonicContext:
                 )
             )
 
-        if gravity_value is not None:
+        if gravity_value is not None and (align_value is not None or arrangement_value is not None):
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="align",
+                    raw_value=gravity_value,
+                )
+            )
+        elif gravity_value is not None:
             out.extend(
                 self._emit_attr_call(
                     view_id=item.id,
@@ -1068,59 +1282,12 @@ class _PythonicContext:
         palette = self.theme_spec.palette
         bg_color = _parse_color(background_value, palette)
         txt_color = _parse_color(text_color_value, palette)
-        kind = self.view_types.get(item.id)
-
-        if bg_color is not None and radius_value is not None:
-            bg_name = f"bg_{item.id}"
-            color_key = self._add_color_resource(f"{item.id}_bg", bg_color)
-            color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{item.id}_bg")
-            radius_key = self._add_dimen_resource(f"{item.id}_radius", float(radius_value), unit="px")
-            radius_load, radius_expr = self._load_dimen_float_expr(radius_key, ctx_expr=var("ctx"), prefix=f"{item.id}_radius")
-            out.extend(color_load)
-            out.extend(radius_load)
-            out.append(assign(bg_name, new("Landroid/graphics/drawable/GradientDrawable;", args=[])))
-            out.append(
-                call_stmt(
-                    "setColor",
-                    args=[var(bg_name), color_expr],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Landroid/graphics/drawable/GradientDrawable;",
-                )
-            )
-            out.append(
-                call_stmt(
-                    "setCornerRadius",
-                    args=[var(bg_name), radius_expr],
-                    return_type=None,
-                    arg_types=["F"],
-                    invoke_kind="virtual",
-                    owner="Landroid/graphics/drawable/GradientDrawable;",
-                )
-            )
-            out.append(
-                call_stmt(
-                    "setBackground",
-                    args=[var(item.id), var(bg_name)],
-                    return_type=None,
-                    arg_types=["Landroid/graphics/drawable/Drawable;"],
-                    invoke_kind="virtual",
-                    owner="Landroid/view/View;",
-                )
-            )
-        elif bg_color is not None:
-            color_key = self._add_color_resource(f"{item.id}_bg", bg_color)
-            color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{item.id}_bg")
-            out.extend(color_load)
-            out.append(
-                call_stmt(
-                    "setBackgroundColor",
-                    args=[var(item.id), color_expr],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Landroid/view/View;",
+        if bg_color is not None or radius_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="background",
+                    raw_value=(bg_color, radius_value),
                 )
             )
 
@@ -1146,44 +1313,69 @@ class _PythonicContext:
         if layout_value or margin_value or weight_value is not None:
             width, height = layout_value if layout_value else ("wrap", "wrap")
             lp_name = f"lp_{item.id}"
-            out.append(assign(lp_name, layout_params(width, height, parent="LinearLayout")))
+            parent_kind = self.view_types.get(parent_id, "column")
+            if parent_kind == "relative":
+                parent_lp = "RelativeLayout"
+            elif parent_kind == "constraint":
+                parent_lp = "ConstraintLayout"
+            else:
+                parent_lp = "LinearLayout"
+            out.append(assign(lp_name, layout_params(width, height, parent=parent_lp)))
             if weight_value is not None:
-                weight_setup, weight_expr = self._float_const_expr(weight_value, prefix=f"{item.id}_w")
-                out.extend(weight_setup)
-                out.append(
-                    field_set(
-                        var(lp_name),
-                        "Landroid/widget/LinearLayout$LayoutParams;",
-                        "weight",
-                        "F",
-                        weight_expr,
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="weight",
+                        raw_value=(var(lp_name), weight_value),
                     )
                 )
             if margin_value:
-                ml, mt, mr, mb = margin_value
-                ml_key = self._add_dimen_resource(f"{item.id}_margin_l", ml)
-                mt_key = self._add_dimen_resource(f"{item.id}_margin_t", mt)
-                mr_key = self._add_dimen_resource(f"{item.id}_margin_r", mr)
-                mb_key = self._add_dimen_resource(f"{item.id}_margin_b", mb)
-                ml_load, ml_expr = self._load_dimen_px_expr(ml_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_l")
-                mt_load, mt_expr = self._load_dimen_px_expr(mt_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_t")
-                mr_load, mr_expr = self._load_dimen_px_expr(mr_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_r")
-                mb_load, mb_expr = self._load_dimen_px_expr(mb_key, ctx_expr=var("ctx"), prefix=f"{item.id}_margin_b")
-                out.extend(ml_load)
-                out.extend(mt_load)
-                out.extend(mr_load)
-                out.extend(mb_load)
-                out.append(
-                    call_stmt(
-                        "setMargins",
-                        args=[var(lp_name), ml_expr, mt_expr, mr_expr, mb_expr],
-                        return_type=None,
-                        arg_types=["I", "I", "I", "I"],
-                        invoke_kind="virtual",
-                        owner="Landroid/view/ViewGroup$MarginLayoutParams;",
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="margin",
+                        raw_value=(var(lp_name), margin_value),
                     )
                 )
-            out.append(set_layout_params(var(item.id), var(lp_name)))
+            if parent_lp == "RelativeLayout" and relative_value is not None:
+                rules = self._normalize_relative_rules(relative_value, parent_id=parent_id)
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="relative",
+                        raw_value=(var(lp_name), rules),
+                    )
+                )
+            if parent_lp == "ConstraintLayout" and constraints_value is not None:
+                constraints = self._normalize_constraints(constraints_value, parent_id=parent_id)
+                field_pairs = []
+                meta = ATTR_METHODS.get("constraints")
+                if meta and meta.field_map:
+                    for key, value in constraints.items():
+                        if key not in meta.field_map:
+                            continue
+                        field_name, field_desc = meta.field_map[key]
+                        if field_desc == "F":
+                            setup, expr = self._float_const_expr(value, prefix=f"{item.id}_{key}")
+                            out.extend(setup)
+                            value_expr = expr
+                        else:
+                            value_expr = const(int(value))
+                        field_pairs.append((field_name, field_desc, value_expr))
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="constraints",
+                        raw_value=(var(lp_name), field_pairs),
+                    )
+                )
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="layout_params",
+                    raw_value=var(lp_name),
+                )
+            )
         return out
 
     def _normalize_box_spacing(self, value, attr_name):
@@ -1213,6 +1405,83 @@ class _PythonicContext:
         raise RuntimeError(
             f"Invalid layout value {value!r}. Expected \"match\"/\"wrap\" or (width, height)."
         )
+
+    def _normalize_relative_rules(self, value, *, parent_id):
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)):
+            raise RuntimeError("relative expects a list/tuple of rules")
+        verb_map = {
+            "align_parent_left": 9,
+            "align_parent_right": 11,
+            "align_parent_top": 10,
+            "align_parent_bottom": 12,
+            "center_horizontal": 14,
+            "center_vertical": 15,
+            "center_in_parent": 13,
+            "align_left": 5,
+            "align_right": 7,
+            "align_top": 6,
+            "align_bottom": 8,
+            "left_of": 0,
+            "right_of": 1,
+            "above": 2,
+            "below": 3,
+            "align_baseline": 4,
+            "align_start": 17,
+            "align_end": 19,
+            "start_of": 16,
+            "end_of": 18,
+        }
+        out = []
+        for rule in value:
+            if not isinstance(rule, (tuple, list)) or len(rule) != 2:
+                raise RuntimeError("relative rule must be (verb, target)")
+            verb, target = rule
+            verb_key = str(verb).lower().strip()
+            if verb_key not in verb_map:
+                raise RuntimeError(f"Unknown relative rule verb: {verb}")
+            if target is None or target == "parent":
+                target_id = 0
+            else:
+                target_id = self._view_id_value(target, parent_id=parent_id)
+            out.append((verb_map[verb_key], int(target_id)))
+        return out
+
+    def _normalize_constraints(self, value, *, parent_id):
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise RuntimeError("constraints expects a dict")
+        out = {}
+        for key, target in value.items():
+            if key in ("horizontal_bias", "vertical_bias", "circle_angle"):
+                out[key] = float(target)
+                continue
+            if key == "circle_radius":
+                out[key] = int(target)
+                continue
+            if target is None or target == "parent":
+                out[key] = 0
+                continue
+            out[key] = self._view_id_value(target, parent_id=parent_id)
+        return out
+
+    def _view_id_value(self, view_id, *, parent_id=None):
+        if isinstance(view_id, int):
+            return view_id
+        if view_id == "parent" or view_id is None:
+            return 0
+        if view_id == parent_id:
+            raise RuntimeError("Constraints cannot target the parent by id; use 'parent'.")
+        resolved = self.view_fields.get(view_id)
+        if resolved is None:
+            raise RuntimeError(f"Unknown view id: {view_id}")
+        return self._numeric_id(view_id)
+
+    def _numeric_id(self, view_id):
+        digest = hashlib.md5(view_id.encode("utf-8")).hexdigest()
+        return 0x70000000 | (int(digest[:6], 16) & 0x00FFFFFF)
 
     def _normalize_gravity(self, value):
         if value is None:

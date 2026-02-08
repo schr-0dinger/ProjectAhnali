@@ -22,8 +22,9 @@ def test_widget_strings_extracted_to_resources_and_loaded_via_getstring():
     assert "Go" in values
     assert "Type something" in values
 
-    smali = alpha_pipeline(prog)["smali_class"]
-    assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
+    result = alpha_pipeline(prog)
+    smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert "LTestRes;->res_get_string(I)Ljava/lang/String;" in smali
     assert "Landroid/content/res/Resources;->getIdentifier" not in smali
     assert '"Hello"' not in smali
     assert '"Go"' not in smali
@@ -50,8 +51,9 @@ def test_click_handler_literals_are_resource_backed():
     assert "Saved successfully" in values
     assert prog.resource_ids
 
-    smali = alpha_pipeline(prog)["smali_class"]
-    assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
+    result = alpha_pipeline(prog)
+    smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert "LTestRes;->res_get_string(I)Ljava/lang/String;" in smali
     assert '"Saved"' not in smali
     assert '"Done"' not in smali
 
@@ -78,8 +80,9 @@ def test_fstring_static_fragments_are_resource_backed():
     assert "Count: " in values
     assert " step " in values
 
-    smali = alpha_pipeline(prog)["smali_class"]
-    assert "Landroid/content/res/Resources;->getString(I)Ljava/lang/String;" in smali
+    result = alpha_pipeline(prog)
+    smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert "LTestRes;->res_get_string(I)Ljava/lang/String;" in smali
     assert '"Count: "' not in smali
     assert '" step "' not in smali
 
@@ -107,10 +110,11 @@ def test_widget_style_values_extracted_to_typed_resources():
     assert prog.resource_dimens
     assert any(v.endswith("px") or v.endswith("sp") for v in prog.resource_dimens.values())
 
-    smali = alpha_pipeline(prog)["smali_class"]
-    assert "Landroid/content/res/Resources;->getColor(I)I" in smali
-    assert "Landroid/content/res/Resources;->getDimensionPixelSize(I)I" in smali
-    assert "Landroid/content/res/Resources;->getDimension(I)F" in smali
+    result = alpha_pipeline(prog)
+    smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert "LTestRes;->res_get_color(I)I" in smali
+    assert "LTestRes;->res_get_dimen_px(I)I" in smali
+    assert "LTestRes;->res_get_dimen_float(I)F" in smali
     assert "Landroid/widget/TextView;->setTextSize(IF)V" in smali
 
 

@@ -175,6 +175,7 @@ _METHOD_SIGS = {
     ("Landroid/widget/LinearLayout;", "setOrientation", "virtual"): (None, ["I"]),
     ("Landroid/widget/LinearLayout;", "setGravity", "virtual"): (None, ["I"]),
     ("Landroid/widget/LinearLayout;", "setWeightSum", "virtual"): (None, ["F"]),
+    ("Landroid/widget/RelativeLayout$LayoutParams;", "addRule", "virtual"): (None, ["I", "I"]),
     ("Landroid/view/ViewGroup;", "addView", "virtual"): (None, ["Landroid/view/View;"]),
     ("Landroid/view/View;", "setOnClickListener", "virtual"): (
         None,
@@ -236,4 +237,6 @@ _CTOR_SIGS = {
     "Landroid/widget/LinearLayout$LayoutParams;": ["I", "I"],
     "Landroid/widget/RelativeLayout$LayoutParams;": ["I", "I"],
     "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;": ["I", "I"],
+    "Landroid/widget/RelativeLayout;": ["Landroid/content/Context;"],
+    "Landroidx/constraintlayout/widget/ConstraintLayout;": ["Landroid/content/Context;"],
 }

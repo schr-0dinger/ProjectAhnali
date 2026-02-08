@@ -52,9 +52,9 @@ class Var(Expr):
 
 class Const(Expr):
     """
-    Literal constant (int only for now).
+    Literal constant (int/float/bool/string).
     """
-    def __init__(self, value: int):
+    def __init__(self, value):
         self.value = value
 
     def __repr__(self):

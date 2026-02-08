@@ -6,6 +6,14 @@ wrap_width = "wrap"
 wrap_height = "wrap"
 
 
+class Dp:
+    def __init__(self, value):
+        self.value = float(value)
+
+    def __repr__(self):
+        return f"dp({self.value})"
+
+
 def fill():
     return "match_parent"
 
@@ -19,7 +27,7 @@ def size(width, height):
 
 
 def dp(value):
-    return int(value)
+    return Dp(value)
 
 
 class _UIText:
@@ -35,6 +43,8 @@ class _UIText:
         margin=None,
         gravity=None,
         weight=None,
+        relative=None,
+        constraints=None,
         text_color=None,
         background=None,
         text_size=None,
@@ -50,6 +60,8 @@ class _UIText:
         self.margin = margin
         self.gravity = gravity
         self.weight = weight
+        self.relative = relative
+        self.constraints = constraints
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
@@ -70,6 +82,8 @@ class _UIButton:
         margin=None,
         gravity=None,
         weight=None,
+        relative=None,
+        constraints=None,
         text_color=None,
         background=None,
         text_size=None,
@@ -85,6 +99,8 @@ class _UIButton:
         self.margin = margin
         self.gravity = gravity
         self.weight = weight
+        self.relative = relative
+        self.constraints = constraints
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
@@ -106,6 +122,8 @@ class _UIRow:
         align=None,
         arrangement=None,
         weight_sum=None,
+        relative=None,
+        constraints=None,
         background=None,
         radius=None,
         style=None,
@@ -121,6 +139,8 @@ class _UIRow:
         self.align = align
         self.arrangement = arrangement
         self.weight_sum = weight_sum
+        self.relative = relative
+        self.constraints = constraints
         self.background = background
         self.radius = radius
         self.style = style
@@ -140,6 +160,8 @@ class _UIColumn:
         align=None,
         arrangement=None,
         weight_sum=None,
+        relative=None,
+        constraints=None,
         background=None,
         radius=None,
         style=None,
@@ -155,6 +177,64 @@ class _UIColumn:
         self.align = align
         self.arrangement = arrangement
         self.weight_sum = weight_sum
+        self.relative = relative
+        self.constraints = constraints
+        self.background = background
+        self.radius = radius
+        self.style = style
+
+
+class _UIRelative:
+    def __init__(
+        self,
+        *items,
+        id="relative",
+        layout=None,
+        width=None,
+        height=None,
+        padding=None,
+        margin=None,
+        gravity=None,
+        background=None,
+        radius=None,
+        style=None,
+    ):
+        self.id = id
+        self.items = items
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height)
+        self.padding = padding
+        self.margin = margin
+        self.gravity = gravity
+        self.background = background
+        self.radius = radius
+        self.style = style
+
+
+class _UIConstraint:
+    def __init__(
+        self,
+        *items,
+        id="constraint",
+        layout=None,
+        width=None,
+        height=None,
+        padding=None,
+        margin=None,
+        gravity=None,
+        background=None,
+        radius=None,
+        style=None,
+    ):
+        self.id = id
+        self.items = items
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height)
+        self.padding = padding
+        self.margin = margin
+        self.gravity = gravity
         self.background = background
         self.radius = radius
         self.style = style
@@ -285,6 +365,8 @@ class Style:
         align=None,
         arrangement=None,
         weight_sum=None,
+        relative=None,
+        constraints=None,
         text_color=None,
         background=None,
         text_size=None,
@@ -300,6 +382,8 @@ class Style:
         self.align = align
         self.arrangement = arrangement
         self.weight_sum = weight_sum
+        self.relative = relative
+        self.constraints = constraints
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
@@ -319,6 +403,8 @@ class Style:
             align=override.align if override.align is not None else self.align,
             arrangement=override.arrangement if override.arrangement is not None else self.arrangement,
             weight_sum=override.weight_sum if override.weight_sum is not None else self.weight_sum,
+            relative=override.relative if override.relative is not None else self.relative,
+            constraints=override.constraints if override.constraints is not None else self.constraints,
             text_color=override.text_color if override.text_color is not None else self.text_color,
             background=override.background if override.background is not None else self.background,
             text_size=override.text_size if override.text_size is not None else self.text_size,
@@ -448,6 +534,14 @@ class PopupMenuButton(_UIPopupMenuButton):
     pass
 
 
+class Relative(_UIRelative):
+    pass
+
+
+class Constraint(_UIConstraint):
+    pass
+
+
 def _layout_with_size(layout, width, height, default=None):
     if layout is None:
         layout = default
@@ -476,6 +570,8 @@ def text(
     margin=None,
     gravity=None,
     weight=None,
+    relative=None,
+    constraints=None,
     text_color=None,
     background=None,
     text_size=None,
@@ -492,6 +588,8 @@ def text(
         margin=margin,
         gravity=gravity,
         weight=weight,
+        relative=relative,
+        constraints=constraints,
         text_color=text_color,
         background=background,
         text_size=text_size,
@@ -511,6 +609,8 @@ def button(
     margin=None,
     gravity=None,
     weight=None,
+    relative=None,
+    constraints=None,
     text_color=None,
     background=None,
     text_size=None,
@@ -527,6 +627,8 @@ def button(
         margin=margin,
         gravity=gravity,
         weight=weight,
+        relative=relative,
+        constraints=constraints,
         text_color=text_color,
         background=background,
         text_size=text_size,
@@ -547,6 +649,8 @@ def row(
     align=None,
     arrangement=None,
     weight_sum=None,
+    relative=None,
+    constraints=None,
     background=None,
     radius=None,
     style=None,
@@ -563,6 +667,8 @@ def row(
         align=align,
         arrangement=arrangement,
         weight_sum=weight_sum,
+        relative=relative,
+        constraints=constraints,
         background=background,
         radius=radius,
         style=style,
@@ -581,6 +687,8 @@ def column(
     align=None,
     arrangement=None,
     weight_sum=None,
+    relative=None,
+    constraints=None,
     background=None,
     radius=None,
     style=None,
@@ -597,6 +705,64 @@ def column(
         align=align,
         arrangement=arrangement,
         weight_sum=weight_sum,
+        relative=relative,
+        constraints=constraints,
+        background=background,
+        radius=radius,
+        style=style,
+    )
+
+
+def relative(
+    *items,
+    id="relative",
+    layout=None,
+    width=None,
+    height=None,
+    padding=None,
+    margin=None,
+    gravity=None,
+    background=None,
+    radius=None,
+    style=None,
+):
+    return _UIRelative(
+        *items,
+        id=id,
+        layout=layout,
+        width=width,
+        height=height,
+        padding=padding,
+        margin=margin,
+        gravity=gravity,
+        background=background,
+        radius=radius,
+        style=style,
+    )
+
+
+def constraint(
+    *items,
+    id="constraint",
+    layout=None,
+    width=None,
+    height=None,
+    padding=None,
+    margin=None,
+    gravity=None,
+    background=None,
+    radius=None,
+    style=None,
+):
+    return _UIConstraint(
+        *items,
+        id=id,
+        layout=layout,
+        width=width,
+        height=height,
+        padding=padding,
+        margin=margin,
+        gravity=gravity,
         background=background,
         radius=radius,
         style=style,

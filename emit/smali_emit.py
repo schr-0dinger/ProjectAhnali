@@ -23,6 +23,7 @@ from dalvik.ir import (
 )
 from ir.types import AnaliType
 from ir.expr import Const
+import struct
 
 
 def _build_reg_map(intervals, param_ssa=None):
@@ -178,6 +179,12 @@ def emit_method_smali(method: DalvikMethod):
                 if isinstance(instr.value, str):
                     s = instr.value.replace("\\", "\\\\").replace("\"", "\\\"")
                     lines.append(f"    const-string {r}, \"{s}\"")
+                elif isinstance(instr.value, float):
+                    bits = struct.unpack(">I", struct.pack(">f", instr.value))[0]
+                    if bits & 0xFFFF == 0:
+                        lines.append(f"    const/high16 {r}, 0x{bits >> 16:04x}")
+                    else:
+                        lines.append(f"    const {r}, 0x{bits:08x}")
                 else:
                     val = int(instr.value)
                     if -8 <= val <= 7:

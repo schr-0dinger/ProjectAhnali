@@ -13,6 +13,7 @@ class ProgramIR:
         fields=None,
         support_classes=None,
         method_class_map=None,
+        lint_warnings=None,
         resources=None,
         resource_ids=None,
         resource_colors=None,
@@ -26,6 +27,7 @@ class ProgramIR:
         self.fields = fields or []
         self.support_classes = support_classes or []
         self.method_class_map = method_class_map or {}
+        self.lint_warnings = lint_warnings or []
         self.resources = resources or {}
         self.resource_ids = resource_ids or {}
         self.resource_colors = resource_colors or {}
