@@ -6,6 +6,7 @@ from dalvik.ir import (
     DConst,
     DMove,
     DIf,
+    DIfZ,
     DGoto,
     DReturnVoid,
     DReturn,
@@ -24,6 +25,7 @@ from dalvik.ir import (
     DInstanceOf,
     DArrayLength,
     DFilledNewArray,
+    DCompare,
 )
 from ir.expr import (
     Compare,
@@ -129,6 +131,7 @@ class LowerSSAToDalvik:
 
         # CFG block -> DalvikBlock
         self.blocks = {}
+        self._tmp_idx = 0
 
     # ----------------------------
     # Entry point
@@ -171,6 +174,43 @@ class LowerSSAToDalvik:
             f"Dalvik lowering received unsupported value: {value}"
         )
 
+    def _new_temp(self, *, prefix="tmp", typ=AnaliType.INT):
+        v = SSAValue(prefix, self._tmp_idx)
+        self._tmp_idx += 1
+        v.type = typ
+        return v
+
+    def _value_type(self, value):
+        if isinstance(value, Const):
+            if isinstance(value.value, bool):
+                return AnaliType.BOOL
+            if isinstance(value.value, int):
+                return AnaliType.INT
+            if isinstance(value.value, float):
+                return AnaliType.FLOAT
+            if isinstance(value.value, str):
+                return AnaliType.STRING
+            return None
+        if isinstance(value, SSAValue):
+            return value.type
+        return None
+
+    def _is_ref_type(self, t):
+        if t in (AnaliType.OBJECT, AnaliType.STRING):
+            return True
+        if isinstance(t, str) and (t.startswith("L") or t.startswith("[")):
+            return True
+        return False
+
+    def _normalize_prim_type(self, t):
+        if t in (AnaliType.INT, AnaliType.BOOL):
+            return "I"
+        if t == AnaliType.FLOAT:
+            return "F"
+        if t in ("I", "J", "F", "D"):
+            return t
+        return None
+
 
 
     def _lower_block(self, cfg_block, ssa_block):
@@ -205,18 +245,74 @@ class LowerSSAToDalvik:
 
         if kind == "branch":
             if isinstance(term.cond, Compare):
-                # Relational branch
-                db.emit(
-                    DIf(
-                        cmp=(
-                            term.cond.op,
-                            self._as_dvalue(term.cond.left, db),
-                            self._as_dvalue(term.cond.right, db),
-                        ),
-                        true_block=term.true,
-                        false_block=term.false,
+                lhs = self._as_dvalue(term.cond.left, db)
+                rhs = self._as_dvalue(term.cond.right, db)
+                left_t = self._value_type(term.cond.left)
+                right_t = self._value_type(term.cond.right)
+
+                if self._is_ref_type(left_t) or self._is_ref_type(right_t):
+                    if term.cond.op not in ("==", "!="):
+                        raise RuntimeError("Reference compare only supports == or !=")
+                    db.emit(
+                        DIf(
+                            cmp=(term.cond.op, lhs, rhs),
+                            true_block=term.true,
+                            false_block=term.false,
+                        )
                     )
-                )
+                else:
+                    prim_left = self._normalize_prim_type(left_t)
+                    prim_right = self._normalize_prim_type(right_t)
+                    prim = prim_left or prim_right or "I"
+
+                    if prim in ("J", "F", "D"):
+                        cmp_kind = {
+                            "J": "long",
+                            "F": "float",
+                            "D": "double",
+                        }[prim]
+                        if term.cond.op in ("<", "<="):
+                            nan_mode = "cmpg"
+                        elif term.cond.op in (">", ">="):
+                            nan_mode = "cmpl"
+                        elif term.cond.op == "==":
+                            nan_mode = "cmpl"
+                        else:
+                            nan_mode = "cmpg"
+                        tmp = self._new_temp(prefix="cmp", typ=AnaliType.INT)
+                        db.emit(
+                            DCompare(
+                                DValue(tmp),
+                                lhs,
+                                rhs,
+                                cmp_kind=cmp_kind,
+                                nan_mode=nan_mode if cmp_kind in ("float", "double") else None,
+                            )
+                        )
+                        z_op = {
+                            "<": "ltz",
+                            "<=": "lez",
+                            ">": "gtz",
+                            ">=": "gez",
+                            "==": "eqz",
+                            "!=": "nez",
+                        }[term.cond.op]
+                        db.emit(
+                            DIfZ(
+                                cond=DValue(tmp),
+                                op=z_op,
+                                true_block=term.true,
+                                false_block=term.false,
+                            )
+                        )
+                    else:
+                        db.emit(
+                            DIf(
+                                cmp=(term.cond.op, lhs, rhs),
+                                true_block=term.true,
+                                false_block=term.false,
+                            )
+                        )
 
             else:
                 # Boolean SSA condition
@@ -328,13 +424,16 @@ class LowerSSAToDalvik:
 
             expr_type = stmt.defines().type
 
-            if expr_type == AnaliType.INT:
-                op_map = {"+": DAdd, "-": DSub, "*": DMul, "/": DDiv, "%": DRem}
+            if expr_type in (AnaliType.INT, AnaliType.BOOL):
+                type_desc = "I"
             elif expr_type == AnaliType.FLOAT:
-                # Future-proofing: Phase Omega allows adding DAddFloat easily here
-                raise NotImplementedError("Float arithmetic not yet implemented")
+                type_desc = "F"
+            elif expr_type in ("J", "D"):
+                type_desc = expr_type
+            elif expr_type in ("I", "F"):
+                type_desc = expr_type
             else:
-                raise RuntimeError(f"Cannot perform arithmetic on type {expr_type}")          
+                raise RuntimeError(f"Cannot perform arithmetic on type {expr_type}")
 
 
             lhs = self._as_dvalue(expr.left, db)
@@ -349,7 +448,7 @@ class LowerSSAToDalvik:
             }
 
             instr_cls = op_map[expr.op]
-            db.emit(instr_cls(dst, lhs, rhs))
+            db.emit(instr_cls(dst, lhs, rhs, type_desc=type_desc))
             return
 
         # Call (Eta-2 scaffolding)

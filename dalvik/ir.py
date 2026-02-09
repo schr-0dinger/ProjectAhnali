@@ -239,10 +239,11 @@ class DBinaryOp(DInstr):
     Base class for Dalvik binary arithmetic instructions.
     dst = lhs <op> rhs
     """
-    def __init__(self, dst, lhs, rhs):
+    def __init__(self, dst, lhs, rhs, type_desc="I"):
         self.dst = dst    # DValue
         self.lhs = lhs    # DValue
         self.rhs = rhs    # DValue
+        self.type_desc = type_desc  # I, J, F, D (or other primitive desc)
 
     def __repr__(self):
         return f"{self.dst} = {self.op} {self.lhs}, {self.rhs}"
@@ -265,6 +266,21 @@ class DDiv(DBinaryOp):
 
 class DRem(DBinaryOp):
     op = "rem"
+
+
+class DCompare(DInstr):
+    """
+    Primitive compare:
+    - long: cmp-long
+    - float/double: cmpl/cmpg
+    Produces int result in dst.
+    """
+    def __init__(self, dst, lhs, rhs, *, cmp_kind, nan_mode=None):
+        self.dst = dst
+        self.lhs = lhs
+        self.rhs = rhs
+        self.cmp_kind = cmp_kind  # "long" | "float" | "double"
+        self.nan_mode = nan_mode  # "cmpl" | "cmpg" (for float/double)
 
 
 class DIf(DInstr):

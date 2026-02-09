@@ -31,6 +31,7 @@ from dalvik.ir import (
     DIfZ,
     DArrayLength,
     DFilledNewArray,
+    DCompare,
 )
 from ir.types import AnaliType
 from ir.expr import Const
@@ -435,7 +436,8 @@ def emit_method_smali(method: DalvikMethod):
                 rd = reg_map[instr.dst.ssa]
                 rs = reg_map[instr.src.ssa]
                 if rd != rs:
-                    op = _move_opcode(rs, rd, _is_object_ssa(instr.src.ssa))
+                    is_obj = _is_object_ssa(instr.src.ssa) or _is_object_ssa(instr.dst.ssa)
+                    op = _move_opcode(rs, rd, is_obj)
                     lines.append(f"    {op} {rd}, {rs}")
             elif isinstance(instr, DMoveWide):
                 rd = reg_map[instr.dst.ssa]
@@ -461,14 +463,43 @@ def emit_method_smali(method: DalvikMethod):
                 ra = reg_map[instr.lhs.ssa]
                 rb = reg_map[instr.rhs.ssa]
 
-                opcode = {
-                    "DAdd": "add-int",
-                    "DSub": "sub-int",
-                    "DMul": "mul-int",
-                    "DDiv": "div-int",
-                    "DRem": "rem-int",
+                type_desc = getattr(instr, "type_desc", "I")
+                if type_desc in ("B", "C", "S", "Z"):
+                    type_desc = "I"
+
+                op_base = {
+                    "DAdd": "add",
+                    "DSub": "sub",
+                    "DMul": "mul",
+                    "DDiv": "div",
+                    "DRem": "rem",
                 }[instr.__class__.__name__]
 
+                suffix = {
+                    "I": "int",
+                    "J": "long",
+                    "F": "float",
+                    "D": "double",
+                }.get(type_desc)
+                if suffix is None:
+                    raise RuntimeError(f"Unsupported binary op type {type_desc}")
+
+                opcode = f"{op_base}-{suffix}"
+
+                lines.append(f"    {opcode} {rd}, {ra}, {rb}")
+
+            elif isinstance(instr, DCompare):
+                rd = reg_map[instr.dst.ssa]
+                ra = reg_map[instr.lhs.ssa]
+                rb = reg_map[instr.rhs.ssa]
+                if instr.cmp_kind == "long":
+                    opcode = "cmp-long"
+                elif instr.cmp_kind == "float":
+                    opcode = "cmpl-float" if instr.nan_mode == "cmpl" else "cmpg-float"
+                elif instr.cmp_kind == "double":
+                    opcode = "cmpl-double" if instr.nan_mode == "cmpl" else "cmpg-double"
+                else:
+                    raise RuntimeError(f"Unsupported compare kind {instr.cmp_kind}")
                 lines.append(f"    {opcode} {rd}, {ra}, {rb}")
 
             elif isinstance(instr, DInvoke):

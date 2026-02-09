@@ -4,9 +4,11 @@ from dalvik.ir import (
     DConst,
     DMove,
     DIf,
+    DIfZ,
     DGoto,
     DReturnVoid,
     DBinaryOp,
+    DCompare,
     DInvoke,
     DReturn,
     DThrow,
@@ -76,6 +78,10 @@ def eliminate_dead_code(dalvik_blocks):
                     for v in (_ssa_of(instr.lhs), _ssa_of(instr.rhs)):
                         if v:
                             read.add(v)
+                elif isinstance(instr, DCompare):
+                    for v in (_ssa_of(instr.lhs), _ssa_of(instr.rhs)):
+                        if v:
+                            read.add(v)
 
                 elif isinstance(instr, DIf):
                     # Boolean condition
@@ -95,6 +101,10 @@ def eliminate_dead_code(dalvik_blocks):
                         for v in (_ssa_of(a), _ssa_of(b)):
                             if v:
                                 read.add(v)
+                elif isinstance(instr, DIfZ):
+                    v = _ssa_of(instr.cond)
+                    if v:
+                        read.add(v)
 
                 elif isinstance(instr, DInvoke):
                     for v in (_ssa_of(a) for a in instr.args):

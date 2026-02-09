@@ -43,7 +43,7 @@ APP_SHOW_ACTION_BAR = False
 APP_LABEL = "Anali App"
 
 # Plugin list (core is always loaded)
-APP_PLUGINS = ["material"]
+# APP_PLUGINS = ["material"]
 
 # APP_UNINSTALL_FIRST
 # APP_OUTPUT_APK

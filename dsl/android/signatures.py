@@ -1,6 +1,8 @@
 from ir.expr import Const
 from ir.types import AnaliType
 import json
+import os
+import zipfile
 from pathlib import Path
 
 
@@ -74,9 +76,240 @@ def _type_compatible(inferred, expected):
     return False
 
 
+def _parse_type_list(sig: str) -> list[str]:
+    out: list[str] = []
+    i = 0
+    while i < len(sig):
+        c = sig[i]
+        if c in "ZBCSIFJDV":
+            out.append(c)
+            i += 1
+            continue
+        if c == "L":
+            j = sig.find(";", i)
+            out.append(sig[i : j + 1])
+            i = j + 1
+            continue
+        if c == "[":
+            start = i
+            i += 1
+            while i < len(sig) and sig[i] == "[":
+                i += 1
+            if i < len(sig) and sig[i] == "L":
+                j = sig.find(";", i)
+                out.append(sig[start : j + 1])
+                i = j + 1
+            else:
+                out.append(sig[start : i + 1])
+                i += 1
+            continue
+        raise ValueError(f"Unexpected type descriptor: {sig}")
+    return out
+
+
+def _parse_descriptor(desc: str) -> tuple[list[str], str]:
+    if not desc.startswith("("):
+        raise ValueError(f"Bad descriptor: {desc}")
+    args_sig, ret_sig = desc.split(")", 1)
+    args = _parse_type_list(args_sig[1:])
+    ret = ret_sig
+    return args, ret
+
+
+def _read_u1(data: bytes, idx: int) -> tuple[int, int]:
+    return data[idx], idx + 1
+
+
+def _read_u2(data: bytes, idx: int) -> tuple[int, int]:
+    return int.from_bytes(data[idx : idx + 2], "big"), idx + 2
+
+
+def _read_u4(data: bytes, idx: int) -> tuple[int, int]:
+    return int.from_bytes(data[idx : idx + 4], "big"), idx + 4
+
+
+def _read_cp_entry(data: bytes, idx: int):
+    tag, idx = _read_u1(data, idx)
+    if tag == 1:  # Utf8
+        length, idx = _read_u2(data, idx)
+        value = data[idx : idx + length].decode("utf-8", errors="replace")
+        return ("Utf8", value), idx + length, 1
+    if tag == 7:  # Class
+        name_index, idx = _read_u2(data, idx)
+        return ("Class", name_index), idx, 1
+    if tag == 8:  # String
+        idx2, idx = _read_u2(data, idx)
+        return ("String", idx2), idx, 1
+    if tag in (9, 10, 11):  # Field/Method/InterfaceMethod ref
+        idx = idx + 4
+        return ("Ref", None), idx, 1
+    if tag == 12:  # NameAndType
+        idx = idx + 4
+        return ("NameType", None), idx, 1
+    if tag in (3, 4):  # Integer/Float
+        idx = idx + 4
+        return ("Num", None), idx, 1
+    if tag in (5, 6):  # Long/Double (two slots)
+        idx = idx + 8
+        return ("Num2", None), idx, 2
+    if tag == 15:  # MethodHandle
+        idx = idx + 3
+        return ("Handle", None), idx, 1
+    if tag == 16:  # MethodType
+        idx = idx + 2
+        return ("MethodType", None), idx, 1
+    if tag == 18:  # InvokeDynamic
+        idx = idx + 4
+        return ("InvokeDynamic", None), idx, 1
+    if tag in (19, 20):  # Module, Package
+        idx = idx + 2
+        return ("Module", None), idx, 1
+    raise ValueError(f"Unsupported constant pool tag {tag}")
+
+
+def _parse_classfile(data: bytes):
+    idx = 0
+    magic, idx = _read_u4(data, idx)
+    if magic != 0xCAFEBABE:
+        raise ValueError("Bad class file")
+    _, idx = _read_u2(data, idx)
+    _, idx = _read_u2(data, idx)
+    cp_count, idx = _read_u2(data, idx)
+    cp = [None] * cp_count
+    i = 1
+    while i < cp_count:
+        entry, idx, slots = _read_cp_entry(data, idx)
+        cp[i] = entry
+        i += slots
+    access_flags, idx = _read_u2(data, idx)
+    this_class, idx = _read_u2(data, idx)
+    _, idx = _read_u2(data, idx)
+    interfaces_count, idx = _read_u2(data, idx)
+    idx += interfaces_count * 2
+    fields_count, idx = _read_u2(data, idx)
+    for _ in range(fields_count):
+        idx += 6
+        attr_count, idx = _read_u2(data, idx)
+        for _ in range(attr_count):
+            _, idx = _read_u2(data, idx)
+            length, idx = _read_u4(data, idx)
+            idx += length
+    methods = []
+    methods_count, idx = _read_u2(data, idx)
+    for _ in range(methods_count):
+        m_access, idx = _read_u2(data, idx)
+        name_index, idx = _read_u2(data, idx)
+        desc_index, idx = _read_u2(data, idx)
+        attr_count, idx = _read_u2(data, idx)
+        for _ in range(attr_count):
+            _, idx = _read_u2(data, idx)
+            length, idx = _read_u4(data, idx)
+            idx += length
+        methods.append((m_access, name_index, desc_index))
+    class_entry = cp[this_class]
+    if class_entry is None or class_entry[0] != "Class":
+        raise ValueError("Bad class name")
+    name_index = class_entry[1]
+    name_entry = cp[name_index]
+    class_name = name_entry[1]
+    return access_flags, class_name, cp, methods
+
+
+_ANDROID_JAR_PATH: Path | None = None
+_DYNAMIC_LOADED: set[str] = set()
+_DYNAMIC_MISSING: set[str] = set()
+
+
+def _find_android_jar() -> Path | None:
+    global _ANDROID_JAR_PATH
+    if _ANDROID_JAR_PATH is not None:
+        return _ANDROID_JAR_PATH
+    candidates: list[Path] = []
+    env_path = os.getenv("ANDROID_JAR")
+    if env_path:
+        candidates.append(Path(env_path))
+    for parent in Path(__file__).resolve().parents:
+        candidates.append(parent / "android.jar")
+    sdk_root = os.getenv("ANDROID_HOME") or os.getenv("ANDROID_SDK_ROOT")
+    if sdk_root:
+        platforms = Path(sdk_root) / "platforms"
+        if platforms.exists():
+            items = []
+            for p in platforms.glob("android-*"):
+                try:
+                    api = int(p.name.split("-")[-1])
+                except ValueError:
+                    api = -1
+                items.append((api, p))
+            for _, p in sorted(items, reverse=True):
+                candidates.append(p / "android.jar")
+    for candidate in candidates:
+        if candidate.exists():
+            _ANDROID_JAR_PATH = candidate
+            return candidate
+    _ANDROID_JAR_PATH = None
+    return None
+
+
+def _ensure_dynamic_signatures(owner_desc: str) -> None:
+    if owner_desc in _DYNAMIC_LOADED or owner_desc in _DYNAMIC_MISSING:
+        return
+    if not (isinstance(owner_desc, str) and owner_desc.startswith("L") and owner_desc.endswith(";")):
+        _DYNAMIC_MISSING.add(owner_desc)
+        return
+    jar_path = _find_android_jar()
+    if jar_path is None:
+        _DYNAMIC_MISSING.add(owner_desc)
+        return
+    class_path = owner_desc[1:-1] + ".class"
+    try:
+        with zipfile.ZipFile(jar_path, "r") as zf:
+            data = zf.read(class_path)
+    except Exception:
+        _DYNAMIC_MISSING.add(owner_desc)
+        return
+    try:
+        access_flags, internal_name, cp, methods = _parse_classfile(data)
+    except Exception:
+        _DYNAMIC_MISSING.add(owner_desc)
+        return
+    is_interface = bool(access_flags & 0x0200)
+    for m_access, name_index, desc_index in methods:
+        if not (m_access & 0x0001):
+            continue
+        name_entry = cp[name_index]
+        desc_entry = cp[desc_index]
+        if not name_entry or not desc_entry:
+            continue
+        method_name = name_entry[1]
+        desc = desc_entry[1]
+        try:
+            args, ret = _parse_descriptor(desc)
+        except Exception:
+            continue
+        if method_name == "<init>":
+            _CTOR_SIGS.setdefault(owner_desc, args)
+            key = (owner_desc, "<init>", "direct")
+            _METHOD_SIGS.setdefault(key, []).append((None, args))
+            continue
+        is_static = bool(m_access & 0x0008)
+        invoke_kind = "static" if is_static else ("interface" if is_interface else "virtual")
+        key = (owner_desc, method_name, invoke_kind)
+        _METHOD_SIGS.setdefault(key, []).append((ret if ret != "V" else None, args))
+        if invoke_kind == "virtual":
+            key = (owner_desc, method_name, "super")
+            _METHOD_SIGS.setdefault(key, []).append((ret if ret != "V" else None, args))
+    _DYNAMIC_LOADED.add(owner_desc)
+
+
 def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner):
     key = (owner, name, invoke_kind)
     entry = _METHOD_SIGS.get(key)
+    if entry is None:
+        _ensure_dynamic_signatures(owner)
+        entry = _METHOD_SIGS.get(key)
+    if entry is None and invoke_kind == "super":
+        entry = _METHOD_SIGS.get((owner, name, "virtual"))
     if entry is None:
         return _normalize_type(return_type), _normalize_arg_list(arg_types)
 

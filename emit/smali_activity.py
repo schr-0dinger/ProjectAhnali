@@ -126,17 +126,46 @@ def emit_activity_smali(
                 ra = reg_map[instr.lhs]
                 rb = reg_map[instr.rhs]
 
-                opcode = {
-                    "DAdd": "add-int",
-                    "DSub": "sub-int",
-                    "DMul": "mul-int",
-                    "DDiv": "div-int",
-                    "DRem": "rem-int",
+                type_desc = getattr(instr, "type_desc", "I")
+                if type_desc in ("B", "C", "S", "Z"):
+                    type_desc = "I"
+
+                op_base = {
+                    "DAdd": "add",
+                    "DSub": "sub",
+                    "DMul": "mul",
+                    "DDiv": "div",
+                    "DRem": "rem",
                 }[name]
+
+                suffix = {
+                    "I": "int",
+                    "J": "long",
+                    "F": "float",
+                    "D": "double",
+                }.get(type_desc)
+                if suffix is None:
+                    raise RuntimeError(f"Unsupported binary op type {type_desc}")
+
+                opcode = f"{op_base}-{suffix}"
 
                 lines.append(
                     f"    {opcode} {rd}, {ra}, {rb}"
                 )
+
+            elif name == "DCompare":
+                rd = reg_map[instr.dst]
+                ra = reg_map[instr.lhs]
+                rb = reg_map[instr.rhs]
+                if instr.cmp_kind == "long":
+                    opcode = "cmp-long"
+                elif instr.cmp_kind == "float":
+                    opcode = "cmpl-float" if instr.nan_mode == "cmpl" else "cmpg-float"
+                elif instr.cmp_kind == "double":
+                    opcode = "cmpl-double" if instr.nan_mode == "cmpl" else "cmpg-double"
+                else:
+                    raise RuntimeError(f"Unsupported compare kind {instr.cmp_kind}")
+                lines.append(f"    {opcode} {rd}, {ra}, {rb}")
 
             elif name == "DGoto":
                 lines.append(f"    goto :B{instr.target.id}")

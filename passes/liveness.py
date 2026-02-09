@@ -4,6 +4,8 @@ from dalvik.ir import (
     DMove,
     DBinaryOp,
     DIf,
+    DIfZ,
+    DCompare,
     DInvoke,
     DReturn,
     DThrow,
@@ -104,6 +106,10 @@ def _block_uses_defs(dblock):
                 for v in (_ssa_of(a), _ssa_of(b)):
                     if isinstance(v, SSAValue):
                         uses.add(v)
+        elif isinstance(instr, DIfZ):
+            v = _ssa_of(instr.cond)
+            if isinstance(v, SSAValue):
+                uses.add(v)
         elif isinstance(instr, DInvoke):
             for arg in instr.args:
                 v = _ssa_of(arg)
@@ -137,6 +143,10 @@ def _block_uses_defs(dblock):
             v = _ssa_of(instr.src)
             if isinstance(v, SSAValue):
                 uses.add(v)
+        elif isinstance(instr, DCompare):
+            for v in (_ssa_of(instr.lhs), _ssa_of(instr.rhs)):
+                if isinstance(v, SSAValue):
+                    uses.add(v)
         elif isinstance(instr, DNewArray):
             v = _ssa_of(instr.src)
             if isinstance(v, SSAValue):

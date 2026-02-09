@@ -99,7 +99,7 @@ def compile_method(method_ir, *, ssa_opt=None):
     verify_ssa(cfg, ssa_blocks, dom)
 
     # 8. NEW: Type Inference (Phase Omega Gate)
-    TypeInferencePass(cfg, ssa_blocks).run()
+    TypeInferencePass(cfg, ssa_blocks, return_type=method_ir.return_type).run()
 
     verify_types(ssa_blocks)
     ssa_opt = ssa_opt or {}
