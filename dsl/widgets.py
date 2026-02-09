@@ -50,20 +50,25 @@ def size(width, height):
     return (width, height)
 
 
-def dp(value):
-    return Dp(value)
+class _Unit:
+    def __init__(self, name, cls):
+        self.name = name
+        self.cls = cls
+
+    def __call__(self, value):
+        return self.cls(value)
+
+    def __rmul__(self, value):
+        return self.cls(value)
+
+    def __repr__(self):
+        return self.name
 
 
-def sp(value):
-    return Sp(value)
-
-
-def px(value):
-    return Px(value)
-
-
-def percent(value):
-    return Percent(value)
+dp = _Unit("dp", Dp)
+sp = _Unit("sp", Sp)
+px = _Unit("px", Px)
+percent = _Unit("percent", Percent)
 
 
 class _UIText:
@@ -474,31 +479,31 @@ class Presets:
         return Style(
             background=self.palette.get("primary", "#2563EB"),
             text_color=self.palette.get("on_primary", "#FFFFFF"),
-            text_size=16,
-            radius=16,
-            padding=(12, 12, 12, 12),
+            text_size=sp(16),
+            radius=dp(16),
+            padding=(dp(12), dp(12), dp(12), dp(12)),
         ).merged(Style(**overrides))
 
     def DangerButton(self, **overrides):
         return Style(
             background=self.palette.get("danger", "#EF4444"),
             text_color=self.palette.get("on_danger", "#FFFFFF"),
-            text_size=16,
-            radius=16,
-            padding=(12, 12, 12, 12),
+            text_size=sp(16),
+            radius=dp(16),
+            padding=(dp(12), dp(12), dp(12), dp(12)),
         ).merged(Style(**overrides))
 
     def MutedText(self, **overrides):
         return Style(
             text_color=self.palette.get("muted", "#6B7280"),
-            text_size=14,
+            text_size=sp(14),
         ).merged(Style(**overrides))
 
     def Card(self, **overrides):
         return Style(
             background=self.palette.get("card", "#FFFFFF"),
-            radius=16,
-            padding=(12, 12, 12, 12),
+            radius=dp(16),
+            padding=(dp(12), dp(12), dp(12), dp(12)),
         ).merged(Style(**overrides))
 
 
@@ -867,6 +872,11 @@ def toast(message, duration=0):
 
 def snackbar(message, duration=0):
     return _UISnackbar(message, duration=duration)
+
+
+def core(widget):
+    setattr(widget, "_plugin_override", "core")
+    return widget
 
 
 def style(**kwargs):

@@ -1,6 +1,7 @@
 from .ast import *
 from .ir_helpers import *
 from .lowering.context import _PythonicContext
+from .plugins import load_plugins
 from .parser import _parse_handler_ast
 from .widgets import (
     _UIAppBar,
@@ -40,7 +41,11 @@ from .widgets import (
     Theme,
     button,
     column,
+    core,
     dp,
+    sp,
+    px,
+    percent,
     fill,
     max_height,
     max_width,
@@ -55,6 +60,9 @@ from .widgets import (
     wrap_height,
     wrap_width,
 )
+import importlib
+import inspect
+import builtins as _builtins
 
 
 class _SimpleActivity:
@@ -221,21 +229,70 @@ class _ActivitySpec:
         self.parts = parts
 
 
+class AppConfig:
+    def __init__(
+        self,
+        *,
+        package: str = "com.anali.preview",
+        min_sdk: int = 21,
+        target_sdk: int = 33,
+        version_code: int = 1,
+        version_name: str = "1.0",
+        debuggable: bool = False,
+        show_action_bar: bool = True,
+        label: str | None = None,
+        uninstall_first: bool = True,
+        output_apk: str | None = None,
+        keystore_path: str | None = None,
+        keystore_alias: str = "androiddebugkey",
+    ):
+        self.package = package
+        self.min_sdk = min_sdk
+        self.target_sdk = target_sdk
+        self.version_code = version_code
+        self.version_name = version_name
+        self.debuggable = debuggable
+        self.show_action_bar = show_action_bar
+        self.label = label
+        self.uninstall_first = uninstall_first
+        self.output_apk = output_apk
+        self.keystore_path = keystore_path
+        self.keystore_alias = keystore_alias
+
+
 class AppSpec:
-    def __init__(self, activity_spec: _ActivitySpec):
+    def __init__(self, activity_spec: _ActivitySpec, *, caller_module: str | None = None):
         self.activity_spec = activity_spec
+        self.caller_module = caller_module
 
     def build(self):
-        return _build_pythonic_app(self.activity_spec)
+        return _build_pythonic_app(self.activity_spec, self.caller_module)
 
     def run(self, **kwargs):
         from apk.toolchain import build_install_run
 
-        return build_install_run(self.build(), **kwargs)
+        app_config = _extract_app_config(self.activity_spec, self.caller_module)
+        config_kwargs = {
+            "application_id": app_config.package,
+            "min_sdk": app_config.min_sdk,
+            "target_sdk": app_config.target_sdk,
+            "version_code": app_config.version_code,
+            "version_name": app_config.version_name,
+            "debuggable": app_config.debuggable,
+            "show_action_bar": app_config.show_action_bar,
+            "uninstall_first": app_config.uninstall_first,
+            "output_apk": app_config.output_apk,
+            "keystore_path": app_config.keystore_path,
+            "keystore_alias": app_config.keystore_alias,
+        }
+        config_kwargs = {k: v for k, v in config_kwargs.items() if v is not None}
+        config_kwargs.update(kwargs)
+        return build_install_run(self.build(), **config_kwargs)
 
 
 def app(activity_spec: _ActivitySpec):
-    return AppSpec(activity_spec)
+    caller = inspect.stack()[1].frame.f_globals.get("__name__")
+    return AppSpec(activity_spec, caller_module=caller)
 
 
 def run(app_spec: AppSpec, **kwargs):
@@ -244,6 +301,37 @@ def run(app_spec: AppSpec, **kwargs):
 
 def activity(name, *parts):
     return _ActivitySpec(name, *parts)
+
+
+def app_config(
+    *,
+    package: str = "com.anali.preview",
+    min_sdk: int = 21,
+    target_sdk: int = 33,
+    version_code: int = 1,
+    version_name: str = "1.0",
+    debuggable: bool = False,
+    show_action_bar: bool = True,
+    label: str | None = None,
+    uninstall_first: bool = True,
+    output_apk: str | None = None,
+    keystore_path: str | None = None,
+    keystore_alias: str = "androiddebugkey",
+):
+    return AppConfig(
+        package=package,
+        min_sdk=min_sdk,
+        target_sdk=target_sdk,
+        version_code=version_code,
+        version_name=version_name,
+        debuggable=debuggable,
+        show_action_bar=show_action_bar,
+        label=label,
+        uninstall_first=uninstall_first,
+        output_apk=output_apk,
+        keystore_path=keystore_path,
+        keystore_alias=keystore_alias,
+    )
 
 
 def state(**kwargs):
@@ -266,6 +354,15 @@ def on_click(button_id, stmts=None):
     return _OnClickSpec(button_id, stmts)
 
 
+def on_click_map(mapping):
+    specs = []
+    for button_id, stmts in mapping.items():
+        if callable(stmts):
+            stmts = _parse_handler_ast(stmts)
+        specs.append(_OnClickSpec(button_id, stmts))
+    return specs
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 
@@ -277,22 +374,57 @@ def theme(**kwargs):
 def presets(palette=None):
     return presets_widget(palette=palette)
 
+def _resolve_plugins(activity_spec: _ActivitySpec, caller_module: str | None):
+    plugins = []
+    if caller_module:
+        try:
+            mod = importlib.import_module(caller_module)
+        except Exception:
+            mod = None
+        if mod is not None and hasattr(mod, "APP_PLUGINS"):
+            value = getattr(mod, "APP_PLUGINS")
+            if isinstance(value, (list, tuple, set)):
+                plugins.extend([str(p).strip() for p in value if str(p).strip()])
+            elif isinstance(value, str):
+                plugins.extend([p.strip() for p in value.split(",") if p.strip()])
+    # preserve order, drop duplicates
+    seen = set()
+    out = []
+    for name in plugins:
+        if name not in seen:
+            seen.add(name)
+            out.append(name)
+    return out
 
-def _build_pythonic_app(activity_spec: _ActivitySpec):
+
+def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None = None):
     state_spec = None
     ui_spec = None
     theme_spec = Theme()
     click_specs = []
     resources = {"app_name": "AnaliPreview"}
+    label_locked = False
 
     for part in activity_spec.parts:
+        if isinstance(part, (list, tuple)):
+            for subpart in part:
+                if isinstance(subpart, _OnClickSpec):
+                    click_specs.append(subpart)
+            continue
         if isinstance(part, State):
             state_spec = part
         elif isinstance(part, _UISpec):
             ui_spec = part
             for item in part.items:
                 if isinstance(item, _UIAppBar) and getattr(item, "text", None):
-                    resources["app_name"] = str(item.text)
+                    if not label_locked:
+                        resources["app_name"] = str(item.text)
+        elif isinstance(part, AppConfig):
+            if part.label:
+                resources["app_name"] = str(part.label)
+                label_locked = True
+            # AppConfig is handled in AppSpec.run; ignore during build.
+            pass
         elif isinstance(part, Theme):
             theme_spec = part
         elif isinstance(part, _OnClickSpec):
@@ -301,5 +433,79 @@ def _build_pythonic_app(activity_spec: _ActivitySpec):
     state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
 
-    ctx = _PythonicContext(state_spec, ui_spec, theme_spec)
-    return ctx.build_program(click_specs, resources=resources)
+    if caller_module:
+        try:
+            mod = importlib.import_module(caller_module)
+        except Exception:
+            mod = None
+        if mod is not None and hasattr(mod, "APP_LABEL"):
+            resources["app_name"] = str(getattr(mod, "APP_LABEL"))
+            label_locked = True
+
+    plugin_names = _resolve_plugins(activity_spec, caller_module)
+    registry = load_plugins(["core", *plugin_names])
+    ctx = _PythonicContext(state_spec, ui_spec, theme_spec, registry=registry)
+    program = ctx.build_program(click_specs, resources=resources)
+    required_artifacts, jar_allowlist = registry.collect_deps(ui_spec.items, click_specs)
+    program.required_artifacts = required_artifacts
+    program.jar_allowlist = jar_allowlist
+    return program
+
+
+def _install_units_into_builtins():
+    # Make common DSL units/helpers available without explicit imports.
+    for name in (
+        "dp",
+        "sp",
+        "px",
+        "percent",
+        "fill",
+        "wrap",
+        "max_width",
+        "max_height",
+        "wrap_width",
+        "wrap_height",
+        "size",
+    ):
+        if name in globals():
+            setattr(_builtins, name, globals()[name])
+
+
+_install_units_into_builtins()
+
+
+def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None) -> AppConfig:
+    cfg = AppConfig()
+    for part in activity_spec.parts:
+        if isinstance(part, AppConfig):
+            cfg = part
+    if caller_module:
+        try:
+            mod = importlib.import_module(caller_module)
+        except Exception:
+            mod = None
+        if mod is not None:
+            macro = getattr(mod, "APP_CONFIG", None)
+            if isinstance(macro, dict):
+                cfg = AppConfig(**{**cfg.__dict__, **macro})
+            for key, attr in (
+                ("APP_PACKAGE", "package"),
+                ("APP_MIN_SDK", "min_sdk"),
+                ("APP_TARGET_SDK", "target_sdk"),
+                ("APP_VERSION_CODE", "version_code"),
+                ("APP_VERSION_NAME", "version_name"),
+                ("APP_DEBUGGABLE", "debuggable"),
+                ("APP_SHOW_ACTION_BAR", "show_action_bar"),
+                ("APP_NO_ACTION_BAR", "show_action_bar"),
+                ("APP_LABEL", "label"),
+                ("APP_UNINSTALL_FIRST", "uninstall_first"),
+                ("APP_OUTPUT_APK", "output_apk"),
+                ("APP_KEYSTORE_PATH", "keystore_path"),
+                ("APP_KEYSTORE_ALIAS", "keystore_alias"),
+            ):
+                if hasattr(mod, key):
+                    value = getattr(mod, key)
+                    if key == "APP_NO_ACTION_BAR":
+                        value = not bool(value)
+                    setattr(cfg, attr, value)
+    return cfg

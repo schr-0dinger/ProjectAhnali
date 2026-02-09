@@ -136,6 +136,18 @@ Requested Material widgets are exposed in DSL now. Current runtime uses framewor
 | Toast | `android.widget.Toast` |
 | Snackbar | `Toast` fallback |
 
+## Plugins
+
+The core runtime stays minimal. Optional functionality lives in plugins.
+
+- Set `APP_PLUGINS = ["plugin_a"]` in your app module
+
+Material support is a plugin (`material`) and is not enabled by default.
+
+To force a specific widget to use core rendering even when a plugin is enabled:
+
+- `core(Text("..."))`
+
 ## Colors
 
 `from dsl.colors import colors` provides named hex strings:

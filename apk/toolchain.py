@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import os
 import shutil
 import subprocess
@@ -320,6 +321,9 @@ def _extract_aar_jars(extra_aars: list[str | Path], out_dir: Path) -> list[Path]
         aar_path = Path(aar_path)
         if not aar_path.exists():
             raise RuntimeError(f"AAR not found: {aar_path}")
+        if aar_path.suffix == ".jar":
+            jar_paths.append(aar_path)
+            continue
         prefix = out_dir / aar_path.stem
         prefix.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(aar_path, "r") as zf:
@@ -331,6 +335,84 @@ def _extract_aar_jars(extra_aars: list[str | Path], out_dir: Path) -> list[Path]
                     zf.extract(name, prefix)
                     jar_paths.append(prefix / name)
     return jar_paths
+
+
+def _find_latest_artifact_file(libs_dir: Path, artifact: str, suffix: str) -> Path | None:
+    matches = sorted(libs_dir.glob(f"{artifact}-*{suffix}"))
+    if matches:
+        return matches[-1]
+    candidate = libs_dir / f"{artifact}{suffix}"
+    return candidate if candidate.exists() else None
+
+
+def _resolve_extra_aars_from_manifest(
+    libs_dir: Path,
+    required_artifacts: set[str],
+    jar_allowlist: set[str],
+) -> list[Path] | None:
+    manifest_path = libs_dir / "aar_resolved.json"
+    if not manifest_path.exists():
+        return None
+    data = json.loads(manifest_path.read_text())
+    resolved = []
+    for raw in data.get("resolved", []):
+        path = Path(raw)
+        if not path.is_absolute() and not path.exists():
+            path = libs_dir / path
+        if path.exists():
+            resolved.append(path)
+    aars = [
+        p
+        for p in resolved
+        if p.suffix == ".aar"
+        and any(p.name.startswith(f"{artifact}-") for artifact in required_artifacts)
+    ]
+    jars = []
+    if jar_allowlist:
+        for p in resolved:
+            if p.suffix != ".jar":
+                continue
+            stem = p.stem
+            base = stem.rsplit("-", 1)[0] if "-" in stem else stem
+            if base in jar_allowlist:
+                jars.append(p)
+    return aars + jars
+
+
+def _resolve_extra_aars(frontend_ir, extra_aars: list[str | Path] | None) -> list[str | Path] | None:
+    if extra_aars is not None:
+        return extra_aars
+    required_artifacts = set(getattr(frontend_ir, "required_artifacts", []) or [])
+    jar_allowlist = set(getattr(frontend_ir, "jar_allowlist", []) or [])
+    if not required_artifacts and not jar_allowlist:
+        return None
+    libs_dir = Path("libs")
+    if not libs_dir.exists():
+        raise RuntimeError("Missing ./libs directory. Run tools/download_aars.py --out libs.")
+
+    resolved = _resolve_extra_aars_from_manifest(libs_dir, required_artifacts, jar_allowlist)
+    if resolved is None:
+        resolved = []
+        for artifact in sorted(required_artifacts):
+            match = _find_latest_artifact_file(libs_dir, artifact, ".aar")
+            if match is not None:
+                resolved.append(match)
+        for jar in sorted(jar_allowlist):
+            match = _find_latest_artifact_file(libs_dir, jar, ".jar")
+            if match is not None:
+                resolved.append(match)
+
+    missing = []
+    for artifact in sorted(required_artifacts):
+        if not any(Path(p).name.startswith(f"{artifact}-") for p in resolved if Path(p).suffix == ".aar"):
+            missing.append(f"{artifact}-*.aar")
+    if missing:
+        missing_list = ", ".join(missing)
+        raise RuntimeError(
+            f"Missing required AARs in ./libs: {missing_list}. "
+            "Run tools/download_aars.py --out libs."
+        )
+    return resolved if resolved else None
 
 
 def _merge_dex_with_aars(
@@ -373,6 +455,10 @@ def package_apk_from_dex(
     application_id: str = "com.anali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
+    version_code: int = 1,
+    version_name: str = "1.0",
+    debuggable: bool = False,
+    show_action_bar: bool = True,
     api: int | None = None,
     keystore_path: str | Path | None = None,
     keystore_alias: str = "androiddebugkey",
@@ -399,27 +485,30 @@ def package_apk_from_dex(
     signed_apk = Path(output_apk) if output_apk else (out_dir / "signed.apk")
 
     manifest_path = out_dir / "AndroidManifest.xml"
-    if not manifest_path.exists():
-        if activity_name is None and activity_class_desc is not None:
-            activity_name = _activity_name_from_desc(
-                activity_class_desc,
-                application_id,
-            )
-        if activity_name is None:
-            activity_name = ".MainActivity"
-        if resources is None and not (out_dir / "res").exists():
-            resources = {"app_name": "AnaliPreview"}
-        label = "@string/app_name" if (resources is not None or (out_dir / "res").exists()) else "AnaliPreview"
-        manifest_path.write_text(
-            render_manifest(
-                application_id=application_id,
-                min_sdk=min_sdk,
-                target_sdk=target_sdk,
-                activity_name=activity_name,
-                label=label,
-            ),
-            encoding="utf-8",
+    if activity_name is None and activity_class_desc is not None:
+        activity_name = _activity_name_from_desc(
+            activity_class_desc,
+            application_id,
         )
+    if activity_name is None:
+        activity_name = ".MainActivity"
+    if resources is None and not (out_dir / "res").exists():
+        resources = {"app_name": "AnaliPreview"}
+    label = "@string/app_name" if (resources is not None or (out_dir / "res").exists()) else "AnaliPreview"
+    manifest_path.write_text(
+        render_manifest(
+            application_id=application_id,
+            min_sdk=min_sdk,
+            target_sdk=target_sdk,
+            version_code=version_code,
+            version_name=version_name,
+            debuggable=debuggable,
+            show_action_bar=show_action_bar,
+            activity_name=activity_name,
+            label=label,
+        ),
+        encoding="utf-8",
+    )
 
     with tempfile.TemporaryDirectory(dir=out_dir) as tmp:
         tmp = Path(tmp)
@@ -433,26 +522,40 @@ def package_apk_from_dex(
                 resources = AndroidResources(strings={"app_name": "AnaliPreview"})
             resources.write_to_dir(tmp)
 
+        extra_res_dirs = []
         if extra_aars:
-            extra_res_dir = tmp / "res_extra"
-            for aar_path in extra_aars:
+            extra_res_root = tmp / "res_extra"
+            for idx, aar_path in enumerate(extra_aars):
                 aar_path = Path(aar_path)
                 if not aar_path.exists():
                     raise RuntimeError(f"AAR not found: {aar_path}")
+                if aar_path.suffix != ".aar":
+                    continue
+                dest_root = extra_res_root / f"aar_{idx}"
                 with zipfile.ZipFile(aar_path, "r") as zf:
                     for name in zf.namelist():
                         if name.startswith("res/"):
-                            zf.extract(name, extra_res_dir)
+                            zf.extract(name, dest_root)
+                res_dir = dest_root / "res"
+                if res_dir.exists():
+                    extra_res_dirs.append(res_dir)
 
-        compiled_res = tmp / "compiled"
-        compiled_res.mkdir(parents=True, exist_ok=True)
-        subprocess.run([aapt2, "compile", "--dir", str(tmp / "res"), "-o", str(compiled_res)], check=True)
-        if extra_aars:
-            extra_res = tmp / "res_extra" / "res"
-            if extra_res.exists():
-                subprocess.run([aapt2, "compile", "--dir", str(extra_res), "-o", str(compiled_res)], check=True)
+        compiled_dirs = []
+        base_compiled = tmp / "compiled" / "base"
+        base_compiled.mkdir(parents=True, exist_ok=True)
+        subprocess.run([aapt2, "compile", "--dir", str(tmp / "res"), "-o", str(base_compiled)], check=True)
+        compiled_dirs.append(base_compiled)
+        if extra_res_dirs:
+            extra_compiled_root = tmp / "compiled" / "extra"
+            for idx, res_dir in enumerate(extra_res_dirs):
+                out_dir = extra_compiled_root / f"aar_{idx}"
+                out_dir.mkdir(parents=True, exist_ok=True)
+                subprocess.run([aapt2, "compile", "--dir", str(res_dir), "-o", str(out_dir)], check=True)
+                compiled_dirs.append(out_dir)
 
-        flat_files = list(compiled_res.rglob("*.flat"))
+        flat_files = []
+        for compiled_dir in compiled_dirs:
+            flat_files.extend(compiled_dir.rglob("*.flat"))
         if not flat_files:
             raise RuntimeError("aapt2 compile produced no resources")
 
@@ -472,14 +575,16 @@ def package_apk_from_dex(
             "--auto-add-overlay",
         ]
         auto_stable_ids = None
-        if isinstance(resources, AndroidResources) and resources.string_ids:
+        if isinstance(resources, AndroidResources) and (
+            resources.string_ids
+            or resources.color_ids
+            or resources.dimen_ids
+            or resources.style_ids
+        ):
             auto_stable_ids = tmp / "stable_ids.txt"
             resources.write_stable_ids(auto_stable_ids, application_id)
 
-        disable_stable_ids = bool(extra_aars)
-        if disable_stable_ids:
-            stable_ids_path = None
-        if stable_ids_path is None and not disable_stable_ids:
+        if stable_ids_path is None:
             candidate_ids = out_dir / "stable_ids.txt"
             if candidate_ids.exists():
                 stable_ids_path = candidate_ids
@@ -534,6 +639,10 @@ def build_install_run(
     application_id: str = "com.anali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
+    version_code: int = 1,
+    version_name: str = "1.0",
+    debuggable: bool = False,
+    show_action_bar: bool = True,
     api: int | None = None,
     smali_jar: str | None = None,
     keystore_path: str | Path | None = None,
@@ -547,6 +656,7 @@ def build_install_run(
     Returns the signed APK path.
     """
     out_dir = Path(out_dir)
+    extra_aars = _resolve_extra_aars(frontend_ir, extra_aars)
     build_dir = emit_build_dir_from_program(
         frontend_ir,
         out_dir=out_dir,
@@ -581,6 +691,10 @@ def build_install_run(
         application_id=application_id,
         min_sdk=min_sdk,
         target_sdk=target_sdk,
+        version_code=version_code,
+        version_name=version_name,
+        debuggable=debuggable,
+        show_action_bar=show_action_bar,
         api=api,
         keystore_path=keystore_path,
         keystore_alias=keystore_alias,

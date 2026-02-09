@@ -15,14 +15,22 @@ def render_manifest(
     application_id: str = "com.anali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
+    version_code: int = 1,
+    version_name: str = "1.0",
+    debuggable: bool = False,
+    show_action_bar: bool = True,
     activity_name: str = ".MainActivity",
     label: str = "@string/app_name",
 ) -> str:
+    debug_attr = ' android:debuggable="true"' if debuggable else ""
+    theme_attr = ""
+    if not show_action_bar:
+        theme_attr = ' android:theme="@android:style/Theme.Material.Light.NoActionBar"'
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="{application_id}"
-    android:versionCode="1"
-    android:versionName="1.0">
+    android:versionCode="{version_code}"
+    android:versionName="{version_name}">
 
     <uses-sdk
         android:minSdkVersion="{min_sdk}"
@@ -30,7 +38,7 @@ def render_manifest(
 
     <application
         android:label="{label}"
-        android:allowBackup="false">
+        android:allowBackup="false"{debug_attr}{theme_attr}>
 
         <activity
             android:name="{activity_name}"

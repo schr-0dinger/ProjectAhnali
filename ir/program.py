@@ -22,6 +22,8 @@ class ProgramIR:
         resource_dimen_ids=None,
         resource_styles=None,
         resource_style_ids=None,
+        required_artifacts=None,
+        jar_allowlist=None,
     ):
         self.methods = methods or []
         self.fields = fields or []
@@ -36,6 +38,8 @@ class ProgramIR:
         self.resource_dimen_ids = resource_dimen_ids or {}
         self.resource_styles = resource_styles or {}
         self.resource_style_ids = resource_style_ids or {}
+        self.required_artifacts = required_artifacts or set()
+        self.jar_allowlist = jar_allowlist or set()
 
     def add_method(self, method: MethodIR):
         self.methods.append(method)

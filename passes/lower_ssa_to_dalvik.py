@@ -170,6 +170,10 @@ class LowerSSAToDalvik:
     def _lower_block(self, cfg_block, ssa_block):
         db = self.blocks[cfg_block]
 
+        # --- Lower SSA statements ---
+        for stmt in ssa_block.statements:
+            self._lower_stmt(stmt, db)
+
         # --- Phi elimination (edge moves) ---
         for succ in cfg_block.successors:
             succ_ssa = self.ssa_blocks.get(succ)
@@ -179,11 +183,15 @@ class LowerSSAToDalvik:
             for phi in succ_ssa.phis:
                 src = phi.incoming[cfg_block]
                 dst = phi.target
-                db.emit(DMove(DValue(dst), DValue(src)))
-
-        # --- Lower SSA statements ---
-        for stmt in ssa_block.statements:
-            self._lower_stmt(stmt, db)
+                if isinstance(src, SSAValue) and getattr(src, "is_undef", False):
+                    db.emit(DConst(DValue(dst), 0))
+                    continue
+                if isinstance(src, Const):
+                    db.emit(DConst(DValue(dst), src.value))
+                elif isinstance(src, (int, float, bool)):
+                    db.emit(DConst(DValue(dst), src))
+                else:
+                    db.emit(DMove(DValue(dst), DValue(src)))
 
         # --- Terminator ---
         term = cfg_block.terminator
