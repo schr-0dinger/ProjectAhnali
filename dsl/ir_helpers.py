@@ -178,8 +178,23 @@ def check_cast(value, desc):
     return CheckCast(value, desc)
 
 
+def instance_of(value, desc):
+    from ir.expr import InstanceOf
+    return InstanceOf(value, desc)
+
+
 def new_array(length, elem_desc, array_desc=None):
     return NewArray(length=length, elem_desc=elem_desc, array_desc=array_desc)
+
+
+def filled_new_array(args, elem_desc, array_desc=None):
+    from ir.expr import FilledNewArray
+    return FilledNewArray(args=args, elem_desc=elem_desc, array_desc=array_desc)
+
+
+def array_length(array):
+    from ir.expr import ArrayLength
+    return ArrayLength(array)
 
 
 def primitive_cast(value, from_desc, to_desc):

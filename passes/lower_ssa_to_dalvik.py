@@ -21,6 +21,9 @@ from dalvik.ir import (
     DCheckCast,
     DPrimitiveCast,
     DNewArray,
+    DInstanceOf,
+    DArrayLength,
+    DFilledNewArray,
 )
 from ir.expr import (
     Compare,
@@ -34,7 +37,10 @@ from ir.expr import (
     StaticFieldGet,
     FieldGet,
     ArrayGet,
+    ArrayLength,
     CheckCast,
+    InstanceOf,
+    FilledNewArray,
 )
 from ir.stmt import StaticFieldSet, FieldSet, ArraySet
 from ir.types import AnaliType
@@ -481,12 +487,33 @@ class LowerSSAToDalvik:
                 )
             )
             return
+        if isinstance(expr, ArrayLength):
+            if dst is None:
+                raise RuntimeError("ArrayLength must be assigned to a destination")
+            db.emit(
+                DArrayLength(
+                    dst,
+                    self._as_dvalue(expr.array, db),
+                )
+            )
+            return
         if isinstance(expr, CheckCast):
             if dst is None:
                 raise RuntimeError("CheckCast must be assigned to a destination")
             # emit move + check-cast on the same reg
             db.emit(DMove(dst, self._as_dvalue(expr.value, db)))
             db.emit(DCheckCast(dst, expr.desc))
+            return
+        if isinstance(expr, InstanceOf):
+            if dst is None:
+                raise RuntimeError("InstanceOf must be assigned to a destination")
+            db.emit(
+                DInstanceOf(
+                    dst,
+                    self._as_dvalue(expr.value, db),
+                    expr.desc,
+                )
+            )
             return
         if isinstance(expr, PrimitiveCast):
             if dst is None:
@@ -497,6 +524,18 @@ class LowerSSAToDalvik:
                     self._as_dvalue(expr.value, db),
                     expr.from_desc,
                     expr.to_desc,
+                )
+            )
+            return
+        if isinstance(expr, FilledNewArray):
+            if dst is None:
+                raise RuntimeError("FilledNewArray must be assigned to a destination")
+            args = [self._as_dvalue(a, db) for a in expr.args]
+            db.emit(
+                DFilledNewArray(
+                    dst,
+                    args,
+                    expr.array_desc,
                 )
             )
             return

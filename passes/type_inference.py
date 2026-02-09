@@ -11,7 +11,10 @@ from ir.expr import (
     StaticFieldGet,
     FieldGet,
     ArrayGet,
+    ArrayLength,
     CheckCast,
+    InstanceOf,
+    FilledNewArray,
 )
 from ssa.value import SSAValue
 
@@ -141,8 +144,14 @@ class TypeInferencePass:
             return self._type_from_desc(expr.desc)
         if isinstance(expr, ArrayGet):
             return self._type_from_desc(expr.elem_desc)
+        if isinstance(expr, ArrayLength):
+            return AnaliType.INT
         if isinstance(expr, CheckCast):
             return self._type_from_desc(expr.desc)
+        if isinstance(expr, InstanceOf):
+            return AnaliType.BOOL
+        if isinstance(expr, FilledNewArray):
+            return self._type_from_desc(expr.array_desc)
 
         return AnaliType.UNKNOWN
 

@@ -20,6 +20,17 @@ from dalvik.ir import (
     DArrayPut,
     DCheckCast,
     DPrimitiveCast,
+    DConstWide,
+    DConstStringJumbo,
+    DMoveWide,
+    DMoveResult,
+    DMoveResultObject,
+    DMoveResultWide,
+    DMoveException,
+    DInstanceOf,
+    DIfZ,
+    DArrayLength,
+    DFilledNewArray,
 )
 from ir.types import AnaliType
 from ir.expr import Const
@@ -91,6 +102,55 @@ def emit_method_smali(method: DalvikMethod):
             return "move-object/from16" if is_obj else "move/from16"
         return "move-object" if is_obj else "move"
 
+    def _move_wide_opcode(src_reg, dst_reg):
+        src_idx = _reg_index(src_reg)
+        dst_idx = _reg_index(dst_reg)
+        if max(src_idx, dst_idx) > 255:
+            return "move-wide/16"
+        if max(src_idx, dst_idx) > 15:
+            return "move-wide/from16"
+        return "move-wide"
+
+    def _primitive_cast_opcode(from_desc, to_desc):
+        def _norm(desc):
+            if desc in ("B", "C", "S", "Z"):
+                return "I"
+            return desc
+
+        from_norm = _norm(from_desc)
+        to_norm = _norm(to_desc)
+
+        if to_desc in ("B", "C", "S"):
+            if from_norm != "I":
+                raise RuntimeError(f"Invalid primitive cast {from_desc}->{to_desc}")
+            return {
+                "B": "int-to-byte",
+                "C": "int-to-char",
+                "S": "int-to-short",
+            }[to_desc]
+
+        if from_norm == to_norm:
+            return None
+
+        opcode_map = {
+            ("I", "J"): "i-to-l",
+            ("I", "F"): "i-to-f",
+            ("I", "D"): "i-to-d",
+            ("J", "I"): "l-to-i",
+            ("J", "F"): "l-to-f",
+            ("J", "D"): "l-to-d",
+            ("F", "I"): "f-to-i",
+            ("F", "J"): "f-to-l",
+            ("F", "D"): "f-to-d",
+            ("D", "I"): "d-to-i",
+            ("D", "J"): "d-to-l",
+            ("D", "F"): "d-to-f",
+        }
+        op = opcode_map.get((from_norm, to_norm))
+        if op is None:
+            raise RuntimeError(f"Unsupported primitive cast {from_desc}->{to_desc}")
+        return op
+
     def _temp_regs():
         return [f"v{temp_reg_start + i}" for i in range(temp_reg_count)]
 
@@ -136,12 +196,17 @@ def emit_method_smali(method: DalvikMethod):
 
     for block in method.blocks.values():
         for instr in block.instructions:
-            if not isinstance(instr, DInvoke):
+            if isinstance(instr, DInvoke):
+                regs = [reg_map[a.ssa] for a in instr.args]
+                needs_range = len(regs) > 5 or any(_reg_index(r) > 15 for r in regs)
+                if needs_range:
+                    range_temp_count = max(range_temp_count, len(regs))
                 continue
-            regs = [reg_map[a.ssa] for a in instr.args]
-            needs_range = len(regs) > 5 or any(_reg_index(r) > 15 for r in regs)
-            if needs_range:
-                range_temp_count = max(range_temp_count, len(regs))
+            if isinstance(instr, DFilledNewArray):
+                regs = [reg_map[a.ssa] for a in instr.args]
+                needs_range = len(regs) > 5 or any(_reg_index(r) > 15 for r in regs)
+                if needs_range:
+                    range_temp_count = max(range_temp_count, len(regs))
 
     lines = []
     def _type_desc(t):
@@ -179,6 +244,9 @@ def emit_method_smali(method: DalvikMethod):
             elif instr.__class__.__name__ == "DIf":
                 referenced.add(instr.true.id)
                 referenced.add(instr.false.id)
+            elif instr.__class__.__name__ == "DIfZ":
+                referenced.add(instr.true.id)
+                referenced.add(instr.false.id)
 
     for start, end, handler, _ in method.try_regions:
         referenced.update({start.id, end.id, handler.id})
@@ -213,6 +281,18 @@ def emit_method_smali(method: DalvikMethod):
                         lines.append(f"    const/16 {r}, {val}")
                     else:
                         lines.append(f"    const {r}, {val}")
+            elif isinstance(instr, DConstWide):
+                r = reg_map[instr.dst.ssa]
+                if isinstance(instr.value, float):
+                    bits = struct.unpack(">Q", struct.pack(">d", instr.value))[0]
+                    lines.append(f"    const-wide {r}, 0x{bits:016x}")
+                else:
+                    val = int(instr.value)
+                    lines.append(f"    const-wide {r}, {val}")
+            elif isinstance(instr, DConstStringJumbo):
+                r = reg_map[instr.dst.ssa]
+                s = str(instr.value).replace("\\", "\\\\").replace("\"", "\\\"")
+                lines.append(f"    const-string/jumbo {r}, \"{s}\"")
             elif isinstance(instr, DNew):
                 r = reg_map[instr.dst.ssa]
                 lines.append(f"    new-instance {r}, {instr.class_desc}")
@@ -283,14 +363,73 @@ def emit_method_smali(method: DalvikMethod):
                 v = reg_map[instr.value.ssa]
                 op = _array_opcode("aput", instr.elem_desc)
                 lines.append(f"    {op} {v}, {a}, {i}")
+            elif isinstance(instr, DArrayLength):
+                r = reg_map[instr.dst.ssa]
+                a = reg_map[instr.array.ssa]
+                lines.append(f"    array-length {r}, {a}")
+            elif isinstance(instr, DFilledNewArray):
+                regs_list = [reg_map[a.ssa] for a in instr.args]
+                needs_range = len(regs_list) > 5 or any(_reg_index(r) > 15 for r in regs_list)
+                if needs_range:
+                    temp_base = locals_count
+                    for i, arg in enumerate(instr.args):
+                        src = reg_map[arg.ssa]
+                        dst = f"v{temp_base + i}"
+                        if src == dst:
+                            continue
+                        is_obj = _is_object_ssa(arg.ssa)
+                        move_op = _move_opcode(src, dst, is_obj)
+                        lines.append(f"    {move_op} {dst}, {src}")
+                    start = f"v{temp_base}"
+                    end = f"v{temp_base + len(regs_list) - 1}"
+                    lines.append(
+                        f"    filled-new-array/range {{{start} .. {end}}}, {instr.array_desc}"
+                    )
+                else:
+                    regs = ", ".join(regs_list)
+                    lines.append(
+                        f"    filled-new-array {{{regs}}}, {instr.array_desc}"
+                    )
+                rd = reg_map[instr.dst.ssa]
+                lines.append(f"    move-result-object {rd}")
+            elif isinstance(instr, DInstanceOf):
+                pre = []
+                temps = _temp_regs()
+                ti = 0
+                o = reg_map[instr.obj.ssa]
+                o_reg, moved_obj = _ensure_reg(
+                    o, 15, True, temps[ti], pre
+                )
+                if moved_obj:
+                    ti += 1
+                r = reg_map[instr.dst.ssa]
+                r_reg = r
+                post = []
+                if _reg_index(r) > 15:
+                    if ti >= len(temps):
+                        raise RuntimeError("Not enough temp registers for instance-of")
+                    r_reg = temps[ti]
+                    ti += 1
+                    post.append(f"    move {r}, {r_reg}")
+                lines.extend(pre)
+                lines.append(f"    instance-of {r_reg}, {o_reg}, {instr.desc}")
+                lines.extend(post)
             elif isinstance(instr, DCheckCast):
                 r = reg_map[instr.obj.ssa]
                 lines.append(f"    check-cast {r}, {instr.desc}")
             elif isinstance(instr, DPrimitiveCast):
                 rd = reg_map[instr.dst.ssa]
                 rs = reg_map[instr.src.ssa]
-                cast_op = f"{instr.from_desc.lower()}-to-{instr.to_desc.lower()}"
-                lines.append(f"    {cast_op} {rd}, {rs}")
+                cast_op = _primitive_cast_opcode(instr.from_desc, instr.to_desc)
+                if cast_op is None:
+                    if rd != rs:
+                        if instr.to_desc in ("J", "D") or instr.from_desc in ("J", "D"):
+                            op = _move_wide_opcode(rs, rd)
+                        else:
+                            op = _move_opcode(rs, rd, False)
+                        lines.append(f"    {op} {rd}, {rs}")
+                else:
+                    lines.append(f"    {cast_op} {rd}, {rs}")
 
             elif instr.__class__.__name__ == "DMove":
                 rd = reg_map[instr.dst.ssa]
@@ -298,6 +437,24 @@ def emit_method_smali(method: DalvikMethod):
                 if rd != rs:
                     op = _move_opcode(rs, rd, _is_object_ssa(instr.src.ssa))
                     lines.append(f"    {op} {rd}, {rs}")
+            elif isinstance(instr, DMoveWide):
+                rd = reg_map[instr.dst.ssa]
+                rs = reg_map[instr.src.ssa]
+                if rd != rs:
+                    op = _move_wide_opcode(rs, rd)
+                    lines.append(f"    {op} {rd}, {rs}")
+            elif isinstance(instr, DMoveResult):
+                rd = reg_map[instr.dst.ssa]
+                lines.append(f"    move-result {rd}")
+            elif isinstance(instr, DMoveResultObject):
+                rd = reg_map[instr.dst.ssa]
+                lines.append(f"    move-result-object {rd}")
+            elif isinstance(instr, DMoveResultWide):
+                rd = reg_map[instr.dst.ssa]
+                lines.append(f"    move-result-wide {rd}")
+            elif isinstance(instr, DMoveException):
+                rd = reg_map[instr.dst.ssa]
+                lines.append(f"    move-exception {rd}")
 
             elif isinstance(instr, (DAdd, DSub, DMul, DDiv, DRem)):
                 rd = reg_map[instr.dst.ssa]
@@ -474,6 +631,20 @@ def emit_method_smali(method: DalvikMethod):
                     lines.append(
                         f"    goto :B{instr.false.id}"
                     )
+            elif isinstance(instr, DIfZ):
+                r = reg_map[instr.cond.ssa]
+                pre = []
+                temps = _temp_regs()
+                r_reg, _ = _ensure_reg(
+                    r, 255, _is_object_ssa(instr.cond.ssa), temps[0], pre
+                )
+                lines.extend(pre)
+                lines.append(
+                    f"    if-{instr.op} {r_reg}, :B{instr.true.id}"
+                )
+                lines.append(
+                    f"    goto :B{instr.false.id}"
+                )
 
             elif instr.__class__.__name__ == "DReturnVoid":
                 lines.append("    return-void")

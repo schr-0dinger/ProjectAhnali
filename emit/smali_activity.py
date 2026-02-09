@@ -46,6 +46,9 @@ def emit_activity_smali(
             elif name == "DIf":
                 referenced.add(instr.true.id)
                 referenced.add(instr.false.id)
+            elif name == "DIfZ":
+                referenced.add(instr.true.id)
+                referenced.add(instr.false.id)
 
     for block in dalvik_blocks.values():
         if block.id not in referenced and not block.instructions:
@@ -70,6 +73,18 @@ def emit_activity_smali(
                         lines.append(f"    const {r}, 0x{bits:08x}")
                 else:
                     lines.append(f"    const/4 {r}, {instr.value}")
+            elif name == "DConstWide":
+                r = reg_map[instr.dst]
+                if isinstance(instr.value, float):
+                    import struct
+                    bits = struct.unpack(">Q", struct.pack(">d", instr.value))[0]
+                    lines.append(f"    const-wide {r}, 0x{bits:016x}")
+                else:
+                    lines.append(f"    const-wide {r}, {int(instr.value)}")
+            elif name == "DConstStringJumbo":
+                r = reg_map[instr.dst]
+                s = str(instr.value).replace("\\", "\\\\").replace("\"", "\\\"")
+                lines.append(f"    const-string/jumbo {r}, \"{s}\"")
             elif name == "DNew":
                 r = reg_map[instr.dst]
                 lines.append(f"    new-instance {r}, {instr.class_desc}")
@@ -78,6 +93,33 @@ def emit_activity_smali(
                 rd = reg_map[instr.dst]
                 rs = reg_map[instr.src]
                 lines.append(f"    move {rd}, {rs}")
+            elif name == "DMoveWide":
+                rd = reg_map[instr.dst]
+                rs = reg_map[instr.src]
+                lines.append(f"    move-wide {rd}, {rs}")
+            elif name == "DMoveResult":
+                rd = reg_map[instr.dst]
+                lines.append(f"    move-result {rd}")
+            elif name == "DMoveResultObject":
+                rd = reg_map[instr.dst]
+                lines.append(f"    move-result-object {rd}")
+            elif name == "DMoveResultWide":
+                rd = reg_map[instr.dst]
+                lines.append(f"    move-result-wide {rd}")
+            elif name == "DMoveException":
+                rd = reg_map[instr.dst]
+                lines.append(f"    move-exception {rd}")
+            elif name == "DArrayLength":
+                rd = reg_map[instr.dst]
+                ra = reg_map[instr.array]
+                lines.append(f"    array-length {rd}, {ra}")
+            elif name == "DFilledNewArray":
+                regs = ", ".join(reg_map[a.ssa] for a in instr.args)
+                lines.append(
+                    f"    filled-new-array {{{regs}}}, {instr.array_desc}"
+                )
+                rd = reg_map[instr.dst]
+                lines.append(f"    move-result-object {rd}")
 
             elif name in ("DAdd", "DSub", "DMul", "DDiv", "DRem"):
                 rd = reg_map[instr.dst]
@@ -120,6 +162,14 @@ def emit_activity_smali(
                     lines.append(
                         f"    goto :B{instr.false.id}"
                     )
+            elif name == "DIfZ":
+                r = reg_map[instr.cond]
+                lines.append(
+                    f"    if-{instr.op} {r}, :B{instr.true.id}"
+                )
+                lines.append(
+                    f"    goto :B{instr.false.id}"
+                )
 
             elif name == "DInvoke":
                 invoke = {
@@ -202,6 +252,10 @@ def emit_activity_smali(
                         lines.append(f"    move-result-object {rd}")
                     else:
                         lines.append(f"    move-result {rd}")
+            elif name == "DInstanceOf":
+                rd = reg_map[instr.dst]
+                ro = reg_map[instr.obj]
+                lines.append(f"    instance-of {rd}, {ro}, {instr.desc}")
 
             elif name == "DReturnVoid":
                 pass  # ignore inner return

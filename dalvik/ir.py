@@ -28,6 +28,24 @@ class DConst(DInstr):
         return f"{self.dst} = const {self.value}"
 
 
+class DConstWide(DInstr):
+    def __init__(self, dst, value):
+        self.dst = dst
+        self.value = value
+
+    def __repr__(self):
+        return f"{self.dst} = const-wide {self.value}"
+
+
+class DConstStringJumbo(DInstr):
+    def __init__(self, dst, value):
+        self.dst = dst
+        self.value = value
+
+    def __repr__(self):
+        return f"{self.dst} = const-string/jumbo {self.value}"
+
+
 class DStaticGet(DInstr):
     def __init__(self, dst, owner, name, desc):
         self.dst = dst
@@ -96,6 +114,35 @@ class DArrayPut(DInstr):
         return f"aput {self.elem_desc} {self.value}"
 
 
+class DArrayLength(DInstr):
+    def __init__(self, dst, array):
+        self.dst = dst
+        self.array = array
+
+    def __repr__(self):
+        return f"{self.dst} = array-length {self.array}"
+
+
+class DFilledNewArray(DInstr):
+    def __init__(self, dst, args, array_desc):
+        self.dst = dst
+        self.args = args
+        self.array_desc = array_desc
+
+    def __repr__(self):
+        return f"{self.dst} = filled-new-array {self.array_desc} ({len(self.args)} args)"
+
+
+class DInstanceOf(DInstr):
+    def __init__(self, dst, obj, desc):
+        self.dst = dst
+        self.obj = obj
+        self.desc = desc
+
+    def __repr__(self):
+        return f"{self.dst} = instance-of {self.desc} {self.obj}"
+
+
 class DCheckCast(DInstr):
     def __init__(self, obj, desc):
         self.obj = obj
@@ -145,6 +192,47 @@ class DMove(DInstr):
 
     def __repr__(self):
         return f"{self.dst} = move {self.src}"
+
+
+class DMoveWide(DInstr):
+    def __init__(self, dst, src):
+        self.dst = dst
+        self.src = src
+
+    def __repr__(self):
+        return f"{self.dst} = move-wide {self.src}"
+
+
+class DMoveResult(DInstr):
+    def __init__(self, dst):
+        self.dst = dst
+
+    def __repr__(self):
+        return f"{self.dst} = move-result"
+
+
+class DMoveResultObject(DInstr):
+    def __init__(self, dst):
+        self.dst = dst
+
+    def __repr__(self):
+        return f"{self.dst} = move-result-object"
+
+
+class DMoveResultWide(DInstr):
+    def __init__(self, dst):
+        self.dst = dst
+
+    def __repr__(self):
+        return f"{self.dst} = move-result-wide"
+
+
+class DMoveException(DInstr):
+    def __init__(self, dst):
+        self.dst = dst
+
+    def __repr__(self):
+        return f"{self.dst} = move-exception"
     
 class DBinaryOp(DInstr):
     """
@@ -189,6 +277,17 @@ class DIf(DInstr):
         self.true = true_block
         self.false = false_block
 
+
+class DIfZ(DInstr):
+    OPS = {"eqz", "nez", "ltz", "lez", "gtz", "gez"}
+
+    def __init__(self, *, cond, op, true_block, false_block):
+        if op not in self.OPS:
+            raise ValueError(f"Invalid ifz op: {op}")
+        self.cond = cond
+        self.op = op
+        self.true = true_block
+        self.false = false_block
 
 class DGoto(DInstr):
     def __init__(self, target):

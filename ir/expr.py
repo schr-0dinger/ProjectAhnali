@@ -169,6 +169,17 @@ class ArrayGet(Expr):
         return f"aget {self.elem_desc}"
 
 
+class ArrayLength(Expr):
+    """
+    array-length instruction.
+    """
+    def __init__(self, array):
+        self.array = array
+
+    def __repr__(self):
+        return "array-length"
+
+
 class CheckCast(Expr):
     """
     Check-cast.
@@ -179,6 +190,18 @@ class CheckCast(Expr):
 
     def __repr__(self):
         return f"check-cast {self.desc}"
+
+
+class InstanceOf(Expr):
+    """
+    instance-of check.
+    """
+    def __init__(self, value, desc: str):
+        self.value = value
+        self.desc = desc
+
+    def __repr__(self):
+        return f"instance-of {self.desc}"
 
 
 class NewArray(Expr):
@@ -195,6 +218,20 @@ class NewArray(Expr):
 
     def __repr__(self):
         return f"new-array {self.array_desc}"
+
+
+class FilledNewArray(Expr):
+    """
+    filled-new-array instruction.
+    """
+
+    def __init__(self, args, elem_desc: str, array_desc: str = None):
+        self.args = args or []
+        self.elem_desc = elem_desc
+        self.array_desc = array_desc or f"[{elem_desc}"
+
+    def __repr__(self):
+        return f"filled-new-array {self.array_desc}"
 
 
 class PrimitiveCast(Expr):

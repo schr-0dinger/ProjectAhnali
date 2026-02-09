@@ -566,11 +566,44 @@ class _PythonicContext:
             fields.append(static_field(name, "I"))
             body.append(static_set(name, "I", const(value)))
 
+        # Accessors for cross-class handlers (keep fields private)
+        handler_owner_desc = "LTestHandlers;"
+        self._handler_owner_desc = handler_owner_desc
+        self._state_accessors = {}
+        if handler_owner_desc != "LTest;" and self.state_spec.values:
+            for name in self.state_spec.values.keys():
+                getter = f"get_state_{name}"
+                setter = f"set_state_{name}"
+                self._state_accessors[name] = (getter, setter)
+                methods.append(
+                    method(
+                        getter,
+                        params=[],
+                        param_types=[],
+                        return_type="I",
+                        body=[
+                            assign("v", static_get(name, "I", owner="LTest;")),
+                            ret(var("v")),
+                        ],
+                    )
+                )
+                methods.append(
+                    method(
+                        setter,
+                        params=["value"],
+                        param_types=["I"],
+                        return_type=None,
+                        body=[
+                            static_set(name, "I", var("value"), owner="LTest;"),
+                            ret(),
+                        ],
+                    )
+                )
+
         # Wire click handlers
         handler_methods = []
         support_classes = []
         method_class_map = {}
-        handler_owner_desc = "LTest;"
         for spec in click_specs:
             if spec.button_id not in self.view_types:
                 known = ", ".join(sorted(self.view_types.keys()))
@@ -1746,6 +1779,20 @@ class _PythonicContext:
             )
 
         if name in self.state_spec.values:
+            accessor = self._state_accessor(name)
+            if accessor:
+                _, setter = accessor
+                return [
+                    *prefix,
+                    call_stmt(
+                        setter,
+                        args=[result],
+                        return_type=None,
+                        arg_types=["I"],
+                        invoke_kind="static",
+                        owner="LTest;",
+                    ),
+                ]
             return [*prefix, static_set(name, "I", result)]
 
         self._local_vars.add(name)
@@ -1756,6 +1803,12 @@ class _PythonicContext:
         self._tmp_counter += 1
         return f"{prefix}_{self._tmp_counter}"
 
+    def _state_accessor(self, name):
+        if getattr(self, "_handler_owner_desc", "LTest;") == "LTest;":
+            return None
+        accessors = getattr(self, "_state_accessors", None) or {}
+        return accessors.get(name)
+
     def _compile_int_expr(self, expr):
         if isinstance(expr, _ExprConst):
             if not isinstance(expr.value, int) or isinstance(expr.value, bool):
@@ -1765,7 +1818,23 @@ class _PythonicContext:
             return [], const(expr.value)
         if isinstance(expr, _ExprSymbol):
             if expr.name in self.state_spec.values:
+                accessor = self._state_accessor(expr.name)
                 t = self._next_tmp("s")
+                if accessor:
+                    getter, _ = accessor
+                    return [
+                        assign(
+                            t,
+                            call(
+                                getter,
+                                args=[],
+                                return_type="I",
+                                arg_types=[],
+                                invoke_kind="static",
+                                owner="LTest;",
+                            ),
+                        )
+                    ], var(t)
                 return [assign(t, static_get(expr.name, "I"))], var(t)
             if expr.name in self._local_vars:
                 return [], var(expr.name)
@@ -1869,7 +1938,26 @@ class _PythonicContext:
                 *right_stmts,
             ], compare(expr.op, left_expr, right_expr)
         if isinstance(expr, _ExprSymbol):
-            if expr.name in self.state_spec.values or expr.name in self._local_vars:
+            if expr.name in self.state_spec.values:
+                accessor = self._state_accessor(expr.name)
+                if accessor:
+                    getter, _ = accessor
+                    t = self._next_tmp("s")
+                    return [
+                        assign(
+                            t,
+                            call(
+                                getter,
+                                args=[],
+                                return_type="I",
+                                arg_types=[],
+                                invoke_kind="static",
+                                owner="LTest;",
+                            ),
+                        )
+                    ], t
+                return [], expr.name
+            if expr.name in self._local_vars:
                 return [], expr.name
             raise RuntimeError(
                 f"Undefined variable '{expr.name}' in condition. "
@@ -2031,7 +2119,24 @@ class _PythonicContext:
                     )
             elif isinstance(part, _ExprSymbol):
                 if part.name in self.state_spec.values:
-                    stmts.append(assign("x", static_get(part.name, "I")))
+                    accessor = self._state_accessor(part.name)
+                    if accessor:
+                        getter, _ = accessor
+                        stmts.append(
+                            assign(
+                                "x",
+                                call(
+                                    getter,
+                                    args=[],
+                                    return_type="I",
+                                    arg_types=[],
+                                    invoke_kind="static",
+                                    owner="LTest;",
+                                ),
+                            )
+                        )
+                    else:
+                        stmts.append(assign("x", static_get(part.name, "I")))
                 elif part.name in self._local_vars:
                     stmts.append(assign("x", var(part.name)))
                 else:
