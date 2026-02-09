@@ -6,8 +6,8 @@ def optimize_ssa(
     ssa_blocks,
     *,
     enable_folding=False,
-    enable_copy_removal=True,
-    enable_coalesce=True,
+    enable_copy_removal=False,
+    enable_coalesce=False,
 ):
     """
     Epsilon-2 SSA optimizations (simple, safe):
@@ -20,9 +20,11 @@ def optimize_ssa(
     const_map = {}
     copy_map = {}
 
+    use_copy_map = enable_coalesce or enable_copy_removal
+
     def _resolve(val):
         if isinstance(val, SSAValue):
-            v = copy_map.get(val, val)
+            v = copy_map.get(val, val) if use_copy_map else val
             return const_map.get(v, v)
         return val
 
@@ -55,7 +57,7 @@ def optimize_ssa(
                 stmt.expr = expr
                 if isinstance(expr, Const) and isinstance(dst, SSAValue):
                     const_map[dst] = expr
-                elif isinstance(expr, SSAValue) and isinstance(dst, SSAValue):
+                elif use_copy_map and isinstance(expr, SSAValue) and isinstance(dst, SSAValue):
                     copy_map[dst] = expr
                 continue
 
@@ -171,11 +173,9 @@ def optimize_ssa(
                     dst = stmt.defines() if hasattr(stmt, "defines") else None
 
                     if isinstance(expr, SSAValue) and isinstance(dst, SSAValue):
-                        # rewrite all uses of dst -> expr, then delete stmt
-                        if uses.get(dst, 0) > 0:
-                            copy_map[dst] = expr
+                        # Only drop dead copies; keep live copies to preserve dataflow.
+                        if uses.get(dst, 0) == 0:
                             changed = True
-                        if uses.get(dst, 0) == 0 or changed:
                             continue
 
                     new_stmts.append(stmt)

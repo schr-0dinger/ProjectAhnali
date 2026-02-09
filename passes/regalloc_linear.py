@@ -22,8 +22,12 @@ class LiveInterval:
         return f"<Interval {self.value} [{self.start}, {self.end}] r={self.reg}>"
 
 
+RESERVED_LOW_TEMPS = 3
+LOW_REG_LIMIT = 16
+
+
 class LinearScanAllocator:
-    def __init__(self, max_registers=16):
+    def __init__(self, max_registers=LOW_REG_LIMIT - RESERVED_LOW_TEMPS):
         self.max_registers = max_registers
         self.intervals = []
         self.active = []

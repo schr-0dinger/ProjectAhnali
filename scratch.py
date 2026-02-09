@@ -25,19 +25,22 @@ from dsl.widgets import (
     presets,
     toast,
     snackbar,
+    exit_app,
     simple_dialog,
 )
 from dsl.colors import colors
 import os
 
-APP_PACKAGE = "com.anali.preview"
+#------------------------------------------
+
+APP_PACKAGE = "com.anali.helloworld"
 APP_MIN_SDK = 21
 APP_TARGET_SDK = 33
 APP_VERSION_CODE = 1
 APP_VERSION_NAME = "1.0"
 APP_DEBUGGABLE = False
 APP_SHOW_ACTION_BAR = False
-APP_LABEL = "AnaliPreview"
+APP_LABEL = "Anali App"
 
 # Plugin list (core is always loaded)
 APP_PLUGINS = ["material"]
@@ -46,6 +49,8 @@ APP_PLUGINS = ["material"]
 # APP_OUTPUT_APK
 # APP_KEYSTORE_PATH
 # APP_KEYSTORE_ALIAS
+
+#------------------------------------------
 
 @on_click("inc")
 def increment():
@@ -93,6 +98,11 @@ def menu_click():
 @on_click("announce")
 def announce_click():
     snackbar("ButtonBar action")
+
+
+@on_click("exit")
+def exit_click():
+    exit_app()
 
 
 palette = {
@@ -236,6 +246,7 @@ items = [
     ButtonBar(
         Button("OK"),
         Button("Cancel"),
+        Button("Exit", id="exit", style=ui_presets.DangerButton()),
         id="button_bar",
         margin=(dp(16), dp(0), dp(16), dp(16)),
     ),
@@ -301,7 +312,7 @@ items.extend(
             id="fab",
             width=dp(72),
             height=dp(72),
-            style=Style(background="primary", text_color="on_primary", radius=dp(36), padding=(dp(0), dp(0), dp(0), dp(0))),
+            style=Style(background=colors.zinc_200, text_color="on_primary", radius=dp(36), padding=(dp(0), dp(0), dp(0), dp(0))),
         ),
     ]
 )
@@ -329,6 +340,7 @@ app_spec = app(
         fab_click,
         menu_click,
         announce_click,
+        exit_click,
     )
 )
 

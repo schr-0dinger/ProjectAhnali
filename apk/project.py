@@ -21,11 +21,13 @@ def render_manifest(
     show_action_bar: bool = True,
     activity_name: str = ".MainActivity",
     label: str = "@string/app_name",
+    icon: str | None = None,
 ) -> str:
     debug_attr = ' android:debuggable="true"' if debuggable else ""
     theme_attr = ""
     if not show_action_bar:
         theme_attr = ' android:theme="@android:style/Theme.Material.Light.NoActionBar"'
+    icon_attr = f' android:icon="{icon}"' if icon else ""
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="{application_id}"
@@ -38,7 +40,7 @@ def render_manifest(
 
     <application
         android:label="{label}"
-        android:allowBackup="false"{debug_attr}{theme_attr}>
+        android:allowBackup="false"{debug_attr}{theme_attr}{icon_attr}>
 
         <activity
             android:name="{activity_name}"

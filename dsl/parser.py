@@ -13,6 +13,7 @@ from .ast import (
     _StmtAssign,
     _StmtIf,
     _StmtSetText,
+    _StmtExitApp,
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
@@ -95,6 +96,10 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[1], _ExprConst):
                     raise RuntimeError("simple_dialog args must be constants")
                 return _StmtSimpleDialog(args[0].value, args[1].value)
+            if fn == "exit_app":
+                if call.args:
+                    raise RuntimeError("exit_app takes no arguments")
+                return _StmtExitApp()
         return None
     if isinstance(stmt, ast.Pass):
         return None

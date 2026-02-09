@@ -25,6 +25,10 @@ from ir.types import AnaliType
 from ir.expr import Const
 import struct
 
+LOW_REG_LIMIT = 16
+TEMP_REG_COUNT = 3
+TEMP_REG_START = LOW_REG_LIMIT - TEMP_REG_COUNT
+
 
 def _build_reg_map(intervals, param_ssa=None):
     reg_map = {}
@@ -33,7 +37,7 @@ def _build_reg_map(intervals, param_ssa=None):
         default=-1
     )
     spill_slots = [i for i in intervals if i.spilled]
-    spill_base = max_reg + 1
+    spill_base = max(max_reg + 1, TEMP_REG_START + TEMP_REG_COUNT)
 
     for interval in intervals:
         if interval.spilled:
@@ -59,6 +63,9 @@ def emit_method_smali(method: DalvikMethod):
     reg_map, locals_count = _build_reg_map(method.allocator.intervals, method.param_ssa)
     param_count = len(method.param_types or [])
     range_temp_count = 0
+    temp_reg_count = TEMP_REG_COUNT
+    temp_reg_start = TEMP_REG_START
+    locals_count = max(locals_count, TEMP_REG_START + TEMP_REG_COUNT)
 
     def _reg_index(reg):
         if reg.startswith("v"):
@@ -83,6 +90,16 @@ def emit_method_smali(method: DalvikMethod):
         if max(src_idx, dst_idx) > 15:
             return "move-object/from16" if is_obj else "move/from16"
         return "move-object" if is_obj else "move"
+
+    def _temp_regs():
+        return [f"v{temp_reg_start + i}" for i in range(temp_reg_count)]
+
+    def _ensure_reg(reg, max_idx, is_obj, temp_reg, pre_lines):
+        if _reg_index(reg) <= max_idx:
+            return reg, False
+        move_op = _move_opcode(reg, temp_reg, is_obj)
+        pre_lines.append(f"    {move_op} {temp_reg}, {reg}")
+        return temp_reg, True
 
     def _is_reference_desc(desc):
         return isinstance(desc, str) and (desc.startswith("L") or desc.startswith("["))
@@ -188,7 +205,10 @@ def emit_method_smali(method: DalvikMethod):
                 else:
                     val = int(instr.value)
                     if -8 <= val <= 7:
-                        lines.append(f"    const/4 {r}, {val}")
+                        if _reg_index(r) > 15:
+                            lines.append(f"    const/16 {r}, {val}")
+                        else:
+                            lines.append(f"    const/4 {r}, {val}")
                     elif -32768 <= val <= 32767:
                         lines.append(f"    const/16 {r}, {val}")
                     else:
@@ -209,15 +229,48 @@ def emit_method_smali(method: DalvikMethod):
                 op = _field_opcode("sput", instr.desc)
                 lines.append(f"    {op} {r}, {instr.owner}->{instr.name}:{instr.desc}")
             elif isinstance(instr, DInstanceGet):
-                r = reg_map[instr.dst.ssa]
+                pre = []
+                temps = _temp_regs()
+                ti = 0
                 o = reg_map[instr.obj.ssa]
+                o_reg, moved_obj = _ensure_reg(
+                    o, 15, True, temps[ti], pre
+                )
+                if moved_obj:
+                    ti += 1
+                r = reg_map[instr.dst.ssa]
+                r_reg = r
+                post = []
+                if _reg_index(r) > 15:
+                    if ti >= len(temps):
+                        raise RuntimeError("Not enough temp registers for iget")
+                    r_reg = temps[ti]
+                    ti += 1
+                    move_op = _move_opcode(r_reg, r, _is_reference_desc(instr.desc))
+                    post.append(f"    {move_op} {r}, {r_reg}")
                 op = _field_opcode("iget", instr.desc)
-                lines.append(f"    {op} {r}, {o}, {instr.owner}->{instr.name}:{instr.desc}")
+                lines.extend(pre)
+                lines.append(f"    {op} {r_reg}, {o_reg}, {instr.owner}->{instr.name}:{instr.desc}")
+                lines.extend(post)
             elif isinstance(instr, DInstancePut):
+                pre = []
+                temps = _temp_regs()
+                ti = 0
                 o = reg_map[instr.obj.ssa]
                 v = reg_map[instr.value.ssa]
+                v_reg, moved_v = _ensure_reg(
+                    v, 15, _is_reference_desc(instr.desc), temps[ti], pre
+                )
+                if moved_v:
+                    ti += 1
+                o_reg, moved_o = _ensure_reg(
+                    o, 15, True, temps[ti], pre
+                )
+                if moved_o:
+                    ti += 1
                 op = _field_opcode("iput", instr.desc)
-                lines.append(f"    {op} {v}, {o}, {instr.owner}->{instr.name}:{instr.desc}")
+                lines.extend(pre)
+                lines.append(f"    {op} {v_reg}, {o_reg}, {instr.owner}->{instr.name}:{instr.desc}")
             elif isinstance(instr, DArrayGet):
                 r = reg_map[instr.dst.ssa]
                 a = reg_map[instr.array.ssa]
@@ -381,8 +434,21 @@ def emit_method_smali(method: DalvikMethod):
             elif instr.__class__.__name__ == "DIf":
                 if instr.cmp:
                     op, a, b = instr.cmp
+                    pre = []
+                    temps = _temp_regs()
+                    ti = 0
                     ra = reg_map[a.ssa]
                     rb = reg_map[b.ssa]
+                    ra_reg, moved_ra = _ensure_reg(
+                        ra, 15, _is_object_ssa(a.ssa), temps[ti], pre
+                    )
+                    if moved_ra:
+                        ti += 1
+                    rb_reg, moved_rb = _ensure_reg(
+                        rb, 15, _is_object_ssa(b.ssa), temps[ti], pre
+                    )
+                    if moved_rb:
+                        ti += 1
 
                     opcode = {
                         "<":  "if-lt",
@@ -393,8 +459,9 @@ def emit_method_smali(method: DalvikMethod):
                         "!=": "if-ne",
                     }[op]
 
+                    lines.extend(pre)
                     lines.append(
-                        f"    {opcode} {ra}, {rb}, :B{instr.true.id}"
+                        f"    {opcode} {ra_reg}, {rb_reg}, :B{instr.true.id}"
                     )
                     lines.append(
                         f"    goto :B{instr.false.id}"

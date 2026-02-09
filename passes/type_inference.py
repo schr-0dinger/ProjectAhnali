@@ -125,6 +125,8 @@ class TypeInferencePass:
         
         if isinstance(expr, Call):
             if expr.return_type is not None:
+                if isinstance(expr.return_type, str):
+                    return self._type_from_desc(expr.return_type)
                 return expr.return_type
             return AnaliType.UNKNOWN
         if isinstance(expr, New):

@@ -14,6 +14,7 @@ from dsl.ast import (
     _ExprSymbol,
     _ExprUnary,
     _StmtAssign,
+    _StmtExitApp,
     _StmtIf,
     _StmtSetText,
     _StmtSimpleDialog,
@@ -436,6 +437,13 @@ class _PythonicContext:
         # Ensure app_ctx is available for resource helper calls.
         fields.append(static_field("app_ctx", "Landroid/app/Activity;", access="public static"))
         body.append(static_set("app_ctx", "Landroid/app/Activity;", var("ctx")))
+        floating_items = [item for item in self.ui_spec.items if getattr(item, "floating", False)]
+        scroll_items = [item for item in self.ui_spec.items if not getattr(item, "floating", False)]
+        use_overlay_root = bool(floating_items)
+        screen_root_id = None
+        if use_overlay_root:
+            screen_root_id = self._register_view("_screen_root", "relative")
+            body.extend(relative_layout(screen_root_id, var("ctx")))
         body.extend(linear_layout(self.root_id, var("ctx"), "vertical"))
 
         # Resource helper methods (LTestRes)
@@ -490,7 +498,7 @@ class _PythonicContext:
         pending = []
         pending_count = 0
 
-        def _flush_helper():
+        def _flush_helper(parent_id):
             nonlocal helper_idx, pending, pending_count
             if not pending:
                 return
@@ -509,7 +517,7 @@ class _PythonicContext:
             body.append(
                 call_stmt(
                     helper_name,
-                    args=[var("ctx"), var(self.root_id)],
+                    args=[var("ctx"), var(parent_id)],
                     return_type=None,
                     arg_types=["Landroid/app/Activity;", "Landroid/view/ViewGroup;"],
                     invoke_kind="static",
@@ -519,13 +527,30 @@ class _PythonicContext:
             pending = []
             pending_count = 0
 
-        for item in self.ui_spec.items:
+        for item in scroll_items:
             item_stmts = self._build_ui_items("parent", [item])
             if pending and pending_count + len(item_stmts) > max_stmts:
-                _flush_helper()
+                _flush_helper(self.root_id)
             pending.extend(item_stmts)
             pending_count += len(item_stmts)
-        _flush_helper()
+        _flush_helper(self.root_id)
+
+        if use_overlay_root:
+            prev_parent_kind = self.view_types.get("parent")
+            self.view_types["parent"] = "relative"
+            try:
+                for item in floating_items:
+                    item_stmts = self._build_ui_items("parent", [item])
+                    if pending and pending_count + len(item_stmts) > max_stmts:
+                        _flush_helper(screen_root_id)
+                    pending.extend(item_stmts)
+                    pending_count += len(item_stmts)
+                _flush_helper(screen_root_id)
+            finally:
+                if prev_parent_kind is None:
+                    self.view_types.pop("parent", None)
+                else:
+                    self.view_types["parent"] = prev_parent_kind
 
         # Declare static refs for views
         for vid, field_name in self.view_fields.items():
@@ -538,14 +563,14 @@ class _PythonicContext:
                 raise RuntimeError(
                     f"State '{name}' must be an integer literal, got {value!r} ({type(value).__name__})"
                 )
-            fields.append(static_field(name, "I", access="public static"))
+            fields.append(static_field(name, "I"))
             body.append(static_set(name, "I", const(value)))
 
         # Wire click handlers
         handler_methods = []
         support_classes = []
         method_class_map = {}
-        handler_owner_desc = "LTestHandlers;"
+        handler_owner_desc = "LTest;"
         for spec in click_specs:
             if spec.button_id not in self.view_types:
                 known = ", ".join(sorted(self.view_types.keys()))
@@ -578,22 +603,50 @@ class _PythonicContext:
         method_class_map.update(res_map)
 
         # Main method
-        methods.insert(
-            0,
-            method(
-                "main",
-                params=["ctx"],
-                param_types=["Landroid/app/Activity;"],
-                return_type=None,
-                body=[
-                    *body,
-                    assign("_scroll_root", new("Landroid/widget/ScrollView;", args=[var("ctx")])),
-                    add_view(var("_scroll_root"), var(self.root_id)),
-                    set_content_view(var("ctx"), var("_scroll_root")),
-                    ret(),
-                ],
-            ),
-        )
+        if use_overlay_root and screen_root_id:
+            methods.insert(
+                0,
+                method(
+                    "main",
+                    params=["ctx"],
+                    param_types=["Landroid/app/Activity;"],
+                    return_type=None,
+                    body=[
+                        *body,
+                        assign("_scroll_root", new("Landroid/widget/ScrollView;", args=[var("ctx")])),
+                        add_view(var("_scroll_root"), var(self.root_id)),
+                        assign(
+                            "_scroll_lp",
+                            new(
+                                "Landroid/widget/RelativeLayout$LayoutParams;",
+                                args=[const(-1), const(-1)],
+                                arg_types=["I", "I"],
+                            ),
+                        ),
+                        set_layout_params(var("_scroll_root"), var("_scroll_lp")),
+                        add_view(var(screen_root_id), var("_scroll_root")),
+                        set_content_view(var("ctx"), var(screen_root_id)),
+                        ret(),
+                    ],
+                ),
+            )
+        else:
+            methods.insert(
+                0,
+                method(
+                    "main",
+                    params=["ctx"],
+                    param_types=["Landroid/app/Activity;"],
+                    return_type=None,
+                    body=[
+                        *body,
+                        assign("_scroll_root", new("Landroid/widget/ScrollView;", args=[var("ctx")])),
+                        add_view(var("_scroll_root"), var(self.root_id)),
+                        set_content_view(var("ctx"), var("_scroll_root")),
+                        ret(),
+                    ],
+                ),
+            )
 
         for name, hbody in handler_methods:
             methods.append(click_handler(name, hbody))
@@ -1199,6 +1252,8 @@ class _PythonicContext:
             return self._compile_assign_stmt(stmt)
         if isinstance(stmt, _StmtSetText):
             return self._compile_set_text_stmt(stmt)
+        if isinstance(stmt, _StmtExitApp):
+            return self._compile_exit_app_stmt(stmt)
         if isinstance(stmt, _StmtIf):
             return self._compile_if_stmt(stmt)
         if isinstance(stmt, _StmtWhile):
@@ -1210,6 +1265,18 @@ class _PythonicContext:
         if isinstance(stmt, _StmtSimpleDialog):
             return self._compile_dialog_stmt(stmt)
         raise RuntimeError(f"Unsupported statement: {stmt}")
+
+    def _compile_exit_app_stmt(self, stmt):
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            call_stmt(
+                "finish",
+                args=[var("ctx")],
+                return_type=None,
+                invoke_kind="virtual",
+                owner="Landroid/app/Activity;",
+            )
+        ]
 
     def _float_const_expr(self, value, prefix="f"):
         if not isinstance(value, (int, float)) or isinstance(value, bool):
@@ -1297,6 +1364,13 @@ class _PythonicContext:
         background_value = item.background if getattr(item, "background", None) is not None else style.background
         radius_value = item.radius if getattr(item, "radius", None) is not None else style.radius
         text_size_value = item.text_size if getattr(item, "text_size", None) is not None else style.text_size
+
+        if margin_value is None and getattr(item, "floating", False):
+            margin_value = Dp(16)
+        if isinstance(radius_value, (int, float)) and not isinstance(radius_value, bool):
+            radius_value = Dp(radius_value)
+        if isinstance(text_size_value, (int, float)) and not isinstance(text_size_value, bool):
+            text_size_value = Sp(text_size_value)
 
         padding_value = self._normalize_box_spacing(padding_value, "padding")
         margin_value = self._normalize_box_spacing(margin_value, "margin")
@@ -1394,6 +1468,8 @@ class _PythonicContext:
             )
 
         if layout_value or margin_value or weight_value is not None or relative_value is not None or constraints_value is not None:
+            if getattr(item, "floating", False) and relative_value is None:
+                relative_value = [("align_parent_bottom", "parent"), ("align_parent_end", "parent")]
             if layout_value is None:
                 layout_value = ("wrap", "wrap")
             width, height = layout_value if layout_value else ("wrap", "wrap")
@@ -1481,11 +1557,17 @@ class _PythonicContext:
     def _normalize_box_spacing(self, value, attr_name):
         if value is None:
             return None
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            value = Dp(value)
         if isinstance(value, (Dp, Px)):
             return (value, value, value, value)
         if isinstance(value, (tuple, list)):
             if len(value) == 2:
                 h, v = value
+                if isinstance(h, (int, float)) and not isinstance(h, bool):
+                    h = Dp(h)
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    v = Dp(v)
                 for entry in (h, v):
                     if not isinstance(entry, (Dp, Px)):
                         raise RuntimeError(
@@ -1494,6 +1576,14 @@ class _PythonicContext:
                 return (h, v, h, v)
             if len(value) == 4:
                 l, t, r, b = value
+                if isinstance(l, (int, float)) and not isinstance(l, bool):
+                    l = Dp(l)
+                if isinstance(t, (int, float)) and not isinstance(t, bool):
+                    t = Dp(t)
+                if isinstance(r, (int, float)) and not isinstance(r, bool):
+                    r = Dp(r)
+                if isinstance(b, (int, float)) and not isinstance(b, bool):
+                    b = Dp(b)
                 for entry in (l, t, r, b):
                     if not isinstance(entry, (Dp, Px)):
                         raise RuntimeError(
@@ -1526,6 +1616,8 @@ class _PythonicContext:
             raise RuntimeError(f"Unknown layout size: {value}")
         if isinstance(value, Percent):
             raise RuntimeError("Percent sizes must be handled by layout weight.")
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return [], const(int(value))
         if isinstance(value, (Dp, Px)):
             key = self._add_dimen_resource(f"{prefix}_size", value)
             stmts, expr = self._load_dimen_px_expr(key, ctx_expr=var("ctx"), prefix=f"{prefix}_size")
@@ -1546,6 +1638,8 @@ class _PythonicContext:
             "align_parent_right": 11,
             "align_parent_top": 10,
             "align_parent_bottom": 12,
+            "align_parent_start": 20,
+            "align_parent_end": 21,
             "center_horizontal": 14,
             "center_vertical": 15,
             "center_in_parent": 13,
@@ -1572,7 +1666,8 @@ class _PythonicContext:
             if verb_key not in verb_map:
                 raise RuntimeError(f"Unknown relative rule verb: {verb}")
             if target is None or target == "parent":
-                target_id = 0
+                # RelativeLayout.TRUE
+                target_id = -1
             else:
                 target_id = self._view_id_value(target, parent_id=parent_id)
             out.append((verb_map[verb_key], int(target_id)))

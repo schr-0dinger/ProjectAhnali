@@ -292,6 +292,7 @@ class _UIFloatingActionButton(_UIButton):
     def __init__(self, text="+", *, id="fab", **kwargs):
         kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
+        self.floating = True
 
 
 class _UIRaisedButton(_UIButton):
@@ -872,6 +873,12 @@ def toast(message, duration=0):
 
 def snackbar(message, duration=0):
     return _UISnackbar(message, duration=duration)
+
+
+def exit_app():
+    from .ast import _StmtExitApp
+
+    return _StmtExitApp()
 
 
 def core(widget):

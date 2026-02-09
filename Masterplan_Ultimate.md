@@ -215,6 +215,12 @@ app(
 - icons, strings, themes
 - layout XML (optional)
 
+### 5.2.b Library R Class Handling (Foundational)
+- Parse AAR `R.txt` + merged `R.txt` symbols from aapt2.
+- Generate library `R$*` smali classes (attrs/styleables/etc.) into dex.
+- Ensure resource IDs align with aapt2 output (stable IDs).
+- Add tests with Material AAR to prevent `NoClassDefFoundError`.
+
 ### 5.2.a aapt2 Integration (Detailed)
 - Generate `AndroidManifest.xml` from DSL + permissions
 - Generate resource folders:
@@ -256,9 +262,9 @@ app(
 ---
 
 ## What’s Next (Immediate Work)
-1. Implement **Pythonic DSL layer** (`app(...)`, `activity(...)`, `state(...)`, `ui(...)`, `on_click(...)`).
-2. Add **expression mini‑parser** for `+=` and `f""`.
-3. Add **golden tests** + adb smoke for counter example.
+1. Implement **Library R class handling** (merged symbols → library `R$*` smali).
+2. Validate **AAR class/resource merge** on device (Material smoke test).
+3. Draft **Navigation API** and wire minimal multi‑screen prototype.
 
 --- 
 

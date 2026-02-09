@@ -19,6 +19,7 @@ from passes.type_inference import TypeInferencePass
 from passes.ssa_opt import optimize_ssa
 from passes.liveness import compute_liveness
 from passes.regalloc_linear import LinearScanAllocator
+from passes.edge_split import split_critical_edges
 from ir.method import MethodIR
 from ir.program import ProgramIR
 from dalvik.method import DalvikMethod
@@ -62,6 +63,7 @@ def compile_method(method_ir, *, ssa_opt=None):
 
     # 1. CFG
     cfg = CFGBuilder().build(method_ir.body)
+    split_critical_edges(cfg)
     validate_cfg(cfg)
 
     # 2. Dominance
@@ -104,8 +106,8 @@ def compile_method(method_ir, *, ssa_opt=None):
     optimize_ssa(
         ssa_blocks,
         enable_folding=ssa_opt.get("enable_folding", False),
-        enable_copy_removal=ssa_opt.get("enable_copy_removal", True),
-        enable_coalesce=ssa_opt.get("enable_coalesce", True),
+        enable_copy_removal=ssa_opt.get("enable_copy_removal", False),
+        enable_coalesce=ssa_opt.get("enable_coalesce", False),
     )
 
     _verify_method_returns(ssa_blocks, method_ir.return_type)
@@ -238,6 +240,21 @@ def _infer_value_type(val):
 def _verify_method_returns(ssa_blocks, return_type):
     from ir.stmt import Return
     from ir.types import AnaliType
+    def _type_from_desc(desc):
+        if desc in ("I", "J", "B", "C", "S"):
+            return AnaliType.INT
+        if desc == "Z":
+            return AnaliType.BOOL
+        if desc in ("F", "D"):
+            return AnaliType.FLOAT
+        if desc == "Ljava/lang/String;":
+            return AnaliType.STRING
+        if isinstance(desc, str) and (desc.startswith("L") or desc.startswith("[")):
+            return AnaliType.OBJECT
+        return AnaliType.UNKNOWN
+
+    if isinstance(return_type, str):
+        return_type = _type_from_desc(return_type)
 
     for block in ssa_blocks.values():
         for stmt in block.statements:

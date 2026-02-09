@@ -1,11 +1,36 @@
 from ir.expr import Const
+from ir.types import AnaliType
 import json
 from pathlib import Path
+
+
+_TYPE_DESC_MAP = {
+    AnaliType.INT: "I",
+    AnaliType.FLOAT: "F",
+    AnaliType.BOOL: "Z",
+    AnaliType.STRING: "Ljava/lang/String;",
+    AnaliType.OBJECT: "Ljava/lang/Object;",
+}
+
+
+def _normalize_type(value):
+    if isinstance(value, AnaliType):
+        if value is AnaliType.UNKNOWN:
+            return None
+        return _TYPE_DESC_MAP.get(value)
+    return value
+
+
+def _normalize_arg_list(arg_types):
+    if arg_types is None:
+        return None
+    return [_normalize_type(a) for a in arg_types]
 
 
 def _normalize_sig_args(sig_args, invoke_kind, argc):
     if sig_args is None:
         return None
+    sig_args = [_normalize_type(a) for a in sig_args]
     if invoke_kind in ("virtual", "direct", "interface", "super"):
         if len(sig_args) == argc:
             return list(sig_args[1:])
@@ -53,7 +78,7 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
     key = (owner, name, invoke_kind)
     entry = _METHOD_SIGS.get(key)
     if entry is None:
-        return return_type, arg_types
+        return _normalize_type(return_type), _normalize_arg_list(arg_types)
 
     candidates = entry if isinstance(entry, list) else [entry]
     user_arg_types = list(arg_types) if arg_types is not None else None
@@ -73,7 +98,7 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
         provided = user_arg_types
         check_types = inferred_norm
         if provided is not None:
-            pnorm = _normalize_sig_args(provided, invoke_kind, len(args))
+            pnorm = _normalize_sig_args(_normalize_arg_list(provided), invoke_kind, len(args))
             if pnorm is None:
                 continue
             if any(p is not None and p != s for p, s in zip(pnorm, norm)):
@@ -105,6 +130,8 @@ def _resolve_signature(name, args, *, return_type, arg_types, invoke_kind, owner
         )
 
     sig_ret, sig_args = best
+    return_type = _normalize_type(return_type)
+    sig_ret = _normalize_type(sig_ret)
 
     if return_type is None:
         return_type = sig_ret

@@ -94,6 +94,11 @@ class _StmtSimpleDialog:
         self.message = message
 
 
+class _StmtExitApp:
+    def __init__(self):
+        pass
+
+
 class _StmtIf:
     def __init__(self, cond, then, else_):
         self.cond = cond
