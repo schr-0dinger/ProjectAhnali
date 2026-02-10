@@ -186,6 +186,29 @@ def test_pythonic_dsl_root_is_scrollable():
     assert "Landroid/view/ViewGroup;->addView(Landroid/view/View;)V" in smali
 
 
+@on_click("log_btn")
+def log_btn():
+    log("Anali", "clicked")
+
+
+def test_pythonic_dsl_log_stmt():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                button("Log", id="log_btn"),
+            ),
+            log_btn,
+        )
+    )
+
+    result = alpha_pipeline(prog.build())
+    smali = result["smali_class"]
+    handlers = result.get("extra_smali_classes", {}).get("LTestHandlers;", "")
+    merged = smali + handlers
+    assert "Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I" in merged
+
+
 @on_click("inc_flow")
 def inc_flow():
     local = 0

@@ -7,6 +7,7 @@ import pytest
 from apk.toolchain import (
     emit_build_dir_from_program,
     run_smali,
+    run_baksmali,
     package_apk_from_dex,
     _tool_path,
 )
@@ -23,6 +24,12 @@ def _has_tool(name: str):
         return True
     local_bin = os.path.expanduser(f"~/.local/bin/{name}")
     return os.path.exists(local_bin)
+
+
+def _has_baksmali():
+    if _has_tool("baksmali"):
+        return True
+    return bool(os.environ.get("BAKSMALI_JAR"))
 
 
 def test_omega_apk_packaging_integration(tmp_path):
@@ -236,3 +243,28 @@ def test_omega_smali_register_nibble_safety_integration(tmp_path):
         api=21,
     )
     assert dex_path.exists()
+
+
+def test_omega_smali_baksmali_roundtrip(tmp_path):
+    smali_jar = os.environ.get("SMALI_JAR")
+    if not _has_tool("smali") and not smali_jar:
+        pytest.skip("smali not found on PATH and SMALI_JAR not set")
+    if not _has_baksmali():
+        pytest.skip("baksmali not found on PATH and BAKSMALI_JAR not set")
+
+    out_dir = emit_build_dir_from_program(
+        [assign("x", const(1))],
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+    )
+    dex_path = run_smali(
+        out_dir / "smali",
+        out_dir=out_dir / "classes.dex",
+        smali_jar=smali_jar,
+        api=21,
+    )
+    baksmali_jar = os.environ.get("BAKSMALI_JAR")
+    disasm_dir = tmp_path / "disasm"
+    run_baksmali(dex_path, disasm_dir, baksmali_jar=baksmali_jar)
+    # Expect at least one disassembled class
+    assert any(p.suffix == ".smali" for p in disasm_dir.rglob("*.smali"))

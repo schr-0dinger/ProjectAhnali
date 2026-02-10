@@ -17,6 +17,7 @@ from .ast import (
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtLog,
     _StmtWhile,
 )
 
@@ -96,6 +97,13 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[1], _ExprConst):
                     raise RuntimeError("simple_dialog args must be constants")
                 return _StmtSimpleDialog(args[0].value, args[1].value)
+            if fn == "log":
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) < 2:
+                    raise RuntimeError("log requires tag and message")
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[1], _ExprConst):
+                    raise RuntimeError("log args must be constant strings")
+                return _StmtLog(args[0].value, args[1].value)
             if fn == "exit_app":
                 if call.args:
                     raise RuntimeError("exit_app takes no arguments")

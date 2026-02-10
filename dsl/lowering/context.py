@@ -20,6 +20,7 @@ from dsl.ast import (
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtLog,
     _StmtWhile,
 )
 from dsl.ir_helpers import (
@@ -1297,6 +1298,8 @@ class _PythonicContext:
             return self._compile_snackbar_stmt(stmt)
         if isinstance(stmt, _StmtSimpleDialog):
             return self._compile_dialog_stmt(stmt)
+        if isinstance(stmt, _StmtLog):
+            return self._compile_log_stmt(stmt)
         raise RuntimeError(f"Unsupported statement: {stmt}")
 
     def _compile_exit_app_stmt(self, stmt):
@@ -2087,6 +2090,17 @@ class _PythonicContext:
                     owner="Landroid/app/AlertDialog$Builder;",
                 ),
             ),
+        ]
+
+    def _compile_log_stmt(self, stmt):
+        return [
+            call_stmt(
+                "d",
+                args=[const(stmt.tag), const(stmt.message)],
+                return_type=None,
+                invoke_kind="static",
+                owner="Landroid/util/Log;",
+            )
         ]
 
     def _compile_format_set_text(self, view_desc, view_field, fmt):

@@ -47,7 +47,7 @@ from ir.expr import (
     InstanceOf,
     FilledNewArray,
 )
-from ir.stmt import StaticFieldSet, FieldSet, ArraySet
+from ir.stmt import StaticFieldSet, FieldSet, ArraySet, CallStmt
 from ir.types import AnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 
@@ -60,6 +60,17 @@ from ssa.value import SSAValue
 def _is_wide_ssa(ssa):
     t = getattr(ssa, "type", None)
     return t in ("J", "D")
+
+
+def _allow_ignored_return(expr: Call) -> bool:
+    # TODO(phase-2-followup): Centralize this allowlist and expose it via DSL config.
+    allow = {
+        ("Landroid/util/Log;", "d", "static"),
+        ("Landroid/util/Log;", "i", "static"),
+        ("Landroid/util/Log;", "w", "static"),
+        ("Landroid/util/Log;", "e", "static"),
+    }
+    return (expr.owner, expr.func_name, expr.invoke_kind) in allow
 
 
 def apply_spills(dalvik_blocks, intervals):
@@ -505,6 +516,19 @@ class LowerSSAToDalvik:
                 )
                 return
             if dst is None:
+                if isinstance(stmt, CallStmt) and _allow_ignored_return(expr):
+                    db.emit(
+                        DInvoke(
+                            method=expr.func_name,
+                            args=[self._as_dvalue(a, db) for a in expr.args],
+                            dst=None,
+                            return_type=return_type,
+                            arg_types=expr.arg_types,
+                            invoke_kind=expr.invoke_kind,
+                            owner=expr.owner,
+                        )
+                    )
+                    return
                 raise RuntimeError(
                     "Non-void call must assign to a destination"
                 )

@@ -440,13 +440,14 @@ def emit_build_dir_from_program(
         support_classes = result.get("support_classes", [])
     extra_smali_classes = result.get("extra_smali_classes", {})
     if extra_smali_classes:
-        for class_desc, extra_smali in extra_smali_classes.items():
+        for class_desc in sorted(extra_smali_classes.keys()):
+            extra_smali = extra_smali_classes[class_desc]
             extra_path = _class_desc_to_path(class_desc).with_suffix(".smali")
             extra_out = build_dir / "smali" / extra_path
             extra_out.parent.mkdir(parents=True, exist_ok=True)
             extra_out.write_text(extra_smali, encoding="utf-8")
     if support_classes:
-        for entry in support_classes:
+        for entry in sorted(support_classes, key=lambda e: e[0]):
             if len(entry) == 2:
                 class_desc, target_method = entry
                 target_desc = wrapper_target_desc or class_name

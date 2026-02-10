@@ -94,6 +94,12 @@ class _StmtSimpleDialog:
         self.message = message
 
 
+class _StmtLog:
+    def __init__(self, tag, message):
+        self.tag = tag
+        self.message = message
+
+
 class _StmtExitApp:
     def __init__(self):
         pass
