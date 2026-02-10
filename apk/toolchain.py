@@ -583,6 +583,38 @@ def _tool_path(name: str) -> str:
     raise RuntimeError(f"{name} not found on PATH or in Android build-tools")
 
 
+def _collect_toolchain_diagnostics(*, require_adb: bool = False, require_baksmali: bool = False) -> list[str]:
+    """
+    Return a list of human-readable toolchain diagnostics. Empty list means OK.
+    This is non-fatal and intended to be used by tests or higher-level commands.
+    """
+    issues = []
+    sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
+    if not sdk:
+        issues.append("ANDROID_HOME/ANDROID_SDK_ROOT not set")
+
+    for tool in ("aapt2", "apksigner"):
+        try:
+            _tool_path(tool)
+        except Exception:
+            issues.append(f"{tool} not found on PATH or in Android build-tools")
+
+    if shutil.which("smali") is None and not os.environ.get("SMALI_JAR"):
+        issues.append("smali not found on PATH and SMALI_JAR not set")
+
+    if require_baksmali:
+        if shutil.which("baksmali") is None and not os.environ.get("BAKSMALI_JAR"):
+            issues.append("baksmali not found on PATH and BAKSMALI_JAR not set")
+
+    if require_adb:
+        try:
+            _adb_path()
+        except Exception:
+            issues.append("adb not found on PATH or in Android SDK platform-tools")
+
+    return issues
+
+
 def _adb_path() -> str:
     path = shutil.which("adb")
     if path:

@@ -10,6 +10,7 @@ from apk.toolchain import (
     run_baksmali,
     package_apk_from_dex,
     _tool_path,
+    _collect_toolchain_diagnostics,
 )
 from dsl.app import assign, const
 from dsl.app import app, activity, ui, text, button, row
@@ -32,17 +33,22 @@ def _has_baksmali():
     return bool(os.environ.get("BAKSMALI_JAR"))
 
 
+def _skip_if_missing(require_adb=False, require_baksmali=False):
+    issues = _collect_toolchain_diagnostics(
+        require_adb=require_adb,
+        require_baksmali=require_baksmali,
+    )
+    if issues:
+        pytest.skip("; ".join(issues))
+
+
+def _smali_jar():
+    return os.environ.get("SMALI_JAR")
+
+
 def test_omega_apk_packaging_integration(tmp_path):
-    if not _has_android_sdk():
-        pytest.skip("ANDROID_HOME/ANDROID_SDK_ROOT not set")
-    try:
-        _tool_path("aapt2")
-        _tool_path("apksigner")
-    except RuntimeError:
-        pytest.skip("aapt2/apksigner not found on PATH or in Android build-tools")
-    smali_jar = os.environ.get("SMALI_JAR")
-    if not _has_tool("smali") and not smali_jar:
-        pytest.skip("smali not found on PATH and SMALI_JAR not set")
+    _skip_if_missing()
+    smali_jar = _smali_jar()
 
     out_dir = emit_build_dir_from_program(
         [assign("x", const(1))],
@@ -62,16 +68,8 @@ def test_omega_apk_packaging_integration(tmp_path):
 
 
 def test_omega_apk_packaging_manifest_activity(tmp_path):
-    if not _has_android_sdk():
-        pytest.skip("ANDROID_HOME/ANDROID_SDK_ROOT not set")
-    try:
-        _tool_path("aapt2")
-        _tool_path("apksigner")
-    except RuntimeError:
-        pytest.skip("aapt2/apksigner not found on PATH or in Android build-tools")
-    smali_jar = os.environ.get("SMALI_JAR")
-    if not _has_tool("smali") and not smali_jar:
-        pytest.skip("smali not found on PATH and SMALI_JAR not set")
+    _skip_if_missing()
+    smali_jar = _smali_jar()
 
     out_dir = emit_build_dir_from_program(
         [assign("x", const(1))],
@@ -140,20 +138,10 @@ def _has_device():
 
 
 def test_omega_apk_adb_smoke(tmp_path):
-    if not _has_android_sdk():
-        pytest.skip("ANDROID_HOME/ANDROID_SDK_ROOT not set")
-    try:
-        _tool_path("aapt2")
-        _tool_path("apksigner")
-    except RuntimeError:
-        pytest.skip("aapt2/apksigner not found on PATH or in Android build-tools")
-    smali_jar = os.environ.get("SMALI_JAR")
-    if not _has_tool("smali") and not smali_jar:
-        pytest.skip("smali not found on PATH and SMALI_JAR not set")
-    if not _has_adb():
-        pytest.skip("adb not found on PATH")
+    _skip_if_missing(require_adb=True)
     if not _has_device():
         pytest.skip("no adb devices in 'device' state")
+    smali_jar = _smali_jar()
 
     activity_desc = "Lcom/anali/preview/MainActivity;"
     out_dir = emit_build_dir_from_program(
@@ -197,16 +185,8 @@ def test_omega_apk_adb_smoke(tmp_path):
 
 
 def test_omega_smali_register_nibble_safety_integration(tmp_path):
-    if not _has_android_sdk():
-        pytest.skip("ANDROID_HOME/ANDROID_SDK_ROOT not set")
-    try:
-        _tool_path("aapt2")
-        _tool_path("apksigner")
-    except RuntimeError:
-        pytest.skip("aapt2/apksigner not found on PATH or in Android build-tools")
-    smali_jar = os.environ.get("SMALI_JAR")
-    if not _has_tool("smali") and not smali_jar:
-        pytest.skip("smali not found on PATH and SMALI_JAR not set")
+    _skip_if_missing()
+    smali_jar = _smali_jar()
 
     rows = []
     for i in range(20):
@@ -246,11 +226,8 @@ def test_omega_smali_register_nibble_safety_integration(tmp_path):
 
 
 def test_omega_smali_baksmali_roundtrip(tmp_path):
-    smali_jar = os.environ.get("SMALI_JAR")
-    if not _has_tool("smali") and not smali_jar:
-        pytest.skip("smali not found on PATH and SMALI_JAR not set")
-    if not _has_baksmali():
-        pytest.skip("baksmali not found on PATH and BAKSMALI_JAR not set")
+    _skip_if_missing(require_baksmali=True)
+    smali_jar = _smali_jar()
 
     out_dir = emit_build_dir_from_program(
         [assign("x", const(1))],
