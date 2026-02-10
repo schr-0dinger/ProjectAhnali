@@ -11,8 +11,7 @@ from ir.stmt import (
     FieldSet,
     ArraySet,
 )
-from ir.expr import Compare, Call, Const, Var
-from ir.stmt import Return
+from ir.expr import BoolOp, Call, Compare, Const, UnaryOp, Var
 
 
 class Terminator:
@@ -151,22 +150,40 @@ class CFGBuilder:
             f"If condition must be Compare or str, got {type(cond).__name__}"
         )
 
-    def _lower_if(self, stmt, current):
-        cond = self._normalize_condition(stmt.cond)
+    def _lower_cond_branch(self, cond, true_block, false_block, current):
+        if isinstance(cond, BoolOp):
+            if cond.op == "and":
+                rhs_block = self.cfg.new_block()
+                self._lower_cond_branch(cond.left, rhs_block, false_block, current)
+                return self._lower_cond_branch(cond.right, true_block, false_block, rhs_block)
+            if cond.op == "or":
+                rhs_block = self.cfg.new_block()
+                self._lower_cond_branch(cond.left, true_block, rhs_block, current)
+                return self._lower_cond_branch(cond.right, true_block, false_block, rhs_block)
+            raise RuntimeError(f"Unsupported boolean operator: {cond.op}")
 
+        if isinstance(cond, UnaryOp):
+            if cond.op != "not":
+                raise RuntimeError(f"Unsupported unary condition operator: {cond.op}")
+            return self._lower_cond_branch(cond.value, false_block, true_block, current)
+
+        cond = self._normalize_condition(cond)
+        current.terminator = Terminator(
+            "branch",
+            cond=cond,
+            true=true_block,
+            false=false_block,
+        )
+        current.add_successor(true_block)
+        current.add_successor(false_block)
+        return current
+
+    def _lower_if(self, stmt, current):
         then_entry = self.cfg.new_block()
         else_entry = self.cfg.new_block()
         merge = self.cfg.new_block()
 
-        current.terminator = Terminator(
-            "branch",
-            cond=cond,
-            true=then_entry,
-            false=else_entry,
-        )
-
-        current.add_successor(then_entry)
-        current.add_successor(else_entry)
+        self._lower_cond_branch(stmt.cond, then_entry, else_entry, current)
 
         then_end = self._lower_block(stmt.then, then_entry)
         if then_end.terminator is None:
@@ -179,23 +196,13 @@ class CFGBuilder:
         return merge
 
     def _lower_while(self, stmt, current):
-        cond = self._normalize_condition(stmt.cond)
-
         cond_block = self.cfg.new_block()
         body = self.cfg.new_block()
         exit = self.cfg.new_block()
 
         self._jump(current, cond_block)
 
-        cond_block.terminator = Terminator(
-            "branch",
-            cond=cond,
-            true=body,
-            false=exit,
-        )
-
-        cond_block.add_successor(body)
-        cond_block.add_successor(exit)
+        self._lower_cond_branch(stmt.cond, body, exit, cond_block)
 
         body_end = self._lower_block(stmt.body, body)
         self._jump(body_end, cond_block)

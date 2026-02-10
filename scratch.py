@@ -35,7 +35,7 @@ import os
 
 APP_PACKAGE = "com.anali.helloworld"
 APP_MIN_SDK = 21
-APP_TARGET_SDK = 33
+APP_TARGET_SDK = 34
 APP_VERSION_CODE = 1
 APP_VERSION_NAME = "1.0"
 APP_DEBUGGABLE = False
@@ -178,6 +178,39 @@ items = [
         margin=(dp(16), dp(0), dp(16), dp(16)),
         style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
         width=max_width
+    ),
+
+    # Stopwatch / Timer card (UI-only placeholder)
+    Column(
+        Text(
+            "Stopwatch / Timer",
+            id="timer_title",
+            style=title_style,
+        ),
+        Text(
+            "00:00.0",
+            id="timer_display",
+            padding=(dp(0), dp(8), dp(0), dp(8)),
+            style=Style(text_color="text", text_size=sp(20)),
+        ),
+        TextField(
+            "",
+            id="timer_input",
+            hint="Timer duration (e.g., 02:30)",
+            margin=(dp(0), dp(4), dp(0), dp(8)),
+        ),
+        Row(
+            Button("Start", id="timer_start", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
+            Button("Stop", id="timer_stop", weight=1, width=dp(0)),
+            Button("Reset", id="timer_reset", weight=1, width=dp(0), style=ui_presets.DangerButton()),
+            id="timer_actions",
+            margin=(dp(0), dp(8), dp(0), dp(0)),
+            weight_sum=3,
+        ),
+        id="timer_card",
+        margin=(dp(16), dp(0), dp(16), dp(16)),
+        style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
+        width=max_width,
     ),
 
     # Button variants

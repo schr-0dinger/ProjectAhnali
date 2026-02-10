@@ -1,4 +1,4 @@
-from ir.expr import BinaryOp, Call, Compare, Const, New, NewArray, PrimitiveCast, StaticFieldGet, Var
+from ir.expr import BinaryOp, BoolOp, Call, Compare, Const, New, NewArray, PrimitiveCast, StaticFieldGet, UnaryOp, Var
 from ir.field import StaticField
 from ir.method import MethodIR
 from ir.program import ProgramIR
@@ -508,6 +508,15 @@ def binary(op, left, right):
 
 def compare(op, left, right):
     return Compare(op, left, right)
+
+def bool_and(left, right):
+    return BoolOp("and", left, right)
+
+def bool_or(left, right):
+    return BoolOp("or", left, right)
+
+def bool_not(value):
+    return UnaryOp("not", value)
 
 
 def try_catch(try_body, except_body=None, exception_type=None, handlers=None):

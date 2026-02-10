@@ -5,7 +5,9 @@ from ir.expr import (
     Compare,
     Const,
     BinaryOp,
+    BoolOp,
     Call,
+    UnaryOp,
     Var,
     New,
     NewArray,
@@ -56,6 +58,13 @@ def _iter_ssa_uses(value):
     elif isinstance(value, Compare):
         yield from _iter_ssa_uses(value.left)
         yield from _iter_ssa_uses(value.right)
+
+    elif isinstance(value, BoolOp):
+        yield from _iter_ssa_uses(value.left)
+        yield from _iter_ssa_uses(value.right)
+
+    elif isinstance(value, UnaryOp):
+        yield from _iter_ssa_uses(value.value)
 
     elif isinstance(value, Call):
         for arg in value.args:

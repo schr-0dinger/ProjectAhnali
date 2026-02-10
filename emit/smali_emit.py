@@ -77,7 +77,6 @@ def emit_method_smali(method: DalvikMethod):
     range_temp_count = 0
     temp_reg_count = TEMP_REG_COUNT
     temp_reg_start = TEMP_REG_START
-    locals_count = max(locals_count, TEMP_REG_START + TEMP_REG_COUNT)
 
     def _reg_index(reg):
         if reg.startswith("v"):
@@ -194,6 +193,29 @@ def emit_method_smali(method: DalvikMethod):
         if elem_desc == "S":
             return f"{prefix}-short"
         return prefix
+
+    def _needs_low_temp_regs():
+        for block in method.blocks.values():
+            for instr in block.instructions:
+                if isinstance(instr, DInstanceGet):
+                    o = reg_map[instr.obj.ssa]
+                    r = reg_map[instr.dst.ssa]
+                    if _reg_index(o) > 15 or _reg_index(r) > 15:
+                        return True
+                elif isinstance(instr, DInstancePut):
+                    o = reg_map[instr.obj.ssa]
+                    v = reg_map[instr.value.ssa]
+                    if _reg_index(o) > 15 or _reg_index(v) > 15:
+                        return True
+                elif isinstance(instr, DInstanceOf):
+                    o = reg_map[instr.obj.ssa]
+                    r = reg_map[instr.dst.ssa]
+                    if _reg_index(o) > 15 or _reg_index(r) > 15:
+                        return True
+        return False
+
+    if _needs_low_temp_regs():
+        locals_count = max(locals_count, TEMP_REG_START + TEMP_REG_COUNT)
 
     for block in method.blocks.values():
         for instr in block.instructions:

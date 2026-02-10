@@ -113,6 +113,46 @@ class BinaryOp(Expr):
         return f"({self.left} {self.op} {self.right})"
 
 
+class BoolOp(Expr):
+    """
+    Boolean operation with short-circuit semantics.
+    Used in If/While conditions (lowered by CFG builder).
+    """
+    OPS = {"and", "or"}
+
+    def __init__(self, op: str, left: Expr, right: Expr):
+        if op not in self.OPS:
+            raise ValueError(f"Invalid boolean operator: {op}")
+        if not isinstance(left, Expr):
+            raise TypeError(f"BoolOp.left must be Expr, got {type(left)}")
+        if not isinstance(right, Expr):
+            raise TypeError(f"BoolOp.right must be Expr, got {type(right)}")
+        self.op = op
+        self.left = left
+        self.right = right
+
+    def __repr__(self):
+        return f"({self.left} {self.op} {self.right})"
+
+
+class UnaryOp(Expr):
+    """
+    Unary boolean operation (currently only 'not').
+    """
+    OPS = {"not"}
+
+    def __init__(self, op: str, value: Expr):
+        if op not in self.OPS:
+            raise ValueError(f"Invalid unary operator: {op}")
+        if not isinstance(value, Expr):
+            raise TypeError(f"UnaryOp.value must be Expr, got {type(value)}")
+        self.op = op
+        self.value = value
+
+    def __repr__(self):
+        return f"({self.op} {self.value})"
+
+
 class New(Expr):
     """
     Object construction (new-instance + invoke-direct <init>).
