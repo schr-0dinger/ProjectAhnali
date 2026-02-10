@@ -525,3 +525,8 @@ def try_catch(try_body, except_body=None, exception_type=None, handlers=None):
 
 def throw(value):
     return Throw(value)
+
+
+def navigate(target):
+    from dsl.ast import _StmtNavigate
+    return _StmtNavigate(target)

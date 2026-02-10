@@ -89,93 +89,76 @@ def _block_uses_defs(dblock):
         if isinstance(instr, DMove):
             v = _ssa_of(instr.src)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
 
         elif isinstance(instr, DBinaryOp):
             for v in (_ssa_of(instr.lhs), _ssa_of(instr.rhs)):
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
 
         elif isinstance(instr, DIf):
             if instr.cond:
                 v = _ssa_of(instr.cond)
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
             elif instr.cmp:
                 _, a, b = instr.cmp
                 for v in (_ssa_of(a), _ssa_of(b)):
                     if isinstance(v, SSAValue):
-                        if v not in defs:
-                            uses.add(v)
+                        uses.add(v)
         elif isinstance(instr, DIfZ):
             v = _ssa_of(instr.cond)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
         elif isinstance(instr, DInvoke):
             for arg in instr.args:
                 v = _ssa_of(arg)
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
         elif isinstance(instr, DStaticPut):
             v = _ssa_of(instr.value)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
         elif isinstance(instr, DInstanceGet):
             v = _ssa_of(instr.obj)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
         elif isinstance(instr, DInstancePut):
             for v in (_ssa_of(instr.obj), _ssa_of(instr.value)):
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
         elif isinstance(instr, DArrayGet):
             for v in (_ssa_of(instr.array), _ssa_of(instr.index)):
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
         elif isinstance(instr, DArrayPut):
             for v in (_ssa_of(instr.array), _ssa_of(instr.index), _ssa_of(instr.value)):
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
         elif isinstance(instr, DCheckCast):
             v = _ssa_of(instr.obj)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
         elif isinstance(instr, DPrimitiveCast):
             v = _ssa_of(instr.src)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
         elif isinstance(instr, DCompare):
             for v in (_ssa_of(instr.lhs), _ssa_of(instr.rhs)):
                 if isinstance(v, SSAValue):
-                    if v not in defs:
-                        uses.add(v)
+                    uses.add(v)
         elif isinstance(instr, DNewArray):
             v = _ssa_of(instr.src)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
 
         elif isinstance(instr, DReturn):
             v = _ssa_of(instr.value)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
         elif isinstance(instr, DThrow):
             v = _ssa_of(instr.value)
             if isinstance(v, SSAValue):
-                if v not in defs:
-                    uses.add(v)
+                uses.add(v)
 
     return uses, defs

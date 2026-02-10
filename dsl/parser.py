@@ -18,6 +18,7 @@ from .ast import (
     _StmtSnackbar,
     _StmtToast,
     _StmtLog,
+    _StmtNavigate,
     _StmtWhile,
 )
 
@@ -64,7 +65,7 @@ def _parse_stmt(stmt):
         call = stmt.value
         if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):
             fn = call.func.id
-            if fn == "toast":
+            if fn in ("toast", "Toast"):
                 args = [_parse_expr(a) for a in call.args]
                 if not args:
                     raise RuntimeError("toast requires message")
@@ -77,7 +78,7 @@ def _parse_stmt(stmt):
                         raise RuntimeError("toast duration must be constant")
                     duration = int(args[1].value)
                 return _StmtToast(msg, duration)
-            if fn == "snackbar":
+            if fn in ("snackbar", "Snackbar"):
                 args = [_parse_expr(a) for a in call.args]
                 if not args:
                     raise RuntimeError("snackbar requires message")
@@ -90,7 +91,7 @@ def _parse_stmt(stmt):
                         raise RuntimeError("snackbar duration must be constant")
                     duration = int(args[1].value)
                 return _StmtSnackbar(msg, duration)
-            if fn == "simple_dialog":
+            if fn in ("simple_dialog", "SimpleDialog"):
                 args = [_parse_expr(a) for a in call.args]
                 if len(args) < 2:
                     raise RuntimeError("simple_dialog requires title and message")
@@ -104,6 +105,14 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[1], _ExprConst):
                     raise RuntimeError("log args must be constant strings")
                 return _StmtLog(args[0].value, args[1].value)
+            if fn in ("navigate", "Navigate"):
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("Navigate requires a target screen name")
+                target = args[0].value if isinstance(args[0], _ExprConst) else None
+                if target is None:
+                    raise RuntimeError("Navigate target must be a constant string")
+                return _StmtNavigate(target)
             if fn == "exit_app":
                 if call.args:
                     raise RuntimeError("exit_app takes no arguments")

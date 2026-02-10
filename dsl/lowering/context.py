@@ -21,6 +21,7 @@ from dsl.ast import (
     _StmtSnackbar,
     _StmtToast,
     _StmtLog,
+    _StmtNavigate,
     _StmtWhile,
 )
 from dsl.ir_helpers import (
@@ -75,6 +76,7 @@ from dsl.widgets import (
     _UIRelative,
     _UIRaisedButton,
     _UIRow,
+    _UIScreen,
     _UISlider,
     _UISwitch,
     _UIText,
@@ -104,6 +106,10 @@ class _PythonicContext:
         self._local_vars = set()
         self._container_orientation = {self.root_id: "vertical"}
         self._lint_warnings = []
+        self._screens = []
+        self._screen_map = {}
+        self._current_screen = None
+        self._view_screen = {}
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -138,6 +144,8 @@ class _PythonicContext:
             return "Landroid/widget/Spinner;"
         if kind == "popup_button":
             return "Landroid/widget/Button;"
+        if kind == "screen":
+            return "Landroid/widget/RelativeLayout;"
         return "Landroid/view/View;"
 
     def _register_view(self, item_id: str, kind: str):
@@ -161,6 +169,7 @@ class _PythonicContext:
             "dropdown",
             "button_bar",
             "popup",
+            "screen",
         }
         resolved_id = item_id
         if resolved_id in self.view_types:
@@ -180,7 +189,20 @@ class _PythonicContext:
                 )
         self.view_types[resolved_id] = kind
         self.view_fields[resolved_id] = f"view_{resolved_id}"
+        self._record_view_screen(resolved_id)
         return resolved_id
+
+    def _record_view_screen(self, view_id: str):
+        if not self._current_screen:
+            return
+        existing = self._view_screen.get(view_id)
+        if existing and existing != self._current_screen:
+            raise RuntimeError(
+                f"Widget id '{view_id}' is declared in multiple Screens "
+                f"('{existing}' and '{self._current_screen}'). "
+                "Widget ids must be unique across Screens."
+            )
+        self._view_screen[view_id] = self._current_screen
 
     def _emit_attr_call(self, *, view_id, attr_name, raw_value):
         meta = ATTR_METHODS.get(attr_name)
@@ -1238,6 +1260,44 @@ class _PythonicContext:
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
             body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UIScreen):
+            item.id = self._register_view(item.id, "screen")
+            self._screen_map[item.name] = item.id
+            self._screens.append((item.name, item.id))
+            self._container_orientation[item.id] = "vertical"
+            body.extend(relative_layout(item.id, var("ctx")))
+            body.extend(self._apply_view_layout(item, parent_id))
+            # Default visibility: first screen visible, others gone.
+            vis = 0 if len(self._screens) == 1 else 8
+            body.append(
+                call_stmt(
+                    "setVisibility",
+                    args=[var(item.id), const(vis)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            prev_screen = self._current_screen
+            self._current_screen = item.name
+            try:
+                screen_root = _UIColumn(
+                    *item.items,
+                    id=f"{item.id}_root",
+                    layout=("match_parent", "match_parent"),
+                )
+                screen_root.id = self._register_view(screen_root.id, "column")
+                self._container_orientation[screen_root.id] = "vertical"
+                body.extend(linear_layout(screen_root.id, var("ctx"), "vertical"))
+                body.extend(self._apply_view_layout(screen_root, item.id))
+                body.append(add_view(var(item.id), var(screen_root.id)))
+                body.extend(self._capture_view_static(screen_root.id))
+                body.extend(self._build_ui_items(screen_root.id, screen_root.items))
+            finally:
+                self._current_screen = prev_screen
         elif isinstance(item, _UIText):
             item.id = self._register_view(item.id, "text")
             body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
@@ -1300,6 +1360,8 @@ class _PythonicContext:
             return self._compile_dialog_stmt(stmt)
         if isinstance(stmt, _StmtLog):
             return self._compile_log_stmt(stmt)
+        if isinstance(stmt, _StmtNavigate):
+            return self._compile_navigate_stmt(stmt)
         raise RuntimeError(f"Unsupported statement: {stmt}")
 
     def _compile_exit_app_stmt(self, stmt):
@@ -2102,6 +2164,33 @@ class _PythonicContext:
                 owner="Landroid/util/Log;",
             )
         ]
+
+    def _compile_navigate_stmt(self, stmt):
+        if not self._screens:
+            raise RuntimeError("Navigate used without any Screen definitions")
+        if stmt.target not in self._screen_map:
+            known = ", ".join(sorted(self._screen_map.keys()))
+            raise RuntimeError(f"Unknown screen '{stmt.target}'. Known: [{known}]")
+        out = []
+        for name, screen_id in self._screens:
+            field_name = self.view_fields.get(screen_id)
+            if not field_name:
+                raise RuntimeError(f"Missing view field for screen '{screen_id}'")
+            desc = self._view_desc("screen")
+            vis = 0 if name == stmt.target else 8
+            tmp = self._next_tmp(f"{screen_id}_ref")
+            out.append(assign(tmp, static_get(field_name, desc)))
+            out.append(
+                call_stmt(
+                    "setVisibility",
+                    args=[var(tmp), const(vis)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+        return out
 
     def _compile_format_set_text(self, view_desc, view_field, fmt):
         stmts = [

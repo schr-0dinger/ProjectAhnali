@@ -1,5 +1,17 @@
+"""
+Anali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode.
+All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time
+with no runtime interpretation. Alongside this, Anali ships a statically linked, capability-scoped support runtime: a small
+set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView,
+etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in
+user code are included in the final APK. As a result, Anali applications have deterministic behavior, minimal binary size,
+zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable
+DSL.
+"""
+
 from .ast import *
 from .ir_helpers import *
+from .ir_helpers import toast as _ir_toast
 from .lowering.context import _PythonicContext
 from .plugins import load_plugins
 from .parser import _parse_handler_ast
@@ -14,6 +26,7 @@ from .widgets import (
     _UIPopupMenuButton,
     _UIRaisedButton,
     _UIRow,
+    _UIScreen,
     _UISimpleDialog,
     _UISnackbar,
     _UIToast,
@@ -32,13 +45,17 @@ from .widgets import (
     Radio,
     RaisedButton,
     Row,
+    Screen,
+    SimpleDialog,
     Slider,
     State,
     Style,
+    Snackbar,
     Switch,
     Text,
     TextField,
     Theme,
+    Toast,
     button,
     column,
     core,
@@ -51,11 +68,15 @@ from .widgets import (
     max_width,
     presets as presets_widget,
     row,
+    screen,
+    simple_dialog,
+    snackbar,
     size,
     state as state_widget,
     style as style_widget,
     text,
     theme as theme_widget,
+    toast as _ui_toast,
     wrap,
     wrap_height,
     wrap_width,
@@ -63,6 +84,17 @@ from .widgets import (
 import importlib
 import inspect
 import builtins as _builtins
+
+
+def toast(*args, **kwargs):
+    """
+    Dual-purpose toast helper:
+    - UI DSL: toast("Hi", duration=0) -> _UIToast
+    - IR helper: toast("t", var("ctx"), "Hi", duration=0) -> [IR stmts]
+    """
+    if len(args) >= 3 or "ctx" in kwargs or "name" in kwargs:
+        return _ir_toast(*args, **kwargs)
+    return _ui_toast(*args, **kwargs)
 
 
 class _SimpleActivity:
@@ -363,6 +395,15 @@ def on_click_map(mapping):
     return specs
 
 
+def Navigate(target):
+    from .ast import _StmtNavigate
+    return _StmtNavigate(target)
+
+
+def navigate(target):
+    return Navigate(target)
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 
@@ -432,6 +473,24 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
 
     state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
+    has_screens = any(isinstance(item, _UIScreen) for item in ui_spec.items)
+    if has_screens:
+        non_screens = [item for item in ui_spec.items if not isinstance(item, _UIScreen)]
+        if non_screens:
+            raise RuntimeError(
+                "ui() cannot mix Screen(...) with non-screen items. "
+                "Wrap all UI inside Screen(...) entries or remove Screen(...) entirely."
+            )
+        seen_names = set()
+        dupes = set()
+        for item in ui_spec.items:
+            name = str(item.name)
+            if name in seen_names:
+                dupes.add(name)
+            seen_names.add(name)
+        if dupes:
+            duped = ", ".join(sorted(dupes))
+            raise RuntimeError(f"Screen names must be unique. Duplicate names: [{duped}]")
 
     if caller_module:
         try:
@@ -445,6 +504,10 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     plugin_names = _resolve_plugins(activity_spec, caller_module)
     registry = load_plugins(["core", *plugin_names])
     ctx = _PythonicContext(state_spec, ui_spec, theme_spec, registry=registry)
+    if has_screens and state_spec.values:
+        ctx._lint_warnings.append(
+            "State values are global across Screens. Screen-local state is not yet supported."
+        )
     program = ctx.build_program(click_specs, resources=resources)
     required_artifacts, jar_allowlist = registry.collect_deps(ui_spec.items, click_specs)
     program.required_artifacts = required_artifacts

@@ -186,6 +186,37 @@ def test_pythonic_dsl_root_is_scrollable():
     assert "Landroid/view/ViewGroup;->addView(Landroid/view/View;)V" in smali
 
 
+def test_pythonic_dsl_navigation_screens():
+    from dsl.app import Screen, Navigate
+
+    @on_click("go")
+    def go():
+        Navigate("Player")
+
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                Screen(
+                    "Home",
+                    text("Home", id="home_title"),
+                    button("Go", id="go"),
+                ),
+                Screen(
+                    "Player",
+                    text("Player", id="player_title"),
+                ),
+            ),
+            go,
+        )
+    )
+
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/view/View;->setVisibility(I)V" in smali
+    assert ".field public static view_screen_home" in smali
+    assert ".field public static view_screen_player" in smali
+
+
 @on_click("log_btn")
 def log_btn():
     log("Anali", "clicked")

@@ -100,6 +100,11 @@ class _StmtLog:
         self.message = message
 
 
+class _StmtNavigate:
+    def __init__(self, target):
+        self.target = target
+
+
 class _StmtExitApp:
     def __init__(self):
         pass

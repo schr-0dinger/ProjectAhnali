@@ -584,6 +584,36 @@ class Constraint(_UIConstraint):
     pass
 
 
+class SimpleDialog(_UISimpleDialog):
+    pass
+
+
+class Toast(_UIToast):
+    pass
+
+
+class Snackbar(_UISnackbar):
+    pass
+
+
+class _UIScreen:
+    def __init__(self, name, *items, id=None):
+        self.name = str(name)
+        if id is None:
+            base = self.name.strip().lower().replace(" ", "_")
+            base = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in base)
+            id = f"screen_{base or 'screen'}"
+        self.id = id
+        self.items = items
+        self.layout = ("match_parent", "match_parent")
+        self.padding = None
+        self.margin = None
+        self.gravity = None
+        self.background = None
+        self.radius = None
+        self.style = None
+
+
 def _layout_with_size(layout, width, height, default=None):
     if layout is None:
         layout = default
@@ -873,6 +903,26 @@ def toast(message, duration=0):
 
 def snackbar(message, duration=0):
     return _UISnackbar(message, duration=duration)
+
+
+def SimpleDialog(title, message):
+    return simple_dialog(title, message)
+
+
+def Toast(message, duration=0):
+    return toast(message, duration=duration)
+
+
+def Snackbar(message, duration=0):
+    return snackbar(message, duration=duration)
+
+
+def screen(name, *items, id=None):
+    return _UIScreen(name, *items, id=id)
+
+
+def Screen(name, *items, id=None):
+    return screen(name, *items, id=id)
 
 
 def exit_app():

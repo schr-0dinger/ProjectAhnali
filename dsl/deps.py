@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dsl.widgets import _UIColumn, _UIConstraint, _UIRelative, _UIRow
+from dsl.widgets import _UIColumn, _UIConstraint, _UIRelative, _UIRow, _UIScreen
 from dsl.ast import _StmtSnackbar, _StmtIf, _StmtWhile, _StmtAssign, _StmtSetText, _ExprBinary, _ExprCompare, _ExprBoolOp, _ExprUnary, _ExprFormat
 
 
@@ -8,7 +8,7 @@ def _walk_items(items, *, need_constraint_flag):
     for item in items:
         if isinstance(item, _UIConstraint):
             need_constraint_flag[0] = True
-        if isinstance(item, (_UIRow, _UIColumn, _UIRelative, _UIConstraint)) and getattr(item, "items", None):
+        if isinstance(item, (_UIRow, _UIColumn, _UIRelative, _UIConstraint, _UIScreen)) and getattr(item, "items", None):
             _walk_items(item.items, need_constraint_flag=need_constraint_flag)
 
 

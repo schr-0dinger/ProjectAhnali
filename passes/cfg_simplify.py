@@ -189,4 +189,7 @@ def renumber_blocks(cfg, dalvik_blocks):
         block.id = mapping[block]
         new_blocks[block.id] = block
     cfg.blocks = new_blocks
+    # Keep Dalvik block ids in sync with CFG ids.
+    for cfg_block, dblock in dalvik_blocks.items():
+        dblock.id = cfg_block.id
     return cfg, dalvik_blocks

@@ -68,6 +68,15 @@ class LinearScanAllocator:
                             interval.width = self._interval_width(v)
                             interval.start = min(interval.start, index)
                             interval.end = max(interval.end, index)
+                if instr.__class__.__name__ == "DIf" and getattr(instr, "cmp", None):
+                    _, a, b = instr.cmp
+                    for d in (a, b):
+                        if d and hasattr(d, "ssa") and d.ssa:
+                            v = d.ssa
+                            interval = interval_map.setdefault(v, LiveInterval(v))
+                            interval.width = self._interval_width(v)
+                            interval.start = min(interval.start, index)
+                            interval.end = max(interval.end, index)
                 if hasattr(instr, "args"):
                     for d in instr.args:
                         if d and hasattr(d, "ssa") and d.ssa:

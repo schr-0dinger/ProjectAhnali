@@ -457,6 +457,7 @@ _METHOD_SIGS_MANUAL = {
         None,
         ["Landroid/view/ViewGroup$LayoutParams;"],
     ),
+    ("Landroid/view/View;", "setVisibility", "virtual"): (None, ["I"]),
     ("Landroid/app/AlertDialog$Builder;", "<init>", "direct"): (None, ["Landroid/content/Context;"]),
     ("Landroid/app/AlertDialog$Builder;", "setTitle", "virtual"): ("Landroid/app/AlertDialog$Builder;", ["Ljava/lang/CharSequence;"]),
     ("Landroid/app/AlertDialog$Builder;", "setMessage", "virtual"): ("Landroid/app/AlertDialog$Builder;", ["Ljava/lang/CharSequence;"]),

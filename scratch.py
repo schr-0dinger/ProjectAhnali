@@ -1,4 +1,4 @@
-from dsl.app import app, activity, ui, on_click, run, app_config
+from dsl.app import app, activity, ui, on_click, run, app_config, Screen, Navigate
 from dsl.widgets import (
     State,
     Text,
@@ -62,7 +62,7 @@ def increment():
 
 @on_click("dec")
 def decrement():
-    count = count - 1
+    count -= 1
     label.text = f"Count: {count}"
     if count == 0:
         toast("At zero")
@@ -83,6 +83,15 @@ def boost():
         count += step
         n += 1
     label.text = f"Count: {count}"
+
+@on_click("nav_stopwatch")
+def nav_stopwatch():
+    Navigate("Stopwatch")
+
+
+@on_click("nav_home")
+def nav_home():
+    Navigate("Home")
 
 
 @on_click("fab")
@@ -105,6 +114,8 @@ def exit_click():
     exit_app()
 
 
+# ------------------------------------------------
+
 palette = {
     "bg": colors.zinc_100,
     "card": colors.white,
@@ -116,223 +127,196 @@ palette = {
     "on_danger": colors.white,
 }
 
+# -------------------------------------------------
+
 ui_presets = presets(palette=palette)
 
 title_style = Style(text_color="text", text_size=sp(18))
 
 items = [
-    # AppBar (inline toolbar) + title resource
-    # AppBar(
-    #     "Anali Widget Zoo",
-    #     id="appbar",
-    #     inline=True,
-    #     # text_color="on_primary",
-    #     # background="danger",
-    #     style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
-    # ),
+    Screen(
+        "Home",
+        # AppBar (inline toolbar) + title resource
+        AppBar(
+            "Anali Widget Zoo",
+            id="appbar",
+            inline=True,
+            # text_color="on_primary",
+            # background="danger",
+            style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
+        ),
 
-    # Hero
-    Text(
-        "User-facing DSL",
-        id="hero_title",
-        padding=(dp(16), dp(12), dp(16), dp(8)),
-        style=Style(text_color="text", text_size=sp(22)),
-    ),
-    Text(
-        "Layout + widgets + state + handlers",
-        id="hero_subtitle",
-        padding=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.MutedText(text_size=sp(14)),
-    ),
-
-    # Counter card
-    Column(
+        # Hero
         Text(
-            "Counter",
-            id="counter_title",
-            style=title_style,
+            "User-facing DSL",
+            id="hero_title",
+            padding=(dp(16), dp(12), dp(16), dp(8)),
+            style=Style(text_color="text", text_size=sp(22)),
         ),
         Text(
-            "Count: 0",
-            id="label",
-            padding=(dp(0), dp(8), dp(0), dp(8)),
-            style=Style(text_color="text", text_size=sp(20)),
+            "Layout + widgets + state + handlers",
+            id="hero_subtitle",
+            padding=(dp(16), dp(0), dp(16), dp(16)),
+            style=ui_presets.MutedText(text_size=sp(14)),
         ),
+
         Row(
-            Button("+", id="inc", style=ui_presets.PrimaryButton(), weight=1, width=dp(0)),
-            Button("-", id="dec", style=ui_presets.DangerButton(), weight=1, width=dp(0)),
-            Button("Reset", id="reset", style=ui_presets.PrimaryButton(), weight=1, width=dp(0)),
-            id="counter_row",
-            width=max_width,
-            margin=(dp(0), dp(8), dp(0), dp(0)),
-            weight_sum=3,
+            Button("Stopwatch", id="nav_stopwatch", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
+            id="nav_row",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            weight_sum=1,
         ),
-        Row(
-            Button("Boost x5", id="boost", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
-            Button("Announce", id="announce", weight=1, width=dp(0)),
-            id="counter_actions",
-            margin=(dp(0), dp(8), dp(0), dp(0)),
-            weight_sum=2,
-        ),
-        id="counter_card",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
-        width=max_width
-    ),
 
-    # Stopwatch / Timer card (UI-only placeholder)
-    Column(
-        Text(
-            "Stopwatch / Timer",
-            id="timer_title",
-            style=title_style,
+        # Counter card
+        Column(
+            Text(
+                "Counter",
+                id="counter_title",
+                style=title_style,
+            ),
+            Text(
+                "Count: 0",
+                id="label",
+                padding=(dp(0), dp(8), dp(0), dp(8)),
+                style=Style(text_color="text", text_size=sp(20)),
+            ),
+            Row(
+                Button("+", id="inc", style=ui_presets.PrimaryButton(), weight=1, width=dp(0)),
+                Button("-", id="dec", style=ui_presets.DangerButton(), weight=1, width=dp(0)),
+                Button("Reset", id="reset", style=ui_presets.PrimaryButton(), weight=1, width=dp(0)),
+                id="counter_row",
+                width=max_width,
+                margin=(dp(0), dp(8), dp(0), dp(0)),
+                weight_sum=3,
+            ),
+            Row(
+                Button("Boost x5", id="boost", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
+                Button("Announce", id="announce", weight=1, width=dp(0)),
+                id="counter_actions",
+                margin=(dp(0), dp(8), dp(0), dp(0)),
+                weight_sum=2,
+            ),
+            id="counter_card",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
+            width=max_width
         ),
-        Text(
-            "00:00.0",
-            id="timer_display",
-            padding=(dp(0), dp(8), dp(0), dp(8)),
-            style=Style(text_color="text", text_size=sp(20)),
+
+        # Button variants
+        Column(
+            Text("Button variants", id="btn_title", style=title_style),
+            RaisedButton("Raised", id="raised", style=ui_presets.PrimaryButton()),
+            FlatButton("Flat", style=Style(text_color="on_primary")),
+            IconButton("*", width=max_width, style=Style(background="card", radius=dp(36), text_color="text")),
+            id="button_variants",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            style=ui_presets.Card(padding=(dp(30), dp(30), dp(30), dp(30))),
+            width=max_width
         ),
+
+        # TextField + toggles
         TextField(
             "",
-            id="timer_input",
-            hint="Timer duration (e.g., 02:30)",
-            margin=(dp(0), dp(4), dp(0), dp(8)),
+            id="input",
+            hint="Type something",
+            margin=(dp(16), dp(0), dp(16), dp(12)),
         ),
         Row(
-            Button("Start", id="timer_start", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
-            Button("Stop", id="timer_stop", weight=1, width=dp(0)),
-            Button("Reset", id="timer_reset", weight=1, width=dp(0), style=ui_presets.DangerButton()),
-            id="timer_actions",
-            margin=(dp(0), dp(8), dp(0), dp(0)),
-            weight_sum=3,
+            Column(
+                Checkbox("Check me", checked=True),
+                Radio("Select me", checked=False),
+                Switch("Toggle me", checked=True),
+                id="toggles",
+                style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
+            ),
+            id="toggle_row",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
         ),
-        id="timer_card",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
-        width=max_width,
-    ),
 
-    # Button variants
-    Column(
-        Text("Button variants", id="btn_title", style=title_style),
-        RaisedButton("Raised", id="raised", style=ui_presets.PrimaryButton()),
-        FlatButton("Flat", style=Style(text_color="on_primary")),
-        IconButton("*", width=max_width, style=Style(background="card", radius=dp(36), text_color="text")),
-        id="button_variants",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.Card(padding=(dp(30), dp(30), dp(30), dp(30))),
-        width=max_width
-    ),
+        # Slider
+        Row(
+            Text("Slider", id="slider_title", style=title_style),
+            Slider(
+                id="slider",
+                min=0,
+                max=100,
+                value=42,
+            ),
+            id="slider_card",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            style=ui_presets.Card(padding=(dp(30), dp(30), dp(30), dp(30))),
+        ),
 
-    # TextField + toggles
-    TextField(
-        "",
-        id="input",
-        hint="Type something",
-        margin=(dp(16), dp(0), dp(16), dp(12)),
-    ),
-    Row(
-        Column(
-            Checkbox("Check me", checked=True),
-            Radio("Select me", checked=False),
-            Switch("Toggle me", checked=True),
-            id="toggles",
+        # Dropdown + Popup
+        Row(
+            DropdownButton(
+                id="dropdown",
+                items=["One", "Two", "Three"],
+                width=percent(50),
+            ),
+            PopupMenuButton(
+                "Menu",
+                id="menu",
+                items=["A", "B", "C"],
+                width=percent(50),
+            ),
+            id="menus",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+        ),
+
+        # ButtonBar
+        ButtonBar(
+            Button("OK"),
+            Button("Cancel"),
+            Button("Exit", id="exit", style=ui_presets.DangerButton()),
+            id="button_bar",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+        ),
+
+        # Relative layout demo
+        Relative(
+            Text(
+                "Relative Title",
+                id="rel_title",
+                relative=[("align_parent_top", "parent"), ("center_horizontal", "parent")],
+                margin=(dp(0), dp(0), dp(0), dp(8)),
+            ),
+            Button(
+                "Below Title",
+                id="rel_btn",
+                relative=[("below", "rel_title"), ("center_horizontal", "parent")],
+            ),
+            id="relative_demo",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
             style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
         ),
-        id="toggle_row",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-    ),
 
-    # Slider
-    Row(
-        Text("Slider", id="slider_title", style=title_style),
-        Slider(
-            id="slider",
-            min=0,
-            max=100,
-            value=42,
+        Constraint(
+            Text(
+                "Constraint Title",
+                id="con_title",
+                constraints={
+                    "top_to_top": "parent",
+                    "left_to_left": "parent",
+                    "right_to_right": "parent",
+                    "horizontal_bias": 0.5,
+                },
+            ),
+            Button(
+                "Under Title",
+                id="con_btn",
+                constraints={
+                    "top_to_bottom": "con_title",
+                    "left_to_left": "parent",
+                    "right_to_right": "parent",
+                    "horizontal_bias": 0.5,
+                },
+            ),
+            id="constraint_demo",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
         ),
-        id="slider_card",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.Card(padding=(dp(30), dp(30), dp(30), dp(30))),
-    ),
 
-    # Dropdown + Popup
-    Row(
-        DropdownButton(
-            id="dropdown",
-            items=["One", "Two", "Three"],
-            width=percent(50),
-        ),
-        PopupMenuButton(
-            "Menu",
-            id="menu",
-            items=["A", "B", "C"],
-            width=percent(50),
-        ),
-        id="menus",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-    ),
-
-    # ButtonBar
-    ButtonBar(
-        Button("OK"),
-        Button("Cancel"),
-        Button("Exit", id="exit", style=ui_presets.DangerButton()),
-        id="button_bar",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-    ),
-
-    # Relative layout demo
-    Relative(
-        Text(
-            "Relative Title",
-            id="rel_title",
-            relative=[("align_parent_top", "parent"), ("center_horizontal", "parent")],
-            margin=(dp(0), dp(0), dp(0), dp(8)),
-        ),
-        Button(
-            "Below Title",
-            id="rel_btn",
-            relative=[("below", "rel_title"), ("center_horizontal", "parent")],
-        ),
-        id="relative_demo",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
-    ),
-]
-
-items.append(
-    Constraint(
-        Text(
-            "Constraint Title",
-            id="con_title",
-            constraints={
-                "top_to_top": "parent",
-                "left_to_left": "parent",
-                "right_to_right": "parent",
-                "horizontal_bias": 0.5,
-            },
-        ),
-        Button(
-            "Under Title",
-            id="con_btn",
-            constraints={
-                "top_to_bottom": "con_title",
-                "left_to_left": "parent",
-                "right_to_right": "parent",
-                "horizontal_bias": 0.5,
-            },
-        ),
-        id="constraint_demo",
-        margin=(dp(16), dp(0), dp(16), dp(16)),
-        style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
-    )
-)
-
-items.extend(
-    [
         Text(
             "Toast/Snackbar demo",
             id="footer_text",
@@ -347,8 +331,50 @@ items.extend(
             height=dp(72),
             style=Style(background=colors.zinc_200, text_color="on_primary", radius=dp(36), padding=(dp(0), dp(0), dp(0), dp(0))),
         ),
-    ]
-)
+    ),
+
+    Screen(
+        "Stopwatch",
+        Row(
+            Button("Back", id="nav_home", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
+            id="nav_back_row",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            weight_sum=1,
+        ),
+        # Stopwatch / Timer card (UI-only placeholder)
+        Column(
+            Text(
+                "Stopwatch / Timer",
+                id="timer_title",
+                style=title_style,
+            ),
+            Text(
+                "00:00.0",
+                id="timer_display",
+                padding=(dp(0), dp(8), dp(0), dp(8)),
+                style=Style(text_color="text", text_size=sp(20)),
+            ),
+            TextField(
+                "",
+                id="timer_input",
+                hint="Timer duration (e.g., 02:30)",
+                margin=(dp(0), dp(4), dp(0), dp(8)),
+            ),
+            Row(
+                Button("Start", id="timer_start", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
+                Button("Stop", id="timer_stop", weight=1, width=dp(0)),
+                Button("Reset", id="timer_reset", weight=1, width=dp(0), style=ui_presets.DangerButton()),
+                id="timer_actions",
+                margin=(dp(0), dp(8), dp(0), dp(0)),
+                weight_sum=3,
+            ),
+            id="timer_card",
+            margin=(dp(16), dp(0), dp(16), dp(16)),
+            style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
+            width=max_width,
+        ),
+    ),
+]
 
 app_spec = app(
     activity(
@@ -370,6 +396,8 @@ app_spec = app(
         decrement,
         reset,
         boost,
+        nav_stopwatch,
+        nav_home,
         fab_click,
         menu_click,
         announce_click,

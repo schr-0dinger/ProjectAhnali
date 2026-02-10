@@ -4,6 +4,8 @@ Anali is a Python DSL -> IR -> CFG -> SSA -> Typed SSA -> Dalvik IR -> Smali com
 This repository contains the compiler pipeline, validation gates, and tests for a
 phase-by-phase architecture-first build.
 
+Anali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, Anali ships a statically linked, capability-scoped support runtime: a small set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView, etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in user code are included in the final APK. As a result, Anali applications have deterministic behavior, minimal binary size, zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable DSL.
+
 Last updated: 2026-02-06
 
 ## Goals
