@@ -3,6 +3,7 @@
 from ir.types import AnaliType
 from ir.expr import BinaryOp, Compare, Call
 from ir.stmt import CallStmt
+from passes.ignored_return import allow_ignored_return
 from ssa.value import SSAValue
 
 
@@ -54,7 +55,7 @@ def verify_types(ssa_blocks):
                         "Void call cannot assign to a destination"
                     )
                 if expr.return_type is not None and not isinstance(stmt.defines(), SSAValue):
-                    if isinstance(stmt, CallStmt) and _allow_ignored_return(expr):
+                    if isinstance(stmt, CallStmt) and allow_ignored_return(expr):
                         continue
                     raise TypeVerificationError(
                         "Non-void call must assign to a destination"
@@ -62,17 +63,6 @@ def verify_types(ssa_blocks):
                 continue  # UNKNOWN allowed at this stage
 
 
-def _allow_ignored_return(expr: Call) -> bool:
-    # Allow list for side-effecting calls where return value is commonly ignored.
-    # TODO(phase-2-followup): Centralize this allowlist and expose it via DSL config.
-    # TODO(foundation): Provide a validator-level override for app-specific allowlists.
-    allow = {
-        ("Landroid/util/Log;", "d", "static"),
-        ("Landroid/util/Log;", "i", "static"),
-        ("Landroid/util/Log;", "w", "static"),
-        ("Landroid/util/Log;", "e", "static"),
-    }
-    return (expr.owner, expr.func_name, expr.invoke_kind) in allow
                 
     # ---------------------------------
     # 2. Verify only REQUIRED SSAValues

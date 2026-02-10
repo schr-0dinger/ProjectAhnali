@@ -118,6 +118,8 @@ def compile_method(method_ir, *, ssa_opt=None):
     # 10. Optimizations
     dalvik_blocks = eliminate_dead_code(dalvik_blocks)
     cfg, dalvik_blocks = simplify_cfg(cfg, dalvik_blocks)
+    from passes.cfg_simplify import renumber_blocks
+    cfg, dalvik_blocks = renumber_blocks(cfg, dalvik_blocks)
 
     # 11. Liveness
     liveness = compute_liveness(cfg, dalvik_blocks)
@@ -169,6 +171,9 @@ def compile_method(method_ir, *, ssa_opt=None):
 
 def alpha_pipeline(frontend_ir, *, ssa_opt=None):
     program = build_program(frontend_ir)
+    from passes.ignored_return import set_ignored_return_allowlist
+    allowlist = getattr(frontend_ir, "ignored_return_allowlist", None)
+    set_ignored_return_allowlist(allowlist)
 
     compiled = {}
     for method in program["methods"]:

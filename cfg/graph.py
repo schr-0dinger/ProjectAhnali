@@ -17,8 +17,6 @@ class ControlFlowGraph:
         self._next_id = 0
 
     def new_block(self) -> BasicBlock:
-        # TODO(foundation): Make block ID assignment deterministic across runs,
-        # independent of dict insertion order.
         block = BasicBlock(self._next_id)
         self.blocks[self._next_id] = block
         self._next_id += 1

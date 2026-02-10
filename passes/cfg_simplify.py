@@ -1,6 +1,7 @@
 # passes/cfg_simplify.py
 
 from dalvik.ir import DGoto
+from cfg.graph import stable_block_order
 
 
 def simplify_cfg(cfg, dalvik_blocks):
@@ -173,4 +174,19 @@ def simplify_cfg(cfg, dalvik_blocks):
             changed = True
             break
 
+    return cfg, dalvik_blocks
+
+
+def renumber_blocks(cfg, dalvik_blocks):
+    """
+    Deterministically renumber CFG block ids based on stable traversal order.
+    """
+    order = stable_block_order(cfg)
+    mapping = {block: idx for idx, block in enumerate(order)}
+    # Rebuild cfg.blocks with new ids
+    new_blocks = {}
+    for block in order:
+        block.id = mapping[block]
+        new_blocks[block.id] = block
+    cfg.blocks = new_blocks
     return cfg, dalvik_blocks

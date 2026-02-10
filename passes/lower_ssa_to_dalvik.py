@@ -55,6 +55,7 @@ from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 # passes/lower_ssa_to_dalvik.py
 
 from ssa.value import SSAValue
+from passes.ignored_return import allow_ignored_return
 
 
 def _is_wide_ssa(ssa):
@@ -62,20 +63,7 @@ def _is_wide_ssa(ssa):
     return t in ("J", "D")
 
 
-def _allow_ignored_return(expr: Call) -> bool:
-    # TODO(phase-2-followup): Centralize this allowlist and expose it via DSL config.
-    allow = {
-        ("Landroid/util/Log;", "d", "static"),
-        ("Landroid/util/Log;", "i", "static"),
-        ("Landroid/util/Log;", "w", "static"),
-        ("Landroid/util/Log;", "e", "static"),
-    }
-    return (expr.owner, expr.func_name, expr.invoke_kind) in allow
-
-
 def apply_spills(dalvik_blocks, intervals):
-    # TODO(foundation): Replace virtual spill slots with real stack spills (memory)
-    # when register pressure exceeds safe limits.
     spill_map = {i.value: i for i in intervals if i.spilled}
 
     for block in dalvik_blocks.values():
@@ -518,7 +506,7 @@ class LowerSSAToDalvik:
                 )
                 return
             if dst is None:
-                if isinstance(stmt, CallStmt) and _allow_ignored_return(expr):
+                if isinstance(stmt, CallStmt) and allow_ignored_return(expr):
                     db.emit(
                         DInvoke(
                             method=expr.func_name,

@@ -240,8 +240,6 @@ def _generate_resource_symbols(
     resources: AndroidResources | dict[str, str] | None,
     extra_aars: list[str | Path] | None,
 ) -> Path | None:
-    # TODO(foundation): Validate full dependency closure for AAR resources so
-    # aapt2 link failures are surfaced with actionable guidance.
     aapt2 = _tool_path("aapt2")
     android_jar = _find_android_jar(_find_android_sdk(), api=api)
     out_dir = Path(out_dir)
@@ -342,7 +340,15 @@ def _generate_resource_symbols(
             ),
             encoding="utf-8",
         )
-        subprocess.run(link_cmd, check=True)
+        result = subprocess.run(link_cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            stderr = (result.stderr or "").strip()
+            hint = (
+                "aapt2 link failed; this often means a missing transitive AAR. "
+                "Ensure all dependencies are present in ./libs (see tools/download_aars.py)."
+            )
+            detail = f"\n\nstderr:\n{stderr}" if stderr else ""
+            raise RuntimeError(f"{hint}{detail}")
 
         if not symbols_path.exists():
             return None

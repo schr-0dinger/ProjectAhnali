@@ -77,8 +77,6 @@ def _build_reg_map(intervals, param_ssa=None):
 
 def emit_method_smali(method: DalvikMethod):
     reg_map, locals_count = _build_reg_map(method.allocator.intervals, method.param_ssa)
-    # TODO(foundation): Consider deterministic CFG block IDs to remove label normalization
-    # in tests and ensure byte-for-byte stable smali.
     param_count = len(method.param_types or [])
     range_temp_count = 0
     temp_reg_count = TEMP_REG_COUNT
@@ -90,8 +88,6 @@ def emit_method_smali(method: DalvikMethod):
         if reg.startswith("p"):
             return locals_count + int(reg[1:])
         return -1
-        # TODO(foundation): Validate max register index against encoding limits
-        # and emit/diagnose when exceeding safe ranges.
 
     def _is_object_ssa(ssa):
         t = getattr(ssa, "type", None)
@@ -240,6 +236,16 @@ def emit_method_smali(method: DalvikMethod):
                     range_temp_count = max(range_temp_count, len(regs))
 
     lines = []
+    total_regs = locals_count + param_count + range_temp_count
+    max_idx = total_regs - 1 if total_regs > 0 else 0
+    if max_idx > 255:
+        raise RuntimeError(
+            f"Register index {max_idx} exceeds 255; spill pressure too high for current encoding."
+        )
+    if max_idx > 65535:
+        raise RuntimeError(
+            f"Register index {max_idx} exceeds 65535; method has too many registers."
+        )
     def _type_desc(t):
         if isinstance(t, str):
             if len(t) == 1:
@@ -262,7 +268,6 @@ def emit_method_smali(method: DalvikMethod):
     params_desc = "".join(_type_desc(t) for t in (method.param_types or []))
     ret_desc = _type_desc(method.return_type)
 
-    total_regs = locals_count + param_count + range_temp_count
     lines.append(f".method public static {method.name}({params_desc}){ret_desc}")
     lines.append(f"    .registers {total_regs}")
     lines.append("")
