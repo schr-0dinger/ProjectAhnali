@@ -203,6 +203,30 @@ class DMoveWide(DInstr):
         return f"{self.dst} = move-wide {self.src}"
 
 
+class DSpillLoad(DInstr):
+    """
+    Spill reload from a spill slot into a temp value.
+    """
+    def __init__(self, dst, src):
+        self.dst = dst
+        self.src = src
+
+    def __repr__(self):
+        return f"{self.dst} = spill-load {self.src}"
+
+
+class DSpillStore(DInstr):
+    """
+    Spill store from a temp value into a spill slot.
+    """
+    def __init__(self, dst, src):
+        self.dst = dst
+        self.src = src
+
+    def __repr__(self):
+        return f"spill-store {self.dst} {self.src}"
+
+
 class DMoveResult(DInstr):
     def __init__(self, dst):
         self.dst = dst

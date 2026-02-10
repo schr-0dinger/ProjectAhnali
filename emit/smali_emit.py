@@ -23,6 +23,8 @@ from dalvik.ir import (
     DConstWide,
     DConstStringJumbo,
     DMoveWide,
+    DSpillLoad,
+    DSpillStore,
     DMoveResult,
     DMoveResultObject,
     DMoveResultWide,
@@ -462,6 +464,28 @@ def emit_method_smali(method: DalvikMethod):
                 if rd != rs:
                     is_obj = _is_object_ssa(instr.src.ssa) or _is_object_ssa(instr.dst.ssa)
                     op = _move_opcode(rs, rd, is_obj)
+                    lines.append(f"    {op} {rd}, {rs}")
+            elif instr.__class__.__name__ == "DSpillLoad":
+                rd = reg_map[instr.dst.ssa]
+                rs = reg_map[instr.src.ssa]
+                if rd != rs:
+                    value_type = getattr(instr.dst.ssa, "type", None)
+                    if value_type in ("J", "D"):
+                        op = _move_wide_opcode(rs, rd)
+                    else:
+                        is_obj = _is_object_ssa(instr.dst.ssa)
+                        op = _move_opcode(rs, rd, is_obj)
+                    lines.append(f"    {op} {rd}, {rs}")
+            elif instr.__class__.__name__ == "DSpillStore":
+                rd = reg_map[instr.dst.ssa]
+                rs = reg_map[instr.src.ssa]
+                if rd != rs:
+                    value_type = getattr(instr.src.ssa, "type", None)
+                    if value_type in ("J", "D"):
+                        op = _move_wide_opcode(rs, rd)
+                    else:
+                        is_obj = _is_object_ssa(instr.src.ssa)
+                        op = _move_opcode(rs, rd, is_obj)
                     lines.append(f"    {op} {rd}, {rs}")
             elif isinstance(instr, DMoveWide):
                 rd = reg_map[instr.dst.ssa]

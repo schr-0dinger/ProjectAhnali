@@ -93,6 +93,22 @@ def emit_activity_smali(
                 rd = reg_map[instr.dst]
                 rs = reg_map[instr.src]
                 lines.append(f"    move {rd}, {rs}")
+            elif name == "DSpillLoad":
+                rd = reg_map[instr.dst]
+                rs = reg_map[instr.src]
+                value_type = getattr(getattr(instr.dst, "ssa", None), "type", None)
+                if value_type in ("J", "D"):
+                    lines.append(f"    move-wide {rd}, {rs}")
+                else:
+                    lines.append(f"    move {rd}, {rs}")
+            elif name == "DSpillStore":
+                rd = reg_map[instr.dst]
+                rs = reg_map[instr.src]
+                value_type = getattr(getattr(instr.src, "ssa", None), "type", None)
+                if value_type in ("J", "D"):
+                    lines.append(f"    move-wide {rd}, {rs}")
+                else:
+                    lines.append(f"    move {rd}, {rs}")
             elif name == "DMoveWide":
                 rd = reg_map[instr.dst]
                 rs = reg_map[instr.src]

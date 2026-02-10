@@ -6,6 +6,8 @@ from dalvik.ir import (
     DConst,
     DMove,
     DMoveWide,
+    DSpillLoad,
+    DSpillStore,
     DIf,
     DIfZ,
     DGoto,
@@ -77,9 +79,9 @@ def apply_spills(dalvik_blocks, intervals):
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
                         if _is_wide_ssa(d.ssa):
-                            new_instrs.append(DMoveWide(tmp, spill_val))
+                            new_instrs.append(DSpillLoad(tmp, spill_val))
                         else:
-                            new_instrs.append(DMove(tmp, spill_val))
+                            new_instrs.append(DSpillLoad(tmp, spill_val))
                         setattr(instr, field, tmp)
 
             if hasattr(instr, "args"):
@@ -90,10 +92,7 @@ def apply_spills(dalvik_blocks, intervals):
                         spill_val = DValue(d.ssa)
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
-                        if _is_wide_ssa(d.ssa):
-                            new_instrs.append(DMoveWide(tmp, spill_val))
-                        else:
-                            new_instrs.append(DMove(tmp, spill_val))
+                        new_instrs.append(DSpillLoad(tmp, spill_val))
                         new_args.append(tmp)
                     else:
                         new_args.append(d)
@@ -106,10 +105,7 @@ def apply_spills(dalvik_blocks, intervals):
                 slot = spill_map[instr.dst.ssa].stack_slot
                 spill_val = DValue(instr.dst.ssa)
                 spill_val.reg = slot
-                if _is_wide_ssa(instr.dst.ssa):
-                    new_instrs.append(DMoveWide(spill_val, instr.dst))
-                else:
-                    new_instrs.append(DMove(spill_val, instr.dst))
+                new_instrs.append(DSpillStore(spill_val, instr.dst))
 
         block.instructions = new_instrs
 
