@@ -240,6 +240,8 @@ def _generate_resource_symbols(
     resources: AndroidResources | dict[str, str] | None,
     extra_aars: list[str | Path] | None,
 ) -> Path | None:
+    # TODO(foundation): Validate full dependency closure for AAR resources so
+    # aapt2 link failures are surfaced with actionable guidance.
     aapt2 = _tool_path("aapt2")
     android_jar = _find_android_jar(_find_android_sdk(), api=api)
     out_dir = Path(out_dir)

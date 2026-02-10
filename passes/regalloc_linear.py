@@ -33,6 +33,8 @@ class LinearScanAllocator:
         self.intervals = []
         self.active = []
         self.free_regs = list(range(max_registers))
+        # TODO(foundation): Enforce register limits and provide a fallback strategy
+        # when allocated registers exceed encoding constraints.
 
     def _interval_width(self, value):
         t = getattr(value, "type", None)
@@ -95,6 +97,7 @@ class LinearScanAllocator:
                 self.free_regs.remove(r + 1)
                 return r
         return None
+        # TODO(foundation): Consider a smarter search strategy to reduce fragmentation.
 
     def allocate(self):
         for interval in self.intervals:

@@ -65,6 +65,7 @@ def verify_types(ssa_blocks):
 def _allow_ignored_return(expr: Call) -> bool:
     # Allow list for side-effecting calls where return value is commonly ignored.
     # TODO(phase-2-followup): Centralize this allowlist and expose it via DSL config.
+    # TODO(foundation): Provide a validator-level override for app-specific allowlists.
     allow = {
         ("Landroid/util/Log;", "d", "static"),
         ("Landroid/util/Log;", "i", "static"),

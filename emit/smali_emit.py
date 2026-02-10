@@ -77,6 +77,8 @@ def _build_reg_map(intervals, param_ssa=None):
 
 def emit_method_smali(method: DalvikMethod):
     reg_map, locals_count = _build_reg_map(method.allocator.intervals, method.param_ssa)
+    # TODO(foundation): Consider deterministic CFG block IDs to remove label normalization
+    # in tests and ensure byte-for-byte stable smali.
     param_count = len(method.param_types or [])
     range_temp_count = 0
     temp_reg_count = TEMP_REG_COUNT
@@ -88,6 +90,8 @@ def emit_method_smali(method: DalvikMethod):
         if reg.startswith("p"):
             return locals_count + int(reg[1:])
         return -1
+        # TODO(foundation): Validate max register index against encoding limits
+        # and emit/diagnose when exceeding safe ranges.
 
     def _is_object_ssa(ssa):
         t = getattr(ssa, "type", None)

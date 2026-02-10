@@ -74,6 +74,8 @@ def _allow_ignored_return(expr: Call) -> bool:
 
 
 def apply_spills(dalvik_blocks, intervals):
+    # TODO(foundation): Replace virtual spill slots with real stack spills (memory)
+    # when register pressure exceeds safe limits.
     spill_map = {i.value: i for i in intervals if i.spilled}
 
     for block in dalvik_blocks.values():

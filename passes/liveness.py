@@ -37,6 +37,8 @@ def compute_liveness(cfg, dalvik_blocks):
     """
     Zeta-1: Backward liveness analysis over Dalvik IR.
     """
+    # TODO(foundation): Consider instruction-level liveness for tighter intervals
+    # and reduced register pressure.
 
     result = LivenessResult()
 
