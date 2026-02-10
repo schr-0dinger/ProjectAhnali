@@ -273,7 +273,9 @@ def emit_activity_smali(
 
                 if instr.dst and instr.return_type is not None:
                     rd = reg_map[instr.dst.ssa]
-                    if (
+                    if instr.return_type in ("J", "D"):
+                        lines.append(f"    move-result-wide {rd}")
+                    elif (
                         instr.return_type == AnaliType.OBJECT
                         or instr.return_type == AnaliType.STRING
                         or (isinstance(instr.return_type, str) and instr.return_type.startswith("L"))

@@ -241,12 +241,16 @@ def _verify_method_returns(ssa_blocks, return_type):
     from ir.stmt import Return
     from ir.types import AnaliType
     def _type_from_desc(desc):
-        if desc in ("I", "J", "B", "C", "S"):
+        if desc in ("I", "B", "C", "S"):
             return AnaliType.INT
+        if desc == "J":
+            return "J"
         if desc == "Z":
             return AnaliType.BOOL
-        if desc in ("F", "D"):
+        if desc == "F":
             return AnaliType.FLOAT
+        if desc == "D":
+            return "D"
         if desc == "Ljava/lang/String;":
             return AnaliType.STRING
         if isinstance(desc, str) and (desc.startswith("L") or desc.startswith("[")):

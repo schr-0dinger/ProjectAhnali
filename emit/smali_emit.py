@@ -63,9 +63,11 @@ def _build_reg_map(intervals, param_ssa=None):
             reg_map[ssa] = f"p{idx}"
 
     max_vreg = -1
-    for reg in reg_map.values():
-        if reg.startswith("v"):
-            max_vreg = max(max_vreg, int(reg[1:]))
+    for interval in intervals:
+        reg = reg_map.get(interval.value)
+        if reg and reg.startswith("v"):
+            base = int(reg[1:])
+            max_vreg = max(max_vreg, base + (getattr(interval, "width", 1) - 1))
     locals_count = max_vreg + 1 if max_vreg >= 0 else 0
 
     return reg_map, locals_count
@@ -626,7 +628,9 @@ def emit_method_smali(method: DalvikMethod):
 
                 if instr.dst and instr.return_type is not None:
                     rd = reg_map[instr.dst.ssa]
-                    if (
+                    if instr.return_type in ("J", "D"):
+                        lines.append(f"    move-result-wide {rd}")
+                    elif (
                         instr.return_type == AnaliType.OBJECT
                         or instr.return_type == AnaliType.STRING
                         or (
@@ -717,7 +721,9 @@ def emit_method_smali(method: DalvikMethod):
                             value_type = AnaliType.STRING
                     if value_type in (None, AnaliType.UNKNOWN):
                         raise RuntimeError("Return type UNKNOWN; cannot emit Smali")
-                if (
+                if value_type in ("J", "D"):
+                    lines.append(f"    return-wide {rd}")
+                elif (
                     value_type == AnaliType.OBJECT
                     or value_type == AnaliType.STRING
                     or (isinstance(value_type, str) and value_type.startswith("L"))

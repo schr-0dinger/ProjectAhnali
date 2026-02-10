@@ -5,6 +5,7 @@ from dalvik.ir import (
     DValue,
     DConst,
     DMove,
+    DMoveWide,
     DIf,
     DIfZ,
     DGoto,
@@ -54,6 +55,11 @@ from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
 from ssa.value import SSAValue
 
 
+def _is_wide_ssa(ssa):
+    t = getattr(ssa, "type", None)
+    return t in ("J", "D")
+
+
 def apply_spills(dalvik_blocks, intervals):
     spill_map = {i.value: i for i in intervals if i.spilled}
 
@@ -70,7 +76,10 @@ def apply_spills(dalvik_blocks, intervals):
                         spill_val = DValue(d.ssa)
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
-                        new_instrs.append(DMove(tmp, spill_val))
+                        if _is_wide_ssa(d.ssa):
+                            new_instrs.append(DMoveWide(tmp, spill_val))
+                        else:
+                            new_instrs.append(DMove(tmp, spill_val))
                         setattr(instr, field, tmp)
 
             if hasattr(instr, "args"):
@@ -81,7 +90,10 @@ def apply_spills(dalvik_blocks, intervals):
                         spill_val = DValue(d.ssa)
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
-                        new_instrs.append(DMove(tmp, spill_val))
+                        if _is_wide_ssa(d.ssa):
+                            new_instrs.append(DMoveWide(tmp, spill_val))
+                        else:
+                            new_instrs.append(DMove(tmp, spill_val))
                         new_args.append(tmp)
                     else:
                         new_args.append(d)
@@ -94,7 +106,10 @@ def apply_spills(dalvik_blocks, intervals):
                 slot = spill_map[instr.dst.ssa].stack_slot
                 spill_val = DValue(instr.dst.ssa)
                 spill_val.reg = slot
-                new_instrs.append(DMove(spill_val, instr.dst))
+                if _is_wide_ssa(instr.dst.ssa):
+                    new_instrs.append(DMoveWide(spill_val, instr.dst))
+                else:
+                    new_instrs.append(DMove(spill_val, instr.dst))
 
         block.instructions = new_instrs
 
@@ -211,6 +226,16 @@ class LowerSSAToDalvik:
             return t
         return None
 
+    def _is_wide_value(self, value):
+        t = getattr(value, "type", None)
+        return t in ("J", "D")
+
+    def _emit_move(self, db, dst, src):
+        if self._is_wide_value(dst.ssa):
+            db.emit(DMoveWide(dst, src))
+        else:
+            db.emit(DMove(dst, src))
+
 
 
     def _lower_block(self, cfg_block, ssa_block):
@@ -233,11 +258,17 @@ class LowerSSAToDalvik:
                     db.emit(DConst(DValue(dst), 0))
                     continue
                 if isinstance(src, Const):
-                    db.emit(DConst(DValue(dst), src.value))
+                    if self._is_wide_value(dst):
+                        db.emit(DConstWide(DValue(dst), src.value))
+                    else:
+                        db.emit(DConst(DValue(dst), src.value))
                 elif isinstance(src, (int, float, bool)):
-                    db.emit(DConst(DValue(dst), src))
+                    if self._is_wide_value(dst):
+                        db.emit(DConstWide(DValue(dst), src))
+                    else:
+                        db.emit(DConst(DValue(dst), src))
                 else:
-                    db.emit(DMove(DValue(dst), DValue(src)))
+                    self._emit_move(db, DValue(dst), DValue(src))
 
         # --- Terminator ---
         term = cfg_block.terminator
@@ -408,13 +439,19 @@ class LowerSSAToDalvik:
         if isinstance(expr, int):
             if dst is None:
                 raise RuntimeError("Literal must be assigned to a destination")
-            db.emit(DConst(dst, expr))
+            if self._is_wide_value(dst.ssa):
+                db.emit(DConstWide(dst, expr))
+            else:
+                db.emit(DConst(dst, expr))
             return
 
         if isinstance(expr, Const):
             if dst is None:
                 raise RuntimeError("Const must be assigned to a destination")
-            db.emit(DConst(dst, expr.value))
+            if self._is_wide_value(dst.ssa):
+                db.emit(DConstWide(dst, expr.value))
+            else:
+                db.emit(DConst(dst, expr.value))
             return
 
         # Binary arithmetic
@@ -600,7 +637,7 @@ class LowerSSAToDalvik:
             if dst is None:
                 raise RuntimeError("CheckCast must be assigned to a destination")
             # emit move + check-cast on the same reg
-            db.emit(DMove(dst, self._as_dvalue(expr.value, db)))
+            self._emit_move(db, dst, self._as_dvalue(expr.value, db))
             db.emit(DCheckCast(dst, expr.desc))
             return
         if isinstance(expr, InstanceOf):
@@ -642,4 +679,4 @@ class LowerSSAToDalvik:
         # Symbolic move (x = y)
         if dst is None:
             raise RuntimeError("Move must be assigned to a destination")
-        db.emit(DMove(dst, DValue(expr)))
+        self._emit_move(db, dst, DValue(expr))
