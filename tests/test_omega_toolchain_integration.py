@@ -245,3 +245,33 @@ def test_omega_smali_baksmali_roundtrip(tmp_path):
     run_baksmali(dex_path, disasm_dir, baksmali_jar=baksmali_jar)
     # Expect at least one disassembled class
     assert any(p.suffix == ".smali" for p in disasm_dir.rglob("*.smali"))
+
+
+def test_omega_smali_baksmali_smali_roundtrip(tmp_path):
+    _skip_if_missing(require_baksmali=True)
+    smali_jar = _smali_jar()
+
+    out_dir = emit_build_dir_from_program(
+        [assign("x", const(1))],
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+    )
+    dex_path = run_smali(
+        out_dir / "smali",
+        out_dir=out_dir / "classes.dex",
+        smali_jar=smali_jar,
+        api=21,
+    )
+
+    baksmali_jar = os.environ.get("BAKSMALI_JAR")
+    disasm_dir = tmp_path / "disasm_roundtrip"
+    run_baksmali(dex_path, disasm_dir, baksmali_jar=baksmali_jar)
+
+    # Re-assemble disassembled smali to ensure verifier-safe output.
+    roundtrip_dex = run_smali(
+        disasm_dir,
+        out_dir=tmp_path / "classes_roundtrip.dex",
+        smali_jar=smali_jar,
+        api=21,
+    )
+    assert roundtrip_dex.exists()

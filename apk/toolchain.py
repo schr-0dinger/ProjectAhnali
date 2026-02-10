@@ -1001,6 +1001,9 @@ def build_install_run(
     One-command flow: compile -> smali -> dex -> apk -> install -> run.
     Returns the signed APK path.
     """
+    issues = _collect_toolchain_diagnostics(require_adb=True)
+    if issues:
+        raise RuntimeError("Toolchain diagnostics failed: " + "; ".join(issues))
     out_dir = Path(out_dir)
     extra_aars = _resolve_extra_aars(frontend_ir, extra_aars)
     build_dir = emit_build_dir_from_program(
