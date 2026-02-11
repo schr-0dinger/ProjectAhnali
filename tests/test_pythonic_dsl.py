@@ -1,5 +1,23 @@
 from alpha_pipeline import alpha_pipeline
-from dsl.app import app, activity, state, ui, text, button, row, on_click
+from dsl.app import (
+    app,
+    activity,
+    state,
+    ui,
+    text,
+    button,
+    row,
+    on_click,
+    card,
+    container,
+    divider,
+    icon,
+    image,
+    progress_bar,
+    radio,
+    radio_group,
+    view,
+)
 from dsl.widgets import fill, size, wrap
 import pytest
 
@@ -310,3 +328,48 @@ def test_pythonic_dsl_set_text_typecheck():
     )
     with pytest.raises(RuntimeError, match="expects a string or f-string"):
         prog.build()
+
+
+def test_pythonic_dsl_supports_missing_core_widgets():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                container(
+                    card(
+                        icon("*", id="glyph"),
+                        divider(id="line"),
+                        image(id="hero", src="ic_launcher", content_description="hero image"),
+                        view(id="box", width="match_parent", height=8, background="#22000000"),
+                        radio_group(
+                            radio("A", id="r_a", checked=True),
+                            radio("B", id="r_b"),
+                            id="group",
+                            orientation="vertical",
+                        ),
+                        progress_bar(id="progress", value=30, min=0, max=100),
+                        id="main_card",
+                    ),
+                    id="root_container",
+                ),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/widget/ImageView;" in smali
+    assert "Landroid/widget/ProgressBar;" in smali
+    assert "Landroid/widget/RadioGroup;" in smali
+    assert "Landroid/view/View;" in smali
+    assert "Landroid/content/res/Resources;->getIdentifier" in smali
+
+
+def test_pythonic_dsl_button_allows_icon_plus_text():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                button("Save", id="save_btn", icon="ICON"),
+            ),
+        )
+    ).build()
+    assert "ICON Save" in set(prog.resources.values())

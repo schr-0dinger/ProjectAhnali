@@ -67,6 +67,29 @@ def test_emit_build_dir_writes_resources_from_program(tmp_path):
     assert '<string name="greeting">Hello</string>' in xml
 
 
+def test_emit_build_dir_escapes_apostrophes_in_resources(tmp_path):
+    prog = program(
+        [
+            method(
+                "main",
+                return_type=None,
+                body=[assign("x", const(1)), ret()],
+            )
+        ],
+        resources={"note": "Use src='image' in drawable"},
+    )
+
+    out_dir = emit_build_dir_from_program(
+        prog,
+        out_dir=tmp_path,
+        class_name="LTest;",
+    )
+
+    strings_path = out_dir / "res" / "values" / "strings.xml"
+    xml = strings_path.read_text(encoding="utf-8")
+    assert "<string name=\"note\">Use src=\\'image\\' in drawable</string>" in xml
+
+
 def test_emit_build_dir_writes_typed_resources_from_program(tmp_path):
     prog = program(
         [

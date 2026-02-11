@@ -22,6 +22,13 @@ def _sanitize_name(name: str) -> str:
     return s
 
 
+def _escape_android_string(value: str) -> str:
+    # Android string resources require apostrophes to be backslash-escaped.
+    # Backslashes must also be escaped to preserve literal content.
+    text = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    return html.escape(text, quote=False)
+
+
 @dataclass
 class AndroidResources:
     strings: dict[str, str] = field(default_factory=dict)
@@ -94,7 +101,7 @@ class AndroidResources:
     def render_strings_xml(self) -> str:
         lines = ['<?xml version="1.0" encoding="utf-8"?>', "<resources>"]
         for name in sorted(self.strings.keys()):
-            value = html.escape(self.strings[name], quote=False)
+            value = _escape_android_string(self.strings[name])
             lines.append(f'    <string name="{name}">{value}</string>')
         lines.append("</resources>")
         return "\n".join(lines) + "\n"

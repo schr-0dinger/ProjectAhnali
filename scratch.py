@@ -1,12 +1,22 @@
-from dsl.app import app, activity, ui, on_click, run, app_config, Screen, Navigate, Back
-from dsl.widgets import (
-    State,
+from dsl.app import (
+    app,
+    activity,
+    app_config,
+    ui,
+    on_click,
+    run,
+    Screen,
+    Navigate,
+    Back,
+    Replace,
+    state,
+    Theme,
+    Style,
+    presets,
     Text,
     Button,
     Row,
     Column,
-    Relative,
-    Constraint,
     AppBar,
     FloatingActionButton,
     RaisedButton,
@@ -15,286 +25,351 @@ from dsl.widgets import (
     TextField,
     Checkbox,
     Radio,
+    RadioGroup,
     Switch,
     Slider,
     DropdownButton,
     ButtonBar,
     PopupMenuButton,
-    Theme,
-    Style,
-    presets,
+    Divider,
+    Image,
+    Container,
+    Card,
+    Icon,
+    ProgressBar,
+    View,
     toast,
     snackbar,
-    exit_app,
     simple_dialog,
+    dp,
+    sp,
+    max_width,
 )
 from dsl.colors import colors
-import os
+from dsl.widgets import Relative, Constraint
 
-#------------------------------------------
 
-APP_PACKAGE = "com.anali.helloworld"
+APP_PACKAGE = "com.anali.widgetzoo"
 APP_MIN_SDK = 21
 APP_TARGET_SDK = 34
 APP_VERSION_CODE = 1
 APP_VERSION_NAME = "1.0"
 APP_DEBUGGABLE = False
 APP_SHOW_ACTION_BAR = False
-APP_LABEL = "Anali App"
-
-# Plugin list (core is always loaded)
-# APP_PLUGINS = ["material"]
-
-# APP_UNINSTALL_FIRST
-# APP_OUTPUT_APK
-# APP_KEYSTORE_PATH
-# APP_KEYSTORE_ALIAS
-
-#------------------------------------------
-
-@on_click("inc")
-def increment():
-    count += step
-    label.text = f"Count: {count}"
-    if count == limit:
-        snackbar("Limit reached")
+APP_LABEL = "Anali Widget Zoo"
 
 
-@on_click("dec")
-def decrement():
-    count -= 1
-    label.text = f"Count: {count}"
-    if count == 0:
-        toast("At zero")
+@on_click("go_text_icon")
+def go_text_icon():
+    Navigate("TextIconDemo")
 
 
-@on_click("reset")
-def reset():
-    count = 0
-    label.text = f"Count: {count}"
-    if count == 0 or limit == 0:
-        toast("Reset")
+@on_click("go_buttons")
+def go_buttons():
+    Navigate("ButtonsDemo")
 
 
-@on_click("boost")
-def boost():
-    n = 0
-    while n < 5:
-        count += step
-        n += 1
-    label.text = f"Count: {count}"
-
-@on_click("nav_stopwatch")
-def nav_stopwatch():
-    Navigate("Stopwatch")
+@on_click("go_inputs")
+def go_inputs():
+    Navigate("InputsDemo")
 
 
-@on_click("nav_home")
-def nav_home():
+@on_click("go_selectors")
+def go_selectors():
+    Navigate("SelectorsDemo")
+
+
+@on_click("go_layouts")
+def go_layouts():
+    Navigate("LayoutsDemo")
+
+
+@on_click("go_containers")
+def go_containers():
+    Navigate("ContainersDemo")
+
+
+@on_click("go_images")
+def go_images():
+    Navigate("ImagesDemo")
+
+
+@on_click("go_progress")
+def go_progress():
+    Navigate("ProgressDemo")
+
+
+@on_click("go_dialogs")
+def go_dialogs():
+    Navigate("DialogsDemo")
+
+
+@on_click("go_navigation")
+def go_navigation():
+    Navigate("NavigationDemo")
+
+
+@on_click("back_text_icon")
+def back_text_icon():
+    Replace("Home")
+
+
+@on_click("back_buttons")
+def back_buttons():
+    Replace("Home")
+
+
+@on_click("back_inputs")
+def back_inputs():
+    Replace("Home")
+
+
+@on_click("back_selectors")
+def back_selectors():
+    Replace("Home")
+
+
+@on_click("back_layouts")
+def back_layouts():
+    Replace("Home")
+
+
+@on_click("back_containers")
+def back_containers():
+    Replace("Home")
+
+
+@on_click("back_images")
+def back_images():
+    Replace("Home")
+
+
+@on_click("back_progress")
+def back_progress():
+    Replace("Home")
+
+
+@on_click("back_dialogs")
+def back_dialogs():
+    Replace("Home")
+
+
+@on_click("back_navigation")
+def back_navigation():
+    Replace("Home")
+
+
+@on_click("state_inc")
+def state_inc():
+    demo_count += 1
+    btn_count_text.text = f"Button taps: {demo_count}"
+
+
+@on_click("raised_action")
+def raised_action():
+    toast("RaisedButton clicked")
+
+
+@on_click("flat_action")
+def flat_action():
+    toast("FlatButton clicked")
+
+
+@on_click("icon_action")
+def icon_action():
+    toast("IconButton clicked")
+
+
+@on_click("fab_action")
+def fab_action():
+    snackbar("FloatingActionButton clicked")
+
+
+@on_click("show_toast_btn")
+def show_toast_btn():
+    toast("Toast from handler")
+
+
+@on_click("show_snackbar_btn")
+def show_snackbar_btn():
+    snackbar("Snackbar from handler")
+
+
+@on_click("show_dialog_btn")
+def show_dialog_btn():
+    simple_dialog("Dialog Demo", "SimpleDialog is wired and working.")
+
+
+@on_click("nav_push_btn")
+def nav_push_btn():
+    Navigate("NavigationTarget")
+
+
+@on_click("nav_replace_btn")
+def nav_replace_btn():
+    Replace("NavigationTarget")
+
+
+@on_click("nav_pop_btn")
+def nav_pop_btn():
     Back()
 
 
-@on_click("fab")
-def fab_click():
-    toast("FAB clicked!")
+@on_click("target_home_btn")
+def target_home_btn():
+    Replace("Home")
 
 
-@on_click("menu")
-def menu_click():
-    simple_dialog("Menu", "Popup menu clicked")
+@on_click("target_back_btn")
+def target_back_btn():
+    Back()
 
-
-@on_click("announce")
-def announce_click():
-    snackbar("ButtonBar action")
-
-
-@on_click("exit")
-def exit_click():
-    exit_app()
-
-
-# ------------------------------------------------
 
 palette = {
     "bg": colors.zinc_100,
     "card": colors.white,
-    "primary": colors.blue_600,
-    "danger": colors.red_500,
     "text": colors.slate_900,
     "muted": colors.slate_500,
+    "primary": colors.blue_600,
     "on_primary": colors.white,
+    "danger": colors.red_500,
     "on_danger": colors.white,
+    "divider": colors.zinc_200,
 }
 
-# -------------------------------------------------
+preset = presets(palette=palette)
+title_style = Style(text_color="text", text_size=sp(20))
+section_style = Style(text_color="text", text_size=sp(16))
 
-ui_presets = presets(palette=palette)
-
-title_style = Style(text_color="text", text_size=sp(18))
 
 items = [
     Screen(
         "Home",
-        # AppBar (inline toolbar) + title resource
         AppBar(
             "Anali Widget Zoo",
-            id="appbar",
+            id="home_appbar",
             inline=True,
-            # text_color="on_primary",
-            # background="danger",
-            style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
+            style=preset.Card(padding=(dp(14), dp(14), dp(14), dp(14))),
         ),
-
-        # Hero
+        Text("Home Menu", id="home_title", style=title_style, padding=(dp(16), dp(12), dp(16), dp(4))),
         Text(
-            "User-facing DSL",
-            id="hero_title",
-            padding=(dp(16), dp(12), dp(16), dp(8)),
-            style=Style(text_color="text", text_size=sp(22)),
+            "ListView-style static menu (compiled as a Column). Tap any entry.",
+            id="home_subtitle",
+            style=Style(text_color="muted", text_size=sp(13)),
+            padding=(dp(16), dp(0), dp(16), dp(10)),
         ),
-        Text(
-            "Layout + widgets + state + handlers",
-            id="hero_subtitle",
-            padding=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.MutedText(text_size=sp(14)),
-        ),
-
-        Row(
-            Button("Stopwatch", id="nav_stopwatch", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
-            id="nav_row",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            weight_sum=1,
-        ),
-
-        # Counter card
-        Column(
-            Text(
-                "Counter",
-                id="counter_title",
-                style=title_style,
-            ),
-            Text(
-                "Count: 0",
-                id="label",
-                padding=(dp(0), dp(8), dp(0), dp(8)),
-                style=Style(text_color="text", text_size=sp(20)),
-            ),
-            Row(
-                Button("+", id="inc", style=ui_presets.PrimaryButton(), weight=1, width=dp(0)),
-                Button("-", id="dec", style=ui_presets.DangerButton(), weight=1, width=dp(0)),
-                Button("Reset", id="reset", style=ui_presets.PrimaryButton(), weight=1, width=dp(0)),
-                id="counter_row",
-                width=max_width,
-                margin=(dp(0), dp(8), dp(0), dp(0)),
-                weight_sum=3,
-            ),
-            Row(
-                Button("Boost x5", id="boost", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
-                Button("Announce", id="announce", weight=1, width=dp(0)),
-                id="counter_actions",
-                margin=(dp(0), dp(8), dp(0), dp(0)),
-                weight_sum=2,
-            ),
-            id="counter_card",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
-            width=max_width
-        ),
-
-        # Button variants
-        Column(
-            Text("Button variants", id="btn_title", style=title_style),
-            RaisedButton("Raised", id="raised", style=ui_presets.PrimaryButton()),
-            FlatButton("Flat", style=Style(text_color="on_primary")),
-            IconButton("*", width=max_width, style=Style(background="card", radius=dp(36), text_color="text")),
-            id="button_variants",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.Card(padding=(dp(30), dp(30), dp(30), dp(30))),
-            width=max_width
-        ),
-
-        # TextField + toggles
-        TextField(
-            "",
-            id="input",
-            hint="Type something",
-            margin=(dp(16), dp(0), dp(16), dp(12)),
-        ),
-        Row(
+        Card(
             Column(
-                Checkbox("Check me", checked=True),
-                Radio("Select me", checked=False),
-                Switch("Toggle me", checked=True),
-                id="toggles",
-                style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
+                Button("Text + Icon", id="go_text_icon", icon="T"),
+                Divider(id="home_div_1", color="divider"),
+                Button("Buttons + FAB + ButtonBar", id="go_buttons", icon="B"),
+                Divider(id="home_div_2", color="divider"),
+                Button("Inputs (TextField / Checkbox / Radio / Switch)", id="go_inputs", icon="I"),
+                Divider(id="home_div_3", color="divider"),
+                Button("Selectors (Slider / Dropdown / Popup / RadioGroup)", id="go_selectors", icon="S"),
+                Divider(id="home_div_4", color="divider"),
+                Button("Layouts (Row / Column / Relative / Constraint)", id="go_layouts", icon="L"),
+                Divider(id="home_div_5", color="divider"),
+                Button("Containers (Container / Card / View / Divider)", id="go_containers", icon="C"),
+                Divider(id="home_div_6", color="divider"),
+                Button("Images", id="go_images", icon="IMG"),
+                Divider(id="home_div_7", color="divider"),
+                Button("ProgressBar", id="go_progress", icon="P"),
+                Divider(id="home_div_8", color="divider"),
+                Button("Dialogs + Toast + Snackbar", id="go_dialogs", icon="D"),
+                Divider(id="home_div_9", color="divider"),
+                Button("Navigation (Navigate / Replace / Back)", id="go_navigation", icon="N"),
+                id="home_list",
+                width=max_width,
             ),
-            id="toggle_row",
+            id="home_card",
             margin=(dp(16), dp(0), dp(16), dp(16)),
+            width=max_width,
+            style=preset.Card(padding=(dp(10), dp(10), dp(10), dp(10))),
         ),
-
-        # Slider
-        Row(
-            Text("Slider", id="slider_title", style=title_style),
-            Slider(
-                id="slider",
-                min=0,
-                max=100,
-                value=42,
-            ),
-            id="slider_card",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.Card(padding=(dp(30), dp(30), dp(30), dp(30))),
-        ),
-
-        # Dropdown + Popup
-        Row(
-            DropdownButton(
-                id="dropdown",
-                items=["One", "Two", "Three"],
-                width=percent(50),
-            ),
-            PopupMenuButton(
-                "Menu",
-                id="menu",
-                items=["A", "B", "C"],
-                width=percent(50),
-            ),
-            id="menus",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-        ),
-
-        # ButtonBar
+    ),
+    Screen(
+        "TextIconDemo",
+        Row(Button("Back", id="back_text_icon"), id="text_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Text + Icon", id="text_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Icon("STAR", id="text_icon", style=Style(text_size=sp(22), text_color="primary"), padding=(dp(16), dp(0), dp(16), dp(8))),
+        Text("Regular Text widget", id="text_normal", padding=(dp(16), dp(0), dp(16), dp(8))),
+        Divider(id="text_divider", color="divider", margin=(dp(16), dp(8), dp(16), dp(8))),
+        Text("Styled Text with preset-muted color", id="text_muted", style=preset.MutedText(), padding=(dp(16), dp(0), dp(16), dp(8))),
+    ),
+    Screen(
+        "ButtonsDemo",
+        Row(Button("Back", id="back_buttons"), id="buttons_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Buttons", id="buttons_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Text("Button taps: 0", id="btn_count_text", padding=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Primary Button", id="state_inc", icon="+", margin=(dp(16), dp(0), dp(16), dp(10)), style=preset.PrimaryButton()),
+        RaisedButton("Raised", id="raised_action", margin=(dp(16), dp(0), dp(16), dp(8)), style=preset.PrimaryButton()),
+        FlatButton("Flat", id="flat_action", margin=(dp(16), dp(0), dp(16), dp(8))),
+        IconButton("*", id="icon_action", margin=(dp(16), dp(0), dp(16), dp(8))),
         ButtonBar(
-            Button("OK"),
-            Button("Cancel"),
-            Button("Exit", id="exit", style=ui_presets.DangerButton()),
-            id="button_bar",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
+            Button("One", id="bar_one_btn"),
+            Button("Two", id="bar_two_btn"),
+            Button("Three", id="bar_three_btn"),
+            id="buttons_bar",
+            margin=(dp(16), dp(0), dp(16), dp(10)),
         ),
-
-        # Relative layout demo
+        FloatingActionButton("+", id="fab_action", width=dp(64), height=dp(64), margin=(dp(16), dp(4), dp(16), dp(12))),
+    ),
+    Screen(
+        "InputsDemo",
+        Row(Button("Back", id="back_inputs"), id="inputs_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Inputs", id="inputs_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        TextField("", id="input_name", hint="Type text here", margin=(dp(16), dp(0), dp(16), dp(12))),
+        Checkbox("Checkbox", id="input_checkbox", checked=True, margin=(dp(16), dp(0), dp(16), dp(8))),
+        Radio("Single Radio", id="input_radio", checked=False, margin=(dp(16), dp(0), dp(16), dp(8))),
+        Switch("Switch", id="input_switch", checked=True, margin=(dp(16), dp(0), dp(16), dp(8))),
+    ),
+    Screen(
+        "SelectorsDemo",
+        Row(Button("Back", id="back_selectors"), id="selectors_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Selectors", id="selectors_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Slider(id="selectors_slider", min=0, max=100, value=35, margin=(dp(16), dp(0), dp(16), dp(10))),
+        DropdownButton(id="selectors_dropdown", items=["One", "Two", "Three"], margin=(dp(16), dp(0), dp(16), dp(10))),
+        PopupMenuButton("Popup Menu", id="selectors_popup", items=["A", "B", "C"], margin=(dp(16), dp(0), dp(16), dp(10))),
+        RadioGroup(
+            Radio("Choice A", id="selectors_radio_a", checked=True),
+            Radio("Choice B", id="selectors_radio_b", checked=False),
+            id="selectors_radio_group",
+            orientation="vertical",
+            margin=(dp(16), dp(0), dp(16), dp(10)),
+        ),
+    ),
+    Screen(
+        "LayoutsDemo",
+        Row(Button("Back", id="back_layouts"), id="layouts_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Layouts", id="layouts_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Row(
+            Button("Left", id="layouts_row_left", weight=1, width=dp(0)),
+            Button("Right", id="layouts_row_right", weight=1, width=dp(0)),
+            id="layouts_row_demo",
+            margin=(dp(16), dp(0), dp(16), dp(12)),
+            weight_sum=2,
+        ),
+        Column(
+            Text("Column item A", id="layouts_col_a"),
+            Text("Column item B", id="layouts_col_b"),
+            id="layouts_col_demo",
+            margin=(dp(16), dp(0), dp(16), dp(12)),
+            style=preset.Card(),
+            width=max_width,
+        ),
         Relative(
-            Text(
-                "Relative Title",
-                id="rel_title",
-                relative=[("align_parent_top", "parent"), ("center_horizontal", "parent")],
-                margin=(dp(0), dp(0), dp(0), dp(8)),
-            ),
-            Button(
-                "Below Title",
-                id="rel_btn",
-                relative=[("below", "rel_title"), ("center_horizontal", "parent")],
-            ),
-            id="relative_demo",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
+            Text("Relative Top", id="layouts_rel_top", relative=[("align_parent_top", "parent"), ("center_horizontal", "parent")]),
+            Button("Below", id="layouts_rel_btn", relative=[("below", "layouts_rel_top"), ("center_horizontal", "parent")]),
+            id="layouts_relative_demo",
+            margin=(dp(16), dp(0), dp(16), dp(12)),
+            style=preset.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
+            width=max_width,
         ),
-
         Constraint(
             Text(
-                "Constraint Title",
-                id="con_title",
+                "Constraint Top",
+                id="layouts_con_top",
                 constraints={
                     "top_to_top": "parent",
                     "left_to_left": "parent",
@@ -303,105 +378,143 @@ items = [
                 },
             ),
             Button(
-                "Under Title",
-                id="con_btn",
+                "Constraint Button",
+                id="layouts_con_btn",
                 constraints={
-                    "top_to_bottom": "con_title",
+                    "top_to_bottom": "layouts_con_top",
                     "left_to_left": "parent",
                     "right_to_right": "parent",
                     "horizontal_bias": 0.5,
                 },
             ),
-            id="constraint_demo",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
-        ),
-
-        Text(
-            "Toast/Snackbar demo",
-            id="footer_text",
-            text_color="muted",
-            style=ui_presets.MutedText(text_size=sp(14)),
-            padding=(dp(16), dp(0), dp(16), dp(8)),
-        ),
-        FloatingActionButton(
-            "+",
-            id="fab",
-            width=dp(72),
-            height=dp(72),
-            style=Style(background=colors.zinc_200, text_color="on_primary", radius=dp(36), padding=(dp(0), dp(0), dp(0), dp(0))),
-        ),
-    ),
-
-    Screen(
-        "Stopwatch",
-        Row(
-            Button("Back", id="nav_home", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
-            id="nav_back_row",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            weight_sum=1,
-        ),
-        # Stopwatch / Timer card (UI-only placeholder)
-        Column(
-            Text(
-                "Stopwatch / Timer",
-                id="timer_title",
-                style=title_style,
-            ),
-            Text(
-                "00:00.0",
-                id="timer_display",
-                padding=(dp(0), dp(8), dp(0), dp(8)),
-                style=Style(text_color="text", text_size=sp(20)),
-            ),
-            TextField(
-                "",
-                id="timer_input",
-                hint="Timer duration (e.g., 02:30)",
-                margin=(dp(0), dp(4), dp(0), dp(8)),
-            ),
-            Row(
-                Button("Start", id="timer_start", weight=1, width=dp(0), style=ui_presets.PrimaryButton()),
-                Button("Stop", id="timer_stop", weight=1, width=dp(0)),
-                Button("Reset", id="timer_reset", weight=1, width=dp(0), style=ui_presets.DangerButton()),
-                id="timer_actions",
-                margin=(dp(0), dp(8), dp(0), dp(0)),
-                weight_sum=3,
-            ),
-            id="timer_card",
-            margin=(dp(16), dp(0), dp(16), dp(16)),
-            style=ui_presets.Card(padding=(dp(16), dp(16), dp(16), dp(16))),
+            id="layouts_constraint_demo",
+            margin=(dp(16), dp(0), dp(16), dp(12)),
+            style=preset.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
             width=max_width,
         ),
     ),
+    Screen(
+        "ContainersDemo",
+        Row(Button("Back", id="back_containers"), id="containers_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Container / Card / View / Divider", id="containers_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Container(
+            Card(
+                Text("Card title", id="containers_card_title", style=section_style),
+                Divider(id="containers_divider", color="divider", margin=(dp(0), dp(8), dp(0), dp(8))),
+                Text("A raw View below draws a simple bar.", id="containers_desc", style=preset.MutedText()),
+                View(id="containers_bar", width=max_width, height=dp(8), background="primary", margin=(dp(0), dp(8), dp(0), dp(0))),
+                id="containers_card",
+                width=max_width,
+            ),
+            id="containers_root",
+            margin=(dp(16), dp(0), dp(16), dp(12)),
+            width=max_width,
+        ),
+    ),
+    Screen(
+        "ImagesDemo",
+        Row(Button("Back", id="back_images"), id="images_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Image", id="images_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Text(
+            "Image src expects drawable resource name. Use src='image' for res/drawable/image.jpg.",
+            id="images_note",
+            style=preset.MutedText(),
+            padding=(dp(16), dp(0), dp(16), dp(8)),
+        ),
+        Image(id="images_local", src="image", content_description="project image", width=dp(180), height=dp(120), margin=(dp(16), dp(0), dp(16), dp(10))),
+        Image(id="images_launcher", src="ic_launcher", content_description="launcher icon", width=dp(96), height=dp(96), margin=(dp(16), dp(0), dp(16), dp(12))),
+    ),
+    Screen(
+        "ProgressDemo",
+        Row(Button("Back", id="back_progress"), id="progress_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("ProgressBar", id="progress_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Text("Determinate 65%", id="progress_label_det", padding=(dp(16), dp(0), dp(16), dp(4))),
+        ProgressBar(id="progress_det", min=0, max=100, value=65, margin=(dp(16), dp(0), dp(16), dp(12))),
+        Text("Indeterminate", id="progress_label_ind", padding=(dp(16), dp(0), dp(16), dp(4))),
+        ProgressBar(id="progress_ind", indeterminate=True, margin=(dp(16), dp(0), dp(16), dp(12))),
+    ),
+    Screen(
+        "DialogsDemo",
+        Row(Button("Back", id="back_dialogs"), id="dialogs_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Dialogs / Toast / Snackbar", id="dialogs_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Show Toast", id="show_toast_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Show Snackbar", id="show_snackbar_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Show SimpleDialog", id="show_dialog_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+    ),
+    Screen(
+        "NavigationDemo",
+        Row(Button("Back", id="back_navigation"), id="navigation_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
+        Text("Navigation", id="navigation_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
+        Text("Navigate pushes stack, Replace swaps current, Back pops.", id="navigation_note", style=preset.MutedText(), padding=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Navigate -> Target", id="nav_push_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Replace -> Target", id="nav_replace_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Back()", id="nav_pop_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+    ),
+    Screen(
+        "NavigationTarget",
+        Text("Navigation Target", id="target_title", style=title_style, padding=(dp(16), dp(24), dp(16), dp(8))),
+        Text("Opened via Navigate/Replace", id="target_note", style=preset.MutedText(), padding=(dp(16), dp(0), dp(16), dp(10))),
+        Button("Replace Home", id="target_home_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Back()", id="target_back_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+    ),
 ]
+
 
 app_spec = app(
     activity(
         "MainActivity",
+        app_config(
+            package=APP_PACKAGE,
+            min_sdk=APP_MIN_SDK,
+            target_sdk=APP_TARGET_SDK,
+            version_code=APP_VERSION_CODE,
+            version_name=APP_VERSION_NAME,
+            debuggable=APP_DEBUGGABLE,
+            show_action_bar=APP_SHOW_ACTION_BAR,
+            label=APP_LABEL,
+        ),
         Theme(
             palette=palette,
-            text=Style(text_color="text", text_size=sp(16)),
-            button=Style(text_color="on_primary", text_size=sp(16), radius=dp(16)),
-            row=Style(background="card", radius=dp(16)),
+            text=Style(text_color="text", text_size=sp(15)),
+            button=Style(text_color="on_primary", text_size=sp(15), radius=dp(12)),
+            row=Style(background="card", radius=dp(12)),
             column=Style(background="card", radius=dp(12)),
         ),
-        State(
-            count=0,
-            step=1,
-            limit=10,
-        ),
+        state(demo_count=0),
         ui(*items),
-        increment,
-        decrement,
-        reset,
-        boost,
-        nav_stopwatch,
-        nav_home,
-        fab_click,
-        menu_click,
-        announce_click,
-        exit_click,
+        go_text_icon,
+        go_buttons,
+        go_inputs,
+        go_selectors,
+        go_layouts,
+        go_containers,
+        go_images,
+        go_progress,
+        go_dialogs,
+        go_navigation,
+        back_text_icon,
+        back_buttons,
+        back_inputs,
+        back_selectors,
+        back_layouts,
+        back_containers,
+        back_images,
+        back_progress,
+        back_dialogs,
+        back_navigation,
+        state_inc,
+        raised_action,
+        flat_action,
+        icon_action,
+        fab_action,
+        show_toast_btn,
+        show_snackbar_btn,
+        show_dialog_btn,
+        nav_push_btn,
+        nav_replace_btn,
+        nav_pop_btn,
+        target_home_btn,
+        target_back_btn,
     )
 )
 

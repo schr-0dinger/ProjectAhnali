@@ -70,15 +70,22 @@ from dsl.widgets import (
     _UIAppBar,
     _UIButton,
     _UIButtonBar,
+    _UICard,
     _UICheckbox,
     _UIColumn,
+    _UIContainer,
     _UIConstraint,
+    _UIDivider,
     _UIDropdownButton,
     _UIFlatButton,
     _UIFloatingActionButton,
+    _UIIcon,
     _UIIconButton,
+    _UIImage,
     _UIPopupMenuButton,
+    _UIProgressBar,
     _UIRadio,
+    _UIRadioGroup,
     _UIRelative,
     _UIRaisedButton,
     _UIRow,
@@ -87,6 +94,7 @@ from dsl.widgets import (
     _UISwitch,
     _UIText,
     _UITextField,
+    _UIView,
 )
 from dsl.lowering.attr_registry import ATTR_METHODS
 
@@ -121,6 +129,8 @@ class _PythonicContext:
     def _view_desc(self, kind):
         if kind == "text":
             return "Landroid/widget/TextView;"
+        if kind == "icon":
+            return "Landroid/widget/TextView;"
         if kind == "button":
             return "Landroid/widget/Button;"
         if kind == "app_bar":
@@ -151,6 +161,20 @@ class _PythonicContext:
             return "Landroid/widget/Spinner;"
         if kind == "popup_button":
             return "Landroid/widget/Button;"
+        if kind == "image":
+            return "Landroid/widget/ImageView;"
+        if kind == "progress_bar":
+            return "Landroid/widget/ProgressBar;"
+        if kind == "radio_group":
+            return "Landroid/widget/RadioGroup;"
+        if kind == "container":
+            return "Landroid/widget/LinearLayout;"
+        if kind == "card":
+            return "Landroid/widget/LinearLayout;"
+        if kind == "divider":
+            return "Landroid/view/View;"
+        if kind == "view":
+            return "Landroid/view/View;"
         if kind == "screen":
             return "Landroid/widget/RelativeLayout;"
         return "Landroid/view/View;"
@@ -176,6 +200,14 @@ class _PythonicContext:
             "dropdown",
             "button_bar",
             "popup",
+            "view",
+            "divider",
+            "image",
+            "container",
+            "card",
+            "icon",
+            "radio_group",
+            "progress",
             "screen",
         }
         resolved_id = item_id
@@ -996,6 +1028,76 @@ class _PythonicContext:
         )
         return stmts
 
+    def _button_label(self, item) -> str:
+        text = "" if getattr(item, "text", None) is None else str(item.text)
+        icon = getattr(item, "icon", None)
+        if icon is None:
+            return text
+        icon_text = str(icon).strip()
+        if not icon_text:
+            return text
+        return f"{icon_text} {text}".strip()
+
+    def _set_image_source(self, view_name: str, source):
+        if source is None:
+            return []
+        if isinstance(source, bool):
+            raise RuntimeError("Image source must be int resource id or drawable name string.")
+        if isinstance(source, int):
+            return [
+                call_stmt(
+                    "setImageResource",
+                    args=[var(view_name), const(int(source))],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/ImageView;",
+                )
+            ]
+        if isinstance(source, str):
+            rid_var = self._next_tmp(f"{view_name}_rid")
+            res_var = self._next_tmp(f"{view_name}_res")
+            pkg_var = self._next_tmp(f"{view_name}_pkg")
+            return [
+                assign(
+                    res_var,
+                    call(
+                        "getResources",
+                        args=[var("ctx")],
+                        return_type="Landroid/content/res/Resources;",
+                        invoke_kind="virtual",
+                        owner="Landroid/content/Context;",
+                    ),
+                ),
+                assign(
+                    pkg_var,
+                    call(
+                        "getPackageName",
+                        args=[var("ctx")],
+                        return_type="Ljava/lang/String;",
+                        invoke_kind="virtual",
+                        owner="Landroid/content/Context;",
+                    ),
+                ),
+                assign(
+                    rid_var,
+                    call(
+                        "getIdentifier",
+                        args=[var(res_var), const(source), const("drawable"), var(pkg_var)],
+                        return_type="I",
+                        invoke_kind="virtual",
+                        owner="Landroid/content/res/Resources;",
+                    ),
+                ),
+                call_stmt(
+                    "setImageResource",
+                    args=[var(view_name), var(rid_var)],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/ImageView;",
+                ),
+            ]
+        raise RuntimeError("Image source must be int resource id or drawable name string.")
+
     def _build_ui_items(self, parent_id, items):
         body = []
         for item in items:
@@ -1063,6 +1165,75 @@ class _PythonicContext:
                 body.extend(self._apply_view_layout(item, parent_id))
                 body.append(add_view(var(parent_id), var(item.id)))
                 body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIDivider):
+            item.id = self._register_view(item.id, "divider")
+            body.extend([assign(item.id, new("Landroid/view/View;", args=[var("ctx")]))])
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIImage):
+            item.id = self._register_view(item.id, "image")
+            body.extend([assign(item.id, new("Landroid/widget/ImageView;", args=[var("ctx")]))])
+            body.extend(self._set_image_source(item.id, item.src))
+            if item.content_description:
+                body.extend(
+                    self._set_text_from_resource(
+                        item.id,
+                        item.content_description,
+                        "Landroid/view/View;",
+                        f"{item.id}_content_desc",
+                        ctx_expr=var("ctx"),
+                        method_name="setContentDescription",
+                    )
+                )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIProgressBar):
+            item.id = self._register_view(item.id, "progress_bar")
+            min_value = int(item.min)
+            max_value = int(item.max)
+            span = max(max_value - min_value, 0)
+            progress = int(item.value) - min_value
+            if progress < 0:
+                progress = 0
+            if progress > span:
+                progress = span
+            body.extend(
+                [
+                    assign(item.id, new("Landroid/widget/ProgressBar;", args=[var("ctx")])),
+                    call_stmt(
+                        "setIndeterminate",
+                        args=[var(item.id), const(1 if item.indeterminate else 0)],
+                        return_type=None,
+                        arg_types=["Z"],
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/ProgressBar;",
+                    ),
+                ]
+            )
+            if not item.indeterminate:
+                body.extend(
+                    [
+                        call_stmt(
+                            "setMax",
+                            args=[var(item.id), const(span)],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/ProgressBar;",
+                        ),
+                        call_stmt(
+                            "setProgress",
+                            args=[var(item.id), const(progress)],
+                            return_type=None,
+                            invoke_kind="virtual",
+                            owner="Landroid/widget/ProgressBar;",
+                        ),
+                    ]
+                )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UIFloatingActionButton):
             item.id = self._register_view(item.id, "fab")
             body.extend(
@@ -1070,28 +1241,28 @@ class _PythonicContext:
                     assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")])),
                 ]
             )
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UIRaisedButton):
             item.id = self._register_view(item.id, "raised_button")
             body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UIFlatButton):
             item.id = self._register_view(item.id, "flat_button")
             body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UIIconButton):
             item.id = self._register_view(item.id, "icon_button")
             body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
@@ -1273,10 +1444,68 @@ class _PythonicContext:
         elif isinstance(item, _UIPopupMenuButton):
             item.id = self._register_view(item.id, "popup_button")
             body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIRadioGroup):
+            item.id = self._register_view(item.id, "radio_group")
+            orientation = "horizontal" if item.orientation == "horizontal" else "vertical"
+            self._container_orientation[item.id] = orientation
+            body.extend([assign(item.id, new("Landroid/widget/RadioGroup;", args=[var("ctx")]))])
+            body.append(
+                call_stmt(
+                    "setOrientation",
+                    args=[var(item.id), const(0 if orientation == "horizontal" else 1)],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/LinearLayout;",
+                )
+            )
+            if item.weight_sum is not None:
+                body.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="weight_sum",
+                        raw_value=item.weight_sum,
+                    )
+                )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UIContainer):
+            item.id = self._register_view(item.id, "container")
+            self._container_orientation[item.id] = "vertical"
+            body.extend(linear_layout(item.id, var("ctx"), "vertical"))
+            if item.weight_sum is not None:
+                body.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="weight_sum",
+                        raw_value=item.weight_sum,
+                    )
+                )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UICard):
+            item.id = self._register_view(item.id, "card")
+            self._container_orientation[item.id] = "vertical"
+            body.extend(linear_layout(item.id, var("ctx"), "vertical"))
+            if item.weight_sum is not None:
+                body.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="weight_sum",
+                        raw_value=item.weight_sum,
+                    )
+                )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
         elif isinstance(item, _UIRow):
             item.id = self._register_view(item.id, "row")
             self._container_orientation[item.id] = "horizontal"
@@ -1361,6 +1590,19 @@ class _PythonicContext:
                 body.extend(self._build_ui_items(screen_root.id, screen_root.items))
             finally:
                 self._current_screen = prev_screen
+        elif isinstance(item, _UIIcon):
+            item.id = self._register_view(item.id, "icon")
+            body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
+            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/TextView;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIView):
+            item.id = self._register_view(item.id, "view")
+            body.extend([assign(item.id, new("Landroid/view/View;", args=[var("ctx")]))])
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UIText):
             item.id = self._register_view(item.id, "text")
             body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
@@ -1371,7 +1613,7 @@ class _PythonicContext:
         elif isinstance(item, _UIButton):
             item.id = self._register_view(item.id, "button")
             body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
+            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))

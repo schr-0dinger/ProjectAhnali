@@ -116,6 +116,7 @@ class _UIButton:
         text,
         *,
         id="button",
+        icon=None,
         layout=None,
         width=None,
         height=None,
@@ -133,6 +134,7 @@ class _UIButton:
     ):
         self.id = id
         self.text = text
+        self.icon = icon
         self.width = width
         self.height = height
         self.layout = _layout_with_size(layout, width, height)
@@ -145,6 +147,39 @@ class _UIButton:
         self.text_color = text_color
         self.background = background
         self.text_size = text_size
+        self.radius = radius
+        self.style = style
+
+
+class _UIView:
+    def __init__(
+        self,
+        *,
+        id="view",
+        layout=None,
+        width=None,
+        height=None,
+        padding=None,
+        margin=None,
+        gravity=None,
+        weight=None,
+        relative=None,
+        constraints=None,
+        background=None,
+        radius=None,
+        style=None,
+    ):
+        self.id = id
+        self.width = width
+        self.height = height
+        self.layout = _layout_with_size(layout, width, height)
+        self.padding = padding
+        self.margin = margin
+        self.gravity = gravity
+        self.weight = weight
+        self.relative = relative
+        self.constraints = constraints
+        self.background = background
         self.radius = radius
         self.style = style
 
@@ -370,6 +405,60 @@ class _UIPopupMenuButton(_UIButton):
         self.items = items or []
 
 
+class _UIDivider(_UIView):
+    def __init__(self, *, id="divider", color="#FFD1D5DB", thickness=dp(1), **kwargs):
+        kwargs.setdefault("id", id)
+        kwargs.setdefault("layout", ("match_parent", thickness))
+        kwargs.setdefault("background", color)
+        super().__init__(**kwargs)
+
+
+class _UIImage(_UIView):
+    def __init__(self, *, id="image", src=None, content_description=None, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.src = src
+        self.content_description = content_description
+
+
+class _UIContainer(_UIColumn):
+    def __init__(self, *items, id="container", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(*items, **kwargs)
+
+
+class _UICard(_UIColumn):
+    def __init__(self, *items, id="card", **kwargs):
+        kwargs.setdefault("id", id)
+        kwargs.setdefault("background", "#FFFFFFFF")
+        kwargs.setdefault("radius", dp(12))
+        kwargs.setdefault("padding", dp(12))
+        super().__init__(*items, **kwargs)
+
+
+class _UIIcon(_UIText):
+    def __init__(self, name, *, id="icon", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(name, **kwargs)
+
+
+class _UIRadioGroup(_UIColumn):
+    def __init__(self, *items, id="radio_group", orientation="vertical", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(*items, **kwargs)
+        self.orientation = str(orientation or "vertical").lower()
+
+
+class _UIProgressBar(_UIView):
+    def __init__(self, *, id="progress", value=0, min=0, max=100, indeterminate=False, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.value = value
+        self.min = min
+        self.max = max
+        self.indeterminate = bool(indeterminate)
+
+
 class _UISimpleDialog:
     def __init__(self, title, message):
         self.title = title
@@ -512,7 +601,39 @@ class Text(_UIText):
     pass
 
 
+class View(_UIView):
+    pass
+
+
 class Button(_UIButton):
+    pass
+
+
+class Divider(_UIDivider):
+    pass
+
+
+class Image(_UIImage):
+    pass
+
+
+class Container(_UIContainer):
+    pass
+
+
+class Card(_UICard):
+    pass
+
+
+class Icon(_UIIcon):
+    pass
+
+
+class RadioGroup(_UIRadioGroup):
+    pass
+
+
+class ProgressBar(_UIProgressBar):
     pass
 
 
@@ -674,6 +795,7 @@ def button(
     text,
     *,
     id="button",
+    icon=None,
     layout=None,
     width=None,
     height=None,
@@ -692,6 +814,7 @@ def button(
     return _UIButton(
         text,
         id=id,
+        icon=icon,
         layout=layout,
         width=width,
         height=height,
@@ -704,6 +827,39 @@ def button(
         text_color=text_color,
         background=background,
         text_size=text_size,
+        radius=radius,
+        style=style,
+    )
+
+
+def view(
+    *,
+    id="view",
+    layout=None,
+    width=None,
+    height=None,
+    padding=None,
+    margin=None,
+    gravity=None,
+    weight=None,
+    relative=None,
+    constraints=None,
+    background=None,
+    radius=None,
+    style=None,
+):
+    return _UIView(
+        id=id,
+        layout=layout,
+        width=width,
+        height=height,
+        padding=padding,
+        margin=margin,
+        gravity=gravity,
+        weight=weight,
+        relative=relative,
+        constraints=constraints,
+        background=background,
         radius=radius,
         style=style,
     )
@@ -891,6 +1047,34 @@ def button_bar(*items, id="button_bar", **kwargs):
 
 def popup_menu_button(text="Menu", *, id="popup", items=None, **kwargs):
     return _UIPopupMenuButton(text, id=id, items=items or [], **kwargs)
+
+
+def divider(*, id="divider", color="#FFD1D5DB", thickness=dp(1), **kwargs):
+    return _UIDivider(id=id, color=color, thickness=thickness, **kwargs)
+
+
+def image(*, id="image", src=None, content_description=None, **kwargs):
+    return _UIImage(id=id, src=src, content_description=content_description, **kwargs)
+
+
+def container(*items, id="container", **kwargs):
+    return _UIContainer(*items, id=id, **kwargs)
+
+
+def card(*items, id="card", **kwargs):
+    return _UICard(*items, id=id, **kwargs)
+
+
+def icon(name, *, id="icon", **kwargs):
+    return _UIIcon(name, id=id, **kwargs)
+
+
+def radio_group(*items, id="radio_group", orientation="vertical", **kwargs):
+    return _UIRadioGroup(*items, id=id, orientation=orientation, **kwargs)
+
+
+def progress_bar(*, id="progress", value=0, min=0, max=100, indeterminate=False, **kwargs):
+    return _UIProgressBar(id=id, value=value, min=min, max=max, indeterminate=indeterminate, **kwargs)
 
 
 def simple_dialog(title, message):
