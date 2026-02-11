@@ -125,6 +125,7 @@ class _PythonicContext:
         self._current_screen = None
         self._view_screen = {}
         self._nav_stack_limit = 0
+        self._popup_button_items = {}
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -530,6 +531,7 @@ class _PythonicContext:
         self._resource_styles = {}
         self._resource_style_ids = {}
         self._container_orientation = {self.root_id: "vertical"}
+        self._popup_button_items = {}
         self._build_theme_resources()
 
         # Ensure app_ctx is available for resource helper calls.
@@ -725,7 +727,9 @@ class _PythonicContext:
         handler_methods = []
         support_classes = []
         method_class_map = {}
+        explicit_click_ids = set()
         for spec in click_specs:
+            explicit_click_ids.add(spec.button_id)
             if spec.button_id not in self.view_types:
                 known = ", ".join(sorted(self.view_types.keys()))
                 raise RuntimeError(
@@ -753,6 +757,33 @@ class _PythonicContext:
             body.extend(on_click_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
             support_classes.append((listener_desc, handler_name, handler_owner_desc))
             handler_methods.append((handler_name, self._compile_stmts(spec.stmts)))
+            method_class_map[handler_name] = handler_owner_desc
+
+        # Auto-wire popup behavior for PopupMenuButton without explicit on_click.
+        for popup_id, popup_items in self._popup_button_items.items():
+            if popup_id in explicit_click_ids:
+                continue
+            if not popup_items:
+                continue
+            handler_name = f"onClick_{popup_id}_popup"
+            listener_desc = f"Lcom/anali/preview/AnaliClickListener_{popup_id}_popup;"
+            view_desc = self._view_desc(self.view_types[popup_id])
+            view_field = self.view_fields[popup_id]
+            tmp_btn = f"_btn_{popup_id}_popup"
+            body.append(assign(tmp_btn, static_get(view_field, view_desc)))
+            body.extend(on_click_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
+            support_classes.append((listener_desc, handler_name, handler_owner_desc))
+            handler_methods.append(
+                (
+                    handler_name,
+                    self._compile_popup_menu_handler(
+                        popup_id=popup_id,
+                        popup_items=popup_items,
+                        view_field=view_field,
+                        view_desc=view_desc,
+                    ),
+                )
+            )
             method_class_map[handler_name] = handler_owner_desc
         method_class_map.update(res_map)
 
@@ -1449,6 +1480,7 @@ class _PythonicContext:
             body.extend(self._build_ui_items(item.id, item.items))
         elif isinstance(item, _UIPopupMenuButton):
             item.id = self._register_view(item.id, "popup_button")
+            self._popup_button_items[item.id] = [str(v) for v in (item.items or [])]
             body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
             body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
@@ -1734,7 +1766,7 @@ class _PythonicContext:
         theme_style = Style()
         if isinstance(item, _UIText):
             theme_style = self.theme_spec.text
-        elif isinstance(item, _UIButton):
+        elif isinstance(item, _UIButton) and not isinstance(item, (_UISlider, _UIDropdownButton, _UIPopupMenuButton)):
             theme_style = self.theme_spec.button
         elif isinstance(item, _UIRow):
             theme_style = self.theme_spec.row
@@ -2404,6 +2436,62 @@ class _PythonicContext:
                 owner="Landroid/widget/Toast;",
             ),
         ]
+
+    def _compile_popup_menu_handler(self, *, popup_id: str, popup_items, view_field: str, view_desc: str):
+        out = [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign("anchor", static_get(view_field, view_desc)),
+            assign(
+                "popup",
+                new(
+                    "Landroid/widget/PopupMenu;",
+                    args=[var("ctx"), var("anchor")],
+                    arg_types=["Landroid/content/Context;", "Landroid/view/View;"],
+                ),
+            ),
+            assign(
+                "menu",
+                call(
+                    "getMenu",
+                    args=[var("popup")],
+                    return_type="Landroid/view/Menu;",
+                    arg_types=[],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/PopupMenu;",
+                ),
+            ),
+        ]
+
+        for idx, label in enumerate(popup_items):
+            label_key = self._add_string_resource(f"{popup_id}_item_{idx}", str(label))
+            label_load, label_expr = self._load_string_expr(label_key, prefix=f"{popup_id}_item_{idx}")
+            out.extend(label_load)
+            out.append(
+                assign(
+                    self._next_tmp(f"{popup_id}_item_ref"),
+                    call(
+                        "add",
+                        args=[var("menu"), label_expr],
+                        return_type="Landroid/view/MenuItem;",
+                        arg_types=["Ljava/lang/CharSequence;"],
+                        invoke_kind="interface",
+                        owner="Landroid/view/Menu;",
+                    ),
+                )
+            )
+
+        out.append(
+            call_stmt(
+                "show",
+                args=[var("popup")],
+                return_type=None,
+                arg_types=[],
+                invoke_kind="virtual",
+                owner="Landroid/widget/PopupMenu;",
+            )
+        )
+        out.append(ret())
+        return out
 
     def _compile_snackbar_stmt(self, stmt):
         # Material Snackbar requires resource R classes that are not bundled yet.

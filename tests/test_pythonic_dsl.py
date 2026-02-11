@@ -17,6 +17,12 @@ from dsl.app import (
     radio,
     radio_group,
     view,
+    Slider,
+    DropdownButton,
+    PopupMenuButton,
+    Theme,
+    Style,
+    dp,
 )
 from dsl.widgets import fill, size, wrap
 import pytest
@@ -394,3 +400,44 @@ def test_pythonic_dsl_radiogroup_assigns_id_before_checked():
     assert first_set_id != -1
     assert first_set_checked != -1
     assert first_set_id < first_set_checked
+
+
+def test_pythonic_theme_button_excludes_slider_dropdown_and_popup():
+    prog = app(
+        activity(
+            "MainActivity",
+            Theme(
+                button=Style(
+                    background="#FF112233",
+                    radius=dp(6),
+                )
+            ),
+            ui(
+                button("Styled", id="b"),
+                Slider(id="s"),
+                DropdownButton(id="d", items=["A", "B"]),
+                PopupMenuButton("Menu", id="p", items=["X", "Y"]),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    # Only the real Button should receive theme.button background/radius styling.
+    assert smali.count("Landroid/graphics/drawable/GradientDrawable;->setCornerRadius(F)V") == 1
+
+
+def test_pythonic_popupmenu_autowires_default_show_behavior():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                PopupMenuButton("Menu", id="p", items=["X", "Y"]),
+            ),
+        )
+    )
+    result = alpha_pipeline(prog.build())
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert ".method public static onClick_p_popup(Landroid/view/View;)V" in merged
+    assert "Landroid/widget/PopupMenu;-><init>(Landroid/content/Context;Landroid/view/View;)V" in merged
+    assert "Landroid/widget/PopupMenu;->getMenu()Landroid/view/Menu;" in merged
+    assert "Landroid/view/Menu;->add(Ljava/lang/CharSequence;)Landroid/view/MenuItem;" in merged
+    assert "Landroid/widget/PopupMenu;->show()V" in merged
