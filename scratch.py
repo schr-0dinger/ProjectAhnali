@@ -1,4 +1,4 @@
-from dsl.app import app, activity, ui, on_click, run, app_config, Screen, Navigate
+from dsl.app import app, activity, ui, on_click, run, app_config, Screen, Navigate, Back
 from dsl.widgets import (
     State,
     Text,
@@ -91,7 +91,7 @@ def nav_stopwatch():
 
 @on_click("nav_home")
 def nav_home():
-    Navigate("Home")
+    Back()
 
 
 @on_click("fab")

@@ -530,3 +530,24 @@ def throw(value):
 def navigate(target):
     from dsl.ast import _StmtNavigate
     return _StmtNavigate(target)
+
+
+def back():
+    from dsl.ast import _StmtBack
+    return _StmtBack()
+
+
+def replace(target):
+    from dsl.ast import _StmtReplace
+    return _StmtReplace(target)
+
+
+def request_permissions(*permissions, request_code=0):
+    from dsl.ast import _StmtRequestPermissions
+    if len(permissions) == 1 and isinstance(permissions[0], (list, tuple, set)):
+        permissions = tuple(permissions[0])
+    return _StmtRequestPermissions(list(permissions), request_code=request_code)
+
+
+def request_permission(permission, request_code=0):
+    return request_permissions(permission, request_code=request_code)

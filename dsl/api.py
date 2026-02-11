@@ -15,6 +15,7 @@ from .ir_helpers import toast as _ir_toast
 from .lowering.context import _PythonicContext
 from .plugins import load_plugins
 from .parser import _parse_handler_ast
+from .capabilities import Caps, Perms
 from .widgets import (
     _UIAppBar,
     _UIButton,
@@ -273,6 +274,7 @@ class AppConfig:
         debuggable: bool = False,
         show_action_bar: bool = True,
         label: str | None = None,
+        uses: list[str] | tuple[str, ...] | None = None,
         uninstall_first: bool = True,
         output_apk: str | None = None,
         keystore_path: str | None = None,
@@ -286,6 +288,7 @@ class AppConfig:
         self.debuggable = debuggable
         self.show_action_bar = show_action_bar
         self.label = label
+        self.uses = list(uses) if uses else []
         self.uninstall_first = uninstall_first
         self.output_apk = output_apk
         self.keystore_path = keystore_path
@@ -345,6 +348,7 @@ def app_config(
     debuggable: bool = False,
     show_action_bar: bool = True,
     label: str | None = None,
+    uses: list[str] | tuple[str, ...] | None = None,
     uninstall_first: bool = True,
     output_apk: str | None = None,
     keystore_path: str | None = None,
@@ -359,6 +363,7 @@ def app_config(
         debuggable=debuggable,
         show_action_bar=show_action_bar,
         label=label,
+        uses=uses,
         uninstall_first=uninstall_first,
         output_apk=output_apk,
         keystore_path=keystore_path,
@@ -402,6 +407,35 @@ def Navigate(target):
 
 def navigate(target):
     return Navigate(target)
+
+
+def Back():
+    from .ast import _StmtBack
+    return _StmtBack()
+
+
+def back():
+    return Back()
+
+
+def Replace(target):
+    from .ast import _StmtReplace
+    return _StmtReplace(target)
+
+
+def replace(target):
+    return Replace(target)
+
+
+def request_permissions(*permissions, request_code=0):
+    from .ast import _StmtRequestPermissions
+    if len(permissions) == 1 and isinstance(permissions[0], (list, tuple, set)):
+        permissions = tuple(permissions[0])
+    return _StmtRequestPermissions(list(permissions), request_code=request_code)
+
+
+def request_permission(permission, request_code=0):
+    return request_permissions(permission, request_code=request_code)
 
 
 def style(**kwargs):
@@ -512,6 +546,25 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     required_artifacts, jar_allowlist = registry.collect_deps(ui_spec.items, click_specs)
     program.required_artifacts = required_artifacts
     program.jar_allowlist = jar_allowlist
+    app_cfg = _extract_app_config(activity_spec, caller_module)
+    from .capabilities import (
+        DEFAULT_CAPABILITY_REGISTRY,
+        infer_permissions_from_handlers,
+        infer_permissions_from_ui,
+    )
+    explicit_perms = DEFAULT_CAPABILITY_REGISTRY.resolve_permissions(app_cfg.uses)
+    inferred_perms = [
+        *infer_permissions_from_ui(ui_spec.items),
+        *infer_permissions_from_handlers(click_specs),
+    ]
+    seen = set()
+    merged = []
+    for perm in [*explicit_perms, *inferred_perms]:
+        if perm in seen:
+            continue
+        seen.add(perm)
+        merged.append(perm)
+    program.permissions = merged
     return program
 
 
@@ -538,7 +591,24 @@ _install_units_into_builtins()
 
 
 def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None) -> AppConfig:
+    def _normalize_uses(value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [v.strip() for v in value.split(",") if v.strip()]
+        if isinstance(value, (list, tuple, set)):
+            return [str(v).strip() for v in value if str(v).strip()]
+        raise RuntimeError("uses must be a list or comma-separated string")
+
+    def _merge_uses(base, extra):
+        out = list(base or [])
+        for item in extra or []:
+            if item not in out:
+                out.append(item)
+        return out
+
     cfg = AppConfig()
+    extra_uses = []
     for part in activity_spec.parts:
         if isinstance(part, AppConfig):
             cfg = part
@@ -550,6 +620,9 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
         if mod is not None:
             macro = getattr(mod, "APP_CONFIG", None)
             if isinstance(macro, dict):
+                macro = dict(macro)
+                macro_uses = macro.pop("uses", None)
+                extra_uses.extend(_normalize_uses(macro_uses))
                 cfg = AppConfig(**{**cfg.__dict__, **macro})
             for key, attr in (
                 ("APP_PACKAGE", "package"),
@@ -561,6 +634,7 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
                 ("APP_SHOW_ACTION_BAR", "show_action_bar"),
                 ("APP_NO_ACTION_BAR", "show_action_bar"),
                 ("APP_LABEL", "label"),
+                ("APP_USES", "uses"),
                 ("APP_UNINSTALL_FIRST", "uninstall_first"),
                 ("APP_OUTPUT_APK", "output_apk"),
                 ("APP_KEYSTORE_PATH", "keystore_path"),
@@ -570,5 +644,9 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
                     value = getattr(mod, key)
                     if key == "APP_NO_ACTION_BAR":
                         value = not bool(value)
-                    setattr(cfg, attr, value)
+                    if key == "APP_USES":
+                        extra_uses.extend(_normalize_uses(value))
+                    else:
+                        setattr(cfg, attr, value)
+    cfg.uses = _merge_uses(cfg.uses, extra_uses)
     return cfg

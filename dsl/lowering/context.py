@@ -16,6 +16,9 @@ from dsl.ast import (
     _StmtAssign,
     _StmtExitApp,
     _StmtIf,
+    _StmtBack,
+    _StmtReplace,
+    _StmtRequestPermissions,
     _StmtSetText,
     _StmtSimpleDialog,
     _StmtSnackbar,
@@ -27,6 +30,8 @@ from dsl.ast import (
 from dsl.ir_helpers import (
     add_view,
     assign,
+    array_get,
+    array_set,
     binary,
     call,
     call_stmt,
@@ -40,6 +45,7 @@ from dsl.ir_helpers import (
     linear_layout,
     method,
     new,
+    new_array,
     on_click_view,
     program,
     primitive_cast,
@@ -110,6 +116,7 @@ class _PythonicContext:
         self._screen_map = {}
         self._current_screen = None
         self._view_screen = {}
+        self._nav_stack_limit = 0
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -203,6 +210,42 @@ class _PythonicContext:
                 "Widget ids must be unique across Screens."
             )
         self._view_screen[view_id] = self._current_screen
+
+    def _nav_limit(self) -> int:
+        if self._nav_stack_limit:
+            return self._nav_stack_limit
+        # Allow repeated navigation without overflowing.
+        self._nav_stack_limit = max(8, len(self._screens) * 4)
+        return self._nav_stack_limit
+
+    def _nav_screen_index(self, target: str) -> int:
+        for idx, (name, _) in enumerate(self._screens):
+            if name == target:
+                return idx
+        known = ", ".join(sorted(self._screen_map.keys()))
+        raise RuntimeError(f"Unknown screen '{target}'. Known: [{known}]")
+
+    def _nav_set_visibility_for_index(self, idx_expr, vis):
+        out = []
+        desc = self._view_desc("screen")
+        for idx, (_, screen_id) in enumerate(self._screens):
+            field_name = self.view_fields.get(screen_id)
+            if not field_name:
+                raise RuntimeError(f"Missing view field for screen '{screen_id}'")
+            tmp = self._next_tmp(f"screen_ref_{idx}")
+            then = [
+                assign(tmp, static_get(field_name, desc)),
+                call_stmt(
+                    "setVisibility",
+                    args=[var(tmp), const(vis)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                ),
+            ]
+            out.append(if_(compare("==", idx_expr, const(idx)), then, []))
+        return out
 
     def _emit_attr_call(self, *, view_id, attr_name, raw_value):
         meta = ATTR_METHODS.get(attr_name)
@@ -580,6 +623,12 @@ class _PythonicContext:
             desc = self._view_desc(self.view_types[vid])
             fields.append(static_field(field_name, desc, access="public static"))
 
+        # Navigation stack fields (screen-only)
+        if self._screens:
+            fields.append(static_field("nav_stack", "[I", access="public static"))
+            fields.append(static_field("nav_size", "I", access="public static"))
+            fields.append(static_field("nav_current", "I", access="public static"))
+
         # State fields
         for name, value in self.state_spec.values.items():
             if not isinstance(value, int) or isinstance(value, bool):
@@ -588,6 +637,20 @@ class _PythonicContext:
                 )
             fields.append(static_field(name, "I"))
             body.append(static_set(name, "I", const(value)))
+
+        # Navigation stack init (after screens are built)
+        if self._screens:
+            nav_limit = self._nav_limit()
+            stack_tmp = self._next_tmp("nav_stack")
+            body.extend(
+                [
+                    assign(stack_tmp, new_array(const(nav_limit), "I")),
+                    static_set("nav_stack", "[I", var(stack_tmp)),
+                    array_set(var(stack_tmp), const(0), "I", const(0)),
+                    static_set("nav_size", "I", const(1)),
+                    static_set("nav_current", "I", const(0)),
+                ]
+            )
 
         # Accessors for cross-class handlers (keep fields private)
         handler_owner_desc = "LTestHandlers;"
@@ -1362,6 +1425,12 @@ class _PythonicContext:
             return self._compile_log_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
+        if isinstance(stmt, _StmtBack):
+            return self._compile_back_stmt(stmt)
+        if isinstance(stmt, _StmtReplace):
+            return self._compile_replace_stmt(stmt)
+        if isinstance(stmt, _StmtRequestPermissions):
+            return self._compile_request_permissions_stmt(stmt)
         raise RuntimeError(f"Unsupported statement: {stmt}")
 
     def _compile_exit_app_stmt(self, stmt):
@@ -2165,31 +2234,127 @@ class _PythonicContext:
             )
         ]
 
+    def _compile_request_permissions_stmt(self, stmt):
+        from dsl.capabilities import normalize_permission
+
+        perms = [normalize_permission(p) for p in (stmt.permissions or [])]
+        if not perms:
+            raise RuntimeError("request_permissions requires at least one permission")
+        arr_tmp = self._next_tmp("perm_arr")
+        out = [
+            assign(arr_tmp, new_array(const(len(perms)), "Ljava/lang/String;")),
+        ]
+        for idx, perm in enumerate(perms):
+            out.append(
+                array_set(
+                    var(arr_tmp),
+                    const(idx),
+                    "Ljava/lang/String;",
+                    const(perm),
+                )
+            )
+        out.append(assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")))
+        out.append(
+            call_stmt(
+                "requestPermissions",
+                args=[var("ctx"), var(arr_tmp), const(int(getattr(stmt, "request_code", 0) or 0))],
+                return_type=None,
+                arg_types=["[Ljava/lang/String;", "I"],
+                invoke_kind="virtual",
+                owner="Landroid/app/Activity;",
+            )
+        )
+        return out
+
     def _compile_navigate_stmt(self, stmt):
         if not self._screens:
             raise RuntimeError("Navigate used without any Screen definitions")
-        if stmt.target not in self._screen_map:
-            known = ", ".join(sorted(self._screen_map.keys()))
-            raise RuntimeError(f"Unknown screen '{stmt.target}'. Known: [{known}]")
+        target_idx = self._nav_screen_index(stmt.target)
         out = []
-        for name, screen_id in self._screens:
-            field_name = self.view_fields.get(screen_id)
-            if not field_name:
-                raise RuntimeError(f"Missing view field for screen '{screen_id}'")
-            desc = self._view_desc("screen")
-            vis = 0 if name == stmt.target else 8
-            tmp = self._next_tmp(f"{screen_id}_ref")
-            out.append(assign(tmp, static_get(field_name, desc)))
-            out.append(
-                call_stmt(
-                    "setVisibility",
-                    args=[var(tmp), const(vis)],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Landroid/view/View;",
-                )
+        stack_var = self._next_tmp("nav_stack")
+        size_var = self._next_tmp("nav_size")
+        cur_var = self._next_tmp("nav_current")
+        new_size_var = self._next_tmp("nav_size")
+        out.append(assign(stack_var, static_get("nav_stack", "[I")))
+        out.append(assign(size_var, static_get("nav_size", "I")))
+        out.append(assign(cur_var, static_get("nav_current", "I")))
+        out.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
+        out.extend(self._nav_set_visibility_for_index(const(target_idx), 0))
+
+        push_then = [
+            array_set(var(stack_var), var(size_var), "I", const(target_idx)),
+            assign(new_size_var, binary("+", var(size_var), const(1))),
+            static_set("nav_size", "I", var(new_size_var)),
+        ]
+        replace_else = [
+            assign(new_size_var, binary("-", var(size_var), const(1))),
+            array_set(var(stack_var), var(new_size_var), "I", const(target_idx)),
+            static_set("nav_size", "I", var(size_var)),
+        ]
+        out.append(
+            if_(
+                compare("<", var(size_var), const(self._nav_limit())),
+                push_then,
+                replace_else,
             )
+        )
+        out.append(static_set("nav_current", "I", const(target_idx)))
+        return out
+
+    def _compile_back_stmt(self, stmt):
+        if not self._screens:
+            raise RuntimeError("Back used without any Screen definitions")
+        out = []
+        stack_var = self._next_tmp("nav_stack")
+        size_var = self._next_tmp("nav_size")
+        cur_var = self._next_tmp("nav_current")
+        new_size_var = self._next_tmp("nav_size")
+        top_idx_var = self._next_tmp("nav_top_idx")
+        prev_idx_var = self._next_tmp("nav_prev")
+
+        out.append(assign(stack_var, static_get("nav_stack", "[I")))
+        out.append(assign(size_var, static_get("nav_size", "I")))
+        out.append(assign(cur_var, static_get("nav_current", "I")))
+
+        then_block = []
+        then_block.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
+        then_block.append(assign(new_size_var, binary("-", var(size_var), const(1))))
+        then_block.append(assign(top_idx_var, binary("-", var(new_size_var), const(1))))
+        then_block.append(assign(prev_idx_var, array_get(var(stack_var), var(top_idx_var), "I")))
+        then_block.extend(self._nav_set_visibility_for_index(var(prev_idx_var), 0))
+        then_block.append(static_set("nav_size", "I", var(new_size_var)))
+        then_block.append(static_set("nav_current", "I", var(prev_idx_var)))
+
+        out.append(if_(compare(">", var(size_var), const(1)), then_block, []))
+        return out
+
+    def _compile_replace_stmt(self, stmt):
+        if not self._screens:
+            raise RuntimeError("Replace used without any Screen definitions")
+        target_idx = self._nav_screen_index(stmt.target)
+        out = []
+        stack_var = self._next_tmp("nav_stack")
+        size_var = self._next_tmp("nav_size")
+        cur_var = self._next_tmp("nav_current")
+        top_idx_var = self._next_tmp("nav_top_idx")
+
+        out.append(assign(stack_var, static_get("nav_stack", "[I")))
+        out.append(assign(size_var, static_get("nav_size", "I")))
+        out.append(assign(cur_var, static_get("nav_current", "I")))
+        out.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
+        out.extend(self._nav_set_visibility_for_index(const(target_idx), 0))
+
+        then_block = [
+            assign(top_idx_var, binary("-", var(size_var), const(1))),
+            array_set(var(stack_var), var(top_idx_var), "I", const(target_idx)),
+            static_set("nav_size", "I", var(size_var)),
+        ]
+        else_block = [
+            array_set(var(stack_var), const(0), "I", const(target_idx)),
+            static_set("nav_size", "I", const(1)),
+        ]
+        out.append(if_(compare(">", var(size_var), const(0)), then_block, else_block))
+        out.append(static_set("nav_current", "I", const(target_idx)))
         return out
 
     def _compile_format_set_text(self, view_desc, view_field, fmt):

@@ -22,12 +22,51 @@ def render_manifest(
     activity_name: str = ".MainActivity",
     label: str = "@string/app_name",
     icon: str | None = None,
+    permissions: list[str] | None = None,
+    permission_entries: list[str] | None = None,
+    application_entries: list[str] | None = None,
 ) -> str:
     debug_attr = ' android:debuggable="true"' if debuggable else ""
     theme_attr = ""
     if not show_action_bar:
         theme_attr = ' android:theme="@android:style/Theme.Material.Light.NoActionBar"'
     icon_attr = f' android:icon="{icon}"' if icon else ""
+    perm_lines = []
+    if permissions:
+        seen = set()
+        for perm in permissions:
+            if perm in seen:
+                continue
+            seen.add(perm)
+            perm_lines.append(f'<uses-permission android:name="{perm}" />')
+    for entry in permission_entries or []:
+        entry = (entry or "").strip()
+        if not entry:
+            continue
+        perm_lines.append(entry)
+    perm_block = ""
+    if perm_lines:
+        formatted = []
+        seen = set()
+        for line in perm_lines:
+            if line in seen:
+                continue
+            seen.add(line)
+            formatted.append("    " + line)
+        perm_block = "\n" + "\n".join(formatted)
+    app_block = ""
+    if application_entries:
+        formatted = []
+        seen = set()
+        for entry in application_entries:
+            entry = (entry or "").strip()
+            if not entry or entry in seen:
+                continue
+            seen.add(entry)
+            for line in entry.splitlines():
+                formatted.append("        " + line.strip())
+        if formatted:
+            app_block = "\n" + "\n".join(formatted)
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="{application_id}"
@@ -36,11 +75,11 @@ def render_manifest(
 
     <uses-sdk
         android:minSdkVersion="{min_sdk}"
-        android:targetSdkVersion="{target_sdk}" />
+        android:targetSdkVersion="{target_sdk}" />{perm_block}
 
     <application
         android:label="{label}"
-        android:allowBackup="false"{debug_attr}{theme_attr}{icon_attr}>
+        android:allowBackup="false"{debug_attr}{theme_attr}{icon_attr}>{app_block}
 
         <activity
             android:name="{activity_name}"

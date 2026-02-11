@@ -11,12 +11,17 @@
 ---
 
 ## 0) Current Baseline (Done)
-- One‑command build/install/run (`build_install_run`).
-- DSL sugar: `simple_activity()`, `text_view`, `button`, `toast`, `linear_layout`, `add_view`, `on_click`.
-- Click listener support class emitted by toolchain.
-- Static fields + `x = x + 1` supported under the hood.
-- String constants + basic calls + constructor support.
-- Smoke tests (adb install/run + logcat check).
+- ✅ One‑command build/install/run (`build_install_run`).
+- ✅ DSL sugar: `simple_activity()`, `text_view`, `button`, `toast`, `linear_layout`, `add_view`, `on_click`.
+- ✅ Click listener support class emitted by toolchain.
+- ✅ Static fields + `x = x + 1` supported under the hood.
+- ✅ String constants + basic calls + constructor support.
+- ✅ Smoke tests (adb install/run + logcat check).
+
+**Status Notes (2026-02-10)**
+- Stack navigation exists; system back handling is not wired.
+- Direct AAR resolution is implemented; transitive AAR inference is not wired.
+- Capability/permission inference and manifest injection are not implemented yet.
 
 ---
 
@@ -47,26 +52,26 @@ app(
 ```
 
 ### 1.2 Deliverables
-- DSL builder objects with `.build()` → ProgramIR.
-- Tiny expression parser for:
+- ✅ DSL builder objects with `.build()` → ProgramIR.
+- ✅ Tiny expression parser for:
   - `x += 1`, `x -= 1`
   - `label.text = f'Count: {count}'`
-- Auto‑wiring of:
+- ✅ Auto‑wiring of:
   - static fields (state)
   - UI view registry (by `id`)
   - click handlers → auto‑generated methods
 
 ### 1.3 Implementation Steps
-1. Add `dsl/sugar.py` with:
+1. ✅ Add `dsl/sugar.py` with:
    - `app(...)`, `activity(...)`, `state(...)`, `ui(...)`, `text(...)`, `button(...)`, `on_click(...)`
-2. Implement string‑expression compiler:
+2. ✅ Implement string‑expression compiler:
    - Simple tokenizer for `+=` and `f""` placeholders
    - Replace `f"Count: {count}"` → `"Count: " + valueOf(count)`
-3. Translate sugar -> existing DSL helpers:
+3. ✅ Translate sugar -> existing DSL helpers:
    - `state(count=0)` → static field + initialization
    - `text(...)` / `button(...)` → `text_view(...)` / `button(...)`
    - `on_click(...)` → `click_handler(...)` + `on_click(...)`
-4. Tests:
+4. ✅ Tests:
    - Golden smali checks for UI + state + click
    - End‑to‑end install/run smoke
 
@@ -80,7 +85,7 @@ app(
 ## 2) UI Layout System (Minimal → Common)
 
 ### 2.1 Minimal Layout (Phase C)
-- LinearLayout + addView (already done)
+- ✅ LinearLayout + addView (already done)
 - Set padding, gravity, layout params
 - TextView style knobs:
   - `setTextSize`, `setTextColor`, `setGravity`
@@ -88,7 +93,7 @@ app(
   - `setAllCaps`, `setEnabled`
 
 ### 2.2 Common Layouts
-- RelativeLayout / ConstraintLayout
+- ✅ RelativeLayout / ConstraintLayout
 - Layout params builders
 
 ### 2.3 Deliverables
@@ -103,38 +108,38 @@ app(
 ## 3) Core Smali/DEX Coverage (Pragmatic Order)
 
 ### 3.1 Must-Have Ops (App usability)
-- `invoke-interface`, `invoke-super`
-- `iget`, `iput`, `sget`, `sput` (done: sget/sput)
-- `const-class`, `check-cast`, `instance-of`
-- `new-array`, `aget`, `aput`
-- `move-object`, `move-result-object`
+- ✅ `invoke-interface`, `invoke-super`
+- ✅ `sget`, `sput` (iget/iput pending)
+- ✅ `check-cast`, `instance-of`
+- ✅ `new-array`, `aget`, `aput`
+- ✅ `move-result-object`
 
 ### 3.1.a Bytecode Expansion Plan (Detailed)
 **Step 1: Arrays**
-- IR: `NewArray`, `ArrayGet`, `ArraySet` (+ element type)
-- Dalvik: `new-array`, `filled-new-array` (optional), `aget/aget-object`, `aput/aput-object`
-- Emit: choose op by elem descriptor (`I/Z/F/L...;`)
-- Tests: golden smali + runtime sanity
+- ✅ IR: `NewArray`, `ArrayGet`, `ArraySet` (+ element type)
+- ✅ Dalvik: `new-array`, `filled-new-array` (optional), `aget/aget-object`, `aput/aput-object`
+- ✅ Emit: choose op by elem descriptor (`I/Z/F/L...;`)
+- ✅ Tests: golden smali + runtime sanity
 
 **Step 2: Invoke Variants**
-- `invoke-interface`, `invoke-super`, `invoke-virtual`, `invoke-static`, `invoke-direct`
-- Validate args: receiver rules for instance invokes
-- Support `move-result-object` / `move-result` mapping by return type
+- ✅ `invoke-interface`, `invoke-super`, `invoke-virtual`, `invoke-static`, `invoke-direct`
+- ✅ Validate args: receiver rules for instance invokes
+- ✅ Support `move-result-object` / `move-result` mapping by return type
 
 **Step 3: Exceptions**
-- Explicit try/catch blocks (already supported)
-- Validate range labels + handler descriptors
-- Add tests for multiple handlers ordering and catchall
+- ✅ Explicit try/catch blocks (already supported)
+- ✅ Validate range labels + handler descriptors
+- ✅ Add tests for multiple handlers ordering and catchall
 
 **Step 4: Primitive Conversions**
-- IR: `Cast` / `Convert`
-- Dalvik: `int-to-float`, `float-to-int`, `int-to-long`, `long-to-int`, etc.
-- Verify type inference + type-verify gate
+- ✅ IR: `Cast` / `Convert`
+- ✅ Dalvik: `int-to-float`, `float-to-int`, `int-to-long`, `long-to-int`, etc.
+- ✅ Verify type inference + type-verify gate
 
 ### 3.2 Medium Priority
 - `switch` (packed/sparse)
 - `monitor-enter/exit` (synchronization)
-- `throw` (done), `try/catch` (done)
+- ✅ `throw`, ✅ `try/catch`
 
 ### 3.3 Full Coverage (Completeness)
 - Remaining opcodes from Dalvik/DEX table
@@ -149,9 +154,9 @@ app(
 ## 4) API Coverage Roadmap
 
 ### 4.1 Immediate APIs (1–2 weeks)
-- Logcat (`Log.d/i/w/e`)
-- Toasts (done)
-- Dialogs
+- ✅ Logcat (`Log.d/i/w/e`)
+- ✅ Toasts
+- ✅ Dialogs
 - SharedPreferences
 
 ### 4.2 UI APIs (2–4 weeks)
@@ -262,9 +267,9 @@ app(
 ---
 
 ## What’s Next (Immediate Work)
-1. Implement **Library R class handling** (merged symbols → library `R$*` smali).
+1. ✅ Implement **Library R class handling** (merged symbols → library `R$*` smali).
 2. Validate **AAR class/resource merge** on device (Material smoke test).
-3. Draft **Navigation API** and wire minimal multi‑screen prototype.
+3. ✅ Draft **Navigation API** and wire minimal multi‑screen prototype.
 
 --- 
 

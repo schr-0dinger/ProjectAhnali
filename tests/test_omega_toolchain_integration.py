@@ -13,7 +13,7 @@ from apk.toolchain import (
     _collect_toolchain_diagnostics,
 )
 from dsl.app import assign, const
-from dsl.app import app, activity, ui, text, button, row
+from dsl.app import app, activity, app_config, ui, text, button, row
 
 
 def _has_android_sdk():
@@ -96,6 +96,47 @@ def test_omega_apk_packaging_manifest_activity(tmp_path):
     manifest_path = out_dir / "AndroidManifest.xml"
     manifest_text = manifest_path.read_text(encoding="utf-8")
     assert 'android:name=".EntryActivity"' in manifest_text
+
+
+def test_omega_apk_packaging_manifest_permissions(tmp_path):
+    _skip_if_missing()
+    smali_jar = _smali_jar()
+
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=["Location"]),
+            ui(text("Hi", id="t1")),
+        )
+    )
+    frontend = prog.build()
+
+    out_dir = emit_build_dir_from_program(
+        frontend,
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+        emit_wrapper=True,
+        wrapper_class_desc="Lcom/anali/preview/MainActivity;",
+    )
+    dex_path = run_smali(
+        out_dir / "smali",
+        out_dir=out_dir / "classes.dex",
+        smali_jar=smali_jar,
+        api=21,
+    )
+    signed_apk = package_apk_from_dex(
+        dex_path,
+        out_dir=out_dir,
+        application_id="com.anali.preview",
+        activity_class_desc="Lcom/anali/preview/MainActivity;",
+        permissions=frontend.permissions,
+    )
+
+    assert signed_apk.exists()
+    manifest_path = out_dir / "AndroidManifest.xml"
+    manifest_text = manifest_path.read_text(encoding="utf-8")
+    assert "android.permission.ACCESS_FINE_LOCATION" in manifest_text
+    assert "android.permission.ACCESS_COARSE_LOCATION" in manifest_text
 
 
 def _adb_path():

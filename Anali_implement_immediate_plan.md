@@ -189,6 +189,8 @@ Capabilities:
 - Control permission wiring
 - Pull in the correct runtime module
 
+Implementation status (2026-02-10): capability/permission inference and manifest injection are not implemented yet.
+
 Optional explicit declaration:
 
 ```python
@@ -320,6 +322,8 @@ System back pops stack or exits.
 
 No parameters in v1.
 
+Implementation status (2026-02-10): stack navigation exists, but system back handling is not wired.
+
 ---
 
 ## 12. Debugging & Tooling
@@ -331,6 +335,8 @@ No parameters in v1.
 
 Goal:
 > **Smali crashes always map back to DSL lines**
+
+Dependency status (2026-02-10): direct AAR resolution is implemented; transitive AAR inference is not wired.
 
 ---
 
@@ -386,20 +392,20 @@ never as core behavior.
 ## 15. Immediate Implementation Checklist
 
 ### Compiler
-- Finalize Screen-only UI enforcement
-- Lock attribute validation rules
+- ✅ Finalize Screen-only UI enforcement
+- ✅ Lock attribute validation rules
 - Capability resolution graph
 - Permission inference
-- Deterministic ordering everywhere
+- ✅ Deterministic ordering everywhere
 
 ### Runtime
 - Core runtime stabilization
 - Capability module ABI
-- Navigation engine
-- State storage
+- ✅ Navigation engine
+- ✅ State storage
 
 ### Toolchain
-- Smali ↔ baksmali roundtrip tests
+- ✅ Smali ↔ baksmali roundtrip tests
 - APK size tracking
 - Cold start benchmarks
 
@@ -414,4 +420,3 @@ This plan is:
 - Honest about tradeoffs
 
 If Anali ships with **this architecture**, it will be taken seriously.
-

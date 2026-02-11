@@ -154,6 +154,8 @@ Capabilities are:
 - permission-aware
 - mapped directly to Android APIs
 
+Implementation status (2026-02-10): capability/permission inference and manifest injection are not implemented yet.
+
 Optional explicit declaration:
 
 ```python
@@ -332,6 +334,8 @@ System back pops stack or exits app.
 
 No parameters in v1.
 
+Implementation status (2026-02-10): stack navigation exists, but system back handling is not wired.
+
 ---
 
 ## 14. Forbidden Patterns
@@ -430,15 +434,15 @@ Anali will ship only when:
 ## Execution Plan (Phased)
 
 ### Phase 0: Baseline Stabilization (Immediate)
-1. Enforce DSL structural rules (Screen-only layouts, unique ids, single root per Screen).
-2. Extend static validation:
-   - Reject mixed Screen/non-Screen UI.
-   - Lint global state usage in multi-screen apps.
-   - Confirm all referenced ids exist at compile time.
-3. Hard-fail on invalid smali emission:
-   - Register bounds, branch targets, try/catch structure.
-4. Maintain deterministic emission:
-   - Sorted methods/fields, stable resource ordering, stable class layout.
+1. ✅ Enforce DSL structural rules (Screen-only layouts, unique ids, single root per Screen).
+2. ✅ Extend static validation:
+   - ✅ Reject mixed Screen/non-Screen UI.
+   - ✅ Lint global state usage in multi-screen apps.
+   - ✅ Confirm all referenced ids exist at compile time.
+3. ✅ Hard-fail on invalid smali emission:
+   - ✅ Register bounds, branch targets, try/catch structure.
+4. ✅ Maintain deterministic emission:
+   - ✅ Sorted methods/fields, stable resource ordering, stable class layout.
 
 ### Phase 1: Core Runtime + Capability Registry (v1)
 1. Core runtime always linked:
@@ -497,16 +501,18 @@ Anali will ship only when:
 ---
 
 ## Toolchain & Testing Plan
-1. Toolchain diagnostics:
-   - Validate smali/baksmali availability.
-   - Validate aapt2, zipalign, apksigner.
-2. Pipeline tests:
-   - End-to-end compile → smali → baksmali → smali roundtrip.
+1. ✅ Toolchain diagnostics:
+   - ✅ Validate smali/baksmali availability.
+   - ✅ Validate aapt2, zipalign, apksigner.
+2. ✅ Pipeline tests:
+   - ✅ End-to-end compile → smali → baksmali → smali roundtrip.
    - UI smoke apps (navigation, forms, lists).
 3. Benchmarks:
    - APK size.
    - Cold start time.
    - Memory footprint.
+
+Dependency status (2026-02-10): direct AAR resolution is implemented; transitive AAR inference is not wired.
 
 ---
 

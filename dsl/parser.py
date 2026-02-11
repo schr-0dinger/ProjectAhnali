@@ -113,6 +113,24 @@ def _parse_stmt(stmt):
                 if target is None:
                     raise RuntimeError("Navigate target must be a constant string")
                 return _StmtNavigate(target)
+            if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
+                perms, request_code = _parse_permissions_call(call)
+                from .ast import _StmtRequestPermissions
+                return _StmtRequestPermissions(perms, request_code=request_code)
+            if fn in ("back", "Back"):
+                if call.args:
+                    raise RuntimeError("Back takes no arguments")
+                from .ast import _StmtBack
+                return _StmtBack()
+            if fn in ("replace", "Replace"):
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("Replace requires a target screen name")
+                target = args[0].value if isinstance(args[0], _ExprConst) else None
+                if target is None:
+                    raise RuntimeError("Replace target must be a constant string")
+                from .ast import _StmtReplace
+                return _StmtReplace(target)
             if fn == "exit_app":
                 if call.args:
                     raise RuntimeError("exit_app takes no arguments")
@@ -192,6 +210,52 @@ def _parse_expr(node):
                 raise RuntimeError("Unsupported f-string part")
         return _ExprFormat(parts)
     raise RuntimeError(f"Unsupported expression: {ast.dump(node)}")
+
+
+def _parse_permissions_call(call):
+    perms = []
+    request_code = None
+    for kw in call.keywords or []:
+        if kw.arg == "request_code":
+            if not isinstance(kw.value, ast.Constant) or not isinstance(kw.value.value, int):
+                raise RuntimeError("request_code must be an integer constant")
+            request_code = int(kw.value.value)
+        elif kw.arg in ("permissions", "perms"):
+            perms.extend(_parse_permission_arg(kw.value))
+        else:
+            raise RuntimeError(f"Unsupported keyword '{kw.arg}' for request_permissions")
+
+    args = list(call.args or [])
+    if args:
+        # Allow trailing request_code int.
+        last = args[-1]
+        if isinstance(last, ast.Constant) and isinstance(last.value, int):
+            if request_code is None:
+                request_code = int(last.value)
+            args = args[:-1]
+    for arg in args:
+        perms.extend(_parse_permission_arg(arg))
+
+    if not perms:
+        raise RuntimeError("request_permissions requires at least one permission string")
+    if request_code is None:
+        request_code = 0
+    return perms, request_code
+
+
+def _parse_permission_arg(node):
+    if isinstance(node, ast.Constant):
+        if not isinstance(node.value, str):
+            raise RuntimeError("Permission must be a string constant")
+        return [node.value]
+    if isinstance(node, (ast.List, ast.Tuple)):
+        out = []
+        for elt in node.elts:
+            if not isinstance(elt, ast.Constant) or not isinstance(elt.value, str):
+                raise RuntimeError("Permission list must contain string constants")
+            out.append(elt.value)
+        return out
+    raise RuntimeError("Permissions must be string constants or lists of string constants")
 
 
 def _binop_symbol(op):

@@ -105,6 +105,22 @@ class _StmtNavigate:
         self.target = target
 
 
+class _StmtBack:
+    def __init__(self):
+        pass
+
+
+class _StmtReplace:
+    def __init__(self, target):
+        self.target = target
+
+
+class _StmtRequestPermissions:
+    def __init__(self, permissions, request_code=0):
+        self.permissions = permissions
+        self.request_code = request_code
+
+
 class _StmtExitApp:
     def __init__(self):
         pass

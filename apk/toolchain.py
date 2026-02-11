@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+import xml.etree.ElementTree as ET
 
 from alpha_pipeline import alpha_pipeline
 from apk.project import render_manifest
@@ -140,6 +141,71 @@ def _read_aar_rtxt(aar_path: Path) -> dict[tuple[str, str], object]:
     return _parse_symbol_lines(text)
 
 
+_ANDROID_NS = "http://schemas.android.com/apk/res/android"
+ET.register_namespace("android", _ANDROID_NS)
+
+
+def _strip_ns(tag: str) -> str:
+    if "}" in tag:
+        return tag.split("}", 1)[1]
+    return tag
+
+
+def _format_attrs(attrs: dict) -> str:
+    parts = []
+    for key, value in attrs.items():
+        if key.startswith("{%s}" % _ANDROID_NS):
+            key = "android:" + key.split("}", 1)[1]
+        parts.append(f'{key}="{value}"')
+    return " ".join(parts)
+
+
+def _element_to_xml(el: ET.Element, indent: str) -> str:
+    tag = _strip_ns(el.tag)
+    attrs = _format_attrs(el.attrib)
+    children = list(el)
+    if not children:
+        if attrs:
+            return f"{indent}<{tag} {attrs} />"
+        return f"{indent}<{tag} />"
+    start = f"{indent}<{tag}"
+    if attrs:
+        start += f" {attrs}"
+    start += ">"
+    inner = "\n".join(_element_to_xml(child, indent + "    ") for child in children)
+    end = f"{indent}</{tag}>"
+    return "\n".join([start, inner, end])
+
+
+def _read_aar_manifest_entries(aar_path: Path) -> tuple[list[str], list[str]]:
+    try:
+        with zipfile.ZipFile(aar_path, "r") as zf:
+            raw = zf.read("AndroidManifest.xml").decode("utf-8")
+    except Exception:
+        return [], []
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        return [], []
+    perm_entries: list[str] = []
+    app_entries: list[str] = []
+    for child in list(root):
+        tag = _strip_ns(child.tag)
+        if tag in ("uses-permission", "uses-permission-sdk-23"):
+            perm_entries.append(_element_to_xml(child, ""))
+    app = None
+    for child in list(root):
+        if _strip_ns(child.tag) == "application":
+            app = child
+            break
+    if app is not None:
+        for node in list(app):
+            tag = _strip_ns(node.tag)
+            if tag in ("provider", "service", "receiver"):
+                app_entries.append(_element_to_xml(node, ""))
+    return perm_entries, app_entries
+
+
 def _emit_r_smali_class(class_desc: str, int_fields: dict[str, int], array_fields: dict[str, list[int]]) -> str:
     lines = [
         f".class public final {class_desc}",
@@ -239,6 +305,7 @@ def _generate_resource_symbols(
     api: int | None,
     resources: AndroidResources | dict[str, str] | None,
     extra_aars: list[str | Path] | None,
+    permissions: list[str] | None = None,
 ) -> Path | None:
     aapt2 = _tool_path("aapt2")
     android_jar = _find_android_jar(_find_android_sdk(), api=api)
@@ -337,6 +404,7 @@ def _generate_resource_symbols(
                 activity_name=".MainActivity",
                 label="AnaliPreview",
                 icon=icon_ref,
+                permissions=permissions,
             ),
             encoding="utf-8",
         )
@@ -766,6 +834,21 @@ def _resolve_extra_aars(frontend_ir, extra_aars: list[str | Path] | None) -> lis
     return resolved if resolved else None
 
 
+def _collect_aar_manifest_entries(extra_aars: list[str | Path] | None) -> tuple[list[str], list[str]]:
+    perm_entries: list[str] = []
+    app_entries: list[str] = []
+    if not extra_aars:
+        return perm_entries, app_entries
+    for aar_path in extra_aars:
+        aar_path = Path(aar_path)
+        if aar_path.suffix != ".aar":
+            continue
+        perms, app_nodes = _read_aar_manifest_entries(aar_path)
+        perm_entries.extend(perms or [])
+        app_entries.extend(app_nodes or [])
+    return perm_entries, app_entries
+
+
 def _merge_dex_with_aars(
     dex_path: Path,
     *,
@@ -819,6 +902,9 @@ def package_apk_from_dex(
     resources: AndroidResources | dict[str, str] | None = None,
     stable_ids_path: str | Path | None = None,
     extra_aars: list[str | Path] | None = None,
+    permissions: list[str] | None = None,
+    permission_entries: list[str] | None = None,
+    application_entries: list[str] | None = None,
 ) -> Path:
     """
     Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
@@ -872,6 +958,9 @@ def package_apk_from_dex(
                 activity_name=activity_name,
                 label=label,
                 icon=icon_ref,
+                permissions=permissions,
+                permission_entries=permission_entries,
+                application_entries=application_entries,
             ),
             encoding="utf-8",
         )
@@ -1004,6 +1093,7 @@ def build_install_run(
     output_apk: str | Path | None = None,
     uninstall_first: bool = True,
     extra_aars: list[str | Path] | None = None,
+    permissions: list[str] | None = None,
 ) -> Path:
     """
     One-command flow: compile -> smali -> dex -> apk -> install -> run.
@@ -1013,7 +1103,10 @@ def build_install_run(
     if issues:
         raise RuntimeError("Toolchain diagnostics failed: " + "; ".join(issues))
     out_dir = Path(out_dir)
+    if permissions is None:
+        permissions = list(getattr(frontend_ir, "permissions", []) or [])
     extra_aars = _resolve_extra_aars(frontend_ir, extra_aars)
+    perm_entries, app_entries = _collect_aar_manifest_entries(extra_aars)
     build_dir = emit_build_dir_from_program(
         frontend_ir,
         out_dir=out_dir,
@@ -1036,6 +1129,7 @@ def build_install_run(
         api=api,
         resources=res_obj,
         extra_aars=extra_aars,
+        permissions=permissions,
     )
     if symbols_path and extra_aars:
         symbols_file = Path(symbols_path)
@@ -1082,6 +1176,9 @@ def build_install_run(
         activity_class_desc=wrapper_class_desc,
         resources=res_obj,
         extra_aars=extra_aars,
+        permissions=permissions,
+        permission_entries=perm_entries,
+        application_entries=app_entries,
     )
 
     adb = _adb_path()
