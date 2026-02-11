@@ -284,6 +284,414 @@ Execution follows wave ordering from the tracker to keep lowering deterministic 
 
 ---
 
+## 8) Anali API Master Inventory (Exhaustive Surface Envelope)
+
+This inventory reorganizes the full practical native Android Java surface into Anali architectural layers:
+- Structure
+- Style
+- Interaction
+- State
+- Capability
+- Motion
+
+This is the complete growth envelope under Anali AOT deterministic constraints.
+It is not a promise that all items ship in v1.
+
+### 8.1 Structure APIs (UI Tree and Layout)
+
+Core structural primitives:
+- Screen
+- Activity (single-activity model)
+- Column (LinearLayout vertical)
+- Row (LinearLayout horizontal)
+- Container
+- Card
+- View
+- Relative
+- Constraint
+- ScrollView
+- HorizontalScrollView
+- FrameLayout
+- ListView
+- GridView
+- RecyclerView (static adapter model)
+- ViewPager (static page model)
+- TabLayout
+- NavigationBar
+- NavigationRail
+- DrawerLayout
+- BottomNavigationView
+- Toolbar
+- AppBar
+- CoordinatorLayout
+- NestedScrollView
+- Fragment container (if later supported)
+
+Structural modifiers:
+- width/height
+- match/wrap/fill
+- percent
+- weight
+- margin
+- padding
+- gravity
+- layout_gravity
+- constraints
+- relative rules
+- alignment
+- orientation
+- z-index (elevation layering)
+
+### 8.2 Style APIs (Visual and Appearance)
+
+Typography:
+- text_color
+- text_size
+- font_family
+- font_weight
+- font_style
+- letter_spacing
+- line_height
+- text_alignment
+- max_lines
+- ellipsize
+- all_caps
+- hint_color
+- highlight_color
+- text_shadow
+
+Color and background:
+- background_color
+- gradient background
+- radial gradient
+- sweep gradient
+- border_width
+- border_color
+- border_radius
+- per-corner radius
+- ripple_color
+- opacity
+- elevation
+- clip_to_outline
+- clip_children
+
+Stateful styling:
+- ColorState (default/pressed/disabled/selected/focused)
+- background tint
+- text tint
+- progress tint
+- thumb tint
+- track tint
+- button tint
+
+Image styling:
+- scaleType
+- crop
+- centerInside
+- adjustViewBounds
+- tint
+- image alpha
+- image matrix transform
+
+Progress styling:
+- indeterminate tint
+- progress tint
+- secondary progress tint
+
+Switch/Checkbox/Radio styling:
+- button tint
+- thumb tint
+- track tint
+
+### 8.3 Interaction APIs (Event Surface)
+
+Click and touch:
+- on_click
+- on_long_click
+- on_double_tap
+- on_touch
+- on_swipe
+- on_drag
+- on_drop
+- on_scroll
+- on_fling
+
+Input events:
+- on_text_change
+- on_editor_action
+- on_focus_change
+- on_key
+- on_change (Switch/Checkbox/Radio)
+- on_slider_change
+- on_item_selected
+- on_menu_item_selected
+
+Navigation:
+- Navigate
+- Back
+- Replace
+- PopToRoot
+- ClearStack
+
+Gesture detection:
+- pinch
+- zoom
+- rotate gesture
+- drag
+- scale gesture detector
+
+### 8.4 State APIs (Deterministic App Data)
+
+Global state:
+- state()
+- static fields
+- integer fields
+- boolean fields
+- numeric operations
+- comparisons
+- branching
+
+Persistence:
+- SharedPreferences
+- DataStore
+- file storage (internal/external)
+- SQLite
+- Room (if statically supported)
+- encrypted storage
+
+Lifecycle state:
+- on_start
+- on_resume
+- on_pause
+- on_stop
+- on_destroy
+
+### 8.5 Capability APIs (Platform Services)
+
+Permissions:
+- request_permission
+- request_permissions
+- check_permission
+- runtime permission handling
+
+Audio:
+- MediaPlayer
+- ExoPlayer
+- SoundPool
+- AudioManager
+- audio focus
+- audio recording
+- microphone access
+
+Video:
+- VideoView
+- MediaPlayer video
+- CameraX
+- MediaRecorder
+- video playback controls
+
+Camera:
+- CameraX preview
+- image capture
+- video capture
+- flash control
+- focus control
+
+Sensors:
+- accelerometer
+- gyroscope
+- magnetometer
+- light sensor
+- proximity sensor
+- step counter
+
+Location:
+- FusedLocationProvider
+- GPS
+- geofencing
+
+Networking:
+- HTTP requests
+- OkHttp
+- Retrofit
+- WebSockets
+- ConnectivityManager
+- DownloadManager
+
+Web:
+- WebView
+- WebSettings
+- JS bridge
+- file chooser
+- cookie manager
+
+Notifications:
+- NotificationManager
+- channels
+- push notifications
+- foreground service notification
+
+Background work:
+- WorkManager
+- AlarmManager
+- JobScheduler
+- foreground services
+- BroadcastReceiver
+
+Storage:
+- internal storage
+- external storage
+- MediaStore
+- file picker
+- SAF (Storage Access Framework)
+
+Sharing and intents:
+- open URL
+- share text
+- share file
+- open external app
+- deep linking
+- custom URI schemes
+
+Clipboard:
+- copy
+- paste
+- clear
+
+Biometrics:
+- fingerprint
+- face authentication
+
+Maps:
+- Google Maps SDK
+- map markers
+- camera movement
+- map gestures
+
+Bluetooth:
+- classic Bluetooth
+- BLE
+- device scanning
+
+NFC:
+- NFC read/write
+
+System UI:
+- status bar control
+- immersive mode
+- orientation lock
+- screen brightness
+- WakeLock
+
+### 8.6 Motion APIs (Animation and Effects)
+
+Explicit animations:
+- animate
+- fade_in
+- fade_out
+- rotate
+- scale
+- translate
+- animate_elevation
+- alpha animation
+
+Animator composition:
+- sequence
+- parallel
+- repeat
+- reverse
+- interpolators
+
+ViewPropertyAnimator:
+- duration
+- delay
+- interpolator
+- withEndAction
+- withStartAction
+
+ObjectAnimator:
+- property animation
+- multi-property animation
+- AnimatorSet
+
+Transition APIs:
+- scene transition
+- layout transition
+- fade transition
+- slide transition
+- explode transition
+- shared element transition
+
+Navigation transitions:
+- screen enter animation
+- screen exit animation
+- back navigation animation
+
+Visual effects:
+- blur (API 31+) - TODO: Add a flag for API version check and fallback for older versions.
+- elevation shadow
+- text shadow
+- ripple
+- opacity
+- gradient
+- transform matrix
+
+### 8.7 Advanced Graphics (Optional Future)
+
+Canvas:
+- drawRect
+- drawCircle
+- drawPath
+- drawBitmap
+- drawText
+
+Paint:
+- stroke width
+- stroke color
+- style
+- shader
+
+Hardware acceleration:
+- layer type control
+
+### 8.8 System and App Control
+
+App control:
+- exit_app
+- restart_app
+- clear_cache
+- clear_data
+
+Build config:
+- package
+- version
+- min_sdk
+- target_sdk
+- debuggable
+- keystore
+
+### 8.9 Security and Privacy
+
+- secure flag
+- block screenshots
+- encryption
+- secure preferences
+- network security config
+
+### 8.10 Testing and Debug
+
+- log
+- debug overlay
+- performance metrics
+- trace sections
+
+Conclusion:
+- This inventory covers nearly everything achievable in standard native Android Java, reorganized into Anali layers.
+- Not all items belong in v1.
+- Architecturally, this is the full surface Anali can grow into without violating AOT deterministic principles.
+
+---
+
 ## What’s Next (Immediate Work)
 1. ✅ Implement **Library R class handling** (merged symbols → library `R$*` smali).
 2. Validate **AAR class/resource merge** on device (Material smoke test).
