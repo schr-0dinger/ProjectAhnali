@@ -411,6 +411,26 @@ never as core behavior.
 
 ---
 
+## 16. UI Expansion Tracker (Locked for Execution)
+
+The full UI v1 expansion backlog is now tracked in:
+- `docs/UI_Surface_Expansion_TODO.md`
+
+Execution order is locked by waves:
+- Wave A: Typography, tinting, ColorState DSL (Phases 1–3)
+- Wave B: Event surface, input configuration, accessibility (Phases 4–6)
+- Wave C: Elevation/shadow + visual effects pack (Phases 7–8)
+- Wave D: Explicit animation DSL + navigation transitions (Phase 9)
+- Wave E: Theme expansion, scroll controls, static RecyclerView, lint hardening (Phases 10–13)
+
+All work under this tracker must preserve:
+- deterministic lowering
+- ahead-of-time compilation
+- no reactive runtime
+- no implicit diffing/dynamic UI construction
+
+---
+
 ## Final Lock
 
 This plan is:

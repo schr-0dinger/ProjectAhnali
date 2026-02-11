@@ -266,10 +266,29 @@ app(
 
 ---
 
+## 7) UI Surface Expansion Program (Planned)
+
+The full v1 UI expansion backlog is now tracked in:
+- `docs/UI_Surface_Expansion_TODO.md`
+
+This tracker is the source of truth for:
+- Typography and advanced text controls
+- Control tinting and stateful colors
+- Expanded event surface
+- Input and accessibility
+- Visual effects and explicit animation DSL
+- Theme channel expansion, scroll controls, static RecyclerView
+- Compile-time lint/validation hardening
+
+Execution follows wave ordering from the tracker to keep lowering deterministic and testable.
+
+---
+
 ## What’s Next (Immediate Work)
 1. ✅ Implement **Library R class handling** (merged symbols → library `R$*` smali).
 2. Validate **AAR class/resource merge** on device (Material smoke test).
 3. ✅ Draft **Navigation API** and wire minimal multi‑screen prototype.
+4. Start UI expansion **Wave A** from `docs/UI_Surface_Expansion_TODO.md` (Phases 1–3).
 
 --- 
 
