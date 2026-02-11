@@ -60,6 +60,7 @@ from dsl.ir_helpers import (
     while_,
 )
 from dsl.widgets import (
+    ColorState,
     Dp,
     Px,
     Sp,
@@ -280,6 +281,120 @@ class _PythonicContext:
             out.append(if_(compare("==", idx_expr, const(idx)), then, []))
         return out
 
+    def _resolve_color_state_entries(self, color_value, palette):
+        if isinstance(color_value, ColorState):
+            entries = []
+            state_keys = ("pressed", "disabled", "selected", "focused", "default")
+            for key in state_keys:
+                raw = getattr(color_value, key)
+                if raw is None:
+                    continue
+                argb = _parse_color(raw, palette)
+                if argb is None:
+                    continue
+                entries.append((key, argb))
+            if not entries:
+                raise RuntimeError("ColorState resolved to no concrete colors.")
+            if not any(k == "default" for k, _ in entries):
+                raise RuntimeError("ColorState requires a default color.")
+            return entries
+        argb = _parse_color(color_value, palette)
+        if argb is None:
+            return []
+        return [("default", argb)]
+
+    def _build_color_state_list_expr(self, view_id: str, attr_name: str, color_value, palette):
+        entries = self._resolve_color_state_entries(color_value, palette)
+        if not entries:
+            return [], None
+        states_var = self._next_tmp(f"{view_id}_{attr_name}_states")
+        colors_var = self._next_tmp(f"{view_id}_{attr_name}_colors")
+        csl_var = self._next_tmp(f"{view_id}_{attr_name}_csl")
+        stmts = [
+            assign(states_var, new_array(const(len(entries)), "[I", array_desc="[[I")),
+            assign(colors_var, new_array(const(len(entries)), "I")),
+        ]
+        state_ids = {
+            "pressed": 16842919,
+            "disabled": -16842910,
+            "selected": 16842913,
+            "focused": 16842908,
+        }
+        for idx, (state_key, argb) in enumerate(entries):
+            state_arr = self._next_tmp(f"{view_id}_{attr_name}_st_{idx}")
+            if state_key == "default":
+                stmts.append(assign(state_arr, new_array(const(0), "I")))
+            else:
+                stmts.append(assign(state_arr, new_array(const(1), "I")))
+                stmts.append(
+                    array_set(
+                        var(state_arr),
+                        const(0),
+                        "I",
+                        const(state_ids[state_key]),
+                    )
+                )
+            stmts.append(array_set(var(states_var), const(idx), "[I", var(state_arr)))
+            stmts.append(array_set(var(colors_var), const(idx), "I", const(argb)))
+        stmts.append(
+            assign(
+                csl_var,
+                new(
+                    "Landroid/content/res/ColorStateList;",
+                    args=[var(states_var), var(colors_var)],
+                    arg_types=["[[I", "[I"],
+                ),
+            )
+        )
+        return stmts, var(csl_var)
+
+    def _resolve_text_alignment_value(self, raw_value):
+        if isinstance(raw_value, bool):
+            raise RuntimeError("text_alignment must be string or int, not bool.")
+        if isinstance(raw_value, int):
+            return int(raw_value)
+        if not isinstance(raw_value, str):
+            raise RuntimeError("text_alignment must be one of: inherit, gravity, text_start, text_end, center, view_start, view_end.")
+        key = raw_value.strip().lower()
+        mapping = {
+            "inherit": 0,
+            "gravity": 1,
+            "text_start": 2,
+            "text_end": 3,
+            "center": 4,
+            "view_start": 5,
+            "view_end": 6,
+        }
+        if key not in mapping:
+            raise RuntimeError(
+                "Unsupported text_alignment. Expected one of: inherit, gravity, text_start, text_end, center, view_start, view_end."
+            )
+        return mapping[key]
+
+    def _resolve_typeface_style(self, font_weight, font_style):
+        italic = False
+        bold = False
+        if font_weight is not None:
+            if isinstance(font_weight, bool):
+                raise RuntimeError("font_weight must be int-like, not bool.")
+            weight_int = int(font_weight)
+            bold = weight_int >= 600
+        if font_style is not None:
+            key = str(font_style).strip().lower()
+            if key in ("italic", "oblique"):
+                italic = True
+            elif key == "normal":
+                italic = False
+            else:
+                raise RuntimeError("font_style must be one of: normal, italic, oblique.")
+        if bold and italic:
+            return 3
+        if bold:
+            return 1
+        if italic:
+            return 2
+        return 0
+
     def _emit_attr_call(self, *, view_id, attr_name, raw_value):
         meta = ATTR_METHODS.get(attr_name)
         if meta is None:
@@ -332,6 +447,78 @@ class _PythonicContext:
             load, value_expr = self._load_dimen_float_expr(key, ctx_expr=var("ctx"), prefix=f"{view_id}_{attr_name}")
             stmts.extend(load)
             args = [var(view_id), value_expr]
+        elif meta.value_loader == "line_spacing":
+            if isinstance(raw_value, bool):
+                raise RuntimeError("line_height must be a number or unit value, not bool.")
+            key = self._add_dimen_resource(f"{view_id}_{attr_name}", raw_value)
+            load, value_expr = self._load_dimen_float_expr(key, ctx_expr=var("ctx"), prefix=f"{view_id}_{attr_name}")
+            stmts.extend(load)
+            mult_setup, mult_expr = self._float_const_expr(1.0, prefix=f"{view_id}_{attr_name}_mult")
+            stmts.extend(mult_setup)
+            args = [var(view_id), value_expr, mult_expr]
+        elif meta.value_loader == "text_alignment":
+            args = [var(view_id), const(self._resolve_text_alignment_value(raw_value))]
+        elif meta.value_loader == "ellipsize":
+            if isinstance(raw_value, str):
+                key = raw_value.strip().lower()
+            else:
+                raise RuntimeError("ellipsize must be one of: start, middle, end, marquee, none.")
+            if key == "none":
+                ellipsize_expr = const(None)
+            else:
+                truncate_map = {
+                    "start": "START",
+                    "middle": "MIDDLE",
+                    "end": "END",
+                    "marquee": "MARQUEE",
+                }
+                if key not in truncate_map:
+                    raise RuntimeError("ellipsize must be one of: start, middle, end, marquee, none.")
+                ellipsize_var = self._next_tmp(f"{view_id}_ellipsize")
+                stmts.append(
+                    assign(
+                        ellipsize_var,
+                        static_get(
+                            truncate_map[key],
+                            "Landroid/text/TextUtils$TruncateAt;",
+                            owner="Landroid/text/TextUtils$TruncateAt;",
+                        ),
+                    )
+                )
+                ellipsize_expr = var(ellipsize_var)
+            args = [var(view_id), ellipsize_expr]
+        elif meta.value_loader == "typeface":
+            if not (isinstance(raw_value, tuple) and len(raw_value) == 3):
+                raise RuntimeError("typeface loader expects (font_family, font_weight, font_style)")
+            family, weight, font_style = raw_value
+            style_value = self._resolve_typeface_style(weight, font_style)
+            family_name = "sans-serif" if family is None else str(family)
+            tf_var = self._next_tmp(f"{view_id}_typeface")
+            stmts.append(
+                assign(
+                    tf_var,
+                    call(
+                        "create",
+                        args=[const(family_name), const(style_value)],
+                        return_type="Landroid/graphics/Typeface;",
+                        arg_types=["Ljava/lang/String;", "I"],
+                        invoke_kind="static",
+                        owner="Landroid/graphics/Typeface;",
+                    ),
+                )
+            )
+            args = [var(view_id), var(tf_var)]
+        elif meta.value_loader == "color_state_list":
+            csl_stmts, csl_expr = self._build_color_state_list_expr(
+                view_id,
+                attr_name,
+                raw_value,
+                self.theme_spec.palette,
+            )
+            stmts.extend(csl_stmts)
+            if csl_expr is None:
+                return []
+            args = [var(view_id), csl_expr]
         elif meta.value_loader == "float":
             setup, value_expr = self._float_const_expr(raw_value, prefix=f"{view_id}_{attr_name}")
             stmts.extend(setup)
@@ -450,6 +637,18 @@ class _PythonicContext:
                 owner = "Landroid/widget/LinearLayout;"
             else:
                 owner = "Landroid/widget/TextView;"
+        elif getattr(meta, "owner_resolver", None) == "thumb_tint_owner":
+            view_type = self.view_types.get(view_id)
+            if view_type == "switch":
+                owner = "Landroid/widget/Switch;"
+            else:
+                owner = "Landroid/widget/SeekBar;"
+        elif getattr(meta, "owner_resolver", None) == "progress_tint_owner":
+            view_type = self.view_types.get(view_id)
+            if view_type == "progress_bar":
+                owner = "Landroid/widget/ProgressBar;"
+            else:
+                owner = "Landroid/widget/SeekBar;"
 
         if owner is None:
             return []
@@ -1181,7 +1380,10 @@ class _PythonicContext:
                 text_color_value = item.text_color
                 if text_color_value is None and getattr(item, "style", None):
                     text_color_value = item.style.text_color
-                text_color_value = _parse_color(text_color_value, palette)
+                if isinstance(text_color_value, ColorState):
+                    text_color_value = _parse_color(text_color_value.default, palette)
+                else:
+                    text_color_value = _parse_color(text_color_value, palette)
                 if text_color_value is not None:
                     color_key = self._add_color_resource(f"{item.id}_title", text_color_value)
                     color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{item.id}_title")
@@ -1811,6 +2013,20 @@ class _PythonicContext:
         background_value = item.background if getattr(item, "background", None) is not None else style.background
         radius_value = item.radius if getattr(item, "radius", None) is not None else style.radius
         text_size_value = item.text_size if getattr(item, "text_size", None) is not None else style.text_size
+        font_family_value = getattr(item, "font_family", None) if getattr(item, "font_family", None) is not None else getattr(style, "font_family", None)
+        font_weight_value = getattr(item, "font_weight", None) if getattr(item, "font_weight", None) is not None else getattr(style, "font_weight", None)
+        font_style_value = getattr(item, "font_style", None) if getattr(item, "font_style", None) is not None else getattr(style, "font_style", None)
+        letter_spacing_value = getattr(item, "letter_spacing", None) if getattr(item, "letter_spacing", None) is not None else getattr(style, "letter_spacing", None)
+        line_height_value = getattr(item, "line_height", None) if getattr(item, "line_height", None) is not None else getattr(style, "line_height", None)
+        text_alignment_value = getattr(item, "text_alignment", None) if getattr(item, "text_alignment", None) is not None else getattr(style, "text_alignment", None)
+        all_caps_value = getattr(item, "all_caps", None) if getattr(item, "all_caps", None) is not None else getattr(style, "all_caps", None)
+        max_lines_value = getattr(item, "max_lines", None) if getattr(item, "max_lines", None) is not None else getattr(style, "max_lines", None)
+        ellipsize_value = getattr(item, "ellipsize", None) if getattr(item, "ellipsize", None) is not None else getattr(style, "ellipsize", None)
+        tint_value = getattr(item, "tint", None) if getattr(item, "tint", None) is not None else getattr(style, "tint", None)
+        thumb_tint_value = getattr(item, "thumb_tint", None) if getattr(item, "thumb_tint", None) is not None else getattr(style, "thumb_tint", None)
+        track_tint_value = getattr(item, "track_tint", None) if getattr(item, "track_tint", None) is not None else getattr(style, "track_tint", None)
+        progress_tint_value = getattr(item, "progress_tint", None) if getattr(item, "progress_tint", None) is not None else getattr(style, "progress_tint", None)
+        button_tint_value = getattr(item, "button_tint", None) if getattr(item, "button_tint", None) is not None else getattr(style, "button_tint", None)
 
         if margin_value is None and getattr(item, "floating", False):
             margin_value = Dp(16)
@@ -1885,7 +2101,7 @@ class _PythonicContext:
 
         palette = self.theme_spec.palette
         bg_color = _parse_color(background_value, palette)
-        txt_color = _parse_color(text_color_value, palette)
+        txt_color = None if isinstance(text_color_value, ColorState) else _parse_color(text_color_value, palette)
         if bg_color is not None or radius_value is not None:
             out.extend(
                 self._emit_attr_call(
@@ -1903,6 +2119,14 @@ class _PythonicContext:
                     raw_value=txt_color,
                 )
             )
+        elif isinstance(text_color_value, ColorState):
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="text_color_state",
+                    raw_value=text_color_value,
+                )
+            )
 
 
         if text_size_value is not None:
@@ -1911,6 +2135,131 @@ class _PythonicContext:
                     view_id=item.id,
                     attr_name="text_size",
                     raw_value=text_size_value,
+                )
+            )
+
+        if font_family_value is not None or font_weight_value is not None or font_style_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="typeface",
+                    raw_value=(font_family_value, font_weight_value, font_style_value),
+                )
+            )
+
+        if letter_spacing_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="letter_spacing",
+                    raw_value=letter_spacing_value,
+                )
+            )
+
+        if line_height_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="line_height",
+                    raw_value=line_height_value,
+                )
+            )
+
+        if text_alignment_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="text_alignment",
+                    raw_value=text_alignment_value,
+                )
+            )
+
+        if all_caps_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="all_caps",
+                    raw_value=all_caps_value,
+                )
+            )
+
+        if max_lines_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="max_lines",
+                    raw_value=max_lines_value,
+                )
+            )
+
+        if ellipsize_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="ellipsize",
+                    raw_value=ellipsize_value,
+                )
+            )
+
+        if tint_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="tint",
+                    raw_value=tint_value,
+                )
+            )
+
+        if thumb_tint_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="thumb_tint",
+                    raw_value=thumb_tint_value,
+                )
+            )
+
+        if track_tint_value is not None:
+            if self.view_types.get(item.id) == "slider":
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="slider_track_tint",
+                        raw_value=track_tint_value,
+                    )
+                )
+            else:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="switch_track_tint",
+                        raw_value=track_tint_value,
+                    )
+                )
+
+        if progress_tint_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="progress_tint",
+                    raw_value=progress_tint_value,
+                )
+            )
+            if self.view_types.get(item.id) == "progress_bar":
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="indeterminate_tint",
+                        raw_value=progress_tint_value,
+                    )
+                )
+
+        if button_tint_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="button_tint",
+                    raw_value=button_tint_value,
                 )
             )
 

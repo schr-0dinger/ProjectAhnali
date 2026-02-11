@@ -20,8 +20,11 @@ from dsl.app import (
     Slider,
     DropdownButton,
     PopupMenuButton,
+    Checkbox,
+    Switch,
     Theme,
     Style,
+    color_state,
     dp,
 )
 from dsl.widgets import fill, size, wrap
@@ -441,3 +444,112 @@ def test_pythonic_popupmenu_autowires_default_show_behavior():
     assert "Landroid/widget/PopupMenu;->getMenu()Landroid/view/Menu;" in merged
     assert "Landroid/view/Menu;->add(Ljava/lang/CharSequence;)Landroid/view/MenuItem;" in merged
     assert "Landroid/widget/PopupMenu;->show()V" in merged
+
+
+def test_wave_a_typography_attrs_lowering():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text(
+                    "Typography",
+                    id="t",
+                    style=Style(
+                        font_family="serif",
+                        font_weight=700,
+                        font_style="italic",
+                        letter_spacing=0.15,
+                        line_height=dp(20),
+                        text_alignment="center",
+                        all_caps=True,
+                        max_lines=2,
+                        ellipsize="end",
+                    ),
+                ),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/graphics/Typeface;->create(Ljava/lang/String;I)Landroid/graphics/Typeface;" in smali
+    assert "Landroid/widget/TextView;->setTypeface(Landroid/graphics/Typeface;)V" in smali
+    assert "Landroid/widget/TextView;->setLetterSpacing(F)V" in smali
+    assert "Landroid/widget/TextView;->setLineSpacing(FF)V" in smali
+    assert "Landroid/view/View;->setTextAlignment(I)V" in smali
+    assert "Landroid/widget/TextView;->setAllCaps(Z)V" in smali
+    assert "Landroid/widget/TextView;->setMaxLines(I)V" in smali
+    assert "Landroid/widget/TextView;->setEllipsize(Landroid/text/TextUtils$TruncateAt;)V" in smali
+
+
+def test_wave_a_control_tinting_lowering():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                button("Tinted", id="btn", style=Style(tint="#FF336699")),
+                Slider(
+                    id="s",
+                    style=Style(
+                        thumb_tint="#FFFF0000",
+                        track_tint="#FF00FF00",
+                        progress_tint="#FF0000FF",
+                    ),
+                ),
+                progress_bar(id="p", style=Style(progress_tint="#FF123456")),
+                Checkbox("C", id="c", style=Style(button_tint="#FFABCDEF")),
+                Switch(
+                    "S",
+                    id="sw",
+                    style=Style(
+                        thumb_tint="#FF222222",
+                        track_tint="#FF333333",
+                    ),
+                ),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/view/View;->setBackgroundTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/SeekBar;->setThumbTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/SeekBar;->setProgressTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/SeekBar;->setProgressBackgroundTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/ProgressBar;->setProgressTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/ProgressBar;->setIndeterminateTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/CompoundButton;->setButtonTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/Switch;->setThumbTintList(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/widget/Switch;->setTrackTintList(Landroid/content/res/ColorStateList;)V" in smali
+
+
+def test_wave_a_color_state_lowering_for_text_and_tint():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text(
+                    "Stateful",
+                    id="txt",
+                    style=Style(
+                        text_color=color_state(
+                            default="#FF111111",
+                            pressed="#FF222222",
+                            disabled="#FF333333",
+                        )
+                    ),
+                ),
+                button(
+                    "Stateful Tint",
+                    id="btn",
+                    style=Style(
+                        tint=color_state(
+                            default="#FFAAAAAA",
+                            pressed="#FFBBBBBB",
+                            focused="#FFCCCCCC",
+                        )
+                    ),
+                ),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    assert "Landroid/content/res/ColorStateList;-><init>([[I[I)V" in smali
+    assert "Landroid/widget/TextView;->setTextColor(Landroid/content/res/ColorStateList;)V" in smali
+    assert "Landroid/view/View;->setBackgroundTintList(Landroid/content/res/ColorStateList;)V" in smali

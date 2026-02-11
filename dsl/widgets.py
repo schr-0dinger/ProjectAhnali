@@ -71,6 +71,25 @@ px = _Unit("px", Px)
 percent = _Unit("percent", Percent)
 
 
+class ColorState:
+    def __init__(
+        self,
+        *,
+        default,
+        pressed=None,
+        disabled=None,
+        selected=None,
+        focused=None,
+    ):
+        if default is None:
+            raise RuntimeError("ColorState requires a default color.")
+        self.default = default
+        self.pressed = pressed
+        self.disabled = disabled
+        self.selected = selected
+        self.focused = focused
+
+
 class _UIText:
     def __init__(
         self,
@@ -90,6 +109,20 @@ class _UIText:
         background=None,
         text_size=None,
         radius=None,
+        font_family=None,
+        font_weight=None,
+        font_style=None,
+        letter_spacing=None,
+        line_height=None,
+        text_alignment=None,
+        all_caps=None,
+        max_lines=None,
+        ellipsize=None,
+        tint=None,
+        thumb_tint=None,
+        track_tint=None,
+        progress_tint=None,
+        button_tint=None,
         style=None,
     ):
         self.id = id
@@ -107,6 +140,20 @@ class _UIText:
         self.background = background
         self.text_size = text_size
         self.radius = radius
+        self.font_family = font_family
+        self.font_weight = font_weight
+        self.font_style = font_style
+        self.letter_spacing = letter_spacing
+        self.line_height = line_height
+        self.text_alignment = text_alignment
+        self.all_caps = all_caps
+        self.max_lines = max_lines
+        self.ellipsize = ellipsize
+        self.tint = tint
+        self.thumb_tint = thumb_tint
+        self.track_tint = track_tint
+        self.progress_tint = progress_tint
+        self.button_tint = button_tint
         self.style = style
 
 
@@ -130,6 +177,20 @@ class _UIButton:
         background=None,
         text_size=None,
         radius=None,
+        font_family=None,
+        font_weight=None,
+        font_style=None,
+        letter_spacing=None,
+        line_height=None,
+        text_alignment=None,
+        all_caps=None,
+        max_lines=None,
+        ellipsize=None,
+        tint=None,
+        thumb_tint=None,
+        track_tint=None,
+        progress_tint=None,
+        button_tint=None,
         style=None,
     ):
         self.id = id
@@ -148,6 +209,20 @@ class _UIButton:
         self.background = background
         self.text_size = text_size
         self.radius = radius
+        self.font_family = font_family
+        self.font_weight = font_weight
+        self.font_style = font_style
+        self.letter_spacing = letter_spacing
+        self.line_height = line_height
+        self.text_alignment = text_alignment
+        self.all_caps = all_caps
+        self.max_lines = max_lines
+        self.ellipsize = ellipsize
+        self.tint = tint
+        self.thumb_tint = thumb_tint
+        self.track_tint = track_tint
+        self.progress_tint = progress_tint
+        self.button_tint = button_tint
         self.style = style
 
 
@@ -167,6 +242,11 @@ class _UIView:
         constraints=None,
         background=None,
         radius=None,
+        tint=None,
+        thumb_tint=None,
+        track_tint=None,
+        progress_tint=None,
+        button_tint=None,
         style=None,
     ):
         self.id = id
@@ -181,6 +261,11 @@ class _UIView:
         self.constraints = constraints
         self.background = background
         self.radius = radius
+        self.tint = tint
+        self.thumb_tint = thumb_tint
+        self.track_tint = track_tint
+        self.progress_tint = progress_tint
+        self.button_tint = button_tint
         self.style = style
 
 
@@ -502,6 +587,20 @@ class Style:
         background=None,
         text_size=None,
         radius=None,
+        font_family=None,
+        font_weight=None,
+        font_style=None,
+        letter_spacing=None,
+        line_height=None,
+        text_alignment=None,
+        all_caps=None,
+        max_lines=None,
+        ellipsize=None,
+        tint=None,
+        thumb_tint=None,
+        track_tint=None,
+        progress_tint=None,
+        button_tint=None,
     ):
         self.layout = layout
         self.width = width
@@ -519,6 +618,20 @@ class Style:
         self.background = background
         self.text_size = text_size
         self.radius = radius
+        self.font_family = font_family
+        self.font_weight = font_weight
+        self.font_style = font_style
+        self.letter_spacing = letter_spacing
+        self.line_height = line_height
+        self.text_alignment = text_alignment
+        self.all_caps = all_caps
+        self.max_lines = max_lines
+        self.ellipsize = ellipsize
+        self.tint = tint
+        self.thumb_tint = thumb_tint
+        self.track_tint = track_tint
+        self.progress_tint = progress_tint
+        self.button_tint = button_tint
 
     def merged(self, override):
         if override is None:
@@ -540,6 +653,20 @@ class Style:
             background=override.background if override.background is not None else self.background,
             text_size=override.text_size if override.text_size is not None else self.text_size,
             radius=override.radius if override.radius is not None else self.radius,
+            font_family=override.font_family if override.font_family is not None else self.font_family,
+            font_weight=override.font_weight if override.font_weight is not None else self.font_weight,
+            font_style=override.font_style if override.font_style is not None else self.font_style,
+            letter_spacing=override.letter_spacing if override.letter_spacing is not None else self.letter_spacing,
+            line_height=override.line_height if override.line_height is not None else self.line_height,
+            text_alignment=override.text_alignment if override.text_alignment is not None else self.text_alignment,
+            all_caps=override.all_caps if override.all_caps is not None else self.all_caps,
+            max_lines=override.max_lines if override.max_lines is not None else self.max_lines,
+            ellipsize=override.ellipsize if override.ellipsize is not None else self.ellipsize,
+            tint=override.tint if override.tint is not None else self.tint,
+            thumb_tint=override.thumb_tint if override.thumb_tint is not None else self.thumb_tint,
+            track_tint=override.track_tint if override.track_tint is not None else self.track_tint,
+            progress_tint=override.progress_tint if override.progress_tint is not None else self.progress_tint,
+            button_tint=override.button_tint if override.button_tint is not None else self.button_tint,
         )
 
 
@@ -769,6 +896,20 @@ def text(
     background=None,
     text_size=None,
     radius=None,
+    font_family=None,
+    font_weight=None,
+    font_style=None,
+    letter_spacing=None,
+    line_height=None,
+    text_alignment=None,
+    all_caps=None,
+    max_lines=None,
+    ellipsize=None,
+    tint=None,
+    thumb_tint=None,
+    track_tint=None,
+    progress_tint=None,
+    button_tint=None,
     style=None,
 ):
     return _UIText(
@@ -787,6 +928,20 @@ def text(
         background=background,
         text_size=text_size,
         radius=radius,
+        font_family=font_family,
+        font_weight=font_weight,
+        font_style=font_style,
+        letter_spacing=letter_spacing,
+        line_height=line_height,
+        text_alignment=text_alignment,
+        all_caps=all_caps,
+        max_lines=max_lines,
+        ellipsize=ellipsize,
+        tint=tint,
+        thumb_tint=thumb_tint,
+        track_tint=track_tint,
+        progress_tint=progress_tint,
+        button_tint=button_tint,
         style=style,
     )
 
@@ -809,6 +964,20 @@ def button(
     background=None,
     text_size=None,
     radius=None,
+    font_family=None,
+    font_weight=None,
+    font_style=None,
+    letter_spacing=None,
+    line_height=None,
+    text_alignment=None,
+    all_caps=None,
+    max_lines=None,
+    ellipsize=None,
+    tint=None,
+    thumb_tint=None,
+    track_tint=None,
+    progress_tint=None,
+    button_tint=None,
     style=None,
 ):
     return _UIButton(
@@ -828,6 +997,20 @@ def button(
         background=background,
         text_size=text_size,
         radius=radius,
+        font_family=font_family,
+        font_weight=font_weight,
+        font_style=font_style,
+        letter_spacing=letter_spacing,
+        line_height=line_height,
+        text_alignment=text_alignment,
+        all_caps=all_caps,
+        max_lines=max_lines,
+        ellipsize=ellipsize,
+        tint=tint,
+        thumb_tint=thumb_tint,
+        track_tint=track_tint,
+        progress_tint=progress_tint,
+        button_tint=button_tint,
         style=style,
     )
 
@@ -846,6 +1029,11 @@ def view(
     constraints=None,
     background=None,
     radius=None,
+    tint=None,
+    thumb_tint=None,
+    track_tint=None,
+    progress_tint=None,
+    button_tint=None,
     style=None,
 ):
     return _UIView(
@@ -861,6 +1049,11 @@ def view(
         constraints=constraints,
         background=background,
         radius=radius,
+        tint=tint,
+        thumb_tint=thumb_tint,
+        track_tint=track_tint,
+        progress_tint=progress_tint,
+        button_tint=button_tint,
         style=style,
     )
 
@@ -1126,6 +1319,23 @@ def style(**kwargs):
 
 def theme(**kwargs):
     return Theme(**kwargs)
+
+
+def color_state(
+    *,
+    default,
+    pressed=None,
+    disabled=None,
+    selected=None,
+    focused=None,
+):
+    return ColorState(
+        default=default,
+        pressed=pressed,
+        disabled=disabled,
+        selected=selected,
+        focused=focused,
+    )
 
 
 def presets(palette=None):

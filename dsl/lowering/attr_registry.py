@@ -163,6 +163,148 @@ ATTR_METHODS = {
         ],
     ),
 
+    "typeface": AttrMethod(
+        method="setTypeface",
+        owner="Landroid/widget/TextView;",
+        arg_types=["Landroid/graphics/Typeface;"],
+        value_loader="typeface",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "letter_spacing": AttrMethod(
+        method="setLetterSpacing",
+        owner="Landroid/widget/TextView;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "line_height": AttrMethod(
+        method="setLineSpacing",
+        owner="Landroid/widget/TextView;",
+        arg_types=["F", "F"],
+        value_loader="line_spacing",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "text_alignment": AttrMethod(
+        method="setTextAlignment",
+        owner="Landroid/view/View;",
+        arg_types=["I"],
+        value_loader="text_alignment",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "all_caps": AttrMethod(
+        method="setAllCaps",
+        owner="Landroid/widget/TextView;",
+        arg_types=["Z"],
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "max_lines": AttrMethod(
+        method="setMaxLines",
+        owner="Landroid/widget/TextView;",
+        arg_types=["I"],
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "ellipsize": AttrMethod(
+        method="setEllipsize",
+        owner="Landroid/widget/TextView;",
+        arg_types=["Landroid/text/TextUtils$TruncateAt;"],
+        value_loader="ellipsize",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
+    "text_color_state": AttrMethod(
+        method="setTextColor",
+        owner="Landroid/widget/TextView;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+        ],
+    ),
+
     # ---- background ----
     "background_color": AttrMethod(
         method="setBackgroundColor",
@@ -178,5 +320,61 @@ ATTR_METHODS = {
         value_loader="background",
         emit_kind="custom",
         supported_kinds=None,
+    ),
+
+    "tint": AttrMethod(
+        method="setBackgroundTintList",
+        owner="Landroid/view/View;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=None,
+    ),
+
+    "thumb_tint": AttrMethod(
+        method="setThumbTintList",
+        owner_resolver="thumb_tint_owner",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["slider", "switch"],
+    ),
+
+    "slider_track_tint": AttrMethod(
+        method="setProgressBackgroundTintList",
+        owner="Landroid/widget/SeekBar;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["slider"],
+    ),
+
+    "switch_track_tint": AttrMethod(
+        method="setTrackTintList",
+        owner="Landroid/widget/Switch;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["switch"],
+    ),
+
+    "progress_tint": AttrMethod(
+        method="setProgressTintList",
+        owner_resolver="progress_tint_owner",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["slider", "progress_bar"],
+    ),
+
+    "indeterminate_tint": AttrMethod(
+        method="setIndeterminateTintList",
+        owner="Landroid/widget/ProgressBar;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["progress_bar"],
+    ),
+
+    "button_tint": AttrMethod(
+        method="setButtonTintList",
+        owner="Landroid/widget/CompoundButton;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["checkbox", "radio", "switch"],
     ),
 }

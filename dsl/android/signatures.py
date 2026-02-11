@@ -290,15 +290,41 @@ def _ensure_dynamic_signatures(owner_desc: str) -> None:
         if method_name == "<init>":
             _CTOR_SIGS.setdefault(owner_desc, args)
             key = (owner_desc, "<init>", "direct")
-            _METHOD_SIGS.setdefault(key, []).append((None, args))
+            existing = _METHOD_SIGS.get(key)
+            candidate = (None, args)
+            if existing is None:
+                _METHOD_SIGS[key] = [candidate]
+            elif isinstance(existing, list):
+                if candidate not in existing:
+                    existing.append(candidate)
+            else:
+                if existing != candidate:
+                    _METHOD_SIGS[key] = [existing, candidate]
             continue
         is_static = bool(m_access & 0x0008)
         invoke_kind = "static" if is_static else ("interface" if is_interface else "virtual")
         key = (owner_desc, method_name, invoke_kind)
-        _METHOD_SIGS.setdefault(key, []).append((ret if ret != "V" else None, args))
+        candidate = (ret if ret != "V" else None, args)
+        existing = _METHOD_SIGS.get(key)
+        if existing is None:
+            _METHOD_SIGS[key] = [candidate]
+        elif isinstance(existing, list):
+            if candidate not in existing:
+                existing.append(candidate)
+        else:
+            if existing != candidate:
+                _METHOD_SIGS[key] = [existing, candidate]
         if invoke_kind == "virtual":
             key = (owner_desc, method_name, "super")
-            _METHOD_SIGS.setdefault(key, []).append((ret if ret != "V" else None, args))
+            existing = _METHOD_SIGS.get(key)
+            if existing is None:
+                _METHOD_SIGS[key] = [candidate]
+            elif isinstance(existing, list):
+                if candidate not in existing:
+                    existing.append(candidate)
+            else:
+                if existing != candidate:
+                    _METHOD_SIGS[key] = [existing, candidate]
     _DYNAMIC_LOADED.add(owner_desc)
 
 
