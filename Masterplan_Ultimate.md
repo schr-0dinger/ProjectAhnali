@@ -690,6 +690,49 @@ Conclusion:
 - Not all items belong in v1.
 - Architecturally, this is the full surface Anali can grow into without violating AOT deterministic principles.
 
+### 8.11 API Surface Modularization Plan (`dsl/api.py` Simplification)
+
+Target package split:
+
+```text
+dsl/
+  structure.py
+  style.py
+  interaction.py
+  state.py
+  capability.py
+  motion.py
+```
+
+Rules:
+- Widgets remain in `dsl/widgets.py` and widget classes/functions stay separate from domain facades.
+- `dsl/api.py` becomes a thin compatibility layer that only re-exports public APIs from the six domain modules.
+- No business logic should remain in `dsl/api.py` after migration.
+
+User mental model (official):
+- Structure = layout
+- Style = appearance
+- Interaction = events
+- State = data
+- Capability = platform access
+- Motion = animation
+
+Migration steps:
+1. Create `dsl/structure.py` and move layout/screen/navigation structure-facing exports.
+2. Create `dsl/style.py` and move theme/style/color-state/fill-wrap-size-facing exports.
+3. Create `dsl/interaction.py` and move event declarations/handler decorators and interaction helpers.
+4. Create `dsl/state.py` and move state declarations and deterministic state operations.
+5. Create `dsl/capability.py` and move capability/permission surface exports.
+6. Create `dsl/motion.py` and move animation/transition APIs.
+7. Reduce `dsl/api.py` to grouped re-exports only.
+8. Add API-equivalence tests to ensure old import paths continue to work.
+9. Update docs/examples to prefer domain imports while keeping `dsl.app`/`dsl.api` compatibility.
+
+Acceptance criteria:
+- `dsl/api.py` contains no lowering logic, no compilation logic, no helper implementation logic.
+- All public APIs remain import-compatible for existing projects.
+- New docs teach the six-module mental model first.
+
 ---
 
 ## What’s Next (Immediate Work)
@@ -697,6 +740,7 @@ Conclusion:
 2. Validate **AAR class/resource merge** on device (Material smoke test).
 3. ✅ Draft **Navigation API** and wire minimal multi‑screen prototype.
 4. Start UI expansion **Wave A** from `docs/UI_Surface_Expansion_TODO.md` (Phases 1–3).
+5. Start API modularization of `dsl/api.py` into the six domain modules above.
 
 --- 
 
