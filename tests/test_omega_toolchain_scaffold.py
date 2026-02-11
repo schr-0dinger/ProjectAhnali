@@ -165,3 +165,35 @@ def test_emit_build_dir_writes_split_handler_class_and_listener_target(tmp_path)
     assert listener_path.exists()
     listener_text = listener_path.read_text(encoding="utf-8")
     assert "invoke-static {p1}, LTestHandlers;->onClick_inc(Landroid/view/View;)V" in listener_text
+
+
+def test_emit_wrapper_wires_system_back_for_screen_navigation(tmp_path):
+    from dsl.app import Screen, Navigate
+
+    @on_click("go")
+    def _go_screen():
+        Navigate("Second")
+
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                Screen("First", button("Go", id="go")),
+                Screen("Second", text("Two", id="t2")),
+            ),
+            _go_screen,
+        )
+    ).build()
+
+    out_dir = emit_build_dir_from_program(
+        prog,
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+        emit_wrapper=True,
+        wrapper_target_sig="(Landroid/app/Activity;)V",
+    )
+
+    activity_path = out_dir / "smali" / "com" / "anali" / "preview" / "MainActivity.smali"
+    activity_text = activity_path.read_text(encoding="utf-8")
+    assert ".method public onBackPressed()V" in activity_text
+    assert "invoke-static {}, LTest;->onSystemBack()I" in activity_text

@@ -435,6 +435,7 @@ def emit_build_dir(
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
+    emit_system_back_bridge: bool = False,
     emit_support_classes: bool = False,
     click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
     click_listener_target_method: str = "onClick",
@@ -463,6 +464,7 @@ def emit_build_dir(
                 activity_desc=wrapper_class_desc,
                 target_desc=wrapper_target_desc,
                 target_sig=wrapper_target_sig,
+                emit_system_back_bridge=emit_system_back_bridge,
             ),
             encoding="utf-8",
         )
@@ -492,12 +494,16 @@ def emit_build_dir_from_program(
     wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
+    emit_system_back_bridge: bool | None = None,
     emit_support_classes: bool = False,
     click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
     click_listener_target_method: str = "onClick",
 ) -> Path:
     result = alpha_pipeline(frontend_ir)
     smali_text = result["smali_class"]
+    if emit_system_back_bridge is None:
+        methods = getattr(frontend_ir, "methods", []) or []
+        emit_system_back_bridge = any(getattr(m, "name", "") == "onSystemBack" for m in methods)
     build_dir = emit_build_dir(
         smali_text,
         out_dir=out_dir,
@@ -506,6 +512,7 @@ def emit_build_dir_from_program(
         wrapper_class_desc=wrapper_class_desc,
         wrapper_target_desc=wrapper_target_desc,
         wrapper_target_sig=wrapper_target_sig,
+        emit_system_back_bridge=bool(emit_system_back_bridge),
         emit_support_classes=emit_support_classes or bool(getattr(frontend_ir, "support_classes", [])),
         click_listener_class_desc=click_listener_class_desc,
         click_listener_target_method=click_listener_target_method,

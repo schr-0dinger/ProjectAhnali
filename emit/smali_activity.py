@@ -318,6 +318,9 @@ def emit_activity_wrapper_smali(
     activity_desc: str = "Lcom/anali/preview/MainActivity;",
     target_desc: str = "LTest;",
     target_sig: str = "()V",
+    emit_system_back_bridge: bool = False,
+    back_sig: str = "()I",
+    back_method: str = "onSystemBack",
 ):
     lines = []
 
@@ -341,6 +344,18 @@ def emit_activity_wrapper_smali(
         lines.append(f"    invoke-static {{p0}}, {target_desc}->main{target_sig}")
     lines.append("    return-void")
     lines.append(".end method")
+    if emit_system_back_bridge:
+        lines.append("")
+        lines.append(".method public onBackPressed()V")
+        lines.append("    .locals 1")
+        lines.append(f"    invoke-static {{}}, {target_desc}->{back_method}{back_sig}")
+        lines.append("    move-result v0")
+        lines.append("    if-eqz v0, :anali_call_super")
+        lines.append("    return-void")
+        lines.append("  :anali_call_super")
+        lines.append("    invoke-super {p0}, Landroid/app/Activity;->onBackPressed()V")
+        lines.append("    return-void")
+        lines.append(".end method")
 
     return "\n".join(lines)
 

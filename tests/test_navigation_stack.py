@@ -44,3 +44,4 @@ def test_navigation_stack_fields_and_handlers():
     handlers = "\n".join(result.get("extra_smali_classes", {}).values())
     merged = smali + "\n" + handlers
     assert "setVisibility" in merged
+    assert ".method public static onSystemBack()I" in smali

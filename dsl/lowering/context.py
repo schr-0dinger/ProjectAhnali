@@ -684,6 +684,9 @@ class _PythonicContext:
                 ]
             )
 
+        # System back bridge for wrapper activity.
+        methods.append(self._compile_system_back_method())
+
         # Accessors for cross-class handlers (keep fields private)
         handler_owner_desc = "LTestHandlers;"
         self._handler_owner_desc = handler_owner_desc
@@ -2569,6 +2572,49 @@ class _PythonicContext:
 
         out.append(if_(compare(">", var(size_var), const(1)), then_block, []))
         return out
+
+    def _compile_system_back_method(self):
+        if not self._screens:
+            return method(
+                "onSystemBack",
+                params=[],
+                param_types=[],
+                return_type="I",
+                body=[ret(const(0))],
+            )
+
+        out = []
+        stack_var = self._next_tmp("nav_stack")
+        size_var = self._next_tmp("nav_size")
+        cur_var = self._next_tmp("nav_current")
+        new_size_var = self._next_tmp("nav_size")
+        top_idx_var = self._next_tmp("nav_top_idx")
+        prev_idx_var = self._next_tmp("nav_prev")
+
+        out.append(assign(stack_var, static_get("nav_stack", "[I")))
+        out.append(assign(size_var, static_get("nav_size", "I")))
+        out.append(assign(cur_var, static_get("nav_current", "I")))
+        out.append(assign("handled", const(0)))
+
+        then_block = []
+        then_block.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
+        then_block.append(assign(new_size_var, binary("-", var(size_var), const(1))))
+        then_block.append(assign(top_idx_var, binary("-", var(new_size_var), const(1))))
+        then_block.append(assign(prev_idx_var, array_get(var(stack_var), var(top_idx_var), "I")))
+        then_block.extend(self._nav_set_visibility_for_index(var(prev_idx_var), 0))
+        then_block.append(static_set("nav_size", "I", var(new_size_var)))
+        then_block.append(static_set("nav_current", "I", var(prev_idx_var)))
+        then_block.append(assign("handled", const(1)))
+
+        out.append(if_(compare(">", var(size_var), const(1)), then_block, []))
+        out.append(ret(var("handled")))
+        return method(
+            "onSystemBack",
+            params=[],
+            param_types=[],
+            return_type="I",
+            body=out,
+        )
 
     def _compile_replace_stmt(self, stmt):
         if not self._screens:
