@@ -1319,20 +1319,23 @@ class _PythonicContext:
             body.extend(
                 [
                     assign(item.id, new("Landroid/widget/RadioButton;", args=[var("ctx")])),
-                    call_stmt(
-                        "setChecked",
-                        args=[var(item.id), const(1 if item.checked else 0)],
-                        return_type=None,
-                        arg_types=["Z"],
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/RadioButton;",
-                    ),
                 ]
+            )
+            # RadioGroup tracks checked ids; id must be assigned before checked state is set.
+            body.extend(self._capture_view_static(item.id))
+            body.append(
+                call_stmt(
+                    "setChecked",
+                    args=[var(item.id), const(1 if item.checked else 0)],
+                    return_type=None,
+                    arg_types=["Z"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/RadioButton;",
+                )
             )
             body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/RadioButton;", f"{item.id}_text", ctx_expr=var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UISwitch):
             item.id = self._register_view(item.id, "switch")
             body.extend(

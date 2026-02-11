@@ -373,3 +373,24 @@ def test_pythonic_dsl_button_allows_icon_plus_text():
         )
     ).build()
     assert "ICON Save" in set(prog.resources.values())
+
+
+def test_pythonic_dsl_radiogroup_assigns_id_before_checked():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                radio_group(
+                    radio("A", id="r_a", checked=True),
+                    radio("B", id="r_b", checked=False),
+                    id="group",
+                ),
+            ),
+        )
+    )
+    smali = alpha_pipeline(prog.build())["smali_class"]
+    first_set_id = smali.find("Landroid/view/View;->setId(I)V")
+    first_set_checked = smali.find("Landroid/widget/RadioButton;->setChecked(Z)V")
+    assert first_set_id != -1
+    assert first_set_checked != -1
+    assert first_set_id < first_set_checked

@@ -4,6 +4,7 @@ from dsl.app import (
     app_config,
     ui,
     on_click,
+    on_click_map,
     run,
     Screen,
     Navigate,
@@ -59,104 +60,38 @@ APP_SHOW_ACTION_BAR = False
 APP_LABEL = "Anali Widget Zoo"
 
 
-@on_click("go_text_icon")
-def go_text_icon():
-    Navigate("TextIconDemo")
+NAV_TO_SCREEN = {
+    "go_text_icon": "TextIconDemo",
+    "go_buttons": "ButtonsDemo",
+    "go_inputs": "InputsDemo",
+    "go_selectors": "SelectorsDemo",
+    "go_layouts": "LayoutsDemo",
+    "go_containers": "ContainersDemo",
+    "go_images": "ImagesDemo",
+    "go_progress": "ProgressDemo",
+    "go_dialogs": "DialogsDemo",
+    "go_navigation": "NavigationDemo",
+}
 
+BACK_TO_HOME = [
+    "back_text_icon", "back_buttons", "back_inputs", "back_selectors",
+    "back_layouts", "back_containers", "back_images", "back_progress",
+    "back_dialogs", "back_navigation",
+]
 
-@on_click("go_buttons")
-def go_buttons():
-    Navigate("ButtonsDemo")
+NAV_MISC = {
+    "nav_push_btn": [Navigate("NavigationTarget")],
+    "nav_replace_btn": [Replace("NavigationTarget")],
+    "nav_pop_btn": [Back()],
+    "target_home_btn": [Replace("Home")],
+    "target_back_btn": [Back()],
+}
 
-
-@on_click("go_inputs")
-def go_inputs():
-    Navigate("InputsDemo")
-
-
-@on_click("go_selectors")
-def go_selectors():
-    Navigate("SelectorsDemo")
-
-
-@on_click("go_layouts")
-def go_layouts():
-    Navigate("LayoutsDemo")
-
-
-@on_click("go_containers")
-def go_containers():
-    Navigate("ContainersDemo")
-
-
-@on_click("go_images")
-def go_images():
-    Navigate("ImagesDemo")
-
-
-@on_click("go_progress")
-def go_progress():
-    Navigate("ProgressDemo")
-
-
-@on_click("go_dialogs")
-def go_dialogs():
-    Navigate("DialogsDemo")
-
-
-@on_click("go_navigation")
-def go_navigation():
-    Navigate("NavigationDemo")
-
-
-@on_click("back_text_icon")
-def back_text_icon():
-    Replace("Home")
-
-
-@on_click("back_buttons")
-def back_buttons():
-    Replace("Home")
-
-
-@on_click("back_inputs")
-def back_inputs():
-    Replace("Home")
-
-
-@on_click("back_selectors")
-def back_selectors():
-    Replace("Home")
-
-
-@on_click("back_layouts")
-def back_layouts():
-    Replace("Home")
-
-
-@on_click("back_containers")
-def back_containers():
-    Replace("Home")
-
-
-@on_click("back_images")
-def back_images():
-    Replace("Home")
-
-
-@on_click("back_progress")
-def back_progress():
-    Replace("Home")
-
-
-@on_click("back_dialogs")
-def back_dialogs():
-    Replace("Home")
-
-
-@on_click("back_navigation")
-def back_navigation():
-    Replace("Home")
+AUTO_CLICK_SPECS = [
+    *on_click_map({btn: [Navigate(screen)] for btn, screen in NAV_TO_SCREEN.items()}),
+    *on_click_map({btn: [Replace("Home")] for btn in BACK_TO_HOME}),
+    *on_click_map(NAV_MISC),
+]
 
 
 @on_click("state_inc")
@@ -198,32 +133,6 @@ def show_snackbar_btn():
 @on_click("show_dialog_btn")
 def show_dialog_btn():
     simple_dialog("Dialog Demo", "SimpleDialog is wired and working.")
-
-
-@on_click("nav_push_btn")
-def nav_push_btn():
-    Navigate("NavigationTarget")
-
-
-@on_click("nav_replace_btn")
-def nav_replace_btn():
-    Replace("NavigationTarget")
-
-
-@on_click("nav_pop_btn")
-def nav_pop_btn():
-    Back()
-
-
-@on_click("target_home_btn")
-def target_home_btn():
-    Replace("Home")
-
-
-@on_click("target_back_btn")
-def target_back_btn():
-    Back()
-
 
 palette = {
     "bg": colors.zinc_100,
@@ -307,11 +216,13 @@ items = [
         FlatButton("Flat", id="flat_action", margin=(dp(16), dp(0), dp(16), dp(8))),
         IconButton("*", id="icon_action", margin=(dp(16), dp(0), dp(16), dp(8))),
         ButtonBar(
-            Button("One", id="bar_one_btn"),
-            Button("Two", id="bar_two_btn"),
-            Button("Three", id="bar_three_btn"),
+            Button("One", id="bar_one_btn", width=dp(100)),
+            Button("Two", id="bar_two_btn", width=dp(120), background=colors.red_500),
+            Button("Three", id="bar_three_btn", width=dp(100)),
             id="buttons_bar",
             margin=(dp(16), dp(0), dp(16), dp(10)),
+            width=max_width,
+            weight_sum=3,
         ),
         FloatingActionButton("+", id="fab_action", width=dp(64), height=dp(64), margin=(dp(16), dp(4), dp(16), dp(12))),
     ),
@@ -333,7 +244,7 @@ items = [
         PopupMenuButton("Popup Menu", id="selectors_popup", items=["A", "B", "C"], margin=(dp(16), dp(0), dp(16), dp(10))),
         RadioGroup(
             Radio("Choice A", id="selectors_radio_a", checked=True),
-            Radio("Choice B", id="selectors_radio_b", checked=False),
+            Radio("Choice B", id="selectors_radio_b", checked=True),
             id="selectors_radio_group",
             orientation="vertical",
             margin=(dp(16), dp(0), dp(16), dp(10)),
@@ -476,32 +387,20 @@ app_spec = app(
         Theme(
             palette=palette,
             text=Style(text_color="text", text_size=sp(15)),
-            button=Style(text_color="on_primary", text_size=sp(15), radius=dp(12)),
+            button=Style(
+                text_color="on_primary",
+                background=colors.blue_500,
+                text_size=sp(15),
+                radius=dp(12),
+                margin=(dp(12)),
+                width=max_width
+                ),
             row=Style(background="card", radius=dp(12)),
             column=Style(background="card", radius=dp(12)),
         ),
         state(demo_count=0),
         ui(*items),
-        go_text_icon,
-        go_buttons,
-        go_inputs,
-        go_selectors,
-        go_layouts,
-        go_containers,
-        go_images,
-        go_progress,
-        go_dialogs,
-        go_navigation,
-        back_text_icon,
-        back_buttons,
-        back_inputs,
-        back_selectors,
-        back_layouts,
-        back_containers,
-        back_images,
-        back_progress,
-        back_dialogs,
-        back_navigation,
+        *AUTO_CLICK_SPECS,
         state_inc,
         raised_action,
         flat_action,
@@ -510,11 +409,6 @@ app_spec = app(
         show_toast_btn,
         show_snackbar_btn,
         show_dialog_btn,
-        nav_push_btn,
-        nav_replace_btn,
-        nav_pop_btn,
-        target_home_btn,
-        target_back_btn,
     )
 )
 
