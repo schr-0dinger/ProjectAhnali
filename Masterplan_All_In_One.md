@@ -62,7 +62,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-12)
 
-- ✅ Test suite reality: `203 passed` (`PYTHONPATH=. pytest -q`)
+- ✅ Test suite reality: `205 passed` (`PYTHONPATH=. pytest -q`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -1182,12 +1182,12 @@ All animations and effects must be explicit and imperative.
 - [x] Warn at compile time when `min_sdk < 31`. (Add if-else : if min_sdk>30, add blur-radius, else, nothing)
 
 ### 8.7 Static Transforms
-- [ ] Add `rotation`.
-- [ ] Add `scale_x`.
-- [ ] Add `scale_y`.
-- [ ] Add `translation_x`.
-- [ ] Add `translation_y`.
-- [ ] Lower to corresponding view setters.
+- [x] Add `rotation`.
+- [x] Add `scale_x`.
+- [x] Add `scale_y`.
+- [x] Add `translation_x`.
+- [x] Add `translation_y`.
+- [x] Lower to corresponding view setters.
 
 ## Phase 9: Explicit Animation DSL (Imperative Only)
 

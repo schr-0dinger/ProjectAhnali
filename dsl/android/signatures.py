@@ -442,6 +442,11 @@ _METHOD_SIGS_MANUAL = {
     ("Landroid/view/View;", "setContentDescription", "virtual"): (None, ["Ljava/lang/CharSequence;"]),
     ("Landroid/view/View;", "setImportantForAccessibility", "virtual"): (None, ["I"]),
     ("Landroid/view/View;", "setAlpha", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setRotation", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setScaleX", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setScaleY", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setTranslationX", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setTranslationY", "virtual"): (None, ["F"]),
     ("Landroid/view/View;", "setClipToOutline", "virtual"): (None, ["Z"]),
     ("Landroid/view/View;", "setElevation", "virtual"): (None, ["F"]),
     ("Landroid/view/View;", "setRenderEffect", "virtual"): (

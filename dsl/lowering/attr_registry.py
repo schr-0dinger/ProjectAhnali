@@ -330,6 +330,46 @@ ATTR_METHODS = {
         supported_kinds=None,
     ),
 
+    "rotation": AttrMethod(
+        method="setRotation",
+        owner="Landroid/view/View;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=None,
+    ),
+
+    "scale_x": AttrMethod(
+        method="setScaleX",
+        owner="Landroid/view/View;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=None,
+    ),
+
+    "scale_y": AttrMethod(
+        method="setScaleY",
+        owner="Landroid/view/View;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=None,
+    ),
+
+    "translation_x": AttrMethod(
+        method="setTranslationX",
+        owner="Landroid/view/View;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=None,
+    ),
+
+    "translation_y": AttrMethod(
+        method="setTranslationY",
+        owner="Landroid/view/View;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=None,
+    ),
+
     "tint": AttrMethod(
         method="setBackgroundTintList",
         owner="Landroid/view/View;",

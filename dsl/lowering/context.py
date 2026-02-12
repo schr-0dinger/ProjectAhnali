@@ -2484,6 +2484,19 @@ class _PythonicContext:
         border_radius_value = getattr(item, "border_radius", None) if getattr(item, "border_radius", None) is not None else getattr(style, "border_radius", None)
         ripple_color_value = getattr(item, "ripple_color", None) if getattr(item, "ripple_color", None) is not None else getattr(style, "ripple_color", None)
         blur_radius_value = getattr(item, "blur_radius", None) if getattr(item, "blur_radius", None) is not None else getattr(style, "blur_radius", None)
+        rotation_value = getattr(item, "rotation", None) if getattr(item, "rotation", None) is not None else getattr(style, "rotation", None)
+        scale_x_value = getattr(item, "scale_x", None) if getattr(item, "scale_x", None) is not None else getattr(style, "scale_x", None)
+        scale_y_value = getattr(item, "scale_y", None) if getattr(item, "scale_y", None) is not None else getattr(style, "scale_y", None)
+        translation_x_value = (
+            getattr(item, "translation_x", None)
+            if getattr(item, "translation_x", None) is not None
+            else getattr(style, "translation_x", None)
+        )
+        translation_y_value = (
+            getattr(item, "translation_y", None)
+            if getattr(item, "translation_y", None) is not None
+            else getattr(style, "translation_y", None)
+        )
         clip_to_outline_value = (
             getattr(item, "clip_to_outline", None)
             if getattr(item, "clip_to_outline", None) is not None
@@ -2838,6 +2851,51 @@ class _PythonicContext:
                     view_id=item.id,
                     attr_name="opacity",
                     raw_value=self._normalize_opacity(opacity_value),
+                )
+            )
+
+        if rotation_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="rotation",
+                    raw_value=rotation_value,
+                )
+            )
+
+        if scale_x_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="scale_x",
+                    raw_value=scale_x_value,
+                )
+            )
+
+        if scale_y_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="scale_y",
+                    raw_value=scale_y_value,
+                )
+            )
+
+        if translation_x_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="translation_x",
+                    raw_value=translation_x_value,
+                )
+            )
+
+        if translation_y_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="translation_y",
+                    raw_value=translation_y_value,
                 )
             )
 

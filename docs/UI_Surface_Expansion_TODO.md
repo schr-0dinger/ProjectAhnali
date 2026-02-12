@@ -180,12 +180,12 @@ All animations and effects must be explicit and imperative.
 - [x] Warn at compile time when `min_sdk < 31`.
 
 ### 8.7 Static Transforms
-- [ ] Add `rotation`.
-- [ ] Add `scale_x`.
-- [ ] Add `scale_y`.
-- [ ] Add `translation_x`.
-- [ ] Add `translation_y`.
-- [ ] Lower to corresponding view setters.
+- [x] Add `rotation`.
+- [x] Add `scale_x`.
+- [x] Add `scale_y`.
+- [x] Add `translation_x`.
+- [x] Add `translation_y`.
+- [x] Lower to corresponding view setters.
 
 ## Phase 9: Explicit Animation DSL (Imperative Only)
 

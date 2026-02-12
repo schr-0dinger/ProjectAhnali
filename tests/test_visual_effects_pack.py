@@ -1,7 +1,7 @@
 import pytest
 
 from alpha_pipeline import alpha_pipeline
-from dsl.app import Gradient, activity, app, app_config, column, dp, gradient, text, ui, view
+from dsl.app import Gradient, Style, activity, app, app_config, column, dp, gradient, text, ui, view
 
 
 def _build_smali(*items):
@@ -142,3 +142,49 @@ def test_visual_effects_blur_is_skipped_and_warned_when_min_sdk_below_31():
     assert "Landroid/graphics/RenderEffect;->createBlurEffect" not in smali
     assert "Landroid/view/View;->setRenderEffect(Landroid/graphics/RenderEffect;)V" not in smali
     assert any("blur_radius is ignored" in warning for warning in prog.lint_warnings)
+
+
+def test_visual_effects_static_transforms_lower_to_view_setters():
+    smali = _build_smali(
+        view(
+            id="transform_box",
+            width=48,
+            height=48,
+            rotation=15.0,
+            scale_x=1.25,
+            scale_y=0.9,
+            translation_x=12.0,
+            translation_y=-6.0,
+        ),
+        view(
+            id="style_transform_box",
+            width=24,
+            height=24,
+            style=Style(
+                rotation=5.0,
+                scale_x=1.1,
+                scale_y=1.2,
+                translation_x=2.0,
+                translation_y=3.0,
+            ),
+        ),
+    )
+
+    assert "Landroid/view/View;->setRotation(F)V" in smali
+    assert "Landroid/view/View;->setScaleX(F)V" in smali
+    assert "Landroid/view/View;->setScaleY(F)V" in smali
+    assert "Landroid/view/View;->setTranslationX(F)V" in smali
+    assert "Landroid/view/View;->setTranslationY(F)V" in smali
+
+
+def test_visual_effects_static_transform_rejects_bool_values():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                view(id="bad_transform", width=24, height=24, rotation=True),
+            ),
+        )
+    )
+    with pytest.raises(RuntimeError, match="Expected numeric float value"):
+        prog.build()
