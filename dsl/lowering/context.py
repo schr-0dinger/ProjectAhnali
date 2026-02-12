@@ -35,7 +35,7 @@ from dsl.ir_helpers import (
     binary,
     call,
     call_stmt,
-    click_handler,
+    event_handler,
     compare,
     const,
     constraint_layout,
@@ -46,7 +46,11 @@ from dsl.ir_helpers import (
     method,
     new,
     new_array,
+    on_change_view,
     on_click_view,
+    on_focus_change_view,
+    on_item_selected_view,
+    on_text_change_view,
     program,
     primitive_cast,
     relative_layout,
@@ -717,7 +721,7 @@ class _PythonicContext:
             static_set(field_name, desc, var(item_id)),
         ]
 
-    def build_program(self, click_specs, resources=None):
+    def build_program(self, event_specs, resources=None):
         body = []
         fields = []
         methods = []
@@ -922,47 +926,182 @@ class _PythonicContext:
                     )
                 )
 
-        # Wire click handlers
+        # Wire event handlers
         handler_methods = []
         support_classes = []
         method_class_map = {}
         explicit_click_ids = set()
-        for spec in click_specs:
-            explicit_click_ids.add(spec.button_id)
-            if spec.button_id not in self.view_types:
+        popup_menu_listener_map = {}
+
+        for spec in event_specs or []:
+            event_kind = getattr(spec, "event_kind", "click")
+            target_id = getattr(spec, "target_id", getattr(spec, "button_id", None))
+            if target_id is None:
+                raise RuntimeError(f"Malformed event spec: missing target id for event '{event_kind}'")
+            if target_id not in self.view_types:
                 known = ", ".join(sorted(self.view_types.keys()))
                 raise RuntimeError(
-                    f"on_click target '{spec.button_id}' not found in ui() ids. "
+                    f"{event_kind} target '{target_id}' not found in ui() ids. "
                     f"Known ids: [{known}]"
                 )
-            clickable_kinds = {
-                "button",
-                "raised_button",
-                "flat_button",
-                "icon_button",
-                "fab",
-                "popup_button",
-            }
-            if self.view_types.get(spec.button_id) not in clickable_kinds:
-                raise RuntimeError(
-                    f"on_click target '{spec.button_id}' is not a button (kind={self.view_types.get(spec.button_id)})."
+            view_kind = self.view_types.get(target_id)
+            view_desc = self._view_desc(view_kind)
+            view_field = self.view_fields[target_id]
+            compiled_stmts = self._compile_stmts(spec.stmts or [])
+
+            if event_kind == "click":
+                explicit_click_ids.add(target_id)
+                clickable_kinds = {
+                    "button",
+                    "raised_button",
+                    "flat_button",
+                    "icon_button",
+                    "fab",
+                    "popup_button",
+                }
+                if view_kind not in clickable_kinds:
+                    raise RuntimeError(
+                        f"on_click target '{target_id}' is not clickable (kind={view_kind})."
+                    )
+                handler_name = f"onClick_{target_id}"
+                listener_desc = f"Lcom/anali/preview/AnaliClickListener_{target_id};"
+                tmp_btn = f"_btn_{target_id}"
+                body.append(assign(tmp_btn, static_get(view_field, view_desc)))
+                body.extend(on_click_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "click"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["view"],
+                        ["Landroid/view/View;"],
+                        compiled_stmts,
+                    )
                 )
-            handler_name = f"onClick_{spec.button_id}"
-            listener_desc = f"Lcom/anali/preview/AnaliClickListener_{spec.button_id};"
-            view_desc = self._view_desc(self.view_types[spec.button_id])
-            view_field = self.view_fields[spec.button_id]
-            tmp_btn = f"_btn_{spec.button_id}"
-            body.append(assign(tmp_btn, static_get(view_field, view_desc)))
-            body.extend(on_click_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
-            support_classes.append((listener_desc, handler_name, handler_owner_desc))
-            handler_methods.append((handler_name, self._compile_stmts(spec.stmts)))
-            method_class_map[handler_name] = handler_owner_desc
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "change":
+                if view_kind not in {"checkbox", "switch", "radio"}:
+                    raise RuntimeError(
+                        f"on_change target '{target_id}' must be checkbox/switch/radio (kind={view_kind})."
+                    )
+                handler_name = f"onChange_{target_id}"
+                listener_desc = f"Lcom/anali/preview/AnaliChangeListener_{target_id};"
+                tmp_btn = f"_chg_{target_id}"
+                body.append(assign(tmp_btn, static_get(view_field, view_desc)))
+                body.extend(on_change_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "change"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["button", "is_checked"],
+                        ["Landroid/widget/CompoundButton;", "Z"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "text_change":
+                if view_kind != "text_field":
+                    raise RuntimeError(
+                        f"on_text_change target '{target_id}' must be text_field (kind={view_kind})."
+                    )
+                handler_name = f"onTextChange_{target_id}"
+                listener_desc = f"Lcom/anali/preview/AnaliTextChangeListener_{target_id};"
+                tmp_input = f"_txt_{target_id}"
+                body.append(assign(tmp_input, static_get(view_field, view_desc)))
+                body.extend(
+                    on_text_change_view(
+                        var(tmp_input),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "text_change"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["editable"],
+                        ["Landroid/text/Editable;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "item_selected":
+                if view_kind != "dropdown":
+                    raise RuntimeError(
+                        f"on_item_selected target '{target_id}' must be dropdown (kind={view_kind})."
+                    )
+                handler_name = f"onItemSelected_{target_id}"
+                listener_desc = f"Lcom/anali/preview/AnaliItemSelectedListener_{target_id};"
+                tmp_spinner = f"_item_{target_id}"
+                body.append(assign(tmp_spinner, static_get(view_field, view_desc)))
+                body.extend(
+                    on_item_selected_view(
+                        var(tmp_spinner),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "item_selected"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["parent", "view", "position", "item_id"],
+                        ["Landroid/widget/AdapterView;", "Landroid/view/View;", "I", "J"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "focus_change":
+                handler_name = f"onFocusChange_{target_id}"
+                listener_desc = f"Lcom/anali/preview/AnaliFocusChangeListener_{target_id};"
+                tmp_view = f"_focus_{target_id}"
+                body.append(assign(tmp_view, static_get(view_field, view_desc)))
+                body.extend(
+                    on_focus_change_view(
+                        var(tmp_view),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "focus_change"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["view", "has_focus"],
+                        ["Landroid/view/View;", "Z"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "menu_item_selected":
+                if view_kind != "popup_button":
+                    raise RuntimeError(
+                        f"on_menu_item_selected target '{target_id}' must be popup_button (kind={view_kind})."
+                    )
+                handler_name = f"onMenuItemSelected_{target_id}"
+                listener_desc = f"Lcom/anali/preview/AnaliMenuItemListener_{target_id};"
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "menu_item_selected"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["menu_item"],
+                        ["Landroid/view/MenuItem;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+                popup_menu_listener_map[target_id] = listener_desc
+            else:
+                raise RuntimeError(f"Unsupported event kind: {event_kind}")
 
         # Auto-wire popup behavior for PopupMenuButton without explicit on_click.
         for popup_id, popup_items in self._popup_button_items.items():
+            if popup_id in explicit_click_ids and popup_id in popup_menu_listener_map:
+                raise RuntimeError(
+                    f"on_menu_item_selected target '{popup_id}' cannot be combined with explicit on_click on the same PopupMenuButton."
+                )
             if popup_id in explicit_click_ids:
                 continue
-            if not popup_items:
+            if not popup_items and popup_id not in popup_menu_listener_map:
                 continue
             handler_name = f"onClick_{popup_id}_popup"
             listener_desc = f"Lcom/anali/preview/AnaliClickListener_{popup_id}_popup;"
@@ -971,15 +1110,18 @@ class _PythonicContext:
             tmp_btn = f"_btn_{popup_id}_popup"
             body.append(assign(tmp_btn, static_get(view_field, view_desc)))
             body.extend(on_click_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
-            support_classes.append((listener_desc, handler_name, handler_owner_desc))
+            support_classes.append((listener_desc, handler_name, handler_owner_desc, "click"))
             handler_methods.append(
                 (
                     handler_name,
+                    ["view"],
+                    ["Landroid/view/View;"],
                     self._compile_popup_menu_handler(
                         popup_id=popup_id,
                         popup_items=popup_items,
                         view_field=view_field,
                         view_desc=view_desc,
+                        menu_listener_class_desc=popup_menu_listener_map.get(popup_id),
                     ),
                 )
             )
@@ -1032,8 +1174,8 @@ class _PythonicContext:
                 ),
             )
 
-        for name, hbody in handler_methods:
-            methods.append(click_handler(name, hbody))
+        for name, params, param_types, hbody in handler_methods:
+            methods.append(event_handler(name, hbody, params=params, param_types=param_types))
 
         return program(
             methods,
@@ -2786,7 +2928,15 @@ class _PythonicContext:
             ),
         ]
 
-    def _compile_popup_menu_handler(self, *, popup_id: str, popup_items, view_field: str, view_desc: str):
+    def _compile_popup_menu_handler(
+        self,
+        *,
+        popup_id: str,
+        popup_items,
+        view_field: str,
+        view_desc: str,
+        menu_listener_class_desc: str | None = None,
+    ):
         out = [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             assign("anchor", static_get(view_field, view_desc)),
@@ -2810,6 +2960,27 @@ class _PythonicContext:
                 ),
             ),
         ]
+
+        if menu_listener_class_desc:
+            listener_var = self._next_tmp(f"{popup_id}_menu_listener")
+            out.extend(
+                [
+                    assign(
+                        listener_var,
+                        new(
+                            menu_listener_class_desc,
+                            args=[],
+                        ),
+                    ),
+                    call_stmt(
+                        "setOnMenuItemClickListener",
+                        args=[var("popup"), var(listener_var)],
+                        return_type=None,
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/PopupMenu;",
+                    ),
+                ]
+            )
 
         for idx, label in enumerate(popup_items):
             label_key = self._add_string_resource(f"{popup_id}_item_{idx}", str(label))

@@ -49,6 +49,15 @@ def emit_activity_smali(
             elif name == "DIfZ":
                 referenced.add(instr.true.id)
                 referenced.add(instr.false.id)
+            elif name == "DPackedSwitch":
+                referenced.add(instr.default.id)
+                referenced.update(target.id for target in instr.targets)
+            elif name == "DSparseSwitch":
+                referenced.add(instr.default.id)
+                referenced.update(target.id for target in instr.targets)
+
+    switch_payloads = []
+    switch_payload_idx = 0
 
     for block in dalvik_blocks.values():
         if block.id not in referenced and not block.instructions:
@@ -125,6 +134,12 @@ def emit_activity_smali(
             elif name == "DMoveException":
                 rd = reg_map[instr.dst]
                 lines.append(f"    move-exception {rd}")
+            elif name == "DMonitorEnter":
+                rv = reg_map[instr.value]
+                lines.append(f"    monitor-enter {rv}")
+            elif name == "DMonitorExit":
+                rv = reg_map[instr.value]
+                lines.append(f"    monitor-exit {rv}")
             elif name == "DArrayLength":
                 rd = reg_map[instr.dst]
                 ra = reg_map[instr.array]
@@ -215,6 +230,34 @@ def emit_activity_smali(
                 lines.append(
                     f"    goto :B{instr.false.id}"
                 )
+            elif name == "DPackedSwitch":
+                r = reg_map[instr.cond]
+                payload_label = f":pswitch_data_{switch_payload_idx}"
+                switch_payload_idx += 1
+                lines.append(f"    packed-switch {r}, {payload_label}")
+                lines.append(f"    goto :B{instr.default.id}")
+                payload = [f"  {payload_label}", f"    .packed-switch {instr.first_key}"]
+                for target in instr.targets:
+                    payload.append(f"        :B{target.id}")
+                payload.append("    .end packed-switch")
+                switch_payloads.extend(payload)
+            elif name == "DSparseSwitch":
+                if instr.keys != sorted(instr.keys):
+                    raise RuntimeError("sparse-switch keys must be sorted ascending")
+                if len(set(instr.keys)) != len(instr.keys):
+                    raise RuntimeError("sparse-switch keys must be unique")
+                if len(instr.keys) != len(instr.targets):
+                    raise RuntimeError("sparse-switch keys/targets length mismatch")
+                r = reg_map[instr.cond]
+                payload_label = f":sswitch_data_{switch_payload_idx}"
+                switch_payload_idx += 1
+                lines.append(f"    sparse-switch {r}, {payload_label}")
+                lines.append(f"    goto :B{instr.default.id}")
+                payload = [f"  {payload_label}", "    .sparse-switch"]
+                for key, target in zip(instr.keys, instr.targets):
+                    payload.append(f"        {int(key)} -> :B{target.id}")
+                payload.append("    .end sparse-switch")
+                switch_payloads.extend(payload)
 
             elif name == "DInvoke":
                 invoke = {
@@ -307,6 +350,10 @@ def emit_activity_smali(
             elif name == "DReturnVoid":
                 pass  # ignore inner return
 
+    if switch_payloads:
+        lines.append("")
+        lines.extend(switch_payloads)
+
     lines.append("")
     lines.append("    return-void")
     lines.append(".end method")
@@ -360,16 +407,34 @@ def emit_activity_wrapper_smali(
     return "\n".join(lines)
 
 
-def emit_click_listener_smali(
-    class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
-    target_desc: str = "LTest;",
-    target_method: str = "onClick",
+def emit_event_listener_smali(
+    class_desc: str,
+    target_desc: str,
+    target_method: str,
+    listener_kind: str = "click",
 ):
     lines = []
 
     lines.append(f".class public {class_desc}")
     lines.append(".super Ljava/lang/Object;")
-    lines.append(".implements Landroid/view/View$OnClickListener;")
+    kind = str(listener_kind or "click").strip().lower()
+
+    if kind == "click":
+        iface = "Landroid/view/View$OnClickListener;"
+    elif kind == "change":
+        iface = "Landroid/widget/CompoundButton$OnCheckedChangeListener;"
+    elif kind == "text_change":
+        iface = "Landroid/text/TextWatcher;"
+    elif kind == "item_selected":
+        iface = "Landroid/widget/AdapterView$OnItemSelectedListener;"
+    elif kind == "focus_change":
+        iface = "Landroid/view/View$OnFocusChangeListener;"
+    elif kind == "menu_item_selected":
+        iface = "Landroid/widget/PopupMenu$OnMenuItemClickListener;"
+    else:
+        raise RuntimeError(f"Unsupported listener kind: {listener_kind}")
+
+    lines.append(f".implements {iface}")
     lines.append("")
 
     lines.append(".method public constructor <init>()V")
@@ -379,10 +444,74 @@ def emit_click_listener_smali(
     lines.append(".end method")
     lines.append("")
 
-    lines.append(".method public onClick(Landroid/view/View;)V")
-    lines.append("    .locals 0")
-    lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/view/View;)V")
-    lines.append("    return-void")
-    lines.append(".end method")
+    if kind == "click":
+        lines.append(".method public onClick(Landroid/view/View;)V")
+        lines.append("    .locals 0")
+        lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/view/View;)V")
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "change":
+        lines.append(".method public onCheckedChanged(Landroid/widget/CompoundButton;Z)V")
+        lines.append("    .locals 0")
+        lines.append(
+            f"    invoke-static {{p1, p2}}, {target_desc}->{target_method}(Landroid/widget/CompoundButton;Z)V"
+        )
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "text_change":
+        lines.append(".method public beforeTextChanged(Ljava/lang/CharSequence;III)V")
+        lines.append("    .locals 0")
+        lines.append("    return-void")
+        lines.append(".end method")
+        lines.append("")
+        lines.append(".method public onTextChanged(Ljava/lang/CharSequence;III)V")
+        lines.append("    .locals 0")
+        lines.append("    return-void")
+        lines.append(".end method")
+        lines.append("")
+        lines.append(".method public afterTextChanged(Landroid/text/Editable;)V")
+        lines.append("    .locals 0")
+        lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/text/Editable;)V")
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "item_selected":
+        lines.append(".method public onItemSelected(Landroid/widget/AdapterView;Landroid/view/View;IJ)V")
+        lines.append("    .locals 0")
+        lines.append(
+            f"    invoke-static {{p1, p2, p3, p4, p5}}, {target_desc}->{target_method}(Landroid/widget/AdapterView;Landroid/view/View;IJ)V"
+        )
+        lines.append("    return-void")
+        lines.append(".end method")
+        lines.append("")
+        lines.append(".method public onNothingSelected(Landroid/widget/AdapterView;)V")
+        lines.append("    .locals 0")
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "focus_change":
+        lines.append(".method public onFocusChange(Landroid/view/View;Z)V")
+        lines.append("    .locals 0")
+        lines.append(f"    invoke-static {{p1, p2}}, {target_desc}->{target_method}(Landroid/view/View;Z)V")
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "menu_item_selected":
+        lines.append(".method public onMenuItemClick(Landroid/view/MenuItem;)Z")
+        lines.append("    .locals 1")
+        lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/view/MenuItem;)V")
+        lines.append("    const/4 v0, 0x1")
+        lines.append("    return v0")
+        lines.append(".end method")
 
     return "\n".join(lines)
+
+
+def emit_click_listener_smali(
+    class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    target_desc: str = "LTest;",
+    target_method: str = "onClick",
+):
+    return emit_event_listener_smali(
+        class_desc=class_desc,
+        target_desc=target_desc,
+        target_method=target_method,
+        listener_kind="click",
+    )

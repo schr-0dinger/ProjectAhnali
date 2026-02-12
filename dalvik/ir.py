@@ -329,6 +329,53 @@ class DIfZ(DInstr):
         self.true = true_block
         self.false = false_block
 
+
+class DPackedSwitch(DInstr):
+    def __init__(self, *, cond, first_key, targets, default_block):
+        self.cond = cond
+        self.first_key = int(first_key)
+        self.targets = list(targets)
+        self.default = default_block
+
+    def __repr__(self):
+        return (
+            f"packed-switch {self.cond} first={self.first_key} "
+            f"cases={len(self.targets)} default=B{self.default.id}"
+        )
+
+
+class DSparseSwitch(DInstr):
+    def __init__(self, *, cond, keys, targets, default_block):
+        if len(keys) != len(targets):
+            raise ValueError("sparse-switch keys and targets must have the same length")
+        self.cond = cond
+        self.keys = [int(k) for k in keys]
+        self.targets = list(targets)
+        self.default = default_block
+
+    def __repr__(self):
+        return (
+            f"sparse-switch {self.cond} cases={len(self.keys)} "
+            f"default=B{self.default.id}"
+        )
+
+
+class DMonitorEnter(DInstr):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f"monitor-enter {self.value}"
+
+
+class DMonitorExit(DInstr):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f"monitor-exit {self.value}"
+
+
 class DGoto(DInstr):
     def __init__(self, target):
         self.target = target

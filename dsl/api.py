@@ -277,10 +277,17 @@ class _UISpec:
         self.items = items
 
 
-class _OnClickSpec:
-    def __init__(self, button_id, stmts):
-        self.button_id = button_id
+class _EventSpec:
+    def __init__(self, event_kind, target_id, stmts):
+        self.event_kind = event_kind
+        self.target_id = target_id
         self.stmts = stmts
+
+
+class _OnClickSpec(_EventSpec):
+    def __init__(self, button_id, stmts):
+        super().__init__("click", button_id, stmts)
+        self.button_id = button_id
 
 
 class _ActivitySpec:
@@ -304,8 +311,12 @@ class AppConfig:
         uses: list[str] | tuple[str, ...] | None = None,
         uninstall_first: bool = True,
         output_apk: str | None = None,
+        signing_mode: str = "debug",
         keystore_path: str | None = None,
         keystore_alias: str = "androiddebugkey",
+        keystore_pass: str | None = None,
+        key_pass: str | None = None,
+        verify_reproducible: bool = False,
     ):
         self.package = package
         self.min_sdk = min_sdk
@@ -318,8 +329,12 @@ class AppConfig:
         self.uses = list(uses) if uses else []
         self.uninstall_first = uninstall_first
         self.output_apk = output_apk
+        self.signing_mode = signing_mode
         self.keystore_path = keystore_path
         self.keystore_alias = keystore_alias
+        self.keystore_pass = keystore_pass
+        self.key_pass = key_pass
+        self.verify_reproducible = bool(verify_reproducible)
 
 
 class AppSpec:
@@ -344,8 +359,12 @@ class AppSpec:
             "show_action_bar": app_config.show_action_bar,
             "uninstall_first": app_config.uninstall_first,
             "output_apk": app_config.output_apk,
+            "signing_mode": app_config.signing_mode,
             "keystore_path": app_config.keystore_path,
             "keystore_alias": app_config.keystore_alias,
+            "keystore_pass": app_config.keystore_pass,
+            "key_pass": app_config.key_pass,
+            "verify_reproducible": app_config.verify_reproducible,
         }
         config_kwargs = {k: v for k, v in config_kwargs.items() if v is not None}
         config_kwargs.update(kwargs)
@@ -378,8 +397,12 @@ def app_config(
     uses: list[str] | tuple[str, ...] | None = None,
     uninstall_first: bool = True,
     output_apk: str | None = None,
+    signing_mode: str = "debug",
     keystore_path: str | None = None,
     keystore_alias: str = "androiddebugkey",
+    keystore_pass: str | None = None,
+    key_pass: str | None = None,
+    verify_reproducible: bool = False,
 ):
     return AppConfig(
         package=package,
@@ -393,8 +416,12 @@ def app_config(
         uses=uses,
         uninstall_first=uninstall_first,
         output_apk=output_apk,
+        signing_mode=signing_mode,
         keystore_path=keystore_path,
         keystore_alias=keystore_alias,
+        keystore_pass=keystore_pass,
+        key_pass=key_pass,
+        verify_reproducible=verify_reproducible,
     )
 
 
@@ -404,6 +431,16 @@ def state(**kwargs):
 
 def ui(*items):
     return _UISpec(*items)
+
+
+def _make_event_spec(event_kind, target_id, stmts=None):
+    if stmts is None:
+        def decorator(fn):
+            return _EventSpec(event_kind, target_id, _parse_handler_ast(fn))
+        return decorator
+    if callable(stmts):
+        return _EventSpec(event_kind, target_id, _parse_handler_ast(stmts))
+    return _EventSpec(event_kind, target_id, stmts)
 
 
 def on_click(button_id, stmts=None):
@@ -425,6 +462,26 @@ def on_click_map(mapping):
             stmts = _parse_handler_ast(stmts)
         specs.append(_OnClickSpec(button_id, stmts))
     return specs
+
+
+def on_change(view_id, stmts=None):
+    return _make_event_spec("change", view_id, stmts)
+
+
+def on_text_change(view_id, stmts=None):
+    return _make_event_spec("text_change", view_id, stmts)
+
+
+def on_item_selected(view_id, stmts=None):
+    return _make_event_spec("item_selected", view_id, stmts)
+
+
+def on_menu_item_selected(view_id, stmts=None):
+    return _make_event_spec("menu_item_selected", view_id, stmts)
+
+
+def on_focus_change(view_id, stmts=None):
+    return _make_event_spec("focus_change", view_id, stmts)
 
 
 def Navigate(target):
@@ -503,15 +560,15 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     state_spec = None
     ui_spec = None
     theme_spec = Theme()
-    click_specs = []
+    event_specs = []
     resources = {"app_name": "AnaliPreview"}
     label_locked = False
 
     for part in activity_spec.parts:
         if isinstance(part, (list, tuple)):
             for subpart in part:
-                if isinstance(subpart, _OnClickSpec):
-                    click_specs.append(subpart)
+                if isinstance(subpart, _EventSpec):
+                    event_specs.append(subpart)
             continue
         if isinstance(part, State):
             state_spec = part
@@ -529,8 +586,8 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             pass
         elif isinstance(part, Theme):
             theme_spec = part
-        elif isinstance(part, _OnClickSpec):
-            click_specs.append(part)
+        elif isinstance(part, _EventSpec):
+            event_specs.append(part)
 
     state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
@@ -569,8 +626,8 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         ctx._lint_warnings.append(
             "State values are global across Screens. Screen-local state is not yet supported."
         )
-    program = ctx.build_program(click_specs, resources=resources)
-    required_artifacts, jar_allowlist = registry.collect_deps(ui_spec.items, click_specs)
+    program = ctx.build_program(event_specs, resources=resources)
+    required_artifacts, jar_allowlist = registry.collect_deps(ui_spec.items, event_specs)
     program.required_artifacts = required_artifacts
     program.jar_allowlist = jar_allowlist
     app_cfg = _extract_app_config(activity_spec, caller_module)
@@ -582,7 +639,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     explicit_perms = DEFAULT_CAPABILITY_REGISTRY.resolve_permissions(app_cfg.uses)
     inferred_perms = [
         *infer_permissions_from_ui(ui_spec.items),
-        *infer_permissions_from_handlers(click_specs),
+        *infer_permissions_from_handlers(event_specs),
     ]
     seen = set()
     merged = []

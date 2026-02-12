@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
 import json
 import os
 import shutil
@@ -14,7 +15,11 @@ import xml.etree.ElementTree as ET
 from alpha_pipeline import alpha_pipeline
 from apk.project import render_manifest
 from apk.resources import AndroidResources, resources_from_mapping, resources_from_program
-from emit.smali_activity import emit_activity_wrapper_smali, emit_click_listener_smali
+from emit.smali_activity import (
+    emit_activity_wrapper_smali,
+    emit_click_listener_smali,
+    emit_event_listener_smali,
+)
 
 
 def _class_desc_from_smali(smali_text: str) -> str:
@@ -531,19 +536,25 @@ def emit_build_dir_from_program(
             extra_out.write_text(extra_smali, encoding="utf-8")
     if support_classes:
         for entry in sorted(support_classes, key=lambda e: e[0]):
+            listener_kind = "click"
             if len(entry) == 2:
                 class_desc, target_method = entry
                 target_desc = wrapper_target_desc or class_name
-            else:
+            elif len(entry) == 3:
                 class_desc, target_method, target_desc = entry
+            elif len(entry) == 4:
+                class_desc, target_method, target_desc, listener_kind = entry
+            else:
+                raise RuntimeError(f"Unsupported support class entry: {entry!r}")
             listener_path = _class_desc_to_path(class_desc).with_suffix(".smali")
             listener_out = build_dir / "smali" / listener_path
             listener_out.parent.mkdir(parents=True, exist_ok=True)
             listener_out.write_text(
-                emit_click_listener_smali(
+                emit_event_listener_smali(
                     class_desc=class_desc,
                     target_desc=target_desc,
                     target_method=target_method,
+                    listener_kind=listener_kind,
                 ),
                 encoding="utf-8",
             )
@@ -740,6 +751,70 @@ def _ensure_debug_keystore(keystore_path: Path, alias: str = "androiddebugkey") 
     subprocess.run(cmd, check=True)
 
 
+def _resolve_signing_params(
+    *,
+    out_dir: Path,
+    signing_mode: str = "debug",
+    keystore_path: str | Path | None = None,
+    keystore_alias: str = "androiddebugkey",
+    keystore_pass: str | None = None,
+    key_pass: str | None = None,
+) -> tuple[Path, str, str, str, bool]:
+    mode = str(signing_mode or "debug").strip().lower()
+    if mode not in {"debug", "release"}:
+        raise RuntimeError("signing_mode must be 'debug' or 'release'")
+
+    alias = str(keystore_alias or "androiddebugkey")
+    if mode == "debug":
+        ks_path = Path(keystore_path) if keystore_path is not None else (out_dir / "debug.keystore")
+        return ks_path, alias, "android", "android", True
+
+    # release mode
+    if keystore_path is None:
+        raise RuntimeError("Release signing requires keystore_path")
+    if not keystore_pass:
+        raise RuntimeError("Release signing requires keystore_pass")
+    if not key_pass:
+        key_pass = keystore_pass
+    return Path(keystore_path), alias, str(keystore_pass), str(key_pass), False
+
+
+def _zip_content_digest(
+    archive_path: str | Path,
+    *,
+    ignore_prefixes: tuple[str, ...] = (),
+) -> str:
+    digest = hashlib.sha256()
+    with zipfile.ZipFile(archive_path, "r") as zf:
+        names = sorted(
+            name for name in zf.namelist() if not any(name.startswith(prefix) for prefix in ignore_prefixes)
+        )
+        for name in names:
+            data = zf.read(name)
+            digest.update(name.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(hashlib.sha256(data).digest())
+    return digest.hexdigest()
+
+
+def _verify_reproducible_archive(
+    archive_path: str | Path,
+    digest_path: str | Path,
+) -> str:
+    current = _zip_content_digest(archive_path)
+    digest_path = Path(digest_path)
+    if digest_path.exists():
+        previous = digest_path.read_text(encoding="utf-8").strip()
+        if previous and previous != current:
+            raise RuntimeError(
+                "Reproducibility check failed: archive content hash changed "
+                f"(previous={previous}, current={current})."
+            )
+    digest_path.parent.mkdir(parents=True, exist_ok=True)
+    digest_path.write_text(current + "\n", encoding="utf-8")
+    return current
+
+
 def _extract_aar_jars(extra_aars: list[str | Path], out_dir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     jar_paths = []
@@ -787,12 +862,9 @@ def _resolve_extra_aars_from_manifest(
             path = libs_dir / path
         if path.exists():
             resolved.append(path)
-    aars = [
-        p
-        for p in resolved
-        if p.suffix == ".aar"
-        and any(p.name.startswith(f"{artifact}-") for artifact in required_artifacts)
-    ]
+    # Manifest "resolved" contains the closure produced during AAR fetch.
+    # Keep all AARs whenever AAR artifacts are requested so transitives are available.
+    aars = [p for p in resolved if p.suffix == ".aar"] if required_artifacts else []
     jars = []
     if jar_allowlist:
         for p in resolved:
@@ -802,7 +874,15 @@ def _resolve_extra_aars_from_manifest(
             base = stem.rsplit("-", 1)[0] if "-" in stem else stem
             if base in jar_allowlist:
                 jars.append(p)
-    return aars + jars
+    out = []
+    seen = set()
+    for p in [*aars, *jars]:
+        key = str(p.resolve()) if p.exists() else str(p)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    return out
 
 
 def _resolve_extra_aars(frontend_ir, extra_aars: list[str | Path] | None) -> list[str | Path] | None:
@@ -901,8 +981,11 @@ def package_apk_from_dex(
     debuggable: bool = False,
     show_action_bar: bool = True,
     api: int | None = None,
+    signing_mode: str = "debug",
     keystore_path: str | Path | None = None,
     keystore_alias: str = "androiddebugkey",
+    keystore_pass: str | None = None,
+    key_pass: str | None = None,
     output_apk: str | Path | None = None,
     activity_name: str | None = None,
     activity_class_desc: str | None = None,
@@ -912,6 +995,8 @@ def package_apk_from_dex(
     permissions: list[str] | None = None,
     permission_entries: list[str] | None = None,
     application_entries: list[str] | None = None,
+    verify_reproducible: bool = False,
+    reproducible_digest_path: str | Path | None = None,
 ) -> Path:
     """
     Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
@@ -1049,10 +1134,22 @@ def package_apk_from_dex(
     with zipfile.ZipFile(unsigned_apk, "a") as zf:
         zf.write(dex_path, "classes.dex")
 
-    if keystore_path is None:
-        keystore_path = out_dir / "debug.keystore"
-    keystore_path = Path(keystore_path)
-    _ensure_debug_keystore(keystore_path, alias=keystore_alias)
+    if verify_reproducible:
+        digest_path = reproducible_digest_path or (out_dir / "unsigned.apk.sha256")
+        _verify_reproducible_archive(unsigned_apk, digest_path)
+
+    keystore_path, keystore_alias, store_pass, key_pass, ensure_debug = _resolve_signing_params(
+        out_dir=out_dir,
+        signing_mode=signing_mode,
+        keystore_path=keystore_path,
+        keystore_alias=keystore_alias,
+        keystore_pass=keystore_pass,
+        key_pass=key_pass,
+    )
+    if ensure_debug:
+        _ensure_debug_keystore(keystore_path, alias=keystore_alias)
+    elif not keystore_path.exists():
+        raise RuntimeError(f"Release keystore not found: {keystore_path}")
 
     subprocess.run(
         [
@@ -1060,10 +1157,12 @@ def package_apk_from_dex(
             "sign",
             "--ks",
             str(keystore_path),
+            "--ks-key-alias",
+            keystore_alias,
             "--ks-pass",
-            "pass:android",
+            f"pass:{store_pass}",
             "--key-pass",
-            "pass:android",
+            f"pass:{key_pass}",
             "--out",
             str(signed_apk),
             str(unsigned_apk),
@@ -1095,12 +1194,17 @@ def build_install_run(
     show_action_bar: bool = True,
     api: int | None = None,
     smali_jar: str | None = None,
+    signing_mode: str = "debug",
     keystore_path: str | Path | None = None,
     keystore_alias: str = "androiddebugkey",
+    keystore_pass: str | None = None,
+    key_pass: str | None = None,
     output_apk: str | Path | None = None,
     uninstall_first: bool = True,
     extra_aars: list[str | Path] | None = None,
     permissions: list[str] | None = None,
+    verify_reproducible: bool = False,
+    reproducible_digest_path: str | Path | None = None,
 ) -> Path:
     """
     One-command flow: compile -> smali -> dex -> apk -> install -> run.
@@ -1177,8 +1281,11 @@ def build_install_run(
         debuggable=debuggable,
         show_action_bar=show_action_bar,
         api=api,
+        signing_mode=signing_mode,
         keystore_path=keystore_path,
         keystore_alias=keystore_alias,
+        keystore_pass=keystore_pass,
+        key_pass=key_pass,
         output_apk=output_apk,
         activity_class_desc=wrapper_class_desc,
         resources=res_obj,
@@ -1186,6 +1293,8 @@ def build_install_run(
         permissions=permissions,
         permission_entries=perm_entries,
         application_entries=app_entries,
+        verify_reproducible=verify_reproducible,
+        reproducible_digest_path=reproducible_digest_path,
     )
 
     adb = _adb_path()

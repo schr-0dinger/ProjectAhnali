@@ -461,11 +461,20 @@ def click_handler(name, body):
     Define a click handler method with signature:
     static name(Landroid/view/View;)V
     """
-    return method(
+    return event_handler(
         name,
+        body,
         params=["view"],
         param_types=["Landroid/view/View;"],
-        return_type=None,
+    )
+
+
+def event_handler(name, body, *, params=None, param_types=None, return_type=None):
+    return method(
+        name,
+        params=params or [],
+        param_types=param_types or [],
+        return_type=return_type,
         body=body,
     )
 
@@ -486,6 +495,82 @@ def on_click_view(view, handler_name="onClick", listener_var="listener", listene
         ),
         call_stmt(
             "setOnClickListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/view/View;",
+        ),
+    ]
+
+
+def on_change_view(view, handler_name="onChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliChangeListener;"):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnCheckedChangeListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/CompoundButton;",
+        ),
+    ]
+
+
+def on_text_change_view(view, handler_name="onTextChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliTextChangeListener;"):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "addTextChangedListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/TextView;",
+        ),
+    ]
+
+
+def on_item_selected_view(view, handler_name="onItemSelected", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliItemSelectedListener;"):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnItemSelectedListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/AdapterView;",
+        ),
+    ]
+
+
+def on_focus_change_view(view, handler_name="onFocusChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliFocusChangeListener;"):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnFocusChangeListener",
             args=[view, var(listener_var)],
             return_type=None,
             invoke_kind="virtual",

@@ -31,6 +31,10 @@ from dalvik.ir import (
     DMoveException,
     DInstanceOf,
     DIfZ,
+    DPackedSwitch,
+    DSparseSwitch,
+    DMonitorEnter,
+    DMonitorExit,
     DArrayLength,
     DFilledNewArray,
     DCompare,
@@ -283,9 +287,18 @@ def emit_method_smali(method: DalvikMethod):
             elif instr.__class__.__name__ == "DIfZ":
                 referenced.add(instr.true.id)
                 referenced.add(instr.false.id)
+            elif isinstance(instr, DPackedSwitch):
+                referenced.add(instr.default.id)
+                referenced.update(target.id for target in instr.targets)
+            elif isinstance(instr, DSparseSwitch):
+                referenced.add(instr.default.id)
+                referenced.update(target.id for target in instr.targets)
 
     for start, end, handler, _ in method.try_regions:
         referenced.update({start.id, end.id, handler.id})
+
+    switch_payloads = []
+    switch_payload_idx = 0
 
     for block in method.blocks.values():
         has_instr = bool(block.instructions)
@@ -514,6 +527,12 @@ def emit_method_smali(method: DalvikMethod):
             elif isinstance(instr, DMoveException):
                 rd = reg_map[instr.dst.ssa]
                 lines.append(f"    move-exception {rd}")
+            elif isinstance(instr, DMonitorEnter):
+                rv = reg_map[instr.value.ssa]
+                lines.append(f"    monitor-enter {rv}")
+            elif isinstance(instr, DMonitorExit):
+                rv = reg_map[instr.value.ssa]
+                lines.append(f"    monitor-exit {rv}")
 
             elif isinstance(instr, (DAdd, DSub, DMul, DDiv, DRem)):
                 rd = reg_map[instr.dst.ssa]
@@ -735,6 +754,37 @@ def emit_method_smali(method: DalvikMethod):
                 lines.append(
                     f"    goto :B{instr.false.id}"
                 )
+            elif isinstance(instr, DPackedSwitch):
+                r = reg_map[instr.cond.ssa]
+                payload_label = f":pswitch_data_{switch_payload_idx}"
+                switch_payload_idx += 1
+                lines.append(f"    packed-switch {r}, {payload_label}")
+                lines.append(f"    goto :B{instr.default.id}")
+
+                payload = [f"  {payload_label}", f"    .packed-switch {instr.first_key}"]
+                for target in instr.targets:
+                    payload.append(f"        :B{target.id}")
+                payload.append("    .end packed-switch")
+                switch_payloads.extend(payload)
+            elif isinstance(instr, DSparseSwitch):
+                if instr.keys != sorted(instr.keys):
+                    raise RuntimeError("sparse-switch keys must be sorted ascending")
+                if len(set(instr.keys)) != len(instr.keys):
+                    raise RuntimeError("sparse-switch keys must be unique")
+                if len(instr.keys) != len(instr.targets):
+                    raise RuntimeError("sparse-switch keys/targets length mismatch")
+
+                r = reg_map[instr.cond.ssa]
+                payload_label = f":sswitch_data_{switch_payload_idx}"
+                switch_payload_idx += 1
+                lines.append(f"    sparse-switch {r}, {payload_label}")
+                lines.append(f"    goto :B{instr.default.id}")
+
+                payload = [f"  {payload_label}", "    .sparse-switch"]
+                for key, target in zip(instr.keys, instr.targets):
+                    payload.append(f"        {int(key)} -> :B{target.id}")
+                payload.append("    .end sparse-switch")
+                switch_payloads.extend(payload)
 
             elif instr.__class__.__name__ == "DReturnVoid":
                 lines.append("    return-void")
@@ -767,6 +817,10 @@ def emit_method_smali(method: DalvikMethod):
             elif isinstance(instr, DThrow):
                 rd = reg_map[instr.value.ssa]
                 lines.append(f"    throw {rd}")
+
+    if switch_payloads:
+        lines.append("")
+        lines.extend(switch_payloads)
 
     if method.try_regions:
         lines.append("")
