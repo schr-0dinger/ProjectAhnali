@@ -3,6 +3,18 @@ from __future__ import annotations
 from dsl.widgets import _UIColumn, _UIConstraint, _UIRelative, _UIRow, _UIScreen
 from dsl.ast import _StmtSnackbar, _StmtIf, _StmtWhile, _StmtAssign, _StmtSetText, _ExprBinary, _ExprCompare, _ExprBoolOp, _ExprUnary, _ExprFormat
 
+_ARTIFACT_JAR_ALLOWLIST: dict[str, set[str]] = {
+    # ConstraintLayout runtime depends on these jars.
+    "constraintlayout": {"constraintlayout-core", "collection"},
+}
+
+
+def jar_allowlist_for_artifacts(artifacts) -> set[str]:
+    allowlist: set[str] = set()
+    for artifact in artifacts or []:
+        allowlist.update(_ARTIFACT_JAR_ALLOWLIST.get(str(artifact), set()))
+    return allowlist
+
 
 def _walk_items(items, *, need_constraint_flag):
     for item in items:
@@ -44,8 +56,7 @@ def collect_dependency_artifacts(ui_items, click_specs=None):
     jar_allowlist = set()
     if need_constraint[0]:
         required_aars.add("constraintlayout")
-        # ConstraintLayout runtime depends on constraintlayout-core + collection.
-        jar_allowlist.update({"constraintlayout-core", "collection"})
+    jar_allowlist.update(jar_allowlist_for_artifacts(required_aars))
     if need_material[0]:
         required_aars.add("material")
     return required_aars, jar_allowlist

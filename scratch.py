@@ -40,14 +40,14 @@ from dsl.app import (
     ProgressBar,
     View,
     toast,
-    snackbar,
+    # snackbar,  # Material feedback path disabled for native-only scratch.
     simple_dialog,
     dp,
     sp,
     max_width,
 )
 from dsl.colors import colors
-from dsl.widgets import Relative, Constraint
+from dsl.widgets import Relative
 
 
 APP_PACKAGE = "com.anali.widgetzoo"
@@ -58,6 +58,8 @@ APP_VERSION_NAME = "1.0"
 APP_DEBUGGABLE = False
 APP_SHOW_ACTION_BAR = False
 APP_LABEL = "Anali Widget Zoo"
+
+# APP_PLUGINS = ["material"]  # Disabled: keep scratch.py on native/core widgets only.
 
 
 NAV_TO_SCREEN = {
@@ -117,7 +119,8 @@ def icon_action():
 
 @on_click("fab_action")
 def fab_action():
-    snackbar("FloatingActionButton clicked")
+    # snackbar("FloatingActionButton clicked")  # Disabled (Material path).
+    toast("FloatingActionButton clicked")
 
 
 @on_click("show_toast_btn")
@@ -127,7 +130,8 @@ def show_toast_btn():
 
 @on_click("show_snackbar_btn")
 def show_snackbar_btn():
-    snackbar("Snackbar from handler")
+    # snackbar("Snackbar from handler")  # Disabled (Material path).
+    toast("Snackbar disabled in native mode")
 
 
 @on_click("show_dialog_btn")
@@ -177,7 +181,7 @@ items = [
                 Divider(id="home_div_3", color="divider"),
                 Button("Selectors (Slider / Dropdown / Popup / RadioGroup)", id="go_selectors", icon="S"),
                 Divider(id="home_div_4", color="divider"),
-                Button("Layouts (Row / Column / Relative / Constraint)", id="go_layouts", icon="L"),
+                Button("Layouts (Row / Column / Relative)", id="go_layouts", icon="L"),
                 Divider(id="home_div_5", color="divider"),
                 Button("Containers (Container / Card / View / Divider)", id="go_containers", icon="C"),
                 Divider(id="home_div_6", color="divider"),
@@ -277,32 +281,7 @@ items = [
             style=preset.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
             width=max_width,
         ),
-        Constraint(
-            Text(
-                "Constraint Top",
-                id="layouts_con_top",
-                constraints={
-                    "top_to_top": "parent",
-                    "left_to_left": "parent",
-                    "right_to_right": "parent",
-                    "horizontal_bias": 0.5,
-                },
-            ),
-            Button(
-                "Constraint Button",
-                id="layouts_con_btn",
-                constraints={
-                    "top_to_bottom": "layouts_con_top",
-                    "left_to_left": "parent",
-                    "right_to_right": "parent",
-                    "horizontal_bias": 0.5,
-                },
-            ),
-            id="layouts_constraint_demo",
-            margin=(dp(16), dp(0), dp(16), dp(12)),
-            style=preset.Card(padding=(dp(12), dp(12), dp(12), dp(12))),
-            width=max_width,
-        ),
+        # ConstraintLayout demo intentionally disabled to keep scratch.py native-only.
     ),
     Screen(
         "ContainersDemo",
@@ -349,7 +328,7 @@ items = [
         Row(Button("Back", id="back_dialogs"), id="dialogs_back_row", margin=(dp(16), dp(12), dp(16), dp(12))),
         Text("Dialogs / Toast / Snackbar", id="dialogs_title", style=title_style, padding=(dp(16), dp(0), dp(16), dp(8))),
         Button("Show Toast", id="show_toast_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
-        Button("Show Snackbar", id="show_snackbar_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
+        Button("Show Snackbar (native fallback)", id="show_snackbar_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
         Button("Show SimpleDialog", id="show_dialog_btn", margin=(dp(16), dp(0), dp(16), dp(8))),
     ),
     Screen(

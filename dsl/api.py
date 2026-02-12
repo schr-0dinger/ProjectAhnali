@@ -317,6 +317,8 @@ class AppConfig:
         keystore_pass: str | None = None,
         key_pass: str | None = None,
         verify_reproducible: bool = False,
+        deps: list[str] | tuple[str, ...] | None = None,
+        auto_deps: bool = False,
     ):
         self.package = package
         self.min_sdk = min_sdk
@@ -335,6 +337,8 @@ class AppConfig:
         self.keystore_pass = keystore_pass
         self.key_pass = key_pass
         self.verify_reproducible = bool(verify_reproducible)
+        self.deps = list(deps) if deps else []
+        self.auto_deps = bool(auto_deps)
 
 
 class AppSpec:
@@ -403,6 +407,8 @@ def app_config(
     keystore_pass: str | None = None,
     key_pass: str | None = None,
     verify_reproducible: bool = False,
+    deps: list[str] | tuple[str, ...] | None = None,
+    auto_deps: bool = False,
 ):
     return AppConfig(
         package=package,
@@ -422,6 +428,8 @@ def app_config(
         keystore_pass=keystore_pass,
         key_pass=key_pass,
         verify_reproducible=verify_reproducible,
+        deps=deps,
+        auto_deps=auto_deps,
     )
 
 
@@ -627,10 +635,29 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             "State values are global across Screens. Screen-local state is not yet supported."
         )
     program = ctx.build_program(event_specs, resources=resources)
-    required_artifacts, jar_allowlist = registry.collect_deps(ui_spec.items, event_specs)
-    program.required_artifacts = required_artifacts
-    program.jar_allowlist = jar_allowlist
     app_cfg = _extract_app_config(activity_spec, caller_module)
+    inferred_required_artifacts, inferred_jar_allowlist = registry.collect_deps(ui_spec.items, event_specs)
+    explicit_required_artifacts = set(app_cfg.deps or [])
+    if app_cfg.auto_deps:
+        final_required_artifacts = set(inferred_required_artifacts)
+        final_required_artifacts.update(explicit_required_artifacts)
+    else:
+        missing_deps = sorted(set(inferred_required_artifacts) - explicit_required_artifacts)
+        if missing_deps:
+            missing_list = ", ".join(missing_deps)
+            raise RuntimeError(
+                "External libraries are explicit-only by default. "
+                f"Missing declared dependencies: [{missing_list}]. "
+                "Declare them with app_config(deps=[...]) or APP_DEPS, "
+                "or set app_config(auto_deps=True)/APP_AUTO_DEPS=True."
+            )
+        final_required_artifacts = set(explicit_required_artifacts)
+        final_required_artifacts.update(inferred_required_artifacts)
+    from .deps import jar_allowlist_for_artifacts
+    final_jar_allowlist = set(inferred_jar_allowlist)
+    final_jar_allowlist.update(jar_allowlist_for_artifacts(final_required_artifacts))
+    program.required_artifacts = final_required_artifacts
+    program.jar_allowlist = final_jar_allowlist
     from .capabilities import (
         DEFAULT_CAPABILITY_REGISTRY,
         infer_permissions_from_handlers,
@@ -675,24 +702,38 @@ _install_units_into_builtins()
 
 
 def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None) -> AppConfig:
-    def _normalize_uses(value):
+    def _normalize_list(value, *, field_name):
         if value is None:
             return []
         if isinstance(value, str):
             return [v.strip() for v in value.split(",") if v.strip()]
         if isinstance(value, (list, tuple, set)):
             return [str(v).strip() for v in value if str(v).strip()]
-        raise RuntimeError("uses must be a list or comma-separated string")
+        raise RuntimeError(f"{field_name} must be a list or comma-separated string")
 
-    def _merge_uses(base, extra):
+    def _merge_unique(base, extra):
         out = list(base or [])
         for item in extra or []:
             if item not in out:
                 out.append(item)
         return out
 
+    def _normalize_bool(value, *, field_name):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, int):
+            return bool(value)
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"1", "true", "yes", "on"}:
+                return True
+            if lowered in {"0", "false", "no", "off"}:
+                return False
+        raise RuntimeError(f"{field_name} must be a boolean")
+
     cfg = AppConfig()
     extra_uses = []
+    extra_deps = []
     for part in activity_spec.parts:
         if isinstance(part, AppConfig):
             cfg = part
@@ -706,7 +747,9 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
             if isinstance(macro, dict):
                 macro = dict(macro)
                 macro_uses = macro.pop("uses", None)
-                extra_uses.extend(_normalize_uses(macro_uses))
+                macro_deps = macro.pop("deps", None)
+                extra_uses.extend(_normalize_list(macro_uses, field_name="uses"))
+                extra_deps.extend(_normalize_list(macro_deps, field_name="deps"))
                 cfg = AppConfig(**{**cfg.__dict__, **macro})
             for key, attr in (
                 ("APP_PACKAGE", "package"),
@@ -719,6 +762,8 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
                 ("APP_NO_ACTION_BAR", "show_action_bar"),
                 ("APP_LABEL", "label"),
                 ("APP_USES", "uses"),
+                ("APP_DEPS", "deps"),
+                ("APP_AUTO_DEPS", "auto_deps"),
                 ("APP_UNINSTALL_FIRST", "uninstall_first"),
                 ("APP_OUTPUT_APK", "output_apk"),
                 ("APP_KEYSTORE_PATH", "keystore_path"),
@@ -729,8 +774,12 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
                     if key == "APP_NO_ACTION_BAR":
                         value = not bool(value)
                     if key == "APP_USES":
-                        extra_uses.extend(_normalize_uses(value))
+                        extra_uses.extend(_normalize_list(value, field_name="uses"))
+                    elif key == "APP_DEPS":
+                        extra_deps.extend(_normalize_list(value, field_name="deps"))
                     else:
                         setattr(cfg, attr, value)
-    cfg.uses = _merge_uses(cfg.uses, extra_uses)
+    cfg.uses = _merge_unique(cfg.uses, extra_uses)
+    cfg.deps = _merge_unique(cfg.deps, extra_deps)
+    cfg.auto_deps = _normalize_bool(cfg.auto_deps, field_name="auto_deps")
     return cfg

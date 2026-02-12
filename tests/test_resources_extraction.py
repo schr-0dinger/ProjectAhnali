@@ -1,5 +1,5 @@
 from alpha_pipeline import alpha_pipeline
-from dsl.app import app, activity, ui, on_click, state
+from dsl.app import app, activity, app_config, ui, on_click, state
 from dsl.widgets import AppBar, Button, Text, TextField
 
 
@@ -127,6 +127,7 @@ def test_snackbar_lowers_to_material_snackbar():
     prog = app(
         activity(
             "MainActivity",
+            app_config(deps=["material"]),
             ui(Button("Go", id="go")),
             _snack,
         )
