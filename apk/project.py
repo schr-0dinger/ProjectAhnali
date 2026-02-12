@@ -19,6 +19,7 @@ def render_manifest(
     version_name: str = "1.0",
     debuggable: bool = False,
     show_action_bar: bool = True,
+    theme: str | None = None,
     activity_name: str = ".MainActivity",
     label: str = "@string/app_name",
     icon: str | None = None,
@@ -28,7 +29,9 @@ def render_manifest(
 ) -> str:
     debug_attr = ' android:debuggable="true"' if debuggable else ""
     theme_attr = ""
-    if not show_action_bar:
+    if theme:
+        theme_attr = f' android:theme="{theme}"'
+    elif not show_action_bar:
         theme_attr = ' android:theme="@android:style/Theme.Material.Light.NoActionBar"'
     icon_attr = f' android:icon="{icon}"' if icon else ""
     perm_lines = []

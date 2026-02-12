@@ -139,12 +139,23 @@ class AndroidResources:
         values_dir.mkdir(parents=True, exist_ok=True)
         strings_path = values_dir / "strings.xml"
         strings_path.write_text(self.render_strings_xml(), encoding="utf-8")
+        colors_path = values_dir / "colors.xml"
         if self.colors:
-            (values_dir / "colors.xml").write_text(self.render_colors_xml(), encoding="utf-8")
+            colors_path.write_text(self.render_colors_xml(), encoding="utf-8")
+        elif colors_path.exists():
+            colors_path.unlink()
+
+        dimens_path = values_dir / "dimens.xml"
         if self.dimens:
-            (values_dir / "dimens.xml").write_text(self.render_dimens_xml(), encoding="utf-8")
+            dimens_path.write_text(self.render_dimens_xml(), encoding="utf-8")
+        elif dimens_path.exists():
+            dimens_path.unlink()
+
+        styles_path = values_dir / "styles.xml"
         if self.styles:
-            (values_dir / "styles.xml").write_text(self.render_styles_xml(), encoding="utf-8")
+            styles_path.write_text(self.render_styles_xml(), encoding="utf-8")
+        elif styles_path.exists():
+            styles_path.unlink()
         return strings_path
 
     def ensure_string_id(self, name: str, value: int) -> int:

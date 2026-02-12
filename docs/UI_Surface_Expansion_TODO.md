@@ -273,6 +273,45 @@ All animations and effects must be explicit and imperative.
 - [ ] Error messages with widget id and field name.
 - [ ] Warnings for degraded fallback behavior.
 
+## Phase 14: Material Plugin Backlog (Pending)
+
+### Input
+- [ ] Number field specialization.
+- [ ] Rating control.
+- [ ] Select variants beyond basic dropdown.
+- [ ] Transfer list.
+- [ ] Toggle button group.
+
+### Data Display
+- [ ] Avatar.
+- [ ] Badge.
+- [ ] Chip and chip group.
+- [ ] List.
+- [ ] Table.
+- [ ] Tooltip.
+- [ ] Material icon pack helpers.
+- [ ] Typography presets.
+
+### Feedback
+- [ ] Material alert surface.
+- [ ] Backdrop.
+- [ ] Material dialog surface (replace platform fallback path).
+- [ ] Skeleton loading states.
+
+### Surfaces
+- [ ] Accordion / expansion panel.
+- [ ] Paper surface primitive.
+
+### Navigation
+- [ ] Bottom navigation.
+- [ ] Breadcrumbs.
+- [ ] Drawer.
+- [ ] Link surface.
+- [ ] Pagination.
+- [ ] Speed dial.
+- [ ] Stepper.
+- [ ] Tabs.
+
 ## Non-Goals (Locked)
 
 - [ ] No reactive hooks.

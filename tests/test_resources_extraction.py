@@ -123,7 +123,7 @@ def _snack():
     snackbar("Saved")
 
 
-def test_snackbar_uses_material_when_available_with_toast_fallback():
+def test_snackbar_lowers_to_material_snackbar():
     prog = app(
         activity(
             "MainActivity",
@@ -134,5 +134,5 @@ def test_snackbar_uses_material_when_available_with_toast_fallback():
 
     result = alpha_pipeline(prog)
     smali = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
-    assert "Landroid/widget/Toast;->makeText" in smali
-    assert "Lcom/google/android/material/snackbar/Snackbar;->make" not in smali
+    assert "Lcom/google/android/material/snackbar/Snackbar;->make(Landroid/view/View;Ljava/lang/CharSequence;I)Lcom/google/android/material/snackbar/Snackbar;" in smali
+    assert "Lcom/google/android/material/snackbar/Snackbar;->show()V" in smali

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import io
 import hashlib
 import json
 import os
@@ -11,6 +12,7 @@ import subprocess
 import tempfile
 import zipfile
 import xml.etree.ElementTree as ET
+from xml.sax.saxutils import escape
 
 from alpha_pipeline import alpha_pipeline
 from apk.project import render_manifest
@@ -115,25 +117,61 @@ def _parse_symbol_lines(text: str) -> dict[tuple[str, str], object]:
 
 
 def _read_aar_package(aar_path: Path) -> str | None:
+    import re
+
     try:
         with zipfile.ZipFile(aar_path, "r") as zf:
             data = zf.read("AndroidManifest.xml")
+            class_pkgs: set[str] = set()
+            try:
+                jar_bytes = zf.read("classes.jar")
+                with zipfile.ZipFile(io.BytesIO(jar_bytes), "r") as jzf:
+                    for name in jzf.namelist():
+                        if not name.endswith(".class"):
+                            continue
+                        if "/" not in name:
+                            continue
+                        pkg = name.rsplit("/", 1)[0].replace("/", ".")
+                        if pkg and not pkg.startswith("META-INF"):
+                            class_pkgs.add(pkg)
+            except Exception:
+                class_pkgs = set()
     except Exception:
         return None
-    import re
 
     strings = re.findall(rb"[A-Za-z0-9_\\.]{3,}", data)
-    candidates = []
-    for s in strings:
-        if b"." not in s:
+    candidates: list[str] = []
+    for raw in strings:
+        s = raw.decode("utf-8", errors="ignore")
+        if "." not in s:
             continue
-        if s.startswith(b"http"):
+        if s.startswith("http") or s.startswith("schemas."):
             continue
-        candidates.append(s.decode("utf-8", errors="ignore"))
+        if "android.com" in s or ".." in s:
+            continue
+        parts = s.split(".")
+        if len(parts) < 2:
+            continue
+        if not all(part and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) for part in parts):
+            continue
+        # Java package names are lowercase by convention; class-like tokens
+        # (e.g. androidx.startup.InitializationProvider) should not be chosen.
+        if any(any(ch.isupper() for ch in part) for part in parts):
+            continue
+        candidates.append(s)
+
     if not candidates:
         return None
-    # Prefer likely application-style packages.
-    candidates.sort(key=lambda v: (0 if v.startswith("com.") else 1, -v.count("."), -len(v)))
+
+    def _is_pkg_match(c: str) -> int:
+        if c in class_pkgs:
+            return 2
+        if any(pkg.startswith(c + ".") for pkg in class_pkgs):
+            return 1
+        return 0
+
+    # Prefer candidates that match the classes.jar package tree.
+    candidates.sort(key=lambda v: (-_is_pkg_match(v), 0 if v.startswith("com.") else 1, -v.count("."), -len(v)))
     return candidates[0]
 
 
@@ -147,7 +185,14 @@ def _read_aar_rtxt(aar_path: Path) -> dict[tuple[str, str], object]:
 
 
 _ANDROID_NS = "http://schemas.android.com/apk/res/android"
+_TOOLS_NS = "http://schemas.android.com/tools"
 ET.register_namespace("android", _ANDROID_NS)
+_BLOCKED_AAR_APP_COMPONENTS = {
+    # These auto-init paths pull Kotlin/lifecycle runtime chains that are not
+    # currently bundled in Anali's runtime envelope.
+    "androidx.startup.InitializationProvider",
+    "androidx.profileinstaller.ProfileInstallReceiver",
+}
 
 
 def _strip_ns(tag: str) -> str:
@@ -159,9 +204,19 @@ def _strip_ns(tag: str) -> str:
 def _format_attrs(attrs: dict) -> str:
     parts = []
     for key, value in attrs.items():
-        if key.startswith("{%s}" % _ANDROID_NS):
-            key = "android:" + key.split("}", 1)[1]
-        parts.append(f'{key}="{value}"')
+        if key.startswith("{"):
+            ns, local = key[1:].split("}", 1)
+            if ns == _ANDROID_NS:
+                key = "android:" + local
+            elif ns == _TOOLS_NS:
+                # tools: merge directives are not needed in merged output and
+                # would require declaring xmlns:tools on the root manifest.
+                continue
+            else:
+                # Drop unknown namespaced attributes from library manifests.
+                continue
+        safe_value = escape(str(value), {'"': "&quot;"})
+        parts.append(f'{key}="{safe_value}"')
     return " ".join(parts)
 
 
@@ -207,6 +262,9 @@ def _read_aar_manifest_entries(aar_path: Path) -> tuple[list[str], list[str]]:
         for node in list(app):
             tag = _strip_ns(node.tag)
             if tag in ("provider", "service", "receiver"):
+                comp_name = node.attrib.get(f"{{{_ANDROID_NS}}}name", "").strip()
+                if comp_name in _BLOCKED_AAR_APP_COMPONENTS:
+                    continue
                 app_entries.append(_element_to_xml(node, ""))
     return perm_entries, app_entries
 
@@ -314,10 +372,10 @@ def _generate_resource_symbols(
 ) -> Path | None:
     aapt2 = _tool_path("aapt2")
     android_jar = _find_android_jar(_find_android_sdk(), api=api)
-    out_dir = Path(out_dir)
-    with tempfile.TemporaryDirectory(dir=out_dir) as tmp:
+    build_out_dir = Path(out_dir)
+    with tempfile.TemporaryDirectory(dir=build_out_dir) as tmp:
         tmp = Path(tmp)
-        existing_res = out_dir / "res"
+        existing_res = build_out_dir / "res"
         if existing_res.exists():
             shutil.copytree(existing_res, tmp / "res")
         else:
@@ -353,10 +411,10 @@ def _generate_resource_symbols(
         if extra_res_dirs:
             extra_compiled_root = tmp / "compiled" / "extra"
             for idx, res_dir in enumerate(extra_res_dirs):
-                out_dir = extra_compiled_root / f"aar_{idx}"
-                out_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.run([aapt2, "compile", "--dir", str(res_dir), "-o", str(out_dir)], check=True)
-                compiled_dirs.append(out_dir)
+                compiled_dir = extra_compiled_root / f"aar_{idx}"
+                compiled_dir.mkdir(parents=True, exist_ok=True)
+                subprocess.run([aapt2, "compile", "--dir", str(res_dir), "-o", str(compiled_dir)], check=True)
+                compiled_dirs.append(compiled_dir)
 
         flat_files = []
         for compiled_dir in compiled_dirs:
@@ -426,7 +484,7 @@ def _generate_resource_symbols(
         if not symbols_path.exists():
             return None
         # Copy to build dir for debugging
-        out_symbols = out_dir / "symbols.R.txt"
+        out_symbols = build_out_dir / "symbols.R.txt"
         out_symbols.write_text(symbols_path.read_text(), encoding="utf-8")
         return out_symbols
 
@@ -969,6 +1027,30 @@ def _merge_dex_with_aars(
     return merged_dex
 
 
+def _select_manifest_theme(
+    *,
+    extra_aars: list[str | Path] | None,
+    show_action_bar: bool,
+) -> str | None:
+    has_material = False
+    for aar_path in extra_aars or []:
+        p = Path(aar_path)
+        if p.suffix != ".aar":
+            continue
+        if p.name.startswith("material-"):
+            has_material = True
+            break
+
+    if has_material:
+        if show_action_bar:
+            return "@style/Theme.MaterialComponents.Light"
+        return "@style/Theme.MaterialComponents.Light.NoActionBar"
+
+    if not show_action_bar:
+        return "@android:style/Theme.Material.Light.NoActionBar"
+    return None
+
+
 def package_apk_from_dex(
     dex_path: str | Path,
     out_dir: str | Path = "build",
@@ -980,6 +1062,7 @@ def package_apk_from_dex(
     version_name: str = "1.0",
     debuggable: bool = False,
     show_action_bar: bool = True,
+    theme: str | None = None,
     api: int | None = None,
     signing_mode: str = "debug",
     keystore_path: str | Path | None = None,
@@ -1047,6 +1130,7 @@ def package_apk_from_dex(
                 version_name=version_name,
                 debuggable=debuggable,
                 show_action_bar=show_action_bar,
+                theme=theme,
                 activity_name=activity_name,
                 label=label,
                 icon=icon_ref,
@@ -1280,6 +1364,7 @@ def build_install_run(
         version_name=version_name,
         debuggable=debuggable,
         show_action_bar=show_action_bar,
+        theme=_select_manifest_theme(extra_aars=extra_aars, show_action_bar=show_action_bar),
         api=api,
         signing_mode=signing_mode,
         keystore_path=keystore_path,

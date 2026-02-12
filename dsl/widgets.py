@@ -544,6 +544,15 @@ class _UIProgressBar(_UIView):
         self.indeterminate = bool(indeterminate)
 
 
+# TODO(material-pending): Add DSL primitives for pending Material components.
+# Planned additions:
+# - NumberField, Rating, TransferList, ToggleButtonGroup
+# - Avatar, Badge, Chip, List, Table, Tooltip, Typography helpers
+# - Alert, Backdrop, Skeleton
+# - Accordion, Paper
+# - BottomNavigation, Breadcrumbs, Drawer, Link, Pagination, SpeedDial, Stepper, Tabs
+
+
 class _UISimpleDialog:
     def __init__(self, title, message):
         self.title = title

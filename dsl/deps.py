@@ -46,5 +46,6 @@ def collect_dependency_artifacts(ui_items, click_specs=None):
         required_aars.add("constraintlayout")
         # ConstraintLayout runtime depends on constraintlayout-core + collection.
         jar_allowlist.update({"constraintlayout-core", "collection"})
-    # Material is handled by plugins; core stays minimal.
+    if need_material[0]:
+        required_aars.add("material")
     return required_aars, jar_allowlist

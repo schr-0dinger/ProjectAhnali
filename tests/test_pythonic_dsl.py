@@ -367,6 +367,7 @@ def test_pythonic_dsl_supports_missing_core_widgets():
     smali = alpha_pipeline(prog.build())["smali_class"]
     assert "Landroid/widget/ImageView;" in smali
     assert "Landroid/widget/ProgressBar;" in smali
+    assert "Landroid/widget/ProgressBar;-><init>(Landroid/content/Context;Landroid/util/AttributeSet;I)V" in smali
     assert "Landroid/widget/RadioGroup;" in smali
     assert "Landroid/view/View;" in smali
     assert "Landroid/content/res/Resources;->getIdentifier" in smali

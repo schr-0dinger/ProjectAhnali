@@ -62,7 +62,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-12)
 
-- ✅ Test suite reality: `152 passed` (`PYTHONPATH=. pytest -q`)
+- ✅ Test suite reality: `166 passed` (`PYTHONPATH=. pytest -q`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -70,8 +70,8 @@ Hybrid rollout status:
 - ✅ Manifest permission injection exists
 - ✅ AAR manifest entry merge exists
 - ✅ Library `R$*` class generation from merged symbols exists
-- Direct AAR resolution exists
-- ⚠️ Transitive AAR inference remains pending
+- ✅ Direct AAR resolution exists
+- ✅ Transitive AAR inference exists (manifest closure path + deterministic selection)
 
 ---
 
@@ -119,12 +119,12 @@ Implemented:
 - ✅ Compile-time AST parse of handler statements
 - ✅ Supported control flow in handlers: assignment, `if`, `while`, navigation, toast/dialog/log/exit/set_text
 
-Pending expansion:
-- `on_change`
-- `on_text_change`
-- `on_item_selected`
-- `on_menu_item_selected`
-- `on_focus_change`
+Expanded and implemented:
+- ✅ `on_change`
+- ✅ `on_text_change`
+- ✅ `on_item_selected`
+- ✅ `on_menu_item_selected`
+- ✅ `on_focus_change`
 
 ---
 
@@ -228,9 +228,9 @@ Implemented opcode families and features:
 - ✅ Exceptions: `try/catch`, multi-handler ordering, `throw`
 - ✅ Wide constants + jumbo strings + move-exception
 
-Pending high-priority gaps:
-- ⚠️ `switch` (packed/sparse)
-- ⚠️ monitor-enter/monitor-exit synchronization ops
+Recently completed high-priority coverage:
+- ✅ `switch` (packed/sparse) with payload emission
+- ✅ monitor-enter/monitor-exit synchronization ops
 
 ---
 
@@ -261,8 +261,8 @@ Tooling implemented:
 - ✅ AAR classes merge path via d8
 - ✅ Resource merge + symbol extraction path
 
-Pending:
-- ⚠️ Transitive AAR inference (auto full closure)
+Completed:
+- ✅ Transitive AAR inference (manifest-resolved closure path)
 
 ---
 
@@ -274,8 +274,11 @@ Implemented:
 - ✅ Build dir emission from frontend ProgramIR
 - ✅ Wrapper activity emission
 - ✅ Click listener support class emission
+- ✅ Multi-event support class emission (`click`, `change`, `text_change`, `item_selected`, `focus_change`, `menu_item_selected`)
 - ✅ APK packaging via `aapt2` + `apksigner`
 - ✅ Debug keystore auto-generation
+- ✅ Release signing mode with explicit keystore workflow
+- ✅ Reproducibility hash check support for unsigned archive content
 - ✅ Resource writing (strings/colors/dimens/styles)
 - ✅ Stable id path support for resources
 
@@ -285,7 +288,6 @@ Integration and smoke:
 - ✅ Device smoke scaffolding in tests
 
 Pending:
-- ⚠️ Formal release variant flow (user keystore workflow hardening)
 - ⚠️ Size/perf benchmark automation
 
 ---
@@ -428,14 +430,14 @@ Click and touch:
 - ❌ on_fling
 
 Input events:
-- ⚠️ on_text_change
+- ✅ on_text_change
 - ❌ on_editor_action
-- ⚠️ on_focus_change
+- ✅ on_focus_change
 - ❌ on_key
-- ⚠️ on_change (Switch/Checkbox/Radio)
+- ✅ on_change (Switch/Checkbox/Radio)
 - ⚠️ on_slider_change
-- ⚠️ on_item_selected
-- ⚠️ on_menu_item_selected
+- ✅ on_item_selected
+- ✅ on_menu_item_selected
 
 Navigation:
 - ✅ Navigate
@@ -709,7 +711,7 @@ Phase status:
 - ✅ Phase 1 Typography v1 (core)
 - ✅ Phase 2 Control Tinting v1 (core)
 - ✅ Phase 3 ColorStateList DSL (core)
-- ⚠️ Phase 4 Event surface expansion
+- ⚠️ Phase 4 Event surface expansion (core listener set shipped; slider/radiogroup paths pending)
 - ⚠️ Phase 5 Input configuration expansion
 - ⚠️ Phase 6 Accessibility expansion (partial: content description path exists; full phase pending)
 - ⚠️ Phase 7 Elevation and shadow
@@ -754,8 +756,8 @@ Phase status:
 
 ## 16) Immediate Unified Execution Plan
 
-1. ⚠️ Finalize transitive AAR inference and error diagnostics.
-2. ⚠️ Execute Phase 4 event surface expansion (`on_change`, text/item/menu/focus listeners).
+1. ✅ Finalize transitive AAR inference and error diagnostics.
+2. ✅ Execute Phase 4 core event surface expansion (`on_change`, text/item/menu/focus listeners).
 3. ⚠️ Execute Phase 5 input configuration fields + lowering.
 4. ⚠️ Complete Phase 6 accessibility surface (`important_for_accessibility`, alias coverage, tests).
 5. ⚠️ Begin Hybrid Phase 1 (NDK/JNI skeleton, capability-scoped entrypoints).

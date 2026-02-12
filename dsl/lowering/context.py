@@ -142,7 +142,7 @@ class _PythonicContext:
         if kind == "app_bar":
             return "Landroid/widget/Toolbar;"
         if kind == "fab":
-            return "Landroid/widget/Button;"
+            return "Landroid/view/View;"
         if kind == "raised_button":
             return "Landroid/widget/Button;"
         if kind == "flat_button":
@@ -1577,9 +1577,23 @@ class _PythonicContext:
                 progress = 0
             if progress > span:
                 progress = span
+            # ProgressBar default style is spinner. Use the horizontal style
+            # constructor for determinate bars so value/max are visually shown.
+            if item.indeterminate:
+                progress_ctor = new("Landroid/widget/ProgressBar;", args=[var("ctx")])
+            else:
+                progress_ctor = new(
+                    "Landroid/widget/ProgressBar;",
+                    args=[var("ctx"), const(0), const(0x1010078)],
+                    arg_types=[
+                        "Landroid/content/Context;",
+                        "Landroid/util/AttributeSet;",
+                        "I",
+                    ],
+                )
             body.extend(
                 [
-                    assign(item.id, new("Landroid/widget/ProgressBar;", args=[var("ctx")])),
+                    assign(item.id, progress_ctor),
                     call_stmt(
                         "setIndeterminate",
                         args=[var(item.id), const(1 if item.indeterminate else 0)],
@@ -3014,29 +3028,44 @@ class _PythonicContext:
         return out
 
     def _compile_snackbar_stmt(self, stmt):
-        # Material Snackbar requires resource R classes that are not bundled yet.
-        # Fall back to Toast to avoid runtime crashes.
         msg_key = self._add_string_resource("snackbar_msg", stmt.message)
         msg_load, msg_expr = self._load_string_expr(msg_key, prefix="snackbar_msg")
-        toast_duration = 0 if stmt.duration == 0 else 1
+        # DSL duration uses 0/1 (short/long). Snackbar constants are -1/0.
+        if stmt.duration == 0:
+            snackbar_duration = -1
+        elif stmt.duration == 1:
+            snackbar_duration = 0
+        else:
+            snackbar_duration = int(stmt.duration)
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *msg_load,
             assign(
-                "toast_obj",
+                "snackbar_anchor",
                 call(
-                    "makeText",
-                    args=[var("ctx"), msg_expr, const(toast_duration)],
+                    "findViewById",
+                    args=[var("ctx"), const(0x01020002)],
+                    return_type="Landroid/view/View;",
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/app/Activity;",
+                ),
+            ),
+            assign(
+                "snackbar_obj",
+                call(
+                    "make",
+                    args=[var("snackbar_anchor"), msg_expr, const(snackbar_duration)],
                     invoke_kind="static",
-                    owner="Landroid/widget/Toast;",
+                    owner="Lcom/google/android/material/snackbar/Snackbar;",
                 ),
             ),
             call_stmt(
                 "show",
-                args=[var("toast_obj")],
+                args=[var("snackbar_obj")],
                 return_type=None,
                 invoke_kind="virtual",
-                owner="Landroid/widget/Toast;",
+                owner="Lcom/google/android/material/snackbar/Snackbar;",
             ),
         ]
 
