@@ -1,7 +1,7 @@
 import pytest
 
 from alpha_pipeline import alpha_pipeline
-from dsl.app import Gradient, activity, app, column, dp, gradient, text, ui, view
+from dsl.app import Gradient, activity, app, app_config, column, dp, gradient, text, ui, view
 
 
 def _build_smali(*items):
@@ -108,3 +108,37 @@ def test_visual_effects_border_width_requires_color():
     )
     with pytest.raises(RuntimeError, match="border_color is required when border_width is set"):
         prog.build()
+
+
+def test_visual_effects_blur_lowers_when_min_sdk_is_31_or_higher():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(min_sdk=31),
+            ui(
+                view(id="blur_box", width=48, height=48, blur_radius=dp(6)),
+            ),
+        )
+    ).build()
+    smali = alpha_pipeline(prog)["smali_class"]
+    assert (
+        "Landroid/graphics/RenderEffect;->createBlurEffect"
+        "(FFLandroid/graphics/Shader$TileMode;)Landroid/graphics/RenderEffect;"
+    ) in smali
+    assert "Landroid/view/View;->setRenderEffect(Landroid/graphics/RenderEffect;)V" in smali
+
+
+def test_visual_effects_blur_is_skipped_and_warned_when_min_sdk_below_31():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(min_sdk=30),
+            ui(
+                view(id="blur_box", width=48, height=48, blur_radius=dp(6)),
+            ),
+        )
+    ).build()
+    smali = alpha_pipeline(prog)["smali_class"]
+    assert "Landroid/graphics/RenderEffect;->createBlurEffect" not in smali
+    assert "Landroid/view/View;->setRenderEffect(Landroid/graphics/RenderEffect;)V" not in smali
+    assert any("blur_radius is ignored" in warning for warning in prog.lint_warnings)

@@ -154,6 +154,7 @@ class _UIText:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -201,6 +202,7 @@ class _UIText:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -254,6 +256,7 @@ class _UIButton:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -302,6 +305,7 @@ class _UIButton:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -342,6 +346,7 @@ class _UIView:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -377,6 +382,7 @@ class _UIView:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -414,6 +420,7 @@ class _UIRow:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -447,6 +454,7 @@ class _UIRow:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -484,6 +492,7 @@ class _UIColumn:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -517,6 +526,7 @@ class _UIColumn:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -549,6 +559,7 @@ class _UIRelative:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -577,6 +588,7 @@ class _UIRelative:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -604,6 +616,14 @@ class _UIConstraint:
         text_shadow_radius=None,
         text_shadow_dx=None,
         text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        blur_radius=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -625,6 +645,14 @@ class _UIConstraint:
         self.text_shadow_radius = text_shadow_radius
         self.text_shadow_dx = text_shadow_dx
         self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -880,6 +908,7 @@ class Style:
         border_color=None,
         border_radius=None,
         ripple_color=None,
+        blur_radius=None,
         clip_to_outline=None,
         clip_children=None,
     ):
@@ -924,6 +953,7 @@ class Style:
         self.border_color = border_color
         self.border_radius = border_radius
         self.ripple_color = ripple_color
+        self.blur_radius = blur_radius
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
 
@@ -988,6 +1018,7 @@ class Style:
             border_color=override.border_color if override.border_color is not None else self.border_color,
             border_radius=override.border_radius if override.border_radius is not None else self.border_radius,
             ripple_color=override.ripple_color if override.ripple_color is not None else self.ripple_color,
+            blur_radius=override.blur_radius if override.blur_radius is not None else self.blur_radius,
             clip_to_outline=(
                 override.clip_to_outline
                 if override.clip_to_outline is not None
@@ -1253,6 +1284,7 @@ def text(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1301,6 +1333,7 @@ def text(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1353,6 +1386,7 @@ def button(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1402,6 +1436,7 @@ def button(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1441,6 +1476,7 @@ def view(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1477,6 +1513,7 @@ def view(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1513,6 +1550,7 @@ def row(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1547,6 +1585,7 @@ def row(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1583,6 +1622,7 @@ def column(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1617,6 +1657,7 @@ def column(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1648,6 +1689,7 @@ def relative(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1677,6 +1719,7 @@ def relative(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1708,6 +1751,7 @@ def constraint(
     border_color=None,
     border_radius=None,
     ripple_color=None,
+    blur_radius=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1737,6 +1781,7 @@ def constraint(
         border_color=border_color,
         border_radius=border_radius,
         ripple_color=ripple_color,
+        blur_radius=blur_radius,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,

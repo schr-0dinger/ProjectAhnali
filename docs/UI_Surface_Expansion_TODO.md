@@ -175,9 +175,9 @@ All animations and effects must be explicit and imperative.
 - [x] Lower to `setClipToOutline` / `setClipChildren`.
 
 ### 8.6 Blur (API 31+)
-- [ ] Add `blur_radius`.
-- [ ] Lower to `RenderEffect.createBlurEffect`.
-- [ ] Warn at compile time when `min_sdk < 31`.
+- [x] Add `blur_radius`.
+- [x] Lower to `RenderEffect.createBlurEffect`.
+- [x] Warn at compile time when `min_sdk < 31`.
 
 ### 8.7 Static Transforms
 - [ ] Add `rotation`.

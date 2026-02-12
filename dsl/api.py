@@ -629,15 +629,21 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             resources["app_name"] = str(getattr(mod, "APP_LABEL"))
             label_locked = True
 
+    app_cfg = _extract_app_config(activity_spec, caller_module)
     plugin_names = _resolve_plugins(activity_spec, caller_module)
     registry = load_plugins(["core", *plugin_names])
-    ctx = _PythonicContext(state_spec, ui_spec, theme_spec, registry=registry)
+    ctx = _PythonicContext(
+        state_spec,
+        ui_spec,
+        theme_spec,
+        min_sdk=app_cfg.min_sdk,
+        registry=registry,
+    )
     if has_screens and state_spec.values:
         ctx._lint_warnings.append(
             "State values are global across Screens. Screen-local state is not yet supported."
         )
     program = ctx.build_program(event_specs, resources=resources)
-    app_cfg = _extract_app_config(activity_spec, caller_module)
     inferred_required_artifacts, inferred_jar_allowlist = registry.collect_deps(ui_spec.items, event_specs)
     explicit_required_artifacts = set(app_cfg.deps or [])
     if app_cfg.auto_deps:

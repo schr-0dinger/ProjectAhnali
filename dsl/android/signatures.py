@@ -444,6 +444,10 @@ _METHOD_SIGS_MANUAL = {
     ("Landroid/view/View;", "setAlpha", "virtual"): (None, ["F"]),
     ("Landroid/view/View;", "setClipToOutline", "virtual"): (None, ["Z"]),
     ("Landroid/view/View;", "setElevation", "virtual"): (None, ["F"]),
+    ("Landroid/view/View;", "setRenderEffect", "virtual"): (
+        None,
+        ["Landroid/graphics/RenderEffect;"],
+    ),
     ("Landroid/view/View;", "setStateListAnimator", "virtual"): (None, ["Landroid/animation/StateListAnimator;"]),
     ("Landroid/view/ViewGroup;", "setClipChildren", "virtual"): (None, ["Z"]),
     ("Landroid/widget/TextView;", "setShadowLayer", "virtual"): (None, ["F", "F", "F", "I"]),
@@ -457,6 +461,10 @@ _METHOD_SIGS_MANUAL = {
     ("Landroid/animation/ObjectAnimator;", "ofFloat", "static"): (
         "Landroid/animation/ObjectAnimator;",
         ["Ljava/lang/Object;", "Ljava/lang/String;", "[F"],
+    ),
+    ("Landroid/graphics/RenderEffect;", "createBlurEffect", "static"): (
+        "Landroid/graphics/RenderEffect;",
+        ["F", "F", "Landroid/graphics/Shader$TileMode;"],
     ),
     ("Landroid/animation/StateListAnimator;", "addState", "virtual"): (
         None,

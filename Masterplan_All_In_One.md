@@ -62,7 +62,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-12)
 
-- ✅ Test suite reality: `201 passed` (`PYTHONPATH=. pytest -q`)
+- ✅ Test suite reality: `203 passed` (`PYTHONPATH=. pytest -q`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -641,7 +641,7 @@ Navigation transitions:
 - ⚠️ back navigation animation
 
 Visual effects:
-- ⚠️ blur (API 31+) - TODO: Add a flag for API version check and fallback for older versions.
+- ✅ blur (API 31+) with compile-time min-sdk guard (`min_sdk < 31` => warn + skip lowering)
 - ✅ elevation shadow
 - ✅ text shadow
 - ✅ ripple
@@ -1177,9 +1177,9 @@ All animations and effects must be explicit and imperative.
 - [x] Lower to `setClipToOutline` / `setClipChildren`.
 
 ### 8.6 Blur (API 31+)
-- [ ] Add `blur_radius`.
-- [ ] Lower to `RenderEffect.createBlurEffect`.
-- [ ] Warn at compile time when `min_sdk < 31`. (Add if-else : if min_sdk>30, add blur-radius, else, nothing)
+- [x] Add `blur_radius`.
+- [x] Lower to `RenderEffect.createBlurEffect`.
+- [x] Warn at compile time when `min_sdk < 31`. (Add if-else : if min_sdk>30, add blur-radius, else, nothing)
 
 ### 8.7 Static Transforms
 - [ ] Add `rotation`.

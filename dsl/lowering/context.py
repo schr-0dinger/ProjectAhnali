@@ -108,10 +108,19 @@ from dsl.lowering.attr_registry import ATTR_METHODS
 
 
 class _PythonicContext:
-    def __init__(self, state_spec: State, ui_spec: Any, theme_spec: Theme, *, registry=None):
+    def __init__(
+        self,
+        state_spec: State,
+        ui_spec: Any,
+        theme_spec: Theme,
+        *,
+        min_sdk: int = 21,
+        registry=None,
+    ):
         self.state_spec = state_spec
         self.ui_spec = ui_spec
         self.theme_spec = theme_spec
+        self.min_sdk = int(min_sdk)
         self.registry = registry
         self.view_types = {}
         self.view_fields = {}
@@ -128,6 +137,7 @@ class _PythonicContext:
         self._local_vars = set()
         self._container_orientation = {self.root_id: "vertical"}
         self._lint_warnings = []
+        self._lint_warning_keys = set()
         self._screens = []
         self._screen_map = {}
         self._current_screen = None
@@ -408,6 +418,12 @@ class _PythonicContext:
         if isinstance(value, bool):
             return value
         raise RuntimeError(f"{field_name} must be a bool when provided.")
+
+    def _warn_once(self, key: str, message: str):
+        if key in self._lint_warning_keys:
+            return
+        self._lint_warning_keys.add(key)
+        self._lint_warnings.append(message)
 
     def _resolve_text_input_type_value(self, item):
         type_class_text = 0x00000001
@@ -2467,6 +2483,7 @@ class _PythonicContext:
         border_color_value = getattr(item, "border_color", None) if getattr(item, "border_color", None) is not None else getattr(style, "border_color", None)
         border_radius_value = getattr(item, "border_radius", None) if getattr(item, "border_radius", None) is not None else getattr(style, "border_radius", None)
         ripple_color_value = getattr(item, "ripple_color", None) if getattr(item, "ripple_color", None) is not None else getattr(style, "ripple_color", None)
+        blur_radius_value = getattr(item, "blur_radius", None) if getattr(item, "blur_radius", None) is not None else getattr(style, "blur_radius", None)
         clip_to_outline_value = (
             getattr(item, "clip_to_outline", None)
             if getattr(item, "clip_to_outline", None) is not None
@@ -2652,6 +2669,14 @@ class _PythonicContext:
                     arg_types=["Z"],
                     invoke_kind="virtual",
                     owner="Landroid/view/ViewGroup;",
+                )
+            )
+
+        if blur_radius_value is not None:
+            out.extend(
+                self._emit_blur_effect(
+                    view_id=item.id,
+                    blur_radius_value=blur_radius_value,
                 )
             )
 
@@ -3324,6 +3349,63 @@ class _PythonicContext:
                 invoke_kind="virtual",
                 owner="Landroid/view/View;",
             )
+        )
+        return out
+
+    def _emit_blur_effect(self, *, view_id, blur_radius_value):
+        if self.min_sdk < 31:
+            self._warn_once(
+                "blur_radius_min_sdk",
+                f"blur_radius is ignored because min_sdk={self.min_sdk} < 31 (RenderEffect API 31+).",
+            )
+            return []
+
+        normalized_radius = self._normalize_dimension_value(
+            blur_radius_value,
+            field_name="blur_radius",
+        )
+        if normalized_radius.value < 0:
+            raise RuntimeError("blur_radius must be >= 0.")
+
+        out = []
+        radius_setup, radius_expr = self._dimension_float_expr(
+            normalized_radius,
+            field_name="blur_radius",
+            prefix=f"{view_id}_blur_radius",
+        )
+        tile_mode_var = self._next_tmp(f"{view_id}_blur_tile_mode")
+        effect_var = self._next_tmp(f"{view_id}_blur_effect")
+        out.extend(radius_setup)
+        out.extend(
+            [
+                assign(
+                    tile_mode_var,
+                    static_get(
+                        "CLAMP",
+                        "Landroid/graphics/Shader$TileMode;",
+                        owner="Landroid/graphics/Shader$TileMode;",
+                    ),
+                ),
+                assign(
+                    effect_var,
+                    call(
+                        "createBlurEffect",
+                        args=[radius_expr, radius_expr, var(tile_mode_var)],
+                        return_type="Landroid/graphics/RenderEffect;",
+                        arg_types=["F", "F", "Landroid/graphics/Shader$TileMode;"],
+                        invoke_kind="static",
+                        owner="Landroid/graphics/RenderEffect;",
+                    ),
+                ),
+                call_stmt(
+                    "setRenderEffect",
+                    args=[var(view_id), var(effect_var)],
+                    return_type=None,
+                    arg_types=["Landroid/graphics/RenderEffect;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                ),
+            ]
         )
         return out
 
