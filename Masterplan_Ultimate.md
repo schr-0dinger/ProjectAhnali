@@ -8,6 +8,10 @@
 - Every DSL feature has a runtime path (toolchain + device test).
 - We grow bytecode coverage by production impact, not by completeness first.
 
+**Plan reconciliation (2026-02-12)**
+- ✅ Reviewed and reconciled: `Anali_Masterplan_v7.md`, `Anali_implement_immediate_plan.md`, `Masterplan_Ultimate.md`, `Anali_Dual_Mode_Architecture.md`.
+- ✅ Canonical position: static AOT mode is default and identity; hybrid runtime is optional, capability-scoped, and non-structural by default.
+
 ---
 
 ## 0) Current Baseline (Done)
@@ -18,10 +22,34 @@
 - ✅ String constants + basic calls + constructor support.
 - ✅ Smoke tests (adb install/run + logcat check).
 
-**Status Notes (2026-02-10)**
-- Stack navigation exists; system back handling is not wired.
-- Direct AAR resolution is implemented; transitive AAR inference is not wired.
-- Capability/permission inference and manifest injection are not implemented yet.
+**Status Notes (2026-02-12, reality-checked)**
+- ✅ Stack navigation exists and system back handling is wired (`onSystemBack` + wrapper `onBackPressed` bridge).
+- ✅ Capability/permission inference and manifest permission injection are implemented.
+- ✅ Direct AAR resolution is implemented.
+- ✅ Library `R$*` class generation from merged symbols is implemented.
+- Transitive AAR inference is not wired yet.
+- ✅ Current test reality: `152 passed` (`PYTHONPATH=. pytest -q`).
+
+---
+
+## 0.1) Dual-Mode Architecture (Integrated)
+
+### Mode A — Static Mode (Default, Canonical)
+- ✅ Entire UI compiled at build time.
+- ✅ Navigation graph and handlers compiled.
+- ✅ State wiring compiled.
+- ✅ No runtime interpreter or reflection.
+
+### Mode B — Hybrid Mode (Optional Plugin Layer)
+- Optional activation via app config/plugin boundary.
+- Stage-gated and capability-scoped.
+- UI remains static; hybrid logic can mutate state and trigger approved actions.
+- Android API access remains via Anali capability wrappers.
+
+### Hybrid Rollout Phases
+- ✅ Phase 0 (static foundation): deterministic emission, navigation, capabilities, permissions/manifest wiring, AAR merge foundations.
+- Phase 1: native execution layer (NDK + JNI bridge).
+- Phase 2: optional Python runtime plugin on top of JNI bridge, with bounded mutation rules.
 
 ---
 
@@ -62,7 +90,7 @@ app(
   - click handlers → auto‑generated methods
 
 ### 1.3 Implementation Steps
-1. ✅ Add `dsl/sugar.py` with:
+1. ✅ Add Pythonic sugar surface in `dsl/api.py` (re-exported by `dsl/app.py`) with:
    - `app(...)`, `activity(...)`, `state(...)`, `ui(...)`, `text(...)`, `button(...)`, `on_click(...)`
 2. ✅ Implement string‑expression compiler:
    - Simple tokenizer for `+=` and `f""` placeholders
@@ -86,22 +114,22 @@ app(
 
 ### 2.1 Minimal Layout (Phase C)
 - ✅ LinearLayout + addView (already done)
-- Set padding, gravity, layout params
-- TextView style knobs:
-  - `setTextSize`, `setTextColor`, `setGravity`
-- Button style knobs:
+- ✅ Set padding, layout params, and container gravity/alignment wiring
+- ✅ TextView style knobs:
+  - `setTextSize`, `setTextColor`, `setTextAlignment`
+- ✅ Button style knobs:
   - `setAllCaps`, `setEnabled`
 
 ### 2.2 Common Layouts
 - ✅ RelativeLayout / ConstraintLayout
-- Layout params builders
+- ✅ Layout params builders
 
 ### 2.3 Deliverables
 - `layout(...)` DSL wrappers:
-  - `column(...)`, `row(...)`, `stack(...)`
-  - `text(...)`, `button(...)`, `image(...)`
-- Automatic view registry and parent/child wiring
-- Tests for each layout primitive
+  - ✅ `column(...)`, ✅ `row(...)`, `stack(...)` (pending)
+  - ✅ `text(...)`, ✅ `button(...)`, ✅ `image(...)`
+- ✅ Automatic view registry and parent/child wiring
+- ✅ Tests for core layout primitives
 
 ---
 
@@ -109,7 +137,7 @@ app(
 
 ### 3.1 Must-Have Ops (App usability)
 - ✅ `invoke-interface`, `invoke-super`
-- ✅ `sget`, `sput` (iget/iput pending)
+- ✅ `sget`, `sput`, `iget`, `iput`
 - ✅ `check-cast`, `instance-of`
 - ✅ `new-array`, `aget`, `aput`
 - ✅ `move-result-object`
@@ -160,9 +188,10 @@ app(
 - SharedPreferences
 
 ### 4.2 UI APIs (2–4 weeks)
-- TextView / EditText / RecyclerView
-- Button click listeners with lambdas
-- View binding sugar
+- ✅ TextView / EditText
+- RecyclerView
+- ✅ Button click listeners (named handlers; lambdas intentionally unsupported)
+- ✅ View binding sugar
 
 ### 4.3 System APIs (4–8 weeks)
 - Notifications
@@ -171,30 +200,29 @@ app(
 - File picker / storage APIs
 
 ### 4.4 Deliverables
-- Signature database for SDK methods
+- ✅ Signature database for SDK methods
 - Permission DSL:
-  - `permission("CAMERA")`
-  - auto‑manifest updates
+  - ✅ `request_permission("CAMERA")` / `request_permissions(...)`
+  - ✅ auto‑manifest updates
 - Resource DSL:
-  - string resources, icons, styles
+  - ✅ string resources, icons, styles
 
 ### 4.5 Signature Database (Detailed Plan)
 **Goal:** Map Pythonic calls → exact Android signatures automatically.
 
 **Phase A: Minimal Curated Table**
-- YAML/JSON in repo: `signatures/android_core.json`
-- Hand‑curated entries for UI + core services
-- Loaded by DSL at import time
+- ✅ JSON signature DB in repo: `dsl/android/signatures_db.json`
+- ✅ Curated/manual signature entries for core calls
+- ✅ Loaded by DSL at import time
 
 **Phase B: SDK Extraction**
-- Parse `android.jar` / public stubs to generate signature index:
+- ✅ Parse `android.jar` / public stubs to generate signature index:
   - `class -> method -> [overloads]`
-- Generate a compact JSON for fast lookup
+- ✅ Signature tooling for DB generation (`tools/build_signature_db.py`)
 
 **Phase C: Overload Resolution**
-- Use arg count + known types to pick overload
-- If ambiguous, require explicit annotation
-- Emit user‑friendly error with suggested signatures
+- ✅ Use arg count + known/inferred types to pick overload
+- ✅ Fail with user-facing errors for mismatches
 
 **Phase D: Caching + Versioning**
 - Cache by SDK version in build dir
@@ -210,41 +238,41 @@ app(
 - Versioning + reproducible builds
 
 ### 5.1.a Build Variants + Signing
-- `debug` uses auto‑generated keystore
+- ✅ `debug` uses auto‑generated keystore
 - `release` requires user keystore + alias + passwords
 - Support v2/v3 signing (apksigner options)
 - Store keystore config in `build.toml` or env vars
 
 ### 5.2 Resource Pipeline
-- aapt2 resource staging
-- icons, strings, themes
+- ✅ aapt2 resource staging
+- ✅ icons, strings, themes
 - layout XML (optional)
 
 ### 5.2.b Library R Class Handling (Foundational)
-- Parse AAR `R.txt` + merged `R.txt` symbols from aapt2.
-- Generate library `R$*` smali classes (attrs/styleables/etc.) into dex.
-- Ensure resource IDs align with aapt2 output (stable IDs).
+- ✅ Parse AAR `R.txt` + merged `R.txt` symbols from aapt2.
+- ✅ Generate library `R$*` smali classes (attrs/styleables/etc.) into dex.
+- ✅ Ensure resource IDs align with aapt2 output (stable IDs).
 - Add tests with Material AAR to prevent `NoClassDefFoundError`.
 
 ### 5.2.a aapt2 Integration (Detailed)
-- Generate `AndroidManifest.xml` from DSL + permissions
+- ✅ Generate `AndroidManifest.xml` from DSL + permissions
 - Generate resource folders:
-  - `res/layout`, `res/drawable`, `res/values/strings.xml`
-- Invoke `aapt2 compile` and `aapt2 link`
-- Track `R.txt` equivalent mapping for resource IDs
+  - ✅ `res/drawable`, ✅ `res/values/strings.xml`
+- ✅ Invoke `aapt2 compile` and `aapt2 link`
+- ✅ Track `R.txt` equivalent mapping for resource IDs
 
 ### 5.3 Lint + Diagnostics
-- Type/arity verification (expanded)
-- Signature validation warnings
+- ✅ Type/arity verification (expanded)
+- ✅ Signature validation diagnostics
 - Smali verifier checks pre‑APK
 
 ### 5.3.a Conversion/Lint Passes
-- Primitive conversion correctness checks
-- Illegal invoke types flagged early
+- ✅ Primitive conversion correctness checks
+- ✅ Illegal invoke types flagged early
 - Array bounds warnings (optional)
 
 ### 5.4 CI + Regression
-- Unit + integration + device smoke tests
+- ✅ Unit + integration + device smoke scaffolding/tests
 - Golden smali snapshots in CI
 
 ---
@@ -263,6 +291,19 @@ app(
 - Release signing, variant builds, CI gating
 - Full smali bytecode coverage
 - Developer docs and examples
+
+---
+
+## 6.1) Dual-Mode Delivery Milestones
+
+### Milestone D — “Native Hybrid Bridge”
+- NDK integration and JNI boundary merged.
+- Capability-scoped native entrypoints only.
+
+### Milestone E — “Optional Python Plugin”
+- Optional embedded Python runtime behind explicit config.
+- State mutation + capability calls allowed; static UI invariants preserved.
+- Bounded dynamic regions only where explicitly declared mutable.
 
 ---
 
@@ -739,8 +780,9 @@ Acceptance criteria:
 1. ✅ Implement **Library R class handling** (merged symbols → library `R$*` smali).
 2. Validate **AAR class/resource merge** on device (Material smoke test).
 3. ✅ Draft **Navigation API** and wire minimal multi‑screen prototype.
-4. Start UI expansion **Wave A** from `docs/UI_Surface_Expansion_TODO.md` (Phases 1–3).
+4. ✅ Start UI expansion **Wave A** from `docs/UI_Surface_Expansion_TODO.md` (Phases 1–3).
 5. Start API modularization of `dsl/api.py` into the six domain modules above.
+6. Start Dual Mode **Phase 1**: NDK + JNI native execution layer (hybrid foundation).
 
 --- 
 
