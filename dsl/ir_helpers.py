@@ -522,6 +522,54 @@ def on_change_view(view, handler_name="onChange", listener_var="listener", liste
     ]
 
 
+def on_slider_change_view(
+    view,
+    handler_name="onChange",
+    listener_var="listener",
+    listener_class_desc="Lcom/anali/preview/AnaliSliderChangeListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnSeekBarChangeListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/SeekBar;",
+        ),
+    ]
+
+
+def on_radio_group_change_view(
+    view,
+    handler_name="onChange",
+    listener_var="listener",
+    listener_class_desc="Lcom/anali/preview/AnaliRadioGroupChangeListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnCheckedChangeListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/RadioGroup;",
+        ),
+    ]
+
+
 def on_text_change_view(view, handler_name="onTextChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliTextChangeListener;"):
     return [
         assign(

@@ -62,7 +62,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-12)
 
-- ✅ Test suite reality: `166 passed` (`PYTHONPATH=. pytest -q`)
+- ✅ Test suite reality: `201 passed` (`PYTHONPATH=. pytest -q`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -375,18 +375,18 @@ Typography:
 
 Color and background:
 - ✅ background_color
-- ⚠️ gradient background
+- ✅ gradient background
 - ❌ radial gradient
 - ❌ sweep gradient
-- ⚠️ border_width
-- ⚠️ border_color
-- ⚠️ border_radius
-- ⚠️ per-corner radius
-- ⚠️ ripple_color
-- ⚠️ opacity
+- ✅ border_width
+- ✅ border_color
+- ✅ border_radius
+- ✅ per-corner radius
+- ✅ ripple_color
+- ✅ opacity
 - ⚠️ elevation
-- ⚠️ clip_to_outline
-- ⚠️ clip_children
+- ✅ clip_to_outline
+- ✅ clip_children
 
 Stateful styling:
 - ✅ ColorState (default/pressed/disabled/selected/focused)
@@ -434,8 +434,8 @@ Input events:
 - ❌ on_editor_action
 - ✅ on_focus_change
 - ❌ on_key
-- ✅ on_change (Switch/Checkbox/Radio)
-- ⚠️ on_slider_change
+- ✅ on_change (Switch/Checkbox/Radio/Slider/RadioGroup)
+- ⚠️ on_slider_change (no dedicated alias; use `on_change`)
 - ✅ on_item_selected
 - ✅ on_menu_item_selected
 
@@ -642,11 +642,11 @@ Navigation transitions:
 
 Visual effects:
 - ⚠️ blur (API 31+) - TODO: Add a flag for API version check and fallback for older versions.
-- ⚠️ elevation shadow
-- ⚠️ text shadow
-- ⚠️ ripple
-- ⚠️ opacity
-- ⚠️ gradient
+- ✅ elevation shadow
+- ✅ text shadow
+- ✅ ripple
+- ✅ opacity
+- ✅ gradient
 - ⚠️ transform matrix
 
 ### 8.7 Advanced Graphics (Optional Future)
@@ -711,10 +711,10 @@ Phase status:
 - ✅ Phase 1 Typography v1 (core)
 - ✅ Phase 2 Control Tinting v1 (core)
 - ✅ Phase 3 ColorStateList DSL (core)
-- ⚠️ Phase 4 Event surface expansion (core listener set shipped; slider/radiogroup paths pending)
-- ⚠️ Phase 5 Input configuration expansion
-- ⚠️ Phase 6 Accessibility expansion (partial: content description path exists; full phase pending)
-- ⚠️ Phase 7 Elevation and shadow
+- ✅ Phase 4 Event surface expansion
+- ✅ Phase 5 Input configuration expansion
+- ✅ Phase 6 Accessibility expansion
+- ✅ Phase 7 Elevation and shadow
 - ⚠️ Phase 8 Visual effects pack
 - ⚠️ Phase 9 Explicit animation DSL
 - ⚠️ Phase 10 Theme channel expansion
@@ -758,10 +758,11 @@ Phase status:
 
 1. ✅ Finalize transitive AAR inference and error diagnostics.
 2. ✅ Execute Phase 4 core event surface expansion (`on_change`, text/item/menu/focus listeners).
-3. ⚠️ Execute Phase 5 input configuration fields + lowering.
-4. ⚠️ Complete Phase 6 accessibility surface (`important_for_accessibility`, alias coverage, tests).
-5. ⚠️ Begin Hybrid Phase 1 (NDK/JNI skeleton, capability-scoped entrypoints).
-6. ⚠️ Continue API modularization (`dsl/api.py` split into domain modules) while preserving compatibility.
+3. ✅ Execute Phase 5 input configuration fields + lowering.
+4. ✅ Complete Phase 6 accessibility surface (`important_for_accessibility`, alias coverage, tests).
+5. ✅ Execute Phase 7 elevation/shadow surface (`setElevation`, text shadow, pressed-elevation state animator).
+6. ⚠️ Begin Hybrid Phase 1 (NDK/JNI skeleton, capability-scoped entrypoints).
+7. ⚠️ Continue API modularization (`dsl/api.py` split into domain modules) while preserving compatibility.
 
 ---
 
@@ -1086,99 +1087,99 @@ All animations and effects must be explicit and imperative.
 ## Phase 4: Event Surface Expansion
 
 ### DSL API (`dsl/app.py`, `dsl/widgets.py`)
-- [ ] Add `on_change`.
-- [ ] Add `on_text_change`.
-- [ ] Add `on_item_selected`.
-- [ ] Add `on_menu_item_selected`.
-- [ ] Add `on_focus_change`.
+- [x] Add `on_change`.
+- [x] Add `on_text_change`.
+- [x] Add `on_item_selected`.
+- [x] Add `on_menu_item_selected`.
+- [x] Add `on_focus_change`.
 
 ### Lowering (`dsl/lowering/context.py`, support listener classes)
-- [ ] Slider -> `OnSeekBarChangeListener`.
-- [ ] Switch/Checkbox -> `OnCheckedChangeListener`.
-- [ ] RadioGroup -> `OnCheckedChangeListener`.
-- [ ] TextField -> `TextWatcher`.
-- [ ] Dropdown -> `OnItemSelectedListener`.
-- [ ] PopupMenu -> `OnMenuItemClickListener`.
+- [x] Slider -> `OnSeekBarChangeListener`.
+- [x] Switch/Checkbox -> `OnCheckedChangeListener`.
+- [x] RadioGroup -> `OnCheckedChangeListener`.
+- [x] TextField -> `TextWatcher`.
+- [x] Dropdown -> `OnItemSelectedListener`.
+- [x] PopupMenu -> `OnMenuItemClickListener`.
 
 ### Constraints
-- [ ] Named handlers only.
-- [ ] Compile-time ID validation.
-- [ ] No dynamic registration at runtime.
+- [x] Named handlers only.
+- [x] Compile-time ID validation.
+- [x] No dynamic registration at runtime.
 
 ## Phase 5: Input Configuration
 
 ### DSL (`dsl/widgets.py`)
-- [ ] Add TextField fields: `input_type`, `ime_options`, `max_length`, `single_line`, `password`, `auto_capitalize`, `numeric_only`.
+- [x] Add TextField fields: `input_type`, `ime_options`, `max_length`, `single_line`, `password`, `auto_capitalize`, `numeric_only`.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] `setInputType`.
-- [ ] `setImeOptions`.
-- [ ] `setFilters`.
-- [ ] `setSingleLine`.
-- [ ] `setTransformationMethod`.
+- [x] `setInputType`.
+- [x] `setImeOptions`.
+- [x] `setFilters`.
+- [x] `setSingleLine`.
+- [x] `setTransformationMethod`.
 
 ## Phase 6: Accessibility
 
 ### DSL (`dsl/widgets.py`)
-- [ ] Add `content_description`.
-- [ ] Add `important_for_accessibility`.
-- [ ] Add `accessibility_label` alias.
+- [x] Add `content_description`.
+- [x] Add `important_for_accessibility`.
+- [x] Add `accessibility_label` alias.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] `setContentDescription`.
-- [ ] `setImportantForAccessibility`.
+- [x] `setContentDescription`.
+- [x] `setImportantForAccessibility`.
 
 ## Phase 7: Elevation and Shadow
 
 ### DSL (`dsl/widgets.py`)
-- [ ] Add `elevation`.
-- [ ] Add `pressed_elevation`.
-- [ ] Add `text_shadow_color`.
-- [ ] Add `text_shadow_radius`.
-- [ ] Add `text_shadow_dx`.
-- [ ] Add `text_shadow_dy`.
+- [x] Add `elevation`.
+- [x] Add `pressed_elevation`.
+- [x] Add `text_shadow_color`.
+- [x] Add `text_shadow_radius`.
+- [x] Add `text_shadow_dx`.
+- [x] Add `text_shadow_dy`.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] `setElevation`.
-- [ ] Text-only `setShadowLayer`.
-- [ ] Optional pressed elevation animation path (explicit only).
+- [x] `setElevation`.
+- [x] Text-only `setShadowLayer`.
+- [x] Optional pressed elevation animation path (explicit only).
 
 ### Coverage
-- [ ] Card
-- [ ] Button
-- [ ] Container
-- [ ] AppBar
-- [ ] Text
+- [x] Card
+- [x] Button
+- [x] Container
+- [x] AppBar
+- [x] Text
 
 ## Phase 8: Visual Effects Pack v1
 
 ### 8.1 Opacity
-- [ ] Add `opacity`.
-- [ ] Lower to `setAlpha`.
+- [x] Add `opacity`.
+- [x] Lower to `setAlpha`.
 
 ### 8.2 Border
-- [ ] Add `border_width`.
-- [ ] Add `border_color`.
-- [ ] Add `border_radius` (allow per-corner model).
-- [ ] Lower via `GradientDrawable` stroke.
+- [x] Add `border_width`.
+- [x] Add `border_color`.
+- [x] Add `border_radius` (allow per-corner model).
+- [x] Lower via `GradientDrawable` stroke.
 
 ### 8.3 Gradient Background
-- [ ] Add `Gradient(start, end, direction)`.
-- [ ] Lower to `GradientDrawable` gradients.
+- [x] Add `Gradient(start, end, direction)`.
+- [x] Lower to `GradientDrawable` gradients.
 
 ### 8.4 Ripple
-- [ ] Add `ripple_color`.
-- [ ] Lower to `RippleDrawable`.
+- [x] Add `ripple_color`.
+- [x] Lower to `RippleDrawable`.
 
 ### 8.5 Clip and Outline
-- [ ] Add `clip_to_outline`.
-- [ ] Add `clip_children`.
-- [ ] Lower to `setClipToOutline` / `setClipChildren`.
+- [x] Add `clip_to_outline`.
+- [x] Add `clip_children`.
+- [x] Lower to `setClipToOutline` / `setClipChildren`.
 
 ### 8.6 Blur (API 31+)
 - [ ] Add `blur_radius`.
 - [ ] Lower to `RenderEffect.createBlurEffect`.
-- [ ] Warn at compile time when `min_sdk < 31`.
+- [ ] Warn at compile time when `min_sdk < 31`. (Add if-else : if min_sdk>30, add blur-radius, else, nothing)
 
 ### 8.7 Static Transforms
 - [ ] Add `rotation`.

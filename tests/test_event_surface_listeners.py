@@ -4,6 +4,9 @@ from apk.toolchain import emit_build_dir_from_program
 from dsl.app import (
     DropdownButton,
     PopupMenuButton,
+    Radio,
+    RadioGroup,
+    Slider,
     Switch,
     TextField,
     activity,
@@ -44,6 +47,16 @@ def _on_menu_item():
     label.text = "menu"
 
 
+@on_change("slider")
+def _on_slider_change():
+    label.text = "sliding"
+
+
+@on_change("group")
+def _on_radio_group_change():
+    label.text = "group changed"
+
+
 def test_emit_change_listener_for_switch(tmp_path):
     prog = app(
         activity(
@@ -65,6 +78,57 @@ def test_emit_change_listener_for_switch(tmp_path):
     assert "implements Landroid/widget/CompoundButton$OnCheckedChangeListener;" in listener_text
     assert "invoke-static {p1, p2}, LTestHandlers;->onChange_toggle(Landroid/widget/CompoundButton;Z)V" in listener_text
     assert "Landroid/widget/CompoundButton;->setOnCheckedChangeListener" in main_smali
+
+
+def test_emit_change_listener_for_slider(tmp_path):
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Label", id="label"),
+                Slider(id="slider", min=0, max=100, value=40),
+            ),
+            _on_slider_change,
+        )
+    ).build()
+
+    out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
+    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliChangeListener_slider.smali"
+    main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
+    listener_text = listener.read_text(encoding="utf-8")
+
+    assert listener.exists()
+    assert "implements Landroid/widget/SeekBar$OnSeekBarChangeListener;" in listener_text
+    assert "onProgressChanged(Landroid/widget/SeekBar;IZ)V" in listener_text
+    assert "invoke-static {p1, p2, p3}, LTestHandlers;->onChange_slider(Landroid/widget/SeekBar;IZ)V" in listener_text
+    assert "Landroid/widget/SeekBar;->setOnSeekBarChangeListener" in main_smali
+
+
+def test_emit_change_listener_for_radio_group(tmp_path):
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Label", id="label"),
+                RadioGroup(
+                    Radio("A", id="radio_a"),
+                    Radio("B", id="radio_b"),
+                    id="group",
+                ),
+            ),
+            _on_radio_group_change,
+        )
+    ).build()
+
+    out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
+    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliChangeListener_group.smali"
+    main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
+    listener_text = listener.read_text(encoding="utf-8")
+
+    assert listener.exists()
+    assert "implements Landroid/widget/RadioGroup$OnCheckedChangeListener;" in listener_text
+    assert "invoke-static {p1, p2}, LTestHandlers;->onChange_group(Landroid/widget/RadioGroup;I)V" in listener_text
+    assert "Landroid/widget/RadioGroup;->setOnCheckedChangeListener" in main_smali
 
 
 def test_emit_text_change_listener_for_text_field(tmp_path):

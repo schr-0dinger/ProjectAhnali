@@ -423,6 +423,10 @@ def emit_event_listener_smali(
         iface = "Landroid/view/View$OnClickListener;"
     elif kind == "change":
         iface = "Landroid/widget/CompoundButton$OnCheckedChangeListener;"
+    elif kind == "slider_change":
+        iface = "Landroid/widget/SeekBar$OnSeekBarChangeListener;"
+    elif kind == "radiogroup_change":
+        iface = "Landroid/widget/RadioGroup$OnCheckedChangeListener;"
     elif kind == "text_change":
         iface = "Landroid/text/TextWatcher;"
     elif kind == "item_selected":
@@ -455,6 +459,32 @@ def emit_event_listener_smali(
         lines.append("    .locals 0")
         lines.append(
             f"    invoke-static {{p1, p2}}, {target_desc}->{target_method}(Landroid/widget/CompoundButton;Z)V"
+        )
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "slider_change":
+        lines.append(".method public onProgressChanged(Landroid/widget/SeekBar;IZ)V")
+        lines.append("    .locals 0")
+        lines.append(
+            f"    invoke-static {{p1, p2, p3}}, {target_desc}->{target_method}(Landroid/widget/SeekBar;IZ)V"
+        )
+        lines.append("    return-void")
+        lines.append(".end method")
+        lines.append("")
+        lines.append(".method public onStartTrackingTouch(Landroid/widget/SeekBar;)V")
+        lines.append("    .locals 0")
+        lines.append("    return-void")
+        lines.append(".end method")
+        lines.append("")
+        lines.append(".method public onStopTrackingTouch(Landroid/widget/SeekBar;)V")
+        lines.append("    .locals 0")
+        lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "radiogroup_change":
+        lines.append(".method public onCheckedChanged(Landroid/widget/RadioGroup;I)V")
+        lines.append("    .locals 0")
+        lines.append(
+            f"    invoke-static {{p1, p2}}, {target_desc}->{target_method}(Landroid/widget/RadioGroup;I)V"
         )
         lines.append("    return-void")
         lines.append(".end method")

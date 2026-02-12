@@ -322,6 +322,14 @@ ATTR_METHODS = {
         supported_kinds=None,
     ),
 
+    "opacity": AttrMethod(
+        method="setAlpha",
+        owner="Landroid/view/View;",
+        arg_types=["F"],
+        value_loader="float",
+        supported_kinds=None,
+    ),
+
     "tint": AttrMethod(
         method="setBackgroundTintList",
         owner="Landroid/view/View;",

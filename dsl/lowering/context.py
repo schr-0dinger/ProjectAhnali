@@ -50,6 +50,8 @@ from dsl.ir_helpers import (
     on_click_view,
     on_focus_change_view,
     on_item_selected_view,
+    on_radio_group_change_view,
+    on_slider_change_view,
     on_text_change_view,
     program,
     primitive_cast,
@@ -64,6 +66,7 @@ from dsl.ir_helpers import (
     while_,
 )
 from dsl.widgets import (
+    Gradient,
     ColorState,
     Dp,
     Px,
@@ -398,6 +401,268 @@ class _PythonicContext:
         if italic:
             return 2
         return 0
+
+    def _coerce_bool_flag(self, value, *, field_name):
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        raise RuntimeError(f"{field_name} must be a bool when provided.")
+
+    def _resolve_text_input_type_value(self, item):
+        type_class_text = 0x00000001
+        type_class_number = 0x00000002
+        type_mask_class = 0x0000000F
+        type_text_flag_multi_line = 0x00020000
+        type_text_flag_cap_characters = 0x00001000
+        type_text_flag_cap_words = 0x00002000
+        type_text_flag_cap_sentences = 0x00004000
+        type_text_variation_password = 0x00000080
+        type_number_variation_password = 0x00000010
+
+        raw_input_type = getattr(item, "input_type", None)
+        raw_single_line = getattr(item, "single_line", None)
+        raw_password = getattr(item, "password", False)
+        raw_auto_capitalize = getattr(item, "auto_capitalize", None)
+        raw_numeric_only = getattr(item, "numeric_only", False)
+
+        single_line = self._coerce_bool_flag(raw_single_line, field_name="single_line")
+        password = self._coerce_bool_flag(raw_password, field_name="password")
+        numeric_only = self._coerce_bool_flag(raw_numeric_only, field_name="numeric_only")
+
+        has_config = (
+            raw_input_type is not None
+            or single_line is not None
+            or bool(password)
+            or raw_auto_capitalize is not None
+            or bool(numeric_only)
+        )
+        if not has_config:
+            return None
+
+        if raw_input_type is None:
+            input_type_value = type_class_text
+        elif isinstance(raw_input_type, bool):
+            raise RuntimeError("input_type must be a string or int, not bool.")
+        elif isinstance(raw_input_type, int):
+            input_type_value = int(raw_input_type)
+        elif isinstance(raw_input_type, str):
+            mapping = {
+                "text": type_class_text,
+                "multiline": type_class_text | type_text_flag_multi_line,
+                "email": type_class_text | 0x00000020,
+                "uri": type_class_text | 0x00000010,
+                "password": type_class_text | type_text_variation_password,
+                "text_password": type_class_text | type_text_variation_password,
+                "visible_password": type_class_text | 0x00000090,
+                "number": type_class_number,
+                "number_decimal": type_class_number | 0x00002000,
+                "number_signed": type_class_number | 0x00001000,
+                "number_decimal_signed": type_class_number | 0x00003000,
+                "number_password": type_class_number | type_number_variation_password,
+                "phone": 0x00000003,
+                "datetime": 0x00000004,
+                "date": 0x00000014,
+                "time": 0x00000024,
+            }
+            key = raw_input_type.strip().lower()
+            if key not in mapping:
+                known = ", ".join(sorted(mapping.keys()))
+                raise RuntimeError(f"Unsupported input_type '{raw_input_type}'. Known: [{known}]")
+            input_type_value = mapping[key]
+        else:
+            raise RuntimeError("input_type must be a string or int.")
+
+        if numeric_only:
+            input_type_value = (input_type_value & ~type_mask_class) | type_class_number
+
+        if raw_auto_capitalize is not None:
+            if (input_type_value & type_mask_class) != type_class_text:
+                raise RuntimeError("auto_capitalize is only valid for text input types.")
+            if isinstance(raw_auto_capitalize, bool):
+                cap_mode = "sentences" if raw_auto_capitalize else "none"
+            elif isinstance(raw_auto_capitalize, str):
+                cap_mode = raw_auto_capitalize.strip().lower()
+            else:
+                raise RuntimeError("auto_capitalize must be bool or one of: none, characters, words, sentences.")
+            cap_map = {
+                "none": 0,
+                "characters": type_text_flag_cap_characters,
+                "words": type_text_flag_cap_words,
+                "sentences": type_text_flag_cap_sentences,
+            }
+            if cap_mode not in cap_map:
+                known = ", ".join(sorted(cap_map.keys()))
+                raise RuntimeError(f"Unsupported auto_capitalize '{raw_auto_capitalize}'. Known: [{known}]")
+            input_type_value &= ~(
+                type_text_flag_cap_characters
+                | type_text_flag_cap_words
+                | type_text_flag_cap_sentences
+            )
+            input_type_value |= cap_map[cap_mode]
+
+        if single_line is not None and (input_type_value & type_mask_class) == type_class_text:
+            if single_line:
+                input_type_value &= ~type_text_flag_multi_line
+            else:
+                input_type_value |= type_text_flag_multi_line
+
+        if password:
+            if (input_type_value & type_mask_class) == type_class_number:
+                input_type_value |= type_number_variation_password
+            else:
+                input_type_value = (input_type_value & ~type_mask_class) | type_class_text
+                input_type_value |= type_text_variation_password
+
+        return int(input_type_value)
+
+    def _resolve_ime_options_value(self, raw_value):
+        if raw_value is None:
+            return None
+        if isinstance(raw_value, bool):
+            raise RuntimeError("ime_options must be string or int, not bool.")
+        if isinstance(raw_value, int):
+            return int(raw_value)
+        if not isinstance(raw_value, str):
+            raise RuntimeError("ime_options must be string or int.")
+
+        mapping = {
+            "unspecified": 0x00000000,
+            "none": 0x00000001,
+            "go": 0x00000002,
+            "search": 0x00000003,
+            "send": 0x00000004,
+            "next": 0x00000005,
+            "done": 0x00000006,
+            "previous": 0x00000007,
+            "no_fullscreen": 0x02000000,
+            "no_extract_ui": 0x10000000,
+            "no_enter_action": 0x40000000,
+        }
+        value = 0
+        parts = [p.strip().lower() for p in raw_value.replace(",", "|").split("|") if p.strip()]
+        if not parts:
+            raise RuntimeError("ime_options string cannot be empty.")
+        for part in parts:
+            token = part
+            for prefix in ("ime_action_", "action_", "ime_flag_", "flag_"):
+                if token.startswith(prefix):
+                    token = token[len(prefix):]
+            if token not in mapping:
+                known = ", ".join(sorted(mapping.keys()))
+                raise RuntimeError(f"Unsupported ime_options token '{part}'. Known: [{known}]")
+            value |= mapping[token]
+        return int(value)
+
+    def _build_text_field_input_config_stmts(self, item):
+        stmts = []
+
+        input_type_value = self._resolve_text_input_type_value(item)
+        if input_type_value is not None:
+            stmts.append(
+                call_stmt(
+                    "setInputType",
+                    args=[var(item.id), const(input_type_value)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/TextView;",
+                )
+            )
+
+        ime_options_value = self._resolve_ime_options_value(getattr(item, "ime_options", None))
+        if ime_options_value is not None:
+            stmts.append(
+                call_stmt(
+                    "setImeOptions",
+                    args=[var(item.id), const(ime_options_value)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/TextView;",
+                )
+            )
+
+        max_length_value = getattr(item, "max_length", None)
+        if max_length_value is not None:
+            if isinstance(max_length_value, bool):
+                raise RuntimeError("max_length must be an integer >= 0.")
+            try:
+                max_length_int = int(max_length_value)
+            except (TypeError, ValueError):
+                raise RuntimeError("max_length must be an integer >= 0.") from None
+            if max_length_int < 0:
+                raise RuntimeError("max_length must be >= 0.")
+            filter_var = self._next_tmp(f"{item.id}_length_filter")
+            filters_arr = self._next_tmp(f"{item.id}_filters")
+            stmts.extend(
+                [
+                    assign(
+                        filter_var,
+                        new(
+                            "Landroid/text/InputFilter$LengthFilter;",
+                            args=[const(max_length_int)],
+                            arg_types=["I"],
+                        ),
+                    ),
+                    assign(filters_arr, new_array(const(1), "Landroid/text/InputFilter;")),
+                    array_set(
+                        var(filters_arr),
+                        const(0),
+                        "Landroid/text/InputFilter;",
+                        var(filter_var),
+                    ),
+                    call_stmt(
+                        "setFilters",
+                        args=[var(item.id), var(filters_arr)],
+                        return_type=None,
+                        arg_types=["[Landroid/text/InputFilter;"],
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/TextView;",
+                    ),
+                ]
+            )
+
+        single_line_value = self._coerce_bool_flag(getattr(item, "single_line", None), field_name="single_line")
+        if single_line_value is not None:
+            stmts.append(
+                call_stmt(
+                    "setSingleLine",
+                    args=[var(item.id), const(1 if single_line_value else 0)],
+                    return_type=None,
+                    arg_types=["Z"],
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/TextView;",
+                )
+            )
+
+        password_enabled = self._coerce_bool_flag(getattr(item, "password", False), field_name="password")
+        if password_enabled:
+            transform_var = self._next_tmp(f"{item.id}_password_tm")
+            stmts.extend(
+                [
+                    assign(
+                        transform_var,
+                        call(
+                            "getInstance",
+                            args=[],
+                            invoke_kind="static",
+                            owner="Landroid/text/method/PasswordTransformationMethod;",
+                            return_type="Landroid/text/method/PasswordTransformationMethod;",
+                        ),
+                    ),
+                    call_stmt(
+                        "setTransformationMethod",
+                        args=[var(item.id), var(transform_var)],
+                        return_type=None,
+                        arg_types=["Landroid/text/method/TransformationMethod;"],
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/TextView;",
+                    ),
+                ]
+            )
+
+        return stmts
 
     def _emit_attr_call(self, *, view_id, attr_name, raw_value):
         meta = ATTR_METHODS.get(attr_name)
@@ -979,24 +1244,64 @@ class _PythonicContext:
                 )
                 method_class_map[handler_name] = handler_owner_desc
             elif event_kind == "change":
-                if view_kind not in {"checkbox", "switch", "radio"}:
+                if view_kind not in {"checkbox", "switch", "radio", "slider", "radio_group"}:
                     raise RuntimeError(
-                        f"on_change target '{target_id}' must be checkbox/switch/radio (kind={view_kind})."
+                        "on_change target "
+                        f"'{target_id}' must be checkbox/switch/radio/slider/radio_group (kind={view_kind})."
                     )
                 handler_name = f"onChange_{target_id}"
                 listener_desc = f"Lcom/anali/preview/AnaliChangeListener_{target_id};"
-                tmp_btn = f"_chg_{target_id}"
-                body.append(assign(tmp_btn, static_get(view_field, view_desc)))
-                body.extend(on_change_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
-                support_classes.append((listener_desc, handler_name, handler_owner_desc, "change"))
-                handler_methods.append(
-                    (
-                        handler_name,
-                        ["button", "is_checked"],
-                        ["Landroid/widget/CompoundButton;", "Z"],
-                        compiled_stmts,
+                if view_kind in {"checkbox", "switch", "radio"}:
+                    tmp_btn = f"_chg_{target_id}"
+                    body.append(assign(tmp_btn, static_get(view_field, view_desc)))
+                    body.extend(on_change_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
+                    support_classes.append((listener_desc, handler_name, handler_owner_desc, "change"))
+                    handler_methods.append(
+                        (
+                            handler_name,
+                            ["button", "is_checked"],
+                            ["Landroid/widget/CompoundButton;", "Z"],
+                            compiled_stmts,
+                        )
                     )
-                )
+                elif view_kind == "slider":
+                    tmp_slider = f"_chg_{target_id}"
+                    body.append(assign(tmp_slider, static_get(view_field, view_desc)))
+                    body.extend(
+                        on_slider_change_view(
+                            var(tmp_slider),
+                            handler_name=handler_name,
+                            listener_class_desc=listener_desc,
+                        )
+                    )
+                    support_classes.append((listener_desc, handler_name, handler_owner_desc, "slider_change"))
+                    handler_methods.append(
+                        (
+                            handler_name,
+                            ["seekbar", "progress", "from_user"],
+                            ["Landroid/widget/SeekBar;", "I", "Z"],
+                            compiled_stmts,
+                        )
+                    )
+                elif view_kind == "radio_group":
+                    tmp_group = f"_chg_{target_id}"
+                    body.append(assign(tmp_group, static_get(view_field, view_desc)))
+                    body.extend(
+                        on_radio_group_change_view(
+                            var(tmp_group),
+                            handler_name=handler_name,
+                            listener_class_desc=listener_desc,
+                        )
+                    )
+                    support_classes.append((listener_desc, handler_name, handler_owner_desc, "radiogroup_change"))
+                    handler_methods.append(
+                        (
+                            handler_name,
+                            ["group", "checked_id"],
+                            ["Landroid/widget/RadioGroup;", "I"],
+                            compiled_stmts,
+                        )
+                    )
                 method_class_map[handler_name] = handler_owner_desc
             elif event_kind == "text_change":
                 if view_kind != "text_field":
@@ -1553,17 +1858,6 @@ class _PythonicContext:
             item.id = self._register_view(item.id, "image")
             body.extend([assign(item.id, new("Landroid/widget/ImageView;", args=[var("ctx")]))])
             body.extend(self._set_image_source(item.id, item.src))
-            if item.content_description:
-                body.extend(
-                    self._set_text_from_resource(
-                        item.id,
-                        item.content_description,
-                        "Landroid/view/View;",
-                        f"{item.id}_content_desc",
-                        ctx_expr=var("ctx"),
-                        method_name="setContentDescription",
-                    )
-                )
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
@@ -1681,6 +1975,7 @@ class _PythonicContext:
                         owner="Landroid/widget/EditText;",
                     )
                 )
+            body.extend(self._build_text_field_input_config_stmts(item))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
@@ -2168,6 +2463,20 @@ class _PythonicContext:
         text_color_value = item.text_color if getattr(item, "text_color", None) is not None else style.text_color
         background_value = item.background if getattr(item, "background", None) is not None else style.background
         radius_value = item.radius if getattr(item, "radius", None) is not None else style.radius
+        border_width_value = getattr(item, "border_width", None) if getattr(item, "border_width", None) is not None else getattr(style, "border_width", None)
+        border_color_value = getattr(item, "border_color", None) if getattr(item, "border_color", None) is not None else getattr(style, "border_color", None)
+        border_radius_value = getattr(item, "border_radius", None) if getattr(item, "border_radius", None) is not None else getattr(style, "border_radius", None)
+        ripple_color_value = getattr(item, "ripple_color", None) if getattr(item, "ripple_color", None) is not None else getattr(style, "ripple_color", None)
+        clip_to_outline_value = (
+            getattr(item, "clip_to_outline", None)
+            if getattr(item, "clip_to_outline", None) is not None
+            else getattr(style, "clip_to_outline", None)
+        )
+        clip_children_value = (
+            getattr(item, "clip_children", None)
+            if getattr(item, "clip_children", None) is not None
+            else getattr(style, "clip_children", None)
+        )
         text_size_value = item.text_size if getattr(item, "text_size", None) is not None else style.text_size
         font_family_value = getattr(item, "font_family", None) if getattr(item, "font_family", None) is not None else getattr(style, "font_family", None)
         font_weight_value = getattr(item, "font_weight", None) if getattr(item, "font_weight", None) is not None else getattr(style, "font_weight", None)
@@ -2183,6 +2492,37 @@ class _PythonicContext:
         track_tint_value = getattr(item, "track_tint", None) if getattr(item, "track_tint", None) is not None else getattr(style, "track_tint", None)
         progress_tint_value = getattr(item, "progress_tint", None) if getattr(item, "progress_tint", None) is not None else getattr(style, "progress_tint", None)
         button_tint_value = getattr(item, "button_tint", None) if getattr(item, "button_tint", None) is not None else getattr(style, "button_tint", None)
+        opacity_value = getattr(item, "opacity", None) if getattr(item, "opacity", None) is not None else getattr(style, "opacity", None)
+        elevation_value = getattr(item, "elevation", None) if getattr(item, "elevation", None) is not None else getattr(style, "elevation", None)
+        pressed_elevation_value = (
+            getattr(item, "pressed_elevation", None)
+            if getattr(item, "pressed_elevation", None) is not None
+            else getattr(style, "pressed_elevation", None)
+        )
+        text_shadow_color_value = (
+            getattr(item, "text_shadow_color", None)
+            if getattr(item, "text_shadow_color", None) is not None
+            else getattr(style, "text_shadow_color", None)
+        )
+        text_shadow_radius_value = (
+            getattr(item, "text_shadow_radius", None)
+            if getattr(item, "text_shadow_radius", None) is not None
+            else getattr(style, "text_shadow_radius", None)
+        )
+        text_shadow_dx_value = (
+            getattr(item, "text_shadow_dx", None)
+            if getattr(item, "text_shadow_dx", None) is not None
+            else getattr(style, "text_shadow_dx", None)
+        )
+        text_shadow_dy_value = (
+            getattr(item, "text_shadow_dy", None)
+            if getattr(item, "text_shadow_dy", None) is not None
+            else getattr(style, "text_shadow_dy", None)
+        )
+        content_description_value = getattr(item, "content_description", None)
+        if content_description_value is None:
+            content_description_value = getattr(item, "accessibility_label", None)
+        important_for_accessibility_value = getattr(item, "important_for_accessibility", None)
 
         if margin_value is None and getattr(item, "floating", False):
             margin_value = Dp(16)
@@ -2256,14 +2596,62 @@ class _PythonicContext:
 
 
         palette = self.theme_spec.palette
-        bg_color = _parse_color(background_value, palette)
         txt_color = None if isinstance(text_color_value, ColorState) else _parse_color(text_color_value, palette)
-        if bg_color is not None or radius_value is not None:
-            out.extend(
-                self._emit_attr_call(
-                    view_id=item.id,
-                    attr_name="background",
-                    raw_value=(bg_color, radius_value),
+
+        out.extend(
+            self._emit_background_visual_effects(
+                view_id=item.id,
+                background_value=background_value,
+                radius_value=radius_value,
+                border_width_value=border_width_value,
+                border_color_value=border_color_value,
+                border_radius_value=border_radius_value,
+                ripple_color_value=ripple_color_value,
+            )
+        )
+
+        if clip_to_outline_value is not None:
+            clip_to_outline = self._coerce_bool_flag(
+                clip_to_outline_value,
+                field_name="clip_to_outline",
+            )
+            out.append(
+                call_stmt(
+                    "setClipToOutline",
+                    args=[var(item.id), const(1 if clip_to_outline else 0)],
+                    return_type=None,
+                    arg_types=["Z"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+
+        if clip_children_value is not None:
+            clip_children = self._coerce_bool_flag(
+                clip_children_value,
+                field_name="clip_children",
+            )
+            if self.view_types.get(item.id) not in {
+                "row",
+                "column",
+                "relative",
+                "constraint",
+                "container",
+                "card",
+                "radio_group",
+                "screen",
+            }:
+                raise RuntimeError(
+                    f"clip_children is only supported on container widgets; '{item.id}' is kind={self.view_types.get(item.id)}."
+                )
+            out.append(
+                call_stmt(
+                    "setClipChildren",
+                    args=[var(item.id), const(1 if clip_children else 0)],
+                    return_type=None,
+                    arg_types=["Z"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/ViewGroup;",
                 )
             )
 
@@ -2419,6 +2807,81 @@ class _PythonicContext:
                 )
             )
 
+        if opacity_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="opacity",
+                    raw_value=self._normalize_opacity(opacity_value),
+                )
+            )
+
+        if elevation_value is not None:
+            out.extend(
+                self._emit_elevation_setter(
+                    view_id=item.id,
+                    value=elevation_value,
+                    field_name="elevation",
+                    prefix=f"{item.id}_elevation",
+                )
+            )
+        if pressed_elevation_value is not None:
+            base_elevation_value = elevation_value if elevation_value is not None else Dp(0)
+            out.extend(
+                self._emit_pressed_elevation_animator(
+                    view_id=item.id,
+                    base_value=base_elevation_value,
+                    pressed_value=pressed_elevation_value,
+                )
+            )
+
+        if (
+            text_shadow_color_value is not None
+            or text_shadow_radius_value is not None
+            or text_shadow_dx_value is not None
+            or text_shadow_dy_value is not None
+        ):
+            out.extend(
+                self._emit_text_shadow_setter(
+                    view_id=item.id,
+                    color_value=text_shadow_color_value,
+                    radius_value=text_shadow_radius_value,
+                    dx_value=text_shadow_dx_value,
+                    dy_value=text_shadow_dy_value,
+                )
+            )
+
+        if content_description_value is not None:
+            if isinstance(content_description_value, bool):
+                raise RuntimeError(
+                    f"content_description on '{item.id}' must be a string."
+                )
+            out.extend(
+                self._set_text_from_resource(
+                    item.id,
+                    str(content_description_value),
+                    "Landroid/view/View;",
+                    f"{item.id}_content_desc",
+                    ctx_expr=var("ctx"),
+                    method_name="setContentDescription",
+                )
+            )
+
+        if important_for_accessibility_value is not None:
+            important_for_accessibility_int = self._normalize_important_for_accessibility(
+                important_for_accessibility_value
+            )
+            out.append(
+                call_stmt(
+                    "setImportantForAccessibility",
+                    args=[var(item.id), const(important_for_accessibility_int)],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+
         if layout_value or margin_value or weight_value is not None or relative_value is not None or constraints_value is not None:
             if getattr(item, "floating", False) and relative_value is None:
                 relative_value = [("align_parent_bottom", "parent"), ("align_parent_end", "parent")]
@@ -2557,6 +3020,503 @@ class _PythonicContext:
         raise RuntimeError(
             f"Invalid layout value {value!r}. Expected \"match\"/\"wrap\" or (width, height)."
         )
+
+    def _normalize_important_for_accessibility(self, value):
+        mapping = {
+            "auto": 0,
+            "yes": 1,
+            "true": 1,
+            "no": 2,
+            "false": 2,
+            "no_hide_descendants": 4,
+            "no-hide-descendants": 4,
+            "nohidedescendants": 4,
+        }
+        if isinstance(value, bool):
+            return 1 if value else 2
+        if isinstance(value, int) and not isinstance(value, bool):
+            if value in (0, 1, 2, 4):
+                return value
+        elif isinstance(value, str):
+            key = value.strip().lower()
+            if key in mapping:
+                return mapping[key]
+        raise RuntimeError(
+            "Unsupported important_for_accessibility value "
+            f"{value!r}. Use auto/yes/no/no_hide_descendants, bool, or 0/1/2/4."
+        )
+
+    def _normalize_opacity(self, value):
+        if isinstance(value, bool):
+            raise RuntimeError("opacity must be a number in range [0.0, 1.0], not bool.")
+        if not isinstance(value, (int, float)):
+            raise RuntimeError("opacity must be a number in range [0.0, 1.0].")
+        f = float(value)
+        if f < 0.0 or f > 1.0:
+            raise RuntimeError(f"opacity {value!r} is out of range. Expected [0.0, 1.0].")
+        return f
+
+    def _normalize_gradient_direction(self, direction):
+        if direction is None:
+            key = "left_to_right"
+        elif isinstance(direction, str):
+            key = direction.strip().lower()
+        else:
+            raise RuntimeError("Gradient direction must be a string.")
+        mapping = {
+            "left_to_right": "LEFT_RIGHT",
+            "right_to_left": "RIGHT_LEFT",
+            "top_to_bottom": "TOP_BOTTOM",
+            "bottom_to_top": "BOTTOM_TOP",
+            "tl_br": "TL_BR",
+            "tr_bl": "TR_BL",
+            "bl_tr": "BL_TR",
+            "br_tl": "BR_TL",
+            "top_left_bottom_right": "TL_BR",
+            "top_right_bottom_left": "TR_BL",
+            "bottom_left_top_right": "BL_TR",
+            "bottom_right_top_left": "BR_TL",
+        }
+        if key not in mapping:
+            known = ", ".join(sorted(mapping.keys()))
+            raise RuntimeError(f"Unsupported Gradient direction '{direction}'. Known: [{known}]")
+        return mapping[key]
+
+    def _normalize_corner_radii(self, value):
+        if value is None:
+            return None, None
+        if isinstance(value, (list, tuple)):
+            if len(value) != 4:
+                raise RuntimeError("border_radius tuple/list must have 4 values: (top_left, top_right, bottom_right, bottom_left).")
+            out = []
+            for idx, entry in enumerate(value):
+                out.append(
+                    self._normalize_dimension_value(
+                        entry,
+                        field_name=f"border_radius[{idx}]",
+                    )
+                )
+            return out, False
+        return [
+            self._normalize_dimension_value(value, field_name="border_radius"),
+            self._normalize_dimension_value(value, field_name="border_radius"),
+            self._normalize_dimension_value(value, field_name="border_radius"),
+            self._normalize_dimension_value(value, field_name="border_radius"),
+        ], True
+
+    def _emit_background_visual_effects(
+        self,
+        *,
+        view_id,
+        background_value,
+        radius_value,
+        border_width_value,
+        border_color_value,
+        border_radius_value,
+        ripple_color_value,
+    ):
+        out = []
+        palette = self.theme_spec.palette
+
+        gradient_value = background_value if isinstance(background_value, Gradient) else None
+        if gradient_value is None:
+            if isinstance(background_value, ColorState):
+                bg_color_value = _parse_color(background_value.default, palette)
+            else:
+                bg_color_value = _parse_color(background_value, palette)
+        else:
+            bg_color_value = None
+
+        if isinstance(border_color_value, ColorState):
+            border_color_value = border_color_value.default
+        border_color = _parse_color(border_color_value, palette)
+
+        effective_radius = border_radius_value if border_radius_value is not None else radius_value
+        corner_values, uniform_corners = self._normalize_corner_radii(effective_radius)
+
+        if border_width_value is None and border_color is not None:
+            border_width_value = Dp(1)
+        if border_width_value is not None and border_color is None:
+            raise RuntimeError("border_color is required when border_width is set.")
+
+        use_shape = (
+            gradient_value is not None
+            or corner_values is not None
+            or border_width_value is not None
+            or ripple_color_value is not None
+        )
+
+        if not use_shape:
+            if bg_color_value is not None:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=view_id,
+                        attr_name="background_color",
+                        raw_value=bg_color_value,
+                    )
+                )
+            return out
+
+        shape_var = self._next_tmp(f"{view_id}_shape")
+        out.append(
+            assign(
+                shape_var,
+                new("Landroid/graphics/drawable/GradientDrawable;", args=[]),
+            )
+        )
+
+        if gradient_value is not None:
+            orientation_field = self._normalize_gradient_direction(gradient_value.direction)
+            orientation_var = self._next_tmp(f"{view_id}_grad_orientation")
+            start_color = _parse_color(gradient_value.start, palette)
+            end_color = _parse_color(gradient_value.end, palette)
+            colors_var = self._next_tmp(f"{view_id}_grad_colors")
+            out.extend(
+                [
+                    assign(
+                        orientation_var,
+                        static_get(
+                            orientation_field,
+                            "Landroid/graphics/drawable/GradientDrawable$Orientation;",
+                            owner="Landroid/graphics/drawable/GradientDrawable$Orientation;",
+                        ),
+                    ),
+                    call_stmt(
+                        "setOrientation",
+                        args=[var(shape_var), var(orientation_var)],
+                        return_type=None,
+                        arg_types=["Landroid/graphics/drawable/GradientDrawable$Orientation;"],
+                        invoke_kind="virtual",
+                        owner="Landroid/graphics/drawable/GradientDrawable;",
+                    ),
+                    assign(colors_var, new_array(const(2), "I")),
+                    array_set(var(colors_var), const(0), "I", const(start_color)),
+                    array_set(var(colors_var), const(1), "I", const(end_color)),
+                    call_stmt(
+                        "setColors",
+                        args=[var(shape_var), var(colors_var)],
+                        return_type=None,
+                        arg_types=["[I"],
+                        invoke_kind="virtual",
+                        owner="Landroid/graphics/drawable/GradientDrawable;",
+                    ),
+                ]
+            )
+        else:
+            fill_color = bg_color_value if bg_color_value is not None else 0x00000000
+            fill_key = self._add_color_resource(f"{view_id}_fill", fill_color)
+            fill_setup, fill_expr = self._load_color_expr(
+                fill_key,
+                ctx_expr=var("ctx"),
+                prefix=f"{view_id}_fill",
+            )
+            out.extend(fill_setup)
+            out.append(
+                call_stmt(
+                    "setColor",
+                    args=[var(shape_var), fill_expr],
+                    return_type=None,
+                    arg_types=["I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/drawable/GradientDrawable;",
+                )
+            )
+
+        if corner_values is not None:
+            if uniform_corners:
+                radius_setup, radius_expr = self._dimension_float_expr(
+                    corner_values[0],
+                    field_name="border_radius",
+                    prefix=f"{view_id}_corner_radius",
+                )
+                out.extend(radius_setup)
+                out.append(
+                    call_stmt(
+                        "setCornerRadius",
+                        args=[var(shape_var), radius_expr],
+                        return_type=None,
+                        arg_types=["F"],
+                        invoke_kind="virtual",
+                        owner="Landroid/graphics/drawable/GradientDrawable;",
+                    )
+                )
+            else:
+                radii_var = self._next_tmp(f"{view_id}_corner_radii")
+                out.append(assign(radii_var, new_array(const(8), "F")))
+                for idx, entry in enumerate(corner_values):
+                    dim_setup, dim_expr = self._dimension_float_expr(
+                        entry,
+                        field_name=f"border_radius[{idx}]",
+                        prefix=f"{view_id}_corner_r{idx}",
+                    )
+                    out.extend(dim_setup)
+                    out.append(array_set(var(radii_var), const(idx * 2), "F", dim_expr))
+                    out.append(array_set(var(radii_var), const(idx * 2 + 1), "F", dim_expr))
+                out.append(
+                    call_stmt(
+                        "setCornerRadii",
+                        args=[var(shape_var), var(radii_var)],
+                        return_type=None,
+                        arg_types=["[F"],
+                        invoke_kind="virtual",
+                        owner="Landroid/graphics/drawable/GradientDrawable;",
+                    )
+                )
+
+        if border_width_value is not None:
+            border_w_setup, border_w_expr = self._dimension_px_expr(
+                border_width_value,
+                field_name="border_width",
+                prefix=f"{view_id}_border_width",
+            )
+            border_color_key = self._add_color_resource(f"{view_id}_border", border_color)
+            border_c_setup, border_c_expr = self._load_color_expr(
+                border_color_key,
+                ctx_expr=var("ctx"),
+                prefix=f"{view_id}_border",
+            )
+            out.extend(border_w_setup)
+            out.extend(border_c_setup)
+            out.append(
+                call_stmt(
+                    "setStroke",
+                    args=[var(shape_var), border_w_expr, border_c_expr],
+                    return_type=None,
+                    arg_types=["I", "I"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/drawable/GradientDrawable;",
+                )
+            )
+
+        drawable_expr = var(shape_var)
+        if ripple_color_value is not None:
+            ripple_stmts, ripple_expr = self._build_color_state_list_expr(
+                view_id,
+                "ripple_color",
+                ripple_color_value,
+                self.theme_spec.palette,
+            )
+            out.extend(ripple_stmts)
+            if ripple_expr is not None:
+                ripple_var = self._next_tmp(f"{view_id}_ripple")
+                out.append(
+                    assign(
+                        ripple_var,
+                        new(
+                            "Landroid/graphics/drawable/RippleDrawable;",
+                            args=[ripple_expr, drawable_expr, const(0)],
+                            arg_types=[
+                                "Landroid/content/res/ColorStateList;",
+                                "Landroid/graphics/drawable/Drawable;",
+                                "Landroid/graphics/drawable/Drawable;",
+                            ],
+                        ),
+                    )
+                )
+                drawable_expr = var(ripple_var)
+
+        out.append(
+            call_stmt(
+                "setBackground",
+                args=[var(view_id), drawable_expr],
+                return_type=None,
+                arg_types=["Landroid/graphics/drawable/Drawable;"],
+                invoke_kind="virtual",
+                owner="Landroid/view/View;",
+            )
+        )
+        return out
+
+    def _normalize_dimension_value(self, value, *, field_name):
+        if isinstance(value, bool):
+            raise RuntimeError(f"{field_name} must be a number or dp()/px() unit, not bool.")
+        if isinstance(value, (int, float)):
+            return Dp(value)
+        if isinstance(value, (Dp, Px)):
+            return value
+        raise RuntimeError(f"{field_name} must be a number or dp()/px() unit.")
+
+    def _dimension_float_expr(self, value, *, field_name, prefix):
+        normalized = self._normalize_dimension_value(value, field_name=field_name)
+        key = self._add_dimen_resource(prefix, normalized)
+        return self._load_dimen_float_expr(key, ctx_expr=var("ctx"), prefix=prefix)
+
+    def _dimension_px_expr(self, value, *, field_name, prefix):
+        normalized = self._normalize_dimension_value(value, field_name=field_name)
+        key = self._add_dimen_resource(prefix, normalized)
+        return self._load_dimen_px_expr(key, ctx_expr=var("ctx"), prefix=prefix)
+
+    def _emit_elevation_setter(self, *, view_id, value, field_name, prefix):
+        out = []
+        setup, value_expr = self._dimension_float_expr(
+            value,
+            field_name=field_name,
+            prefix=prefix,
+        )
+        out.extend(setup)
+        out.append(
+            call_stmt(
+                "setElevation",
+                args=[var(view_id), value_expr],
+                return_type=None,
+                arg_types=["F"],
+                invoke_kind="virtual",
+                owner="Landroid/view/View;",
+            )
+        )
+        return out
+
+    def _emit_pressed_elevation_animator(self, *, view_id, base_value, pressed_value):
+        out = []
+        base_setup, base_expr = self._dimension_float_expr(
+            base_value,
+            field_name="elevation",
+            prefix=f"{view_id}_elevation_default",
+        )
+        pressed_setup, pressed_expr = self._dimension_float_expr(
+            pressed_value,
+            field_name="pressed_elevation",
+            prefix=f"{view_id}_elevation_pressed",
+        )
+        out.extend(base_setup)
+        out.extend(pressed_setup)
+
+        pressed_values = self._next_tmp(f"{view_id}_pressed_elev_vals")
+        default_values = self._next_tmp(f"{view_id}_default_elev_vals")
+        pressed_anim = self._next_tmp(f"{view_id}_pressed_elev_anim")
+        default_anim = self._next_tmp(f"{view_id}_default_elev_anim")
+        pressed_state = self._next_tmp(f"{view_id}_pressed_state")
+        default_state = self._next_tmp(f"{view_id}_default_state")
+        state_animator = self._next_tmp(f"{view_id}_state_animator")
+
+        out.extend(
+            [
+                assign(pressed_values, new_array(const(1), "F")),
+                array_set(var(pressed_values), const(0), "F", pressed_expr),
+                assign(default_values, new_array(const(1), "F")),
+                array_set(var(default_values), const(0), "F", base_expr),
+                assign(
+                    pressed_anim,
+                    call(
+                        "ofFloat",
+                        args=[var(view_id), const("elevation"), var(pressed_values)],
+                        return_type="Landroid/animation/ObjectAnimator;",
+                        arg_types=["Ljava/lang/Object;", "Ljava/lang/String;", "[F"],
+                        invoke_kind="static",
+                        owner="Landroid/animation/ObjectAnimator;",
+                    ),
+                ),
+                assign(
+                    default_anim,
+                    call(
+                        "ofFloat",
+                        args=[var(view_id), const("elevation"), var(default_values)],
+                        return_type="Landroid/animation/ObjectAnimator;",
+                        arg_types=["Ljava/lang/Object;", "Ljava/lang/String;", "[F"],
+                        invoke_kind="static",
+                        owner="Landroid/animation/ObjectAnimator;",
+                    ),
+                ),
+                assign(pressed_state, new_array(const(1), "I")),
+                array_set(var(pressed_state), const(0), "I", const(0x10100A7)),
+                assign(default_state, new_array(const(0), "I")),
+                assign(state_animator, new("Landroid/animation/StateListAnimator;", args=[])),
+                call_stmt(
+                    "addState",
+                    args=[var(state_animator), var(pressed_state), var(pressed_anim)],
+                    return_type=None,
+                    arg_types=["[I", "Landroid/animation/Animator;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/animation/StateListAnimator;",
+                ),
+                call_stmt(
+                    "addState",
+                    args=[var(state_animator), var(default_state), var(default_anim)],
+                    return_type=None,
+                    arg_types=["[I", "Landroid/animation/Animator;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/animation/StateListAnimator;",
+                ),
+                call_stmt(
+                    "setStateListAnimator",
+                    args=[var(view_id), var(state_animator)],
+                    return_type=None,
+                    arg_types=["Landroid/animation/StateListAnimator;"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                ),
+            ]
+        )
+        return out
+
+    def _emit_text_shadow_setter(self, *, view_id, color_value, radius_value, dx_value, dy_value):
+        kind = self.view_types.get(view_id)
+        text_kinds = {
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+            "icon",
+        }
+        if kind not in text_kinds:
+            raise RuntimeError(
+                f"text shadow is only supported on text-like widgets; '{view_id}' is kind={kind}."
+            )
+
+        out = []
+        palette = self.theme_spec.palette
+        if isinstance(color_value, ColorState):
+            parsed_color = _parse_color(color_value.default, palette)
+        else:
+            parsed_color = _parse_color(color_value, palette)
+        if parsed_color is None:
+            parsed_color = _parse_color("#FF000000", palette)
+        color_key = self._add_color_resource(f"{view_id}_text_shadow", parsed_color)
+        color_setup, color_expr = self._load_color_expr(
+            color_key,
+            ctx_expr=var("ctx"),
+            prefix=f"{view_id}_text_shadow",
+        )
+        out.extend(color_setup)
+
+        radius_raw = Dp(0) if radius_value is None else radius_value
+        dx_raw = Dp(0) if dx_value is None else dx_value
+        dy_raw = Dp(0) if dy_value is None else dy_value
+        radius_setup, radius_expr = self._dimension_float_expr(
+            radius_raw,
+            field_name="text_shadow_radius",
+            prefix=f"{view_id}_text_shadow_radius",
+        )
+        dx_setup, dx_expr = self._dimension_float_expr(
+            dx_raw,
+            field_name="text_shadow_dx",
+            prefix=f"{view_id}_text_shadow_dx",
+        )
+        dy_setup, dy_expr = self._dimension_float_expr(
+            dy_raw,
+            field_name="text_shadow_dy",
+            prefix=f"{view_id}_text_shadow_dy",
+        )
+        out.extend(radius_setup)
+        out.extend(dx_setup)
+        out.extend(dy_setup)
+
+        out.append(
+            call_stmt(
+                "setShadowLayer",
+                args=[var(view_id), radius_expr, dx_expr, dy_expr, color_expr],
+                return_type=None,
+                arg_types=["F", "F", "F", "I"],
+                invoke_kind="virtual",
+                owner="Landroid/widget/TextView;",
+            )
+        )
+        return out
 
     def _layout_size_expr(self, value, *, prefix):
         if isinstance(value, str):

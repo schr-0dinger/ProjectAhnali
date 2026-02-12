@@ -50,6 +50,10 @@ def size(width, height):
     return (width, height)
 
 
+def gradient(start, end, direction="left_to_right"):
+    return Gradient(start=start, end=end, direction=direction)
+
+
 class _Unit:
     def __init__(self, name, cls):
         self.name = name
@@ -90,6 +94,19 @@ class ColorState:
         self.focused = focused
 
 
+class Gradient:
+    def __init__(self, start, end, direction="left_to_right"):
+        self.start = start
+        self.end = end
+        self.direction = direction
+
+
+def _resolve_content_description(content_description, accessibility_label):
+    if content_description is not None:
+        return content_description
+    return accessibility_label
+
+
 class _UIText:
     def __init__(
         self,
@@ -123,6 +140,22 @@ class _UIText:
         track_tint=None,
         progress_tint=None,
         button_tint=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -154,6 +187,22 @@ class _UIText:
         self.track_tint = track_tint
         self.progress_tint = progress_tint
         self.button_tint = button_tint
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -191,6 +240,22 @@ class _UIButton:
         track_tint=None,
         progress_tint=None,
         button_tint=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -223,6 +288,22 @@ class _UIButton:
         self.track_tint = track_tint
         self.progress_tint = progress_tint
         self.button_tint = button_tint
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -247,6 +328,22 @@ class _UIView:
         track_tint=None,
         progress_tint=None,
         button_tint=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -266,6 +363,22 @@ class _UIView:
         self.track_tint = track_tint
         self.progress_tint = progress_tint
         self.button_tint = button_tint
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -287,6 +400,22 @@ class _UIRow:
         constraints=None,
         background=None,
         radius=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -304,6 +433,22 @@ class _UIRow:
         self.constraints = constraints
         self.background = background
         self.radius = radius
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -325,6 +470,22 @@ class _UIColumn:
         constraints=None,
         background=None,
         radius=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -342,6 +503,22 @@ class _UIColumn:
         self.constraints = constraints
         self.background = background
         self.radius = radius
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -358,6 +535,22 @@ class _UIRelative:
         gravity=None,
         background=None,
         radius=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
         style=None,
     ):
         self.id = id
@@ -370,6 +563,22 @@ class _UIRelative:
         self.gravity = gravity
         self.background = background
         self.radius = radius
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
         self.style = style
 
 
@@ -386,6 +595,15 @@ class _UIConstraint:
         gravity=None,
         background=None,
         radius=None,
+        content_description=None,
+        important_for_accessibility=None,
+        accessibility_label=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
         style=None,
     ):
         self.id = id
@@ -398,6 +616,15 @@ class _UIConstraint:
         self.gravity = gravity
         self.background = background
         self.radius = radius
+        self.content_description = _resolve_content_description(content_description, accessibility_label)
+        self.important_for_accessibility = important_for_accessibility
+        self.accessibility_label = accessibility_label
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
         self.style = style
 
 
@@ -434,10 +661,31 @@ class _UIIconButton(_UIButton):
 
 
 class _UITextField(_UIText):
-    def __init__(self, text="", *, id="input", hint=None, **kwargs):
+    def __init__(
+        self,
+        text="",
+        *,
+        id="input",
+        hint=None,
+        input_type=None,
+        ime_options=None,
+        max_length=None,
+        single_line=None,
+        password=False,
+        auto_capitalize=None,
+        numeric_only=False,
+        **kwargs,
+    ):
         kwargs.setdefault("id", id)
         super().__init__(text, **kwargs)
         self.hint = hint
+        self.input_type = input_type
+        self.ime_options = ime_options
+        self.max_length = max_length
+        self.single_line = single_line
+        self.password = password
+        self.auto_capitalize = auto_capitalize
+        self.numeric_only = numeric_only
 
 
 class _UICheckbox(_UIText):
@@ -499,11 +747,22 @@ class _UIDivider(_UIView):
 
 
 class _UIImage(_UIView):
-    def __init__(self, *, id="image", src=None, content_description=None, **kwargs):
+    def __init__(
+        self,
+        *,
+        id="image",
+        src=None,
+        content_description=None,
+        accessibility_label=None,
+        **kwargs,
+    ):
         kwargs.setdefault("id", id)
-        super().__init__(**kwargs)
+        super().__init__(
+            content_description=content_description,
+            accessibility_label=accessibility_label,
+            **kwargs,
+        )
         self.src = src
-        self.content_description = content_description
 
 
 class _UIContainer(_UIColumn):
@@ -610,6 +869,19 @@ class Style:
         track_tint=None,
         progress_tint=None,
         button_tint=None,
+        elevation=None,
+        pressed_elevation=None,
+        text_shadow_color=None,
+        text_shadow_radius=None,
+        text_shadow_dx=None,
+        text_shadow_dy=None,
+        opacity=None,
+        border_width=None,
+        border_color=None,
+        border_radius=None,
+        ripple_color=None,
+        clip_to_outline=None,
+        clip_children=None,
     ):
         self.layout = layout
         self.width = width
@@ -641,6 +913,19 @@ class Style:
         self.track_tint = track_tint
         self.progress_tint = progress_tint
         self.button_tint = button_tint
+        self.elevation = elevation
+        self.pressed_elevation = pressed_elevation
+        self.text_shadow_color = text_shadow_color
+        self.text_shadow_radius = text_shadow_radius
+        self.text_shadow_dx = text_shadow_dx
+        self.text_shadow_dy = text_shadow_dy
+        self.opacity = opacity
+        self.border_width = border_width
+        self.border_color = border_color
+        self.border_radius = border_radius
+        self.ripple_color = ripple_color
+        self.clip_to_outline = clip_to_outline
+        self.clip_children = clip_children
 
     def merged(self, override):
         if override is None:
@@ -676,6 +961,41 @@ class Style:
             track_tint=override.track_tint if override.track_tint is not None else self.track_tint,
             progress_tint=override.progress_tint if override.progress_tint is not None else self.progress_tint,
             button_tint=override.button_tint if override.button_tint is not None else self.button_tint,
+            elevation=override.elevation if override.elevation is not None else self.elevation,
+            pressed_elevation=(
+                override.pressed_elevation
+                if override.pressed_elevation is not None
+                else self.pressed_elevation
+            ),
+            text_shadow_color=(
+                override.text_shadow_color
+                if override.text_shadow_color is not None
+                else self.text_shadow_color
+            ),
+            text_shadow_radius=(
+                override.text_shadow_radius
+                if override.text_shadow_radius is not None
+                else self.text_shadow_radius
+            ),
+            text_shadow_dx=(
+                override.text_shadow_dx if override.text_shadow_dx is not None else self.text_shadow_dx
+            ),
+            text_shadow_dy=(
+                override.text_shadow_dy if override.text_shadow_dy is not None else self.text_shadow_dy
+            ),
+            opacity=override.opacity if override.opacity is not None else self.opacity,
+            border_width=override.border_width if override.border_width is not None else self.border_width,
+            border_color=override.border_color if override.border_color is not None else self.border_color,
+            border_radius=override.border_radius if override.border_radius is not None else self.border_radius,
+            ripple_color=override.ripple_color if override.ripple_color is not None else self.ripple_color,
+            clip_to_outline=(
+                override.clip_to_outline
+                if override.clip_to_outline is not None
+                else self.clip_to_outline
+            ),
+            clip_children=(
+                override.clip_children if override.clip_children is not None else self.clip_children
+            ),
         )
 
 
@@ -919,6 +1239,22 @@ def text(
     track_tint=None,
     progress_tint=None,
     button_tint=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIText(
@@ -951,6 +1287,22 @@ def text(
         track_tint=track_tint,
         progress_tint=progress_tint,
         button_tint=button_tint,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -987,6 +1339,22 @@ def button(
     track_tint=None,
     progress_tint=None,
     button_tint=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIButton(
@@ -1020,6 +1388,22 @@ def button(
         track_tint=track_tint,
         progress_tint=progress_tint,
         button_tint=button_tint,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -1043,6 +1427,22 @@ def view(
     track_tint=None,
     progress_tint=None,
     button_tint=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIView(
@@ -1063,6 +1463,22 @@ def view(
         track_tint=track_tint,
         progress_tint=progress_tint,
         button_tint=button_tint,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -1083,6 +1499,22 @@ def row(
     constraints=None,
     background=None,
     radius=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIRow(
@@ -1101,6 +1533,22 @@ def row(
         constraints=constraints,
         background=background,
         radius=radius,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -1121,6 +1569,22 @@ def column(
     constraints=None,
     background=None,
     radius=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIColumn(
@@ -1139,6 +1603,22 @@ def column(
         constraints=constraints,
         background=background,
         radius=radius,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -1154,6 +1634,22 @@ def relative(
     gravity=None,
     background=None,
     radius=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIRelative(
@@ -1167,6 +1663,22 @@ def relative(
         gravity=gravity,
         background=background,
         radius=radius,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -1182,6 +1694,22 @@ def constraint(
     gravity=None,
     background=None,
     radius=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    clip_to_outline=None,
+    clip_children=None,
     style=None,
 ):
     return _UIConstraint(
@@ -1195,6 +1723,22 @@ def constraint(
         gravity=gravity,
         background=background,
         radius=radius,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
         style=style,
     )
 
@@ -1219,8 +1763,33 @@ def icon_button(icon_text="*", *, id="icon_btn", **kwargs):
     return _UIIconButton(icon_text, id=id, **kwargs)
 
 
-def text_field(text="", *, id="input", hint=None, **kwargs):
-    return _UITextField(text, id=id, hint=hint, **kwargs)
+def text_field(
+    text="",
+    *,
+    id="input",
+    hint=None,
+    input_type=None,
+    ime_options=None,
+    max_length=None,
+    single_line=None,
+    password=False,
+    auto_capitalize=None,
+    numeric_only=False,
+    **kwargs,
+):
+    return _UITextField(
+        text,
+        id=id,
+        hint=hint,
+        input_type=input_type,
+        ime_options=ime_options,
+        max_length=max_length,
+        single_line=single_line,
+        password=password,
+        auto_capitalize=auto_capitalize,
+        numeric_only=numeric_only,
+        **kwargs,
+    )
 
 
 def checkbox(text="", *, id="checkbox", checked=False, **kwargs):
@@ -1255,8 +1824,23 @@ def divider(*, id="divider", color="#FFD1D5DB", thickness=dp(1), **kwargs):
     return _UIDivider(id=id, color=color, thickness=thickness, **kwargs)
 
 
-def image(*, id="image", src=None, content_description=None, **kwargs):
-    return _UIImage(id=id, src=src, content_description=content_description, **kwargs)
+def image(
+    *,
+    id="image",
+    src=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    **kwargs,
+):
+    return _UIImage(
+        id=id,
+        src=src,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        **kwargs,
+    )
 
 
 def container(*items, id="container", **kwargs):

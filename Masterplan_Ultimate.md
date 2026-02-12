@@ -28,7 +28,7 @@
 - ✅ Direct AAR resolution is implemented.
 - ✅ Library `R$*` class generation from merged symbols is implemented.
 - Transitive AAR inference is not wired yet.
-- ✅ Current test reality: `152 passed` (`PYTHONPATH=. pytest -q`).
+- ✅ Current test reality: `186 passed` (`PYTHONPATH=. pytest -q`).
 
 ---
 
@@ -462,8 +462,8 @@ Input events:
 - on_editor_action
 - on_focus_change
 - on_key
-- on_change (Switch/Checkbox/Radio)
-- on_slider_change
+- on_change (Switch/Checkbox/Radio/Slider/RadioGroup)
+- on_slider_change (optional alias; `on_change` is canonical)
 - on_item_selected
 - on_menu_item_selected
 

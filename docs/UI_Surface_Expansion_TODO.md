@@ -1,6 +1,6 @@
 # Anali UI Surface Expansion TODO (v1)
 
-Last updated: 2026-02-11
+Last updated: 2026-02-12
 
 Goal:
 - Expand UI depth and polish while preserving:
@@ -85,94 +85,94 @@ All animations and effects must be explicit and imperative.
 ## Phase 4: Event Surface Expansion
 
 ### DSL API (`dsl/app.py`, `dsl/widgets.py`)
-- [ ] Add `on_change`.
-- [ ] Add `on_text_change`.
-- [ ] Add `on_item_selected`.
-- [ ] Add `on_menu_item_selected`.
-- [ ] Add `on_focus_change`.
+- [x] Add `on_change`.
+- [x] Add `on_text_change`.
+- [x] Add `on_item_selected`.
+- [x] Add `on_menu_item_selected`.
+- [x] Add `on_focus_change`.
 
 ### Lowering (`dsl/lowering/context.py`, support listener classes)
-- [ ] Slider -> `OnSeekBarChangeListener`.
-- [ ] Switch/Checkbox -> `OnCheckedChangeListener`.
-- [ ] RadioGroup -> `OnCheckedChangeListener`.
-- [ ] TextField -> `TextWatcher`.
-- [ ] Dropdown -> `OnItemSelectedListener`.
-- [ ] PopupMenu -> `OnMenuItemClickListener`.
+- [x] Slider -> `OnSeekBarChangeListener`.
+- [x] Switch/Checkbox -> `OnCheckedChangeListener`.
+- [x] RadioGroup -> `OnCheckedChangeListener`.
+- [x] TextField -> `TextWatcher`.
+- [x] Dropdown -> `OnItemSelectedListener`.
+- [x] PopupMenu -> `OnMenuItemClickListener`.
 
 ### Constraints
-- [ ] Named handlers only.
-- [ ] Compile-time ID validation.
-- [ ] No dynamic registration at runtime.
+- [x] Named handlers only.
+- [x] Compile-time ID validation.
+- [x] No dynamic registration at runtime.
 
 ## Phase 5: Input Configuration
 
 ### DSL (`dsl/widgets.py`)
-- [ ] Add TextField fields: `input_type`, `ime_options`, `max_length`, `single_line`, `password`, `auto_capitalize`, `numeric_only`.
+- [x] Add TextField fields: `input_type`, `ime_options`, `max_length`, `single_line`, `password`, `auto_capitalize`, `numeric_only`.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] `setInputType`.
-- [ ] `setImeOptions`.
-- [ ] `setFilters`.
-- [ ] `setSingleLine`.
-- [ ] `setTransformationMethod`.
+- [x] `setInputType`.
+- [x] `setImeOptions`.
+- [x] `setFilters`.
+- [x] `setSingleLine`.
+- [x] `setTransformationMethod`.
 
 ## Phase 6: Accessibility
 
 ### DSL (`dsl/widgets.py`)
-- [ ] Add `content_description`.
-- [ ] Add `important_for_accessibility`.
-- [ ] Add `accessibility_label` alias.
+- [x] Add `content_description`.
+- [x] Add `important_for_accessibility`.
+- [x] Add `accessibility_label` alias.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] `setContentDescription`.
-- [ ] `setImportantForAccessibility`.
+- [x] `setContentDescription`.
+- [x] `setImportantForAccessibility`.
 
 ## Phase 7: Elevation and Shadow
 
 ### DSL (`dsl/widgets.py`)
-- [ ] Add `elevation`.
-- [ ] Add `pressed_elevation`.
-- [ ] Add `text_shadow_color`.
-- [ ] Add `text_shadow_radius`.
-- [ ] Add `text_shadow_dx`.
-- [ ] Add `text_shadow_dy`.
+- [x] Add `elevation`.
+- [x] Add `pressed_elevation`.
+- [x] Add `text_shadow_color`.
+- [x] Add `text_shadow_radius`.
+- [x] Add `text_shadow_dx`.
+- [x] Add `text_shadow_dy`.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] `setElevation`.
-- [ ] Text-only `setShadowLayer`.
-- [ ] Optional pressed elevation animation path (explicit only).
+- [x] `setElevation`.
+- [x] Text-only `setShadowLayer`.
+- [x] Optional pressed elevation animation path (explicit only).
 
 ### Coverage
-- [ ] Card
-- [ ] Button
-- [ ] Container
-- [ ] AppBar
-- [ ] Text
+- [x] Card
+- [x] Button
+- [x] Container
+- [x] AppBar
+- [x] Text
 
 ## Phase 8: Visual Effects Pack v1
 
 ### 8.1 Opacity
-- [ ] Add `opacity`.
-- [ ] Lower to `setAlpha`.
+- [x] Add `opacity`.
+- [x] Lower to `setAlpha`.
 
 ### 8.2 Border
-- [ ] Add `border_width`.
-- [ ] Add `border_color`.
-- [ ] Add `border_radius` (allow per-corner model).
-- [ ] Lower via `GradientDrawable` stroke.
+- [x] Add `border_width`.
+- [x] Add `border_color`.
+- [x] Add `border_radius` (allow per-corner model).
+- [x] Lower via `GradientDrawable` stroke.
 
 ### 8.3 Gradient Background
-- [ ] Add `Gradient(start, end, direction)`.
-- [ ] Lower to `GradientDrawable` gradients.
+- [x] Add `Gradient(start, end, direction)`.
+- [x] Lower to `GradientDrawable` gradients.
 
 ### 8.4 Ripple
-- [ ] Add `ripple_color`.
-- [ ] Lower to `RippleDrawable`.
+- [x] Add `ripple_color`.
+- [x] Lower to `RippleDrawable`.
 
 ### 8.5 Clip and Outline
-- [ ] Add `clip_to_outline`.
-- [ ] Add `clip_children`.
-- [ ] Lower to `setClipToOutline` / `setClipChildren`.
+- [x] Add `clip_to_outline`.
+- [x] Add `clip_children`.
+- [x] Lower to `setClipToOutline` / `setClipChildren`.
 
 ### 8.6 Blur (API 31+)
 - [ ] Add `blur_radius`.
