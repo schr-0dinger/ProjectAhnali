@@ -115,6 +115,21 @@ class _StmtReplace:
         self.target = target
 
 
+class _StmtAnimate:
+    def __init__(self, target, properties, duration=None, delay=None, interpolator=None):
+        self.target = target
+        self.properties = dict(properties or {})
+        self.duration = duration
+        self.delay = delay
+        self.interpolator = interpolator
+
+
+class _StmtAnimationGroup:
+    def __init__(self, mode, animations):
+        self.mode = mode
+        self.animations = list(animations or [])
+
+
 class _StmtRequestPermissions:
     def __init__(self, permissions, request_code=0):
         self.permissions = permissions

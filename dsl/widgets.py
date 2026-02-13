@@ -1290,13 +1290,14 @@ class Snackbar(_UISnackbar):
 
 
 class _UIScreen:
-    def __init__(self, name, *items, id=None):
+    def __init__(self, name, *items, id=None, transition=None):
         self.name = str(name)
         if id is None:
             base = self.name.strip().lower().replace(" ", "_")
             base = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in base)
             id = f"screen_{base or 'screen'}"
         self.id = id
+        self.transition = transition
         self.items = items
         self.layout = ("match_parent", "match_parent")
         self.padding = None
@@ -2087,12 +2088,12 @@ def Snackbar(message, duration=0):
     return snackbar(message, duration=duration)
 
 
-def screen(name, *items, id=None):
-    return _UIScreen(name, *items, id=id)
+def screen(name, *items, id=None, transition=None):
+    return _UIScreen(name, *items, id=id, transition=transition)
 
 
-def Screen(name, *items, id=None):
-    return screen(name, *items, id=id)
+def Screen(name, *items, id=None, transition=None):
+    return screen(name, *items, id=id, transition=transition)
 
 
 def exit_app():

@@ -17,6 +17,8 @@ from dsl.ast import (
     _StmtExitApp,
     _StmtIf,
     _StmtBack,
+    _StmtAnimate,
+    _StmtAnimationGroup,
     _StmtReplace,
     _StmtRequestPermissions,
     _StmtSetText,
@@ -140,6 +142,7 @@ class _PythonicContext:
         self._lint_warning_keys = set()
         self._screens = []
         self._screen_map = {}
+        self._screen_transitions = {}
         self._current_screen = None
         self._view_screen = {}
         self._nav_stack_limit = 0
@@ -295,6 +298,179 @@ class _PythonicContext:
                     owner="Landroid/view/View;",
                 ),
             ]
+            out.append(if_(compare("==", idx_expr, const(idx)), then, []))
+        return out
+
+    def _normalize_screen_transition(self, raw):
+        if raw is None:
+            return None
+        key = str(raw).strip().lower().replace("-", "_")
+        allowed = {
+            "fade",
+            "slide_left",
+            "slide_right",
+            "slide_up",
+            "slide_down",
+        }
+        if key not in allowed:
+            supported = ", ".join(sorted(allowed))
+            raise RuntimeError(
+                f"Unsupported screen transition '{raw}'. Supported: [{supported}]"
+            )
+        return key
+
+    def _screen_transition_for_name(self, screen_name):
+        return self._screen_transitions.get(screen_name)
+
+    def _screen_transition_for_index(self, idx):
+        if idx < 0 or idx >= len(self._screens):
+            return None
+        name = self._screens[idx][0]
+        return self._screen_transition_for_name(name)
+
+    def _nav_emit_enter_transition_for_screen(self, screen_id, transition):
+        if not transition:
+            return []
+        field_name = self.view_fields.get(screen_id)
+        if not field_name:
+            raise RuntimeError(f"Missing view field for screen '{screen_id}'")
+        desc = self._view_desc("screen")
+        screen_var = self._next_tmp(f"{screen_id}_anim")
+        animator_var = self._next_tmp(f"{screen_id}_animator")
+        out = [assign(screen_var, static_get(field_name, desc))]
+
+        if transition == "fade":
+            out.append(
+                call_stmt(
+                    "setAlpha",
+                    args=[var(screen_var), const(0.0)],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            anim_method = "alpha"
+            anim_value = 1.0
+        elif transition == "slide_left":
+            out.append(
+                call_stmt(
+                    "setTranslationX",
+                    args=[var(screen_var), const(96.0)],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            anim_method = "translationX"
+            anim_value = 0.0
+        elif transition == "slide_right":
+            out.append(
+                call_stmt(
+                    "setTranslationX",
+                    args=[var(screen_var), const(-96.0)],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            anim_method = "translationX"
+            anim_value = 0.0
+        elif transition == "slide_up":
+            out.append(
+                call_stmt(
+                    "setTranslationY",
+                    args=[var(screen_var), const(96.0)],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            anim_method = "translationY"
+            anim_value = 0.0
+        elif transition == "slide_down":
+            out.append(
+                call_stmt(
+                    "setTranslationY",
+                    args=[var(screen_var), const(-96.0)],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+            anim_method = "translationY"
+            anim_value = 0.0
+        else:
+            raise RuntimeError(f"Unsupported transition '{transition}'")
+
+        out.append(
+            assign(
+                animator_var,
+                call(
+                    "animate",
+                    args=[var(screen_var)],
+                    return_type="Landroid/view/ViewPropertyAnimator;",
+                    arg_types=[],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                ),
+            )
+        )
+        out.append(
+            assign(
+                animator_var,
+                call(
+                    anim_method,
+                    args=[var(animator_var), const(anim_value)],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/ViewPropertyAnimator;",
+                ),
+            )
+        )
+        duration_setup, duration_expr = self._long_const_expr(
+            220,
+            field_name="screen transition duration",
+            prefix=f"{screen_id}_transition_duration",
+        )
+        out.extend(duration_setup)
+        out.append(
+            assign(
+                animator_var,
+                call(
+                    "setDuration",
+                    args=[var(animator_var), duration_expr],
+                    return_type=None,
+                    arg_types=["J"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/ViewPropertyAnimator;",
+                ),
+            )
+        )
+        out.append(
+            call_stmt(
+                "start",
+                args=[var(animator_var)],
+                return_type=None,
+                arg_types=[],
+                invoke_kind="virtual",
+                owner="Landroid/view/ViewPropertyAnimator;",
+            )
+        )
+        return out
+
+    def _nav_emit_enter_transition_for_index(self, idx_expr):
+        out = []
+        for idx, (name, screen_id) in enumerate(self._screens):
+            transition = self._screen_transition_for_name(name)
+            if not transition:
+                continue
+            then = self._nav_emit_enter_transition_for_screen(screen_id, transition)
             out.append(if_(compare("==", idx_expr, const(idx)), then, []))
         return out
 
@@ -1016,6 +1192,12 @@ class _PythonicContext:
         self._resource_style_ids = {}
         self._container_orientation = {self.root_id: "vertical"}
         self._popup_button_items = {}
+        self._screens = []
+        self._screen_map = {}
+        self._screen_transitions = {}
+        self._view_screen = {}
+        self._current_screen = None
+        self._nav_stack_limit = 0
         self._build_theme_resources()
 
         # Ensure app_ctx is available for resource helper calls.
@@ -2263,6 +2445,9 @@ class _PythonicContext:
             item.id = self._register_view(item.id, "screen")
             self._screen_map[item.name] = item.id
             self._screens.append((item.name, item.id))
+            self._screen_transitions[item.name] = self._normalize_screen_transition(
+                getattr(item, "transition", None)
+            )
             self._container_orientation[item.id] = "vertical"
             body.extend(relative_layout(item.id, var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
@@ -2360,6 +2545,10 @@ class _PythonicContext:
             return self._compile_set_text_stmt(stmt)
         if isinstance(stmt, _StmtExitApp):
             return self._compile_exit_app_stmt(stmt)
+        if isinstance(stmt, _StmtAnimate):
+            return self._compile_animate_stmt(stmt)
+        if isinstance(stmt, _StmtAnimationGroup):
+            return self._compile_animation_group_stmt(stmt)
         if isinstance(stmt, _StmtIf):
             return self._compile_if_stmt(stmt)
         if isinstance(stmt, _StmtWhile):
@@ -2393,6 +2582,471 @@ class _PythonicContext:
                 owner="Landroid/app/Activity;",
             )
         ]
+
+    def _normalize_anim_property(self, raw):
+        key = str(raw).strip().lower().replace("-", "_")
+        mapping = {
+            "rotation": "rotate",
+            "rotate": "rotate",
+            "scale": "scale",
+            "scale_x": "scale_x",
+            "scalex": "scale_x",
+            "scale_y": "scale_y",
+            "scaley": "scale_y",
+            "translate_x": "translate_x",
+            "translation_x": "translate_x",
+            "translate_y": "translate_y",
+            "translation_y": "translate_y",
+            "alpha": "alpha",
+            "elevation": "elevation",
+        }
+        return mapping.get(key, key)
+
+    def _normalize_anim_interpolator(self, raw):
+        if raw is None:
+            return None
+        key = str(raw).strip().lower().replace("-", "_")
+        mapping = {
+            "linear": "linear",
+            "accelerate": "accelerate",
+            "ease_in": "accelerate",
+            "decelerate": "decelerate",
+            "ease_out": "decelerate",
+            "accelerate_decelerate": "accelerate_decelerate",
+            "ease_in_out": "accelerate_decelerate",
+        }
+        if key not in mapping:
+            allowed = ", ".join(sorted(mapping.keys()))
+            raise RuntimeError(
+                f"Unsupported interpolator '{raw}'. Supported: [{allowed}]"
+            )
+        return mapping[key]
+
+    def _coerce_anim_float(self, value, *, field_name):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise RuntimeError(f"{field_name} must be numeric, got {value!r}")
+        return float(value)
+
+    def _expand_anim_properties(self, raw_properties):
+        allowed = {
+            "rotate",
+            "scale",
+            "scale_x",
+            "scale_y",
+            "translate_x",
+            "translate_y",
+            "alpha",
+            "elevation",
+        }
+        normalized = {}
+        for key, value in (raw_properties or {}).items():
+            prop = self._normalize_anim_property(key)
+            if prop not in allowed:
+                supported = ", ".join(sorted(allowed))
+                raise RuntimeError(
+                    f"Unsupported animation property '{key}'. Supported: [{supported}]"
+                )
+            normalized[prop] = self._coerce_anim_float(value, field_name=f"animation '{prop}'")
+
+        scale_value = normalized.get("scale")
+        if scale_value is not None:
+            normalized.setdefault("scale_x", scale_value)
+            normalized.setdefault("scale_y", scale_value)
+            normalized.pop("scale", None)
+        return normalized
+
+    def _long_const_expr(self, value, *, field_name, prefix):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise RuntimeError(f"{field_name} must be numeric")
+        int_value = int(value)
+        int_var = self._next_tmp(f"{prefix}_i")
+        long_var = self._next_tmp(f"{prefix}_j")
+        return [
+            assign(int_var, const(int_value)),
+            assign(long_var, primitive_cast(var(int_var), "I", "J")),
+        ], var(long_var)
+
+    def _animation_target_ref(self, target_id, *, prefix):
+        if target_id not in self.view_types:
+            known = ", ".join(sorted(self.view_types.keys()))
+            raise RuntimeError(
+                f"Unknown animation target '{target_id}'. Known ids: [{known}]"
+            )
+        view_kind = self.view_types[target_id]
+        view_desc = self._view_desc(view_kind)
+        view_field = self.view_fields[target_id]
+        view_var = self._next_tmp(prefix)
+        return [assign(view_var, static_get(view_field, view_desc))], var(view_var)
+
+    def _emit_interpolator_instance(self, interpolator, *, prefix):
+        normalized = self._normalize_anim_interpolator(interpolator)
+        if normalized is None:
+            return [], None
+        class_map = {
+            "linear": "Landroid/view/animation/LinearInterpolator;",
+            "accelerate": "Landroid/view/animation/AccelerateInterpolator;",
+            "decelerate": "Landroid/view/animation/DecelerateInterpolator;",
+            "accelerate_decelerate": "Landroid/view/animation/AccelerateDecelerateInterpolator;",
+        }
+        interp_var = self._next_tmp(prefix)
+        return [assign(interp_var, new(class_map[normalized], args=[]))], var(interp_var)
+
+    def _apply_animator_timing(self, *, animator_expr, owner_desc, duration, delay, interpolator, prefix):
+        out = []
+        animator_name = getattr(animator_expr, "name", None)
+        if duration is not None:
+            duration_setup, duration_expr = self._long_const_expr(
+                duration,
+                field_name="duration",
+                prefix=f"{prefix}_duration",
+            )
+            out.extend(duration_setup)
+            if animator_name:
+                out.append(
+                    assign(
+                        animator_name,
+                        call(
+                            "setDuration",
+                            args=[animator_expr, duration_expr],
+                            return_type=None,
+                            arg_types=["J"],
+                            invoke_kind="virtual",
+                            owner=owner_desc,
+                        ),
+                    )
+                )
+            else:
+                out.append(
+                    call_stmt(
+                        "setDuration",
+                        args=[animator_expr, duration_expr],
+                        return_type=None,
+                        arg_types=["J"],
+                        invoke_kind="virtual",
+                        owner=owner_desc,
+                    )
+                )
+        if delay is not None:
+            delay_setup, delay_expr = self._long_const_expr(
+                delay,
+                field_name="delay",
+                prefix=f"{prefix}_delay",
+            )
+            out.extend(delay_setup)
+            if owner_desc == "Landroid/view/ViewPropertyAnimator;" and animator_name:
+                out.append(
+                    assign(
+                        animator_name,
+                        call(
+                            "setStartDelay",
+                            args=[animator_expr, delay_expr],
+                            return_type=None,
+                            arg_types=["J"],
+                            invoke_kind="virtual",
+                            owner=owner_desc,
+                        ),
+                    )
+                )
+            else:
+                out.append(
+                    call_stmt(
+                        "setStartDelay",
+                        args=[animator_expr, delay_expr],
+                        return_type=None,
+                        arg_types=["J"],
+                        invoke_kind="virtual",
+                        owner=owner_desc,
+                    )
+                )
+        interp_setup, interp_expr = self._emit_interpolator_instance(
+            interpolator,
+            prefix=f"{prefix}_interp",
+        )
+        out.extend(interp_setup)
+        if interp_expr is not None:
+            if owner_desc == "Landroid/view/ViewPropertyAnimator;" and animator_name:
+                out.append(
+                    assign(
+                        animator_name,
+                        call(
+                            "setInterpolator",
+                            args=[animator_expr, interp_expr],
+                            return_type=None,
+                            arg_types=["Landroid/animation/TimeInterpolator;"],
+                            invoke_kind="virtual",
+                            owner=owner_desc,
+                        ),
+                    )
+                )
+            else:
+                out.append(
+                    call_stmt(
+                        "setInterpolator",
+                        args=[animator_expr, interp_expr],
+                        return_type=None,
+                        arg_types=["Landroid/animation/TimeInterpolator;"],
+                        invoke_kind="virtual",
+                        owner=owner_desc,
+                    )
+                )
+        return out
+
+    def _build_property_object_animator(self, *, view_expr, property_name, value, duration, delay, interpolator, prefix):
+        out = []
+        values_var = self._next_tmp(f"{prefix}_vals")
+        animator_var = self._next_tmp(f"{prefix}_anim")
+        out.extend(
+            [
+                assign(values_var, new_array(const(1), "F")),
+                array_set(
+                    var(values_var),
+                    const(0),
+                    "F",
+                    const(self._coerce_anim_float(value, field_name=property_name)),
+                ),
+                assign(
+                    animator_var,
+                    call(
+                        "ofFloat",
+                        args=[view_expr, const(property_name), var(values_var)],
+                        return_type="Landroid/animation/ObjectAnimator;",
+                        arg_types=["Ljava/lang/Object;", "Ljava/lang/String;", "[F"],
+                        invoke_kind="static",
+                        owner="Landroid/animation/ObjectAnimator;",
+                    ),
+                ),
+            ]
+        )
+        out.extend(
+            self._apply_animator_timing(
+                animator_expr=var(animator_var),
+                owner_desc="Landroid/animation/ValueAnimator;",
+                duration=duration,
+                delay=delay,
+                interpolator=interpolator,
+                prefix=f"{prefix}_timing",
+            )
+        )
+        return out, var(animator_var)
+
+    def _build_object_animator_for_stmt(self, stmt, *, prefix):
+        properties = self._expand_anim_properties(getattr(stmt, "properties", {}))
+        if not properties:
+            raise RuntimeError("Animation requires at least one property")
+
+        out, view_expr = self._animation_target_ref(stmt.target, prefix=f"{prefix}_view")
+        prop_map = {
+            "rotate": "rotation",
+            "scale_x": "scaleX",
+            "scale_y": "scaleY",
+            "translate_x": "translationX",
+            "translate_y": "translationY",
+            "alpha": "alpha",
+            "elevation": "elevation",
+        }
+
+        animator_vars = []
+        for idx, prop in enumerate(
+            ["rotate", "scale_x", "scale_y", "translate_x", "translate_y", "alpha", "elevation"]
+        ):
+            if prop not in properties:
+                continue
+            prop_out, anim_expr = self._build_property_object_animator(
+                view_expr=view_expr,
+                property_name=prop_map[prop],
+                value=properties[prop],
+                duration=stmt.duration,
+                delay=stmt.delay,
+                interpolator=stmt.interpolator,
+                prefix=f"{prefix}_{prop}_{idx}",
+            )
+            out.extend(prop_out)
+            animator_vars.append(anim_expr)
+
+        if not animator_vars:
+            raise RuntimeError("Animation expanded to no animatable properties")
+        if len(animator_vars) == 1:
+            return out, animator_vars[0]
+
+        set_var = self._next_tmp(f"{prefix}_set")
+        arr_var = self._next_tmp(f"{prefix}_arr")
+        out.extend(
+            [
+                assign(set_var, new("Landroid/animation/AnimatorSet;", args=[])),
+                assign(arr_var, new_array(const(len(animator_vars)), "Landroid/animation/Animator;")),
+            ]
+        )
+        for i, anim_expr in enumerate(animator_vars):
+            out.append(array_set(var(arr_var), const(i), "Landroid/animation/Animator;", anim_expr))
+        out.append(
+            call_stmt(
+                "playTogether",
+                args=[var(set_var), var(arr_var)],
+                return_type=None,
+                arg_types=["[Landroid/animation/Animator;"],
+                invoke_kind="virtual",
+                owner="Landroid/animation/AnimatorSet;",
+            )
+        )
+        return out, var(set_var)
+
+    def _build_group_animator(self, group_stmt, *, prefix):
+        if group_stmt.mode not in {"sequence", "parallel"}:
+            raise RuntimeError(f"Unsupported animation group mode '{group_stmt.mode}'")
+        if not group_stmt.animations:
+            raise RuntimeError("Animation group requires at least one child animation")
+
+        out = []
+        child_vars = []
+        for idx, child in enumerate(group_stmt.animations):
+            child_prefix = f"{prefix}_{idx}"
+            if isinstance(child, _StmtAnimate):
+                child_out, child_anim = self._build_object_animator_for_stmt(child, prefix=child_prefix)
+            elif isinstance(child, _StmtAnimationGroup):
+                child_out, child_anim = self._build_group_animator(child, prefix=child_prefix)
+            else:
+                raise RuntimeError(f"Unsupported animation child: {child}")
+            out.extend(child_out)
+            child_vars.append(child_anim)
+
+        if len(child_vars) == 1:
+            return out, child_vars[0]
+
+        set_var = self._next_tmp(f"{prefix}_set")
+        arr_var = self._next_tmp(f"{prefix}_arr")
+        out.extend(
+            [
+                assign(set_var, new("Landroid/animation/AnimatorSet;", args=[])),
+                assign(arr_var, new_array(const(len(child_vars)), "Landroid/animation/Animator;")),
+            ]
+        )
+        for i, child_anim in enumerate(child_vars):
+            out.append(array_set(var(arr_var), const(i), "Landroid/animation/Animator;", child_anim))
+        method_name = "playSequentially" if group_stmt.mode == "sequence" else "playTogether"
+        out.append(
+            call_stmt(
+                method_name,
+                args=[var(set_var), var(arr_var)],
+                return_type=None,
+                arg_types=["[Landroid/animation/Animator;"],
+                invoke_kind="virtual",
+                owner="Landroid/animation/AnimatorSet;",
+            )
+        )
+        return out, var(set_var)
+
+    def _compile_animate_stmt(self, stmt):
+        properties = self._expand_anim_properties(getattr(stmt, "properties", {}))
+        if not properties:
+            raise RuntimeError("animate requires at least one property")
+
+        out, view_expr = self._animation_target_ref(stmt.target, prefix=f"{stmt.target}_anim_view")
+
+        non_elevation = {}
+        if "elevation" in properties:
+            elevation_value = properties["elevation"]
+        else:
+            elevation_value = None
+        for key in ("rotate", "scale_x", "scale_y", "translate_x", "translate_y", "alpha"):
+            if key in properties:
+                non_elevation[key] = properties[key]
+
+        if non_elevation:
+            animator_var = self._next_tmp(f"{stmt.target}_vpa")
+            out.append(
+                assign(
+                    animator_var,
+                    call(
+                        "animate",
+                        args=[view_expr],
+                        return_type="Landroid/view/ViewPropertyAnimator;",
+                        arg_types=[],
+                        invoke_kind="virtual",
+                        owner="Landroid/view/View;",
+                    ),
+                )
+            )
+            prop_calls = {
+                "rotate": "rotation",
+                "scale_x": "scaleX",
+                "scale_y": "scaleY",
+                "translate_x": "translationX",
+                "translate_y": "translationY",
+                "alpha": "alpha",
+            }
+            for prop in ("rotate", "scale_x", "scale_y", "translate_x", "translate_y", "alpha"):
+                if prop not in non_elevation:
+                    continue
+                out.append(
+                    assign(
+                        animator_var,
+                        call(
+                            prop_calls[prop],
+                            args=[var(animator_var), const(non_elevation[prop])],
+                            return_type=None,
+                            arg_types=["F"],
+                            invoke_kind="virtual",
+                            owner="Landroid/view/ViewPropertyAnimator;",
+                        ),
+                    )
+                )
+            out.extend(
+                self._apply_animator_timing(
+                    animator_expr=var(animator_var),
+                    owner_desc="Landroid/view/ViewPropertyAnimator;",
+                    duration=stmt.duration,
+                    delay=stmt.delay,
+                    interpolator=stmt.interpolator,
+                    prefix=f"{stmt.target}_vpa_timing",
+                )
+            )
+            out.append(
+                call_stmt(
+                    "start",
+                    args=[var(animator_var)],
+                    return_type=None,
+                    arg_types=[],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/ViewPropertyAnimator;",
+                )
+            )
+
+        if elevation_value is not None:
+            elev_out, elev_anim = self._build_property_object_animator(
+                view_expr=view_expr,
+                property_name="elevation",
+                value=elevation_value,
+                duration=stmt.duration,
+                delay=stmt.delay,
+                interpolator=stmt.interpolator,
+                prefix=f"{stmt.target}_elev",
+            )
+            out.extend(elev_out)
+            out.append(
+                call_stmt(
+                    "start",
+                    args=[elev_anim],
+                    return_type=None,
+                    arg_types=[],
+                    invoke_kind="virtual",
+                    owner="Landroid/animation/Animator;",
+                )
+            )
+        return out
+
+    def _compile_animation_group_stmt(self, stmt):
+        out, animator_expr = self._build_group_animator(stmt, prefix="anim_group")
+        out.append(
+            call_stmt(
+                "start",
+                args=[animator_expr],
+                return_type=None,
+                arg_types=[],
+                invoke_kind="virtual",
+                owner="Landroid/animation/Animator;",
+            )
+        )
+        return out
 
     def _float_const_expr(self, value, prefix="f"):
         if not isinstance(value, (int, float)) or isinstance(value, bool):
@@ -4263,8 +4917,9 @@ class _PythonicContext:
         out.append(assign(stack_var, static_get("nav_stack", "[I")))
         out.append(assign(size_var, static_get("nav_size", "I")))
         out.append(assign(cur_var, static_get("nav_current", "I")))
-        out.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
         out.extend(self._nav_set_visibility_for_index(const(target_idx), 0))
+        out.extend(self._nav_emit_enter_transition_for_index(const(target_idx)))
+        out.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
 
         push_then = [
             array_set(var(stack_var), var(size_var), "I", const(target_idx)),
@@ -4302,11 +4957,12 @@ class _PythonicContext:
         out.append(assign(cur_var, static_get("nav_current", "I")))
 
         then_block = []
-        then_block.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
         then_block.append(assign(new_size_var, binary("-", var(size_var), const(1))))
         then_block.append(assign(top_idx_var, binary("-", var(new_size_var), const(1))))
         then_block.append(assign(prev_idx_var, array_get(var(stack_var), var(top_idx_var), "I")))
         then_block.extend(self._nav_set_visibility_for_index(var(prev_idx_var), 0))
+        then_block.extend(self._nav_emit_enter_transition_for_index(var(prev_idx_var)))
+        then_block.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
         then_block.append(static_set("nav_size", "I", var(new_size_var)))
         then_block.append(static_set("nav_current", "I", var(prev_idx_var)))
 
@@ -4337,11 +4993,12 @@ class _PythonicContext:
         out.append(assign("handled", const(0)))
 
         then_block = []
-        then_block.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
         then_block.append(assign(new_size_var, binary("-", var(size_var), const(1))))
         then_block.append(assign(top_idx_var, binary("-", var(new_size_var), const(1))))
         then_block.append(assign(prev_idx_var, array_get(var(stack_var), var(top_idx_var), "I")))
         then_block.extend(self._nav_set_visibility_for_index(var(prev_idx_var), 0))
+        then_block.extend(self._nav_emit_enter_transition_for_index(var(prev_idx_var)))
+        then_block.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
         then_block.append(static_set("nav_size", "I", var(new_size_var)))
         then_block.append(static_set("nav_current", "I", var(prev_idx_var)))
         then_block.append(assign("handled", const(1)))
@@ -4369,8 +5026,9 @@ class _PythonicContext:
         out.append(assign(stack_var, static_get("nav_stack", "[I")))
         out.append(assign(size_var, static_get("nav_size", "I")))
         out.append(assign(cur_var, static_get("nav_current", "I")))
-        out.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
         out.extend(self._nav_set_visibility_for_index(const(target_idx), 0))
+        out.extend(self._nav_emit_enter_transition_for_index(const(target_idx)))
+        out.extend(self._nav_set_visibility_for_index(var(cur_var), 8))
 
         then_block = [
             assign(top_idx_var, binary("-", var(size_var), const(1))),

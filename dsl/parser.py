@@ -17,6 +17,8 @@ from .ast import (
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtAnimate,
+    _StmtAnimationGroup,
     _StmtLog,
     _StmtNavigate,
     _StmtWhile,
@@ -65,6 +67,27 @@ def _parse_stmt(stmt):
         call = stmt.value
         if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):
             fn = call.func.id
+            if fn in (
+                "animate",
+                "Animate",
+                "fade_in",
+                "FadeIn",
+                "fade_out",
+                "FadeOut",
+                "rotate",
+                "Rotate",
+                "scale",
+                "Scale",
+                "translate",
+                "Translate",
+                "animate_elevation",
+                "AnimateElevation",
+                "sequence",
+                "Sequence",
+                "parallel",
+                "Parallel",
+            ):
+                return _parse_animation_call(call)
             if fn in ("toast", "Toast"):
                 args = [_parse_expr(a) for a in call.args]
                 if not args:
@@ -241,6 +264,260 @@ def _parse_permissions_call(call):
     if request_code is None:
         request_code = 0
     return perms, request_code
+
+
+def _parse_animation_call(call):
+    if not isinstance(call.func, ast.Name):
+        raise RuntimeError("Animation calls must use direct function names")
+
+    fn = call.func.id
+    fn_l = _normalize_anim_fn_name(fn)
+    if fn_l in ("sequence", "parallel"):
+        if call.keywords:
+            raise RuntimeError(f"{fn} does not accept keyword arguments")
+        items = []
+        for arg in call.args:
+            if not isinstance(arg, ast.Call):
+                raise RuntimeError(f"{fn} arguments must be animation calls")
+            items.append(_parse_animation_call(arg))
+        if not items:
+            raise RuntimeError(f"{fn} requires at least one animation")
+        mode = "sequence" if fn_l == "sequence" else "parallel"
+        return _StmtAnimationGroup(mode, items)
+
+    return _parse_animate_like_call(call, fn_l)
+
+
+def _parse_animate_like_call(call, fn_l):
+    target, remaining_args = _parse_anim_target(call.args)
+    kwargs = {kw.arg: kw.value for kw in (call.keywords or [])}
+    if any(k is None for k in kwargs):
+        raise RuntimeError("Animation keyword unpacking is not supported")
+
+    duration = _pop_const_int(kwargs, "duration")
+    delay = _pop_const_int(kwargs, "delay")
+    interpolator = _pop_const_str(kwargs, "interpolator")
+    properties = {}
+
+    if fn_l in ("animate",):
+        properties, kwargs = _parse_animate_properties(remaining_args, kwargs)
+    elif fn_l in ("fade_in",):
+        _require_no_args(remaining_args, "fade_in")
+        properties["alpha"] = 1.0
+    elif fn_l in ("fade_out",):
+        _require_no_args(remaining_args, "fade_out")
+        properties["alpha"] = 0.0
+    elif fn_l in ("rotate",):
+        value = _parse_single_numeric_arg_or_kw(
+            remaining_args,
+            kwargs,
+            fn_name="rotate",
+            kw_names=("to", "value", "degrees"),
+        )
+        properties["rotate"] = value
+    elif fn_l in ("scale",):
+        properties.update(_parse_scale_args(remaining_args, kwargs))
+    elif fn_l in ("translate",):
+        properties.update(_parse_translate_args(remaining_args, kwargs))
+    elif fn_l in ("animate_elevation",):
+        value = _parse_single_numeric_arg_or_kw(
+            remaining_args,
+            kwargs,
+            fn_name="animate_elevation",
+            kw_names=("to", "value"),
+        )
+        properties["elevation"] = value
+    else:
+        raise RuntimeError(f"Unsupported animation helper: {fn_l}")
+
+    if kwargs:
+        bad = ", ".join(sorted(kwargs.keys()))
+        raise RuntimeError(f"Unsupported animation keyword(s): {bad}")
+    if not properties:
+        raise RuntimeError("Animation requires at least one property")
+    return _StmtAnimate(
+        target=target,
+        properties=properties,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def _parse_anim_target(args):
+    if not args:
+        raise RuntimeError("Animation requires a target view id")
+    first = args[0]
+    if not isinstance(first, ast.Constant) or not isinstance(first.value, str):
+        raise RuntimeError("Animation target must be a constant string id")
+    return first.value, list(args[1:])
+
+
+def _parse_single_numeric_arg_or_kw(args, kwargs, *, fn_name, kw_names):
+    value = None
+    if args:
+        if len(args) > 1:
+            raise RuntimeError(f"{fn_name} accepts at most one positional value")
+        value = _require_numeric_const(args[0], f"{fn_name} value")
+    for key in kw_names:
+        if key in kwargs:
+            if value is not None:
+                raise RuntimeError(f"{fn_name} value specified more than once")
+            value = _require_numeric_const(kwargs.pop(key), f"{fn_name} {key}")
+    if value is None:
+        raise RuntimeError(f"{fn_name} requires a numeric value")
+    return value
+
+
+def _parse_scale_args(args, kwargs):
+    props = {}
+    if args:
+        if len(args) > 1:
+            raise RuntimeError("scale accepts at most one positional scale value")
+        value = _require_numeric_const(args[0], "scale value")
+        props["scale"] = value
+
+    if "to" in kwargs:
+        value = _require_numeric_const(kwargs.pop("to"), "scale to")
+        if props:
+            raise RuntimeError("scale value specified more than once")
+        props["scale"] = value
+    if "value" in kwargs:
+        value = _require_numeric_const(kwargs.pop("value"), "scale value")
+        if props:
+            raise RuntimeError("scale value specified more than once")
+        props["scale"] = value
+
+    if "x" in kwargs:
+        props["scale_x"] = _require_numeric_const(kwargs.pop("x"), "scale x")
+    if "y" in kwargs:
+        props["scale_y"] = _require_numeric_const(kwargs.pop("y"), "scale y")
+    if "scale_x" in kwargs:
+        props["scale_x"] = _require_numeric_const(kwargs.pop("scale_x"), "scale_x")
+    if "scale_y" in kwargs:
+        props["scale_y"] = _require_numeric_const(kwargs.pop("scale_y"), "scale_y")
+    if not props:
+        raise RuntimeError("scale requires value, x/y, or scale_x/scale_y")
+    return props
+
+
+def _parse_translate_args(args, kwargs):
+    props = {}
+    if args:
+        if len(args) > 2:
+            raise RuntimeError("translate accepts at most two positional values")
+        props["translate_x"] = _require_numeric_const(args[0], "translate x")
+        if len(args) == 2:
+            props["translate_y"] = _require_numeric_const(args[1], "translate y")
+
+    if "x" in kwargs:
+        props["translate_x"] = _require_numeric_const(kwargs.pop("x"), "translate x")
+    if "y" in kwargs:
+        props["translate_y"] = _require_numeric_const(kwargs.pop("y"), "translate y")
+    if "translate_x" in kwargs:
+        props["translate_x"] = _require_numeric_const(kwargs.pop("translate_x"), "translate_x")
+    if "translate_y" in kwargs:
+        props["translate_y"] = _require_numeric_const(kwargs.pop("translate_y"), "translate_y")
+    if not props:
+        raise RuntimeError("translate requires x/y or translate_x/translate_y")
+    return props
+
+
+def _parse_animate_properties(args, kwargs):
+    properties = {}
+    if args:
+        if len(args) != 2:
+            raise RuntimeError("animate positional form is animate(id, property, value)")
+        prop_node, value_node = args
+        if not isinstance(prop_node, ast.Constant) or not isinstance(prop_node.value, str):
+            raise RuntimeError("animate property must be a constant string")
+        prop_name = _normalize_anim_property(prop_node.value)
+        properties[prop_name] = _require_numeric_const(value_node, f"animate {prop_name}")
+
+    allowed = {
+        "rotate",
+        "scale",
+        "scale_x",
+        "scale_y",
+        "translate_x",
+        "translate_y",
+        "alpha",
+        "elevation",
+    }
+    for key in list(kwargs.keys()):
+        if key in ("duration", "delay", "interpolator"):
+            continue
+        normalized = _normalize_anim_property(key)
+        if normalized not in allowed:
+            raise RuntimeError(f"Unsupported animate property '{key}'")
+        properties[normalized] = _require_numeric_const(kwargs.pop(key), f"animate {normalized}")
+
+    if not properties:
+        raise RuntimeError("animate requires at least one animatable property")
+    return properties, kwargs
+
+
+def _normalize_anim_property(name):
+    mapping = {
+        "rotation": "rotate",
+        "rotate": "rotate",
+        "scale": "scale",
+        "scale_x": "scale_x",
+        "scalex": "scale_x",
+        "scale_y": "scale_y",
+        "scaley": "scale_y",
+        "translate_x": "translate_x",
+        "translation_x": "translate_x",
+        "translatey": "translate_y",
+        "translate_y": "translate_y",
+        "translation_y": "translate_y",
+        "alpha": "alpha",
+        "elevation": "elevation",
+    }
+    key = str(name).strip().lower().replace("-", "_")
+    return mapping.get(key, key)
+
+
+def _normalize_anim_fn_name(name):
+    key = str(name).strip().lower().replace("-", "_")
+    mapping = {
+        "fadein": "fade_in",
+        "fadeout": "fade_out",
+        "animateelevation": "animate_elevation",
+    }
+    return mapping.get(key, key)
+
+
+def _pop_const_int(kwargs, key):
+    if key not in kwargs:
+        return None
+    node = kwargs.pop(key)
+    if not isinstance(node, ast.Constant) or not isinstance(node.value, int) or isinstance(node.value, bool):
+        raise RuntimeError(f"{key} must be an integer constant")
+    return int(node.value)
+
+
+def _pop_const_str(kwargs, key):
+    if key not in kwargs:
+        return None
+    node = kwargs.pop(key)
+    if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
+        raise RuntimeError(f"{key} must be a string constant")
+    return str(node.value)
+
+
+def _require_numeric_const(node, label):
+    if not isinstance(node, ast.Constant):
+        raise RuntimeError(f"{label} must be a numeric constant")
+    value = node.value
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RuntimeError(f"{label} must be a numeric constant")
+    return float(value)
+
+
+def _require_no_args(args, fn_name):
+    if args:
+        raise RuntimeError(f"{fn_name} does not accept positional value arguments")
 
 
 def _parse_permission_arg(node):

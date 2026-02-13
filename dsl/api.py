@@ -521,6 +521,221 @@ def replace(target):
     return Replace(target)
 
 
+def Animate(
+    target,
+    property_name=None,
+    value=None,
+    *,
+    duration=None,
+    delay=None,
+    interpolator=None,
+    **properties,
+):
+    from .ast import _StmtAnimate
+
+    if property_name is not None:
+        if value is None:
+            raise RuntimeError("Animate(property_name=...) requires a value")
+        if properties:
+            raise RuntimeError("Animate cannot mix property_name/value with property kwargs")
+        properties = {property_name: value}
+    if not properties:
+        raise RuntimeError("Animate requires at least one animatable property")
+
+    normalized = {}
+    for key, raw in properties.items():
+        norm_key = _normalize_anim_property_name(key)
+        if norm_key not in {
+            "rotate",
+            "scale",
+            "scale_x",
+            "scale_y",
+            "translate_x",
+            "translate_y",
+            "alpha",
+            "elevation",
+        }:
+            raise RuntimeError(f"Unsupported animation property '{key}'")
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            raise RuntimeError(f"Animation property '{key}' must be numeric")
+        normalized[norm_key] = float(raw)
+
+    if duration is not None:
+        duration = int(duration)
+    if delay is not None:
+        delay = int(delay)
+    if interpolator is not None:
+        interpolator = str(interpolator)
+
+    return _StmtAnimate(
+        target=str(target),
+        properties=normalized,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def animate(
+    target,
+    property_name=None,
+    value=None,
+    *,
+    duration=None,
+    delay=None,
+    interpolator=None,
+    **properties,
+):
+    return Animate(
+        target,
+        property_name,
+        value,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+        **properties,
+    )
+
+
+def FadeIn(target, *, duration=None, delay=None, interpolator=None):
+    return Animate(
+        target,
+        alpha=1.0,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def fade_in(target, *, duration=None, delay=None, interpolator=None):
+    return FadeIn(target, duration=duration, delay=delay, interpolator=interpolator)
+
+
+def FadeOut(target, *, duration=None, delay=None, interpolator=None):
+    return Animate(
+        target,
+        alpha=0.0,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def fade_out(target, *, duration=None, delay=None, interpolator=None):
+    return FadeOut(target, duration=duration, delay=delay, interpolator=interpolator)
+
+
+def Rotate(target, value, *, duration=None, delay=None, interpolator=None):
+    return Animate(
+        target,
+        rotate=value,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def rotate(target, value, *, duration=None, delay=None, interpolator=None):
+    return Rotate(target, value, duration=duration, delay=delay, interpolator=interpolator)
+
+
+def Scale(target, value=None, *, x=None, y=None, duration=None, delay=None, interpolator=None):
+    props = {}
+    if value is not None:
+        props["scale"] = value
+    if x is not None:
+        props["scale_x"] = x
+    if y is not None:
+        props["scale_y"] = y
+    if not props:
+        raise RuntimeError("Scale requires value or x/y")
+    return Animate(
+        target,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+        **props,
+    )
+
+
+def scale(target, value=None, *, x=None, y=None, duration=None, delay=None, interpolator=None):
+    return Scale(
+        target,
+        value=value,
+        x=x,
+        y=y,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def Translate(target, x=None, y=None, *, duration=None, delay=None, interpolator=None):
+    props = {}
+    if x is not None:
+        props["translate_x"] = x
+    if y is not None:
+        props["translate_y"] = y
+    if not props:
+        raise RuntimeError("Translate requires x and/or y")
+    return Animate(
+        target,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+        **props,
+    )
+
+
+def translate(target, x=None, y=None, *, duration=None, delay=None, interpolator=None):
+    return Translate(
+        target,
+        x=x,
+        y=y,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def AnimateElevation(target, value, *, duration=None, delay=None, interpolator=None):
+    return Animate(
+        target,
+        elevation=value,
+        duration=duration,
+        delay=delay,
+        interpolator=interpolator,
+    )
+
+
+def animate_elevation(target, value, *, duration=None, delay=None, interpolator=None):
+    return AnimateElevation(target, value, duration=duration, delay=delay, interpolator=interpolator)
+
+
+def Sequence(*animations):
+    from .ast import _StmtAnimationGroup
+
+    if not animations:
+        raise RuntimeError("Sequence requires at least one animation")
+    return _StmtAnimationGroup("sequence", list(animations))
+
+
+def sequence(*animations):
+    return Sequence(*animations)
+
+
+def Parallel(*animations):
+    from .ast import _StmtAnimationGroup
+
+    if not animations:
+        raise RuntimeError("Parallel requires at least one animation")
+    return _StmtAnimationGroup("parallel", list(animations))
+
+
+def parallel(*animations):
+    return Parallel(*animations)
+
+
 def request_permissions(*permissions, request_code=0):
     from .ast import _StmtRequestPermissions
     if len(permissions) == 1 and isinstance(permissions[0], (list, tuple, set)):
@@ -542,6 +757,26 @@ def theme(**kwargs):
 
 def presets(palette=None):
     return presets_widget(palette=palette)
+
+
+def _normalize_anim_property_name(name):
+    key = str(name).strip().lower().replace("-", "_")
+    mapping = {
+        "rotation": "rotate",
+        "rotate": "rotate",
+        "scale": "scale",
+        "scale_x": "scale_x",
+        "scalex": "scale_x",
+        "scale_y": "scale_y",
+        "scaley": "scale_y",
+        "translate_x": "translate_x",
+        "translation_x": "translate_x",
+        "translate_y": "translate_y",
+        "translation_y": "translate_y",
+        "alpha": "alpha",
+        "elevation": "elevation",
+    }
+    return mapping.get(key, key)
 
 def _resolve_plugins(activity_spec: _ActivitySpec, caller_module: str | None):
     plugins = []
