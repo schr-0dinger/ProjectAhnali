@@ -1016,11 +1016,11 @@ All animations and effects must be explicit and imperative.
 
 ## Global Constraints (Apply to Every Phase)
 
-❌ Keep handlers named and statically registered (no lambdas/dynamic callbacks).
-❌ Keep compile-time ID validation for all widget/event references.
-❌ Keep deterministic lowering only (no runtime behavior inference).
-❌ Add compile-time lint for unsupported widget/style combinations.
-❌ Add focused lowering tests and at least one integration smoke test per phase.
+✅ Keep handlers named and statically registered (no lambdas/dynamic callbacks).
+✅ Keep compile-time ID validation for all widget/event references.
+✅ Keep deterministic lowering only (no runtime behavior inference).
+✅ Add compile-time lint for unsupported widget/style combinations.
+⚠️ Add focused lowering tests and at least one integration smoke test per phase.
 
 ## Phase 1: Typography v1
 
@@ -1045,9 +1045,9 @@ All animations and effects must be explicit and imperative.
 ✅ Lower `ellipsize` to `setEllipsize`.
 
 ### Coverage
-❌ Text
-❌ Button family
-❌ Radio / Checkbox / Switch
+✅ Text
+✅ Button family
+✅ Radio / Checkbox / Switch
 ❌ Dropdown text surface
 ❌ Popup menu item text surface
 
@@ -1074,15 +1074,15 @@ All animations and effects must be explicit and imperative.
 ## Phase 3: ColorStateList DSL
 
 ### DSL (`dsl/widgets.py` or `dsl/colors.py`)
-❌ Add `ColorState(default=..., pressed=..., disabled=..., selected=..., focused=...)`.
-❌ Validate allowed keys: `default`, `pressed`, `disabled`, `selected`, `focused`.
-❌ Deterministic state ordering for emitted arrays.
+✅ Add `ColorState(default=..., pressed=..., disabled=..., selected=..., focused=...)`.
+✅ Validate allowed keys: `default`, `pressed`, `disabled`, `selected`, `focused`.
+✅ Deterministic state ordering for emitted arrays.
 
 ### Lowering (`dsl/lowering/context.py`)
-❌ Convert `ColorState` to `ColorStateList`.
-❌ Support `ColorState` in `text_color`.
-❌ Support `ColorState` in `background`/tint channels.
-❌ Support `ColorState` in progress/tint fields.
+✅ Convert `ColorState` to `ColorStateList`.
+✅ Support `ColorState` in `text_color`.
+⚠️ Support `ColorState` in `background`/tint channels.
+✅ Support `ColorState` in progress/tint fields.
 
 ## Phase 4: Event Surface Expansion
 
@@ -1256,8 +1256,8 @@ All animations and effects must be explicit and imperative.
 ✅ Add `ListView(items=[...], item_layout=...)` static-only shape.
 
 ### Lowering
-⚠️ Deterministic adapter generation (static `ArrayAdapter` path; dedicated RecyclerView adapter class still pending).
-❌ Stable view holder + bind logic.
+✅ Deterministic adapter generation.
+✅ Stable view holder + bind logic.
 ✅ Compile-time-only dataset (no runtime diffing).
 
 ## Phase 13: Validation and Linting

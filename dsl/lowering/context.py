@@ -151,6 +151,7 @@ class _PythonicContext:
         self._view_screen = {}
         self._nav_stack_limit = 0
         self._popup_button_items = {}
+        self._generated_support_classes = []
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -277,6 +278,11 @@ class _PythonicContext:
                 "Widget ids must be unique across Screens."
             )
         self._view_screen[view_id] = self._current_screen
+
+    def _queue_support_class(self, class_desc: str, target_method: str, target_desc: str, kind: str):
+        entry = (class_desc, target_method, target_desc, kind)
+        if entry not in self._generated_support_classes:
+            self._generated_support_classes.append(entry)
 
     def _nav_limit(self) -> int:
         if self._nav_stack_limit:
@@ -1278,6 +1284,7 @@ class _PythonicContext:
         self._view_screen = {}
         self._current_screen = None
         self._nav_stack_limit = 0
+        self._generated_support_classes = []
         self._build_theme_resources()
 
         # Ensure app_ctx is available for resource helper calls.
@@ -1711,6 +1718,9 @@ class _PythonicContext:
             )
             method_class_map[handler_name] = handler_owner_desc
         method_class_map.update(res_map)
+        for extra_entry in self._generated_support_classes:
+            if extra_entry not in support_classes:
+                support_classes.append(extra_entry)
 
         # Main method
         if use_overlay_root and screen_root_id:
@@ -2398,20 +2408,25 @@ class _PythonicContext:
             item.id = self._register_view(item.id, "list_view")
             if item.layout is None:
                 item.layout = ("match_parent", "wrap")
+            item_layout_res = int(item.item_layout_res)
+            if item_layout_res != 0x1090003:
+                raise RuntimeError(
+                    f"ListView '{item.id}' item_layout={item_layout_res} is not yet supported by "
+                    "the deterministic adapter path; use simple_list_item_1."
+                )
             adapter_name = f"adapter_{item.id}"
+            items_array_name = f"items_{item.id}"
+            adapter_class_desc = f"Lcom/anali/preview/AnaliListAdapter_{item.id};"
             body.extend(
                 [
                     assign(item.id, new("Landroid/widget/ListView;", args=[var("ctx")])),
                     assign(
-                        adapter_name,
-                        new(
-                            "Landroid/widget/ArrayAdapter;",
-                            args=[var("ctx"), const(int(item.item_layout_res))],
-                        ),
+                        items_array_name,
+                        new_array(const(len(item.items)), "Ljava/lang/String;"),
                     ),
                 ]
             )
-            for val in item.items:
+            for idx, val in enumerate(item.items):
                 item_key = self._add_string_resource(f"{item.id}_item", str(val))
                 item_load, item_expr = self._load_string_expr(
                     item_key,
@@ -2420,22 +2435,37 @@ class _PythonicContext:
                 )
                 body.extend(item_load)
                 body.append(
-                    call_stmt(
-                        "add",
-                        args=[var(adapter_name), item_expr],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/ArrayAdapter;",
+                    array_set(
+                        var(items_array_name),
+                        const(idx),
+                        "Ljava/lang/String;",
+                        item_expr,
                     )
                 )
-            body.append(
-                call_stmt(
-                    "setAdapter",
-                    args=[var(item.id), var(adapter_name)],
-                    return_type=None,
-                    invoke_kind="virtual",
-                    owner="Landroid/widget/ListView;",
-                )
+            body.extend(
+                [
+                    assign(
+                        adapter_name,
+                        new(
+                            adapter_class_desc,
+                            args=[var("ctx"), var(items_array_name)],
+                            arg_types=["Landroid/content/Context;", "[Ljava/lang/String;"],
+                        ),
+                    ),
+                    call_stmt(
+                        "setAdapter",
+                        args=[var(item.id), var(adapter_name)],
+                        return_type=None,
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/ListView;",
+                    ),
+                ]
+            )
+            self._queue_support_class(
+                adapter_class_desc,
+                str(item_layout_res),
+                "LTest;",
+                "list_adapter",
             )
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))

@@ -407,17 +407,109 @@ def emit_activity_wrapper_smali(
     return "\n".join(lines)
 
 
+def emit_list_view_adapter_smali(
+    class_desc: str,
+    *,
+    item_layout_res: int = 0x1090003,
+):
+    lines = []
+    lines.append(f".class public {class_desc}")
+    lines.append(".super Landroid/widget/BaseAdapter;")
+    lines.append("")
+    lines.append(".field private final mInflater:Landroid/view/LayoutInflater;")
+    lines.append(".field private final mItems:[Ljava/lang/String;")
+    lines.append("")
+
+    lines.append(".method public constructor <init>(Landroid/content/Context;[Ljava/lang/String;)V")
+    lines.append("    .locals 1")
+    lines.append("    invoke-direct {p0}, Landroid/widget/BaseAdapter;-><init>()V")
+    lines.append("    iput-object p2, p0, " + class_desc + "->mItems:[Ljava/lang/String;")
+    lines.append(
+        "    invoke-static {p1}, Landroid/view/LayoutInflater;->from(Landroid/content/Context;)Landroid/view/LayoutInflater;"
+    )
+    lines.append("    move-result-object v0")
+    lines.append("    iput-object v0, p0, " + class_desc + "->mInflater:Landroid/view/LayoutInflater;")
+    lines.append("    return-void")
+    lines.append(".end method")
+    lines.append("")
+
+    lines.append(".method public getCount()I")
+    lines.append("    .locals 1")
+    lines.append("    iget-object v0, p0, " + class_desc + "->mItems:[Ljava/lang/String;")
+    lines.append("    array-length v0, v0")
+    lines.append("    return v0")
+    lines.append(".end method")
+    lines.append("")
+
+    lines.append(".method public getItem(I)Ljava/lang/Object;")
+    lines.append("    .locals 1")
+    lines.append("    iget-object v0, p0, " + class_desc + "->mItems:[Ljava/lang/String;")
+    lines.append("    aget-object v0, v0, p1")
+    lines.append("    return-object v0")
+    lines.append(".end method")
+    lines.append("")
+
+    lines.append(".method public getItemId(I)J")
+    lines.append("    .locals 2")
+    lines.append("    int-to-long v0, p1")
+    lines.append("    return-wide v0")
+    lines.append(".end method")
+    lines.append("")
+
+    lines.append(".method public getView(ILandroid/view/View;Landroid/view/ViewGroup;)Landroid/view/View;")
+    lines.append("    .locals 6")
+    lines.append("    if-nez p2, :reuse_view")
+    lines.append("    iget-object v0, p0, " + class_desc + "->mInflater:Landroid/view/LayoutInflater;")
+    lines.append(f"    const v1, 0x{item_layout_res:x}")
+    lines.append("    const/4 v2, 0x0")
+    lines.append(
+        "    invoke-virtual {v0, v1, p3, v2}, Landroid/view/LayoutInflater;->inflate(ILandroid/view/ViewGroup;Z)Landroid/view/View;"
+    )
+    lines.append("    move-result-object p2")
+    lines.append("    const v1, 0x1020014")
+    lines.append("    invoke-virtual {p2, v1}, Landroid/view/View;->findViewById(I)Landroid/view/View;")
+    lines.append("    move-result-object v3")
+    lines.append("    check-cast v3, Landroid/widget/TextView;")
+    lines.append("    invoke-virtual {p2, v3}, Landroid/view/View;->setTag(Ljava/lang/Object;)V")
+    lines.append("    goto :bind")
+    lines.append("")
+    lines.append("  :reuse_view")
+    lines.append("    nop")
+    lines.append("")
+    lines.append("  :bind")
+    lines.append("    invoke-virtual {p2}, Landroid/view/View;->getTag()Ljava/lang/Object;")
+    lines.append("    move-result-object v4")
+    lines.append("    check-cast v4, Landroid/widget/TextView;")
+    lines.append("    iget-object v5, p0, " + class_desc + "->mItems:[Ljava/lang/String;")
+    lines.append("    aget-object v5, v5, p1")
+    lines.append("    invoke-virtual {v4, v5}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V")
+    lines.append("    return-object p2")
+    lines.append(".end method")
+    return "\n".join(lines)
+
+
 def emit_event_listener_smali(
     class_desc: str,
     target_desc: str,
     target_method: str,
     listener_kind: str = "click",
 ):
+    kind = str(listener_kind or "click").strip().lower()
+    if kind == "list_adapter":
+        item_layout_res = 0x1090003
+        try:
+            item_layout_res = int(str(target_method), 0)
+        except Exception:
+            item_layout_res = 0x1090003
+        return emit_list_view_adapter_smali(
+            class_desc=class_desc,
+            item_layout_res=item_layout_res,
+        )
+
     lines = []
 
     lines.append(f".class public {class_desc}")
     lines.append(".super Ljava/lang/Object;")
-    kind = str(listener_kind or "click").strip().lower()
 
     if kind == "click":
         iface = "Landroid/view/View$OnClickListener;"
