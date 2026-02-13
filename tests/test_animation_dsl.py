@@ -44,6 +44,8 @@ def test_explicit_animate_uses_viewpropertyanimator_and_objectanimator():
     assert "Landroid/view/ViewPropertyAnimator;->rotation(F)Landroid/view/ViewPropertyAnimator;" in smali
     assert "Landroid/view/ViewPropertyAnimator;->setDuration(J)Landroid/view/ViewPropertyAnimator;" in smali
     assert "Landroid/view/ViewPropertyAnimator;->setStartDelay(J)Landroid/view/ViewPropertyAnimator;" in smali
+    assert "int-to-long" in smali
+    assert "i-to-l" not in smali
     assert (
         "Landroid/animation/ObjectAnimator;->ofFloat"
         "(Ljava/lang/Object;Ljava/lang/String;[F)Landroid/animation/ObjectAnimator;"

@@ -167,3 +167,41 @@ def test_constfold_branch_heavy_keeps_binaryop_when_needed():
                 has_binaryop_or_const = True
 
     assert has_binaryop_or_const
+
+
+def test_constfold_extended_int_binary_ops():
+    ir = [
+        Assign("x", 12),
+        Assign("y", 5),
+        Assign("a", BinaryOp("&", Var("x"), Var("y"))),
+        Assign("b", BinaryOp("|", Var("x"), Var("y"))),
+        Assign("c", BinaryOp("^", Var("x"), Var("y"))),
+        Assign("d", BinaryOp("<<", Var("x"), Const(1))),
+        Assign("e", BinaryOp(">>", Var("x"), Const(1))),
+        Assign("f", BinaryOp(">>>", Var("x"), Const(1))),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    folded_values = {expr.value for b in ssa_blocks.values() for stmt in b.statements for expr in [getattr(stmt, "expr", None)] if isinstance(expr, Const)}
+
+    assert (12 & 5) in folded_values
+    assert (12 | 5) in folded_values
+    assert (12 ^ 5) in folded_values
+    assert (12 << 1) in folded_values
+    assert (12 >> 1) in folded_values
+    assert 6 in folded_values  # 12 >>> 1
+
+
+def test_constfold_unsigned_right_shift_negative():
+    ir = [
+        Assign("x", -2),
+        Assign("y", BinaryOp(">>>", Var("x"), Const(1))),
+    ]
+
+    result = alpha_pipeline(ir, ssa_opt={"enable_folding": True})
+    ssa_blocks = result["ssa"]
+
+    folded_values = {expr.value for b in ssa_blocks.values() for stmt in b.statements for expr in [getattr(stmt, "expr", None)] if isinstance(expr, Const)}
+    assert 0x7FFFFFFF in folded_values

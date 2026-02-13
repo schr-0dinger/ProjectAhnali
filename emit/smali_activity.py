@@ -152,7 +152,19 @@ def emit_activity_smali(
                 rd = reg_map[instr.dst]
                 lines.append(f"    move-result-object {rd}")
 
-            elif name in ("DAdd", "DSub", "DMul", "DDiv", "DRem"):
+            elif name in (
+                "DAdd",
+                "DSub",
+                "DMul",
+                "DDiv",
+                "DRem",
+                "DAnd",
+                "DOr",
+                "DXor",
+                "DShl",
+                "DShr",
+                "DUshr",
+            ):
                 rd = reg_map[instr.dst]
                 ra = reg_map[instr.lhs]
                 rb = reg_map[instr.rhs]
@@ -167,14 +179,26 @@ def emit_activity_smali(
                     "DMul": "mul",
                     "DDiv": "div",
                     "DRem": "rem",
+                    "DAnd": "and",
+                    "DOr": "or",
+                    "DXor": "xor",
+                    "DShl": "shl",
+                    "DShr": "shr",
+                    "DUshr": "ushr",
                 }[name]
 
-                suffix = {
-                    "I": "int",
-                    "J": "long",
-                    "F": "float",
-                    "D": "double",
-                }.get(type_desc)
+                if op_base in ("and", "or", "xor", "shl", "shr", "ushr"):
+                    suffix = {
+                        "I": "int",
+                        "J": "long",
+                    }.get(type_desc)
+                else:
+                    suffix = {
+                        "I": "int",
+                        "J": "long",
+                        "F": "float",
+                        "D": "double",
+                    }.get(type_desc)
                 if suffix is None:
                     raise RuntimeError(f"Unsupported binary op type {type_desc}")
 

@@ -7,6 +7,12 @@ from dalvik.ir import (
     DMul,
     DDiv,
     DRem,
+    DAnd,
+    DOr,
+    DXor,
+    DShl,
+    DShr,
+    DUshr,
     DInvoke,
     DReturn,
     DThrow,
@@ -141,18 +147,18 @@ def emit_method_smali(method: DalvikMethod):
             return None
 
         opcode_map = {
-            ("I", "J"): "i-to-l",
-            ("I", "F"): "i-to-f",
-            ("I", "D"): "i-to-d",
-            ("J", "I"): "l-to-i",
-            ("J", "F"): "l-to-f",
-            ("J", "D"): "l-to-d",
-            ("F", "I"): "f-to-i",
-            ("F", "J"): "f-to-l",
-            ("F", "D"): "f-to-d",
-            ("D", "I"): "d-to-i",
-            ("D", "J"): "d-to-l",
-            ("D", "F"): "d-to-f",
+            ("I", "J"): "int-to-long",
+            ("I", "F"): "int-to-float",
+            ("I", "D"): "int-to-double",
+            ("J", "I"): "long-to-int",
+            ("J", "F"): "long-to-float",
+            ("J", "D"): "long-to-double",
+            ("F", "I"): "float-to-int",
+            ("F", "J"): "float-to-long",
+            ("F", "D"): "float-to-double",
+            ("D", "I"): "double-to-int",
+            ("D", "J"): "double-to-long",
+            ("D", "F"): "double-to-float",
         }
         op = opcode_map.get((from_norm, to_norm))
         if op is None:
@@ -202,6 +208,77 @@ def emit_method_smali(method: DalvikMethod):
             return f"{prefix}-short"
         return prefix
 
+    def _next_reg(reg):
+        return f"{reg[0]}{int(reg[1:]) + 1}"
+
+    def _is_wide_desc(desc):
+        return desc in ("J", "D")
+
+    def _is_int_const_ssa(value):
+        return (
+            isinstance(value, Const)
+            and isinstance(value.value, int)
+            and not isinstance(value.value, bool)
+        )
+
+    def _int_const_range(value):
+        if -128 <= value <= 127:
+            return "lit8"
+        if -32768 <= value <= 32767:
+            return "lit16"
+        return None
+
+    def _can_use_2addr(dst_reg, rhs_reg, type_desc):
+        dst_idx = _reg_index(dst_reg)
+        rhs_idx = _reg_index(rhs_reg)
+        if dst_idx > 15 or rhs_idx > 15:
+            return False
+        if type_desc in ("J", "D"):
+            return dst_idx <= 14 and rhs_idx <= 14
+        return True
+
+    def _coerce_type_desc(t, *, allow_none=False):
+        if isinstance(t, str):
+            return t
+        if t == AnaliType.INT:
+            return "I"
+        if t == AnaliType.FLOAT:
+            return "F"
+        if t == AnaliType.BOOL:
+            return "Z"
+        if t == AnaliType.STRING:
+            return "Ljava/lang/String;"
+        if t == AnaliType.OBJECT:
+            return "Ljava/lang/Object;"
+        if t is None and allow_none:
+            return None
+        raise RuntimeError(f"Unsupported type {t}")
+
+    def _invoke_arg_types_aligned(instr):
+        arg_types = list(instr.arg_types or [None] * len(instr.args))
+        if instr.invoke_kind in ("virtual", "direct", "interface", "super"):
+            if len(arg_types) == len(instr.args) - 1:
+                arg_types = [instr.owner] + arg_types
+            elif len(arg_types) != len(instr.args):
+                raise RuntimeError(
+                    "Call arg_types length does not match args for instance invoke"
+                )
+        elif len(arg_types) != len(instr.args):
+            raise RuntimeError("Call arg_types length does not match args")
+        return arg_types
+
+    def _invoke_word_regs(instr, aligned_types):
+        out = []
+        for arg, arg_type in zip(instr.args, aligned_types):
+            reg = reg_map[arg.ssa]
+            desc = _coerce_type_desc(arg_type, allow_none=True)
+            if desc is None:
+                desc = _coerce_type_desc(getattr(arg.ssa, "type", None), allow_none=True)
+            out.append(reg)
+            if _is_wide_desc(desc):
+                out.append(_next_reg(reg))
+        return out
+
     def _needs_low_temp_regs():
         for block in method.blocks.values():
             for instr in block.instructions:
@@ -228,7 +305,8 @@ def emit_method_smali(method: DalvikMethod):
     for block in method.blocks.values():
         for instr in block.instructions:
             if isinstance(instr, DInvoke):
-                regs = [reg_map[a.ssa] for a in instr.args]
+                aligned_types = _invoke_arg_types_aligned(instr)
+                regs = _invoke_word_regs(instr, aligned_types)
                 needs_range = len(regs) > 5 or any(_reg_index(r) > 15 for r in regs)
                 if needs_range:
                     range_temp_count = max(range_temp_count, len(regs))
@@ -250,27 +328,8 @@ def emit_method_smali(method: DalvikMethod):
         raise RuntimeError(
             f"Register index {max_idx} exceeds 65535; method has too many registers."
         )
-    def _type_desc(t):
-        if isinstance(t, str):
-            if len(t) == 1:
-                return t
-            return t
-        if t == AnaliType.INT:
-            return "I"
-        if t == AnaliType.FLOAT:
-            return "F"
-        if t == AnaliType.BOOL:
-            return "Z"
-        if t == AnaliType.STRING:
-            return "Ljava/lang/String;"
-        if t == AnaliType.OBJECT:
-            return "Ljava/lang/Object;"
-        if t is None:
-            return "V"
-        raise RuntimeError(f"Unsupported type {t}")
-
-    params_desc = "".join(_type_desc(t) for t in (method.param_types or []))
-    ret_desc = _type_desc(method.return_type)
+    params_desc = "".join(_coerce_type_desc(t) for t in (method.param_types or []))
+    ret_desc = "V" if method.return_type is None else _coerce_type_desc(method.return_type)
 
     lines.append(f".method public static {method.name}({params_desc}){ret_desc}")
     lines.append(f"    .registers {total_regs}")
@@ -534,7 +593,7 @@ def emit_method_smali(method: DalvikMethod):
                 rv = reg_map[instr.value.ssa]
                 lines.append(f"    monitor-exit {rv}")
 
-            elif isinstance(instr, (DAdd, DSub, DMul, DDiv, DRem)):
+            elif isinstance(instr, (DAdd, DSub, DMul, DDiv, DRem, DAnd, DOr, DXor, DShl, DShr, DUshr)):
                 rd = reg_map[instr.dst.ssa]
                 ra = reg_map[instr.lhs.ssa]
                 rb = reg_map[instr.rhs.ssa]
@@ -549,19 +608,65 @@ def emit_method_smali(method: DalvikMethod):
                     "DMul": "mul",
                     "DDiv": "div",
                     "DRem": "rem",
+                    "DAnd": "and",
+                    "DOr": "or",
+                    "DXor": "xor",
+                    "DShl": "shl",
+                    "DShr": "shr",
+                    "DUshr": "ushr",
                 }[instr.__class__.__name__]
 
-                suffix = {
-                    "I": "int",
-                    "J": "long",
-                    "F": "float",
-                    "D": "double",
-                }.get(type_desc)
+                if op_base in {"and", "or", "xor", "shl", "shr", "ushr"}:
+                    suffix = {
+                        "I": "int",
+                        "J": "long",
+                    }.get(type_desc)
+                else:
+                    suffix = {
+                        "I": "int",
+                        "J": "long",
+                        "F": "float",
+                        "D": "double",
+                    }.get(type_desc)
                 if suffix is None:
                     raise RuntimeError(f"Unsupported binary op type {type_desc}")
 
-                opcode = f"{op_base}-{suffix}"
+                rhs_const = instr.rhs.ssa if hasattr(instr.rhs, "ssa") else None
+                lhs_const = instr.lhs.ssa if hasattr(instr.lhs, "ssa") else None
 
+                # int literal opcodes: add/sub/rsub/mul/div/rem/and/or/xor/shl/shr/ushr-int/lit8|lit16
+                if type_desc == "I" and _is_int_const_ssa(rhs_const):
+                    lit = rhs_const.value
+                    lit_kind = _int_const_range(lit)
+                    if lit_kind and op_base in {"add", "mul", "div", "rem", "and", "or", "xor"}:
+                        lines.append(f"    {op_base}-int/{lit_kind} {rd}, {ra}, {lit}")
+                        continue
+                    if lit_kind == "lit8" and op_base in {"shl", "shr", "ushr"}:
+                        lines.append(f"    {op_base}-int/lit8 {rd}, {ra}, {lit}")
+                        continue
+                    if op_base == "sub":
+                        neg_lit = -lit
+                        neg_kind = _int_const_range(neg_lit)
+                        if neg_kind:
+                            lines.append(f"    add-int/{neg_kind} {rd}, {ra}, {neg_lit}")
+                            continue
+
+                # rsub-int/lit8|lit16: (const - reg)
+                if type_desc == "I" and _is_int_const_ssa(lhs_const):
+                    lit = lhs_const.value
+                    lit_kind = _int_const_range(lit)
+                    if lit_kind and op_base == "sub":
+                        if lit_kind == "lit8":
+                            lines.append(f"    rsub-int/lit8 {rd}, {rb}, {lit}")
+                        else:
+                            lines.append(f"    rsub-int {rd}, {rb}, {lit}")
+                        continue
+
+                if rd == ra and _can_use_2addr(rd, rb, type_desc):
+                    lines.append(f"    {op_base}-{suffix}/2addr {rd}, {rb}")
+                    continue
+
+                opcode = f"{op_base}-{suffix}"
                 lines.append(f"    {opcode} {rd}, {ra}, {rb}")
 
             elif isinstance(instr, DCompare):
@@ -591,84 +696,50 @@ def emit_method_smali(method: DalvikMethod):
                         f"Unsupported invoke kind: {instr.invoke_kind}"
                     )
 
-                arg_types = instr.arg_types or [None] * len(instr.args)
-                if instr.invoke_kind in ("virtual", "direct", "interface", "super"):
-                    if len(arg_types) == len(instr.args):
-                        arg_types = arg_types[1:]
-                    elif len(arg_types) != len(instr.args) - 1:
-                        raise RuntimeError(
-                            "Call arg_types length does not match args for instance invoke"
-                        )
-                elif len(arg_types) != len(instr.args):
-                    raise RuntimeError(
-                        "Call arg_types length does not match args"
-                    )
+                aligned_types = _invoke_arg_types_aligned(instr)
+                is_instance_invoke = instr.invoke_kind in ("virtual", "direct", "interface", "super")
+                param_types = aligned_types[1:] if is_instance_invoke else aligned_types
 
-                def _type_desc(t):
-                    if isinstance(t, str):
-                        if len(t) == 1:
-                            return t
-                        return t
-                    if t is None:
+                param_descs = []
+                for idx, arg_type in enumerate(param_types):
+                    desc = _coerce_type_desc(arg_type, allow_none=True)
+                    if desc is None:
+                        arg_idx = idx + 1 if is_instance_invoke else idx
+                        desc = _coerce_type_desc(getattr(instr.args[arg_idx].ssa, "type", None), allow_none=True)
+                    if desc is None:
                         raise RuntimeError("Call arg type missing")
-                    if t == AnaliType.INT:
-                        return "I"
-                    if t == AnaliType.FLOAT:
-                        return "F"
-                    if t == AnaliType.BOOL:
-                        return "Z"
-                    if t == AnaliType.STRING:
-                        return "Ljava/lang/String;"
-                    if t == AnaliType.OBJECT:
-                        return "Ljava/lang/Object;"
-                    raise RuntimeError(f"Unsupported type {t}")
+                    param_descs.append(desc)
+                arg_desc = "".join(param_descs)
 
-                arg_desc = "".join(_type_desc(t) for t in arg_types)
+                ret_desc = "V" if instr.return_type is None else _coerce_type_desc(instr.return_type)
 
-                if instr.return_type is None:
-                    ret_desc = "V"
-                elif instr.return_type == AnaliType.INT:
-                    ret_desc = "I"
-                elif instr.return_type == AnaliType.FLOAT:
-                    ret_desc = "F"
-                elif instr.return_type == AnaliType.BOOL:
-                    ret_desc = "Z"
-                elif instr.return_type == AnaliType.STRING:
-                    ret_desc = "Ljava/lang/String;"
-                elif instr.return_type == AnaliType.OBJECT:
-                    ret_desc = "Ljava/lang/Object;"
-                elif isinstance(instr.return_type, str):
-                    ret_desc = instr.return_type
-                else:
-                    raise RuntimeError(f"Unsupported return type {instr.return_type}")
-
-                regs_list = [reg_map[a.ssa] for a in instr.args]
+                regs_list = _invoke_word_regs(instr, aligned_types)
                 needs_range = len(regs_list) > 5 or any(_reg_index(r) > 15 for r in regs_list)
 
                 if needs_range:
                     temp_base = locals_count
                     range_invoke = f"{invoke}/range"
-
-                    # Build arg type list aligned to args
-                    if instr.invoke_kind in ("virtual", "direct", "interface", "super"):
-                        if len(arg_types) == len(instr.args):
-                            arg_types_for_args = arg_types
-                        else:
-                            arg_types_for_args = [instr.owner] + arg_types
-                    else:
-                        arg_types_for_args = arg_types
-
-                    for i, (arg, arg_t) in enumerate(zip(instr.args, arg_types_for_args)):
+                    cursor = 0
+                    for arg, arg_type in zip(instr.args, aligned_types):
                         src = reg_map[arg.ssa]
-                        dst = f"v{temp_base + i}"
-                        if src == dst:
-                            continue
-                        is_obj = isinstance(arg_t, str) and (arg_t.startswith("L") or arg_t.startswith("["))
-                        move_op = _move_opcode(src, dst, is_obj)
-                        lines.append(f"    {move_op} {dst}, {src}")
+                        desc = _coerce_type_desc(arg_type, allow_none=True)
+                        if desc is None:
+                            desc = _coerce_type_desc(getattr(arg.ssa, "type", None), allow_none=True)
+                        dst = f"v{temp_base + cursor}"
+                        if _is_wide_desc(desc):
+                            if src != dst:
+                                move_op = _move_wide_opcode(src, dst)
+                                lines.append(f"    {move_op} {dst}, {src}")
+                            cursor += 2
+                        else:
+                            if src != dst:
+                                is_obj = _is_reference_desc(desc)
+                                move_op = _move_opcode(src, dst, is_obj)
+                                lines.append(f"    {move_op} {dst}, {src}")
+                            cursor += 1
 
                     start = f"v{temp_base}"
-                    end = f"v{temp_base + len(regs_list) - 1}"
+                    end = f"v{temp_base + cursor - 1}"
                     lines.append(
                         f"    {range_invoke} {{{start} .. {end}}}, {instr.owner}->{instr.method}({arg_desc}){ret_desc}"
                     )
@@ -680,16 +751,9 @@ def emit_method_smali(method: DalvikMethod):
 
                 if instr.dst and instr.return_type is not None:
                     rd = reg_map[instr.dst.ssa]
-                    if instr.return_type in ("J", "D"):
+                    if ret_desc in ("J", "D"):
                         lines.append(f"    move-result-wide {rd}")
-                    elif (
-                        instr.return_type == AnaliType.OBJECT
-                        or instr.return_type == AnaliType.STRING
-                        or (
-                            isinstance(instr.return_type, str)
-                            and (instr.return_type.startswith("L") or instr.return_type.startswith("["))
-                        )
-                    ):
+                    elif _is_reference_desc(ret_desc):
                         lines.append(f"    move-result-object {rd}")
                     else:
                         lines.append(f"    move-result {rd}")

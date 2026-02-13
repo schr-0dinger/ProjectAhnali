@@ -170,6 +170,12 @@ class _UIText:
         translation_y=None,
         clip_to_outline=None,
         clip_children=None,
+        on_click=None,
+        on_change=None,
+        on_text_change=None,
+        on_item_selected=None,
+        on_menu_item_selected=None,
+        on_focus_change=None,
         style=None,
     ):
         self.id = id
@@ -223,6 +229,12 @@ class _UIText:
         self.translation_y = translation_y
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
+        self.on_click = on_click
+        self.on_change = on_change
+        self.on_text_change = on_text_change
+        self.on_item_selected = on_item_selected
+        self.on_menu_item_selected = on_menu_item_selected
+        self.on_focus_change = on_focus_change
         self.style = style
 
 
@@ -282,6 +294,12 @@ class _UIButton:
         translation_y=None,
         clip_to_outline=None,
         clip_children=None,
+        on_click=None,
+        on_change=None,
+        on_text_change=None,
+        on_item_selected=None,
+        on_menu_item_selected=None,
+        on_focus_change=None,
         style=None,
     ):
         self.id = id
@@ -336,6 +354,12 @@ class _UIButton:
         self.translation_y = translation_y
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
+        self.on_click = on_click
+        self.on_change = on_change
+        self.on_text_change = on_text_change
+        self.on_item_selected = on_item_selected
+        self.on_menu_item_selected = on_menu_item_selected
+        self.on_focus_change = on_focus_change
         self.style = style
 
 
@@ -382,6 +406,12 @@ class _UIView:
         translation_y=None,
         clip_to_outline=None,
         clip_children=None,
+        on_click=None,
+        on_change=None,
+        on_text_change=None,
+        on_item_selected=None,
+        on_menu_item_selected=None,
+        on_focus_change=None,
         style=None,
     ):
         self.id = id
@@ -423,6 +453,12 @@ class _UIView:
         self.translation_y = translation_y
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
+        self.on_click = on_click
+        self.on_change = on_change
+        self.on_text_change = on_text_change
+        self.on_item_selected = on_item_selected
+        self.on_menu_item_selected = on_menu_item_selected
+        self.on_focus_change = on_focus_change
         self.style = style
 
 
@@ -1473,6 +1509,12 @@ def text(
     translation_y=None,
     clip_to_outline=None,
     clip_children=None,
+    on_click=None,
+    on_change=None,
+    on_text_change=None,
+    on_item_selected=None,
+    on_menu_item_selected=None,
+    on_focus_change=None,
     style=None,
 ):
     return _UIText(
@@ -1527,6 +1569,12 @@ def text(
         translation_y=translation_y,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
+        on_click=on_click,
+        on_change=on_change,
+        on_text_change=on_text_change,
+        on_item_selected=on_item_selected,
+        on_menu_item_selected=on_menu_item_selected,
+        on_focus_change=on_focus_change,
         style=style,
     )
 
@@ -1585,6 +1633,12 @@ def button(
     translation_y=None,
     clip_to_outline=None,
     clip_children=None,
+    on_click=None,
+    on_change=None,
+    on_text_change=None,
+    on_item_selected=None,
+    on_menu_item_selected=None,
+    on_focus_change=None,
     style=None,
 ):
     return _UIButton(
@@ -1640,6 +1694,12 @@ def button(
         translation_y=translation_y,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
+        on_click=on_click,
+        on_change=on_change,
+        on_text_change=on_text_change,
+        on_item_selected=on_item_selected,
+        on_menu_item_selected=on_menu_item_selected,
+        on_focus_change=on_focus_change,
         style=style,
     )
 
@@ -1685,6 +1745,12 @@ def view(
     translation_y=None,
     clip_to_outline=None,
     clip_children=None,
+    on_click=None,
+    on_change=None,
+    on_text_change=None,
+    on_item_selected=None,
+    on_menu_item_selected=None,
+    on_focus_change=None,
     style=None,
 ):
     return _UIView(
@@ -1727,6 +1793,12 @@ def view(
         translation_y=translation_y,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
+        on_click=on_click,
+        on_change=on_change,
+        on_text_change=on_text_change,
+        on_item_selected=on_item_selected,
+        on_menu_item_selected=on_menu_item_selected,
+        on_focus_change=on_focus_change,
         style=style,
     )
 

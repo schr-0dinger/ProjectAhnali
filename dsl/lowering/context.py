@@ -452,25 +452,6 @@ class _PythonicContext:
                 ),
             )
         )
-        duration_setup, duration_expr = self._long_const_expr(
-            220,
-            field_name="screen transition duration",
-            prefix=f"{screen_id}_transition_duration",
-        )
-        out.extend(duration_setup)
-        out.append(
-            assign(
-                animator_var,
-                call(
-                    "setDuration",
-                    args=[var(animator_var), duration_expr],
-                    return_type=None,
-                    arg_types=["J"],
-                    invoke_kind="virtual",
-                    owner="Landroid/view/ViewPropertyAnimator;",
-                ),
-            )
-        )
         out.append(
             call_stmt(
                 "start",

@@ -93,7 +93,19 @@ class BinaryOp(Expr):
     Arithmetic operation that produces a value.
     Used inside Assign statements.
     """
-    OPS = {"+", "-", "*", "/", "%"}
+    OPS = {
+        "+",
+        "-",
+        "*",
+        "/",
+        "%",
+        "&",
+        "|",
+        "^",
+        "<<",
+        ">>",
+        ">>>",
+    }
 
     def __init__(self, op: str, left: Expr, right: Expr):
         if op not in self.OPS:

@@ -49,7 +49,7 @@ from ir.expr import (
 )
 from ir.stmt import StaticFieldSet, FieldSet, ArraySet, CallStmt
 from ir.types import AnaliType
-from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem
+from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DAnd, DOr, DXor, DShl, DShr, DUshr
 
 
 # passes/lower_ssa_to_dalvik.py
@@ -469,9 +469,25 @@ class LowerSSAToDalvik:
             else:
                 raise RuntimeError(f"Cannot perform arithmetic on type {expr_type}")
 
-
             lhs = self._as_dvalue(expr.left, db)
             rhs = self._as_dvalue(expr.right, db)
+
+            arith_ops = {"+", "-", "*", "/", "%"}
+            bitwise_ops = {"&", "|", "^"}
+            shift_ops = {"<<", ">>", ">>>"}
+
+            if expr.op in arith_ops and type_desc not in {"I", "J", "F", "D"}:
+                raise RuntimeError(f"Operator {expr.op} does not support type {expr_type}")
+            if expr.op in bitwise_ops and type_desc not in {"I", "J"}:
+                raise RuntimeError(f"Operator {expr.op} does not support type {expr_type}")
+            if expr.op in shift_ops:
+                if type_desc not in {"I", "J"}:
+                    raise RuntimeError(f"Operator {expr.op} does not support type {expr_type}")
+                rhs_type = self._value_type(expr.right)
+                if rhs_type not in (AnaliType.INT, AnaliType.BOOL, "I", "B", "C", "S"):
+                    raise RuntimeError(
+                        f"Shift rhs must be int-like for {expr.op}, got {rhs_type}"
+                    )
 
             op_map = {
                 "+": DAdd,
@@ -479,9 +495,17 @@ class LowerSSAToDalvik:
                 "*": DMul,
                 "/": DDiv,
                 "%": DRem,
+                "&": DAnd,
+                "|": DOr,
+                "^": DXor,
+                "<<": DShl,
+                ">>": DShr,
+                ">>>": DUshr,
             }
 
-            instr_cls = op_map[expr.op]
+            instr_cls = op_map.get(expr.op)
+            if instr_cls is None:
+                raise RuntimeError(f"Unsupported binary operator {expr.op}")
             db.emit(instr_cls(dst, lhs, rhs, type_desc=type_desc))
             return
 

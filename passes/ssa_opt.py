@@ -22,6 +22,36 @@ def optimize_ssa(
 
     use_copy_map = enable_coalesce or enable_copy_removal
 
+    def _fold_int_binary(op, left, right):
+        if op == "+":
+            return left + right
+        if op == "-":
+            return left - right
+        if op == "*":
+            return left * right
+        if op == "/":
+            if right == 0:
+                return None
+            return left // right
+        if op == "%":
+            if right == 0:
+                return None
+            return left % right
+        if op == "&":
+            return left & right
+        if op == "|":
+            return left | right
+        if op == "^":
+            return left ^ right
+        if op == "<<":
+            return left << right
+        if op == ">>":
+            return left >> right
+        if op == ">>>":
+            shift = right & 0x1F
+            return (left & 0xFFFFFFFF) >> shift
+        return None
+
     def _resolve(val):
         if isinstance(val, SSAValue):
             v = copy_map.get(val, val) if use_copy_map else val
@@ -72,24 +102,8 @@ def optimize_ssa(
                     if isinstance(expr.left, Const) and isinstance(expr.right, Const):
                         if isinstance(expr.left.value, int) and isinstance(expr.right.value, int):
                             op = expr.op
-                            if op == "+":
-                                folded = Const(expr.left.value + expr.right.value)
-                            elif op == "-":
-                                folded = Const(expr.left.value - expr.right.value)
-                            elif op == "*":
-                                folded = Const(expr.left.value * expr.right.value)
-                            elif op == "/":
-                                if expr.right.value == 0:
-                                    folded = None
-                                else:
-                                    folded = Const(expr.left.value // expr.right.value)
-                            elif op == "%":
-                                if expr.right.value == 0:
-                                    folded = None
-                                else:
-                                    folded = Const(expr.left.value % expr.right.value)
-                            else:
-                                folded = None
+                            folded_value = _fold_int_binary(op, expr.left.value, expr.right.value)
+                            folded = None if folded_value is None else Const(folded_value)
                             if folded is not None:
                                 stmt.expr = folded
                                 if isinstance(dst, SSAValue):

@@ -690,7 +690,7 @@ def run_baksmali(dex_path: str | Path, out_dir: str | Path, baksmali_jar: str | 
 def _find_android_sdk() -> Path:
     sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
     if not sdk:
-        raise RuntimeError("ANDROID_HOME or ANDROID_SDK_ROOT must be set for aapt2/apksigner")
+        raise RuntimeError("ANDROID_HOME or ANDROID_SDK_ROOT must be set for aapt2/zipalign/apksigner")
     return Path(sdk)
 
 
@@ -745,7 +745,7 @@ def _collect_toolchain_diagnostics(*, require_adb: bool = False, require_baksmal
     if not sdk:
         issues.append("ANDROID_HOME/ANDROID_SDK_ROOT not set")
 
-    for tool in ("aapt2", "apksigner"):
+    for tool in ("aapt2", "zipalign", "apksigner"):
         try:
             _tool_path(tool)
         except Exception:
@@ -1082,7 +1082,8 @@ def package_apk_from_dex(
     reproducible_digest_path: str | Path | None = None,
 ) -> Path:
     """
-    Build and sign a minimal APK from an existing classes.dex using aapt2 + apksigner.
+    Build, align, and sign a minimal APK from an existing classes.dex using
+    aapt2 + zipalign + apksigner.
     Requires ANDROID_HOME or ANDROID_SDK_ROOT pointing to an SDK with build-tools.
     """
     dex_path = Path(dex_path)
@@ -1090,10 +1091,12 @@ def package_apk_from_dex(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     aapt2 = _tool_path("aapt2")
+    zipalign = _tool_path("zipalign")
     apksigner = _tool_path("apksigner")
     android_jar = _find_android_jar(_find_android_sdk(), api=api)
 
     unsigned_apk = out_dir / "unsigned.apk"
+    aligned_apk = out_dir / "aligned.apk"
     signed_apk = Path(output_apk) if output_apk else (out_dir / "signed.apk")
 
     manifest_path = out_dir / "AndroidManifest.xml"
@@ -1222,6 +1225,18 @@ def package_apk_from_dex(
         digest_path = reproducible_digest_path or (out_dir / "unsigned.apk.sha256")
         _verify_reproducible_archive(unsigned_apk, digest_path)
 
+    subprocess.run(
+        [
+            zipalign,
+            "-f",
+            "-p",
+            "4",
+            str(unsigned_apk),
+            str(aligned_apk),
+        ],
+        check=True,
+    )
+
     keystore_path, keystore_alias, store_pass, key_pass, ensure_debug = _resolve_signing_params(
         out_dir=out_dir,
         signing_mode=signing_mode,
@@ -1249,7 +1264,7 @@ def package_apk_from_dex(
             f"pass:{key_pass}",
             "--out",
             str(signed_apk),
-            str(unsigned_apk),
+            str(aligned_apk),
         ],
         check=True,
     )

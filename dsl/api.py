@@ -503,6 +503,92 @@ def on_focus_change(view_id, stmts=None):
     return _make_event_spec("focus_change", view_id, stmts)
 
 
+_INLINE_EVENT_ATTRS = (
+    ("on_click", "click"),
+    ("on_change", "change"),
+    ("on_text_change", "text_change"),
+    ("on_item_selected", "item_selected"),
+    ("on_menu_item_selected", "menu_item_selected"),
+    ("on_focus_change", "focus_change"),
+)
+
+
+def _normalize_inline_event_stmts(raw):
+    if isinstance(raw, _EventSpec):
+        stmts = raw.stmts
+        if stmts is None:
+            return []
+        if isinstance(stmts, (list, tuple)):
+            return list(stmts)
+        return [stmts]
+    if callable(raw):
+        return _parse_handler_ast(raw)
+    if isinstance(raw, (list, tuple)):
+        return list(raw)
+    return [raw]
+
+
+def _collect_inline_event_specs(items):
+    out = []
+
+    def _walk(node):
+        node_id = getattr(node, "id", None)
+        if node_id:
+            for attr_name, event_kind in _INLINE_EVENT_ATTRS:
+                raw = getattr(node, attr_name, None)
+                if raw is None:
+                    continue
+                if isinstance(raw, _EventSpec):
+                    source_kind = getattr(raw, "event_kind", None)
+                    source_target = getattr(raw, "target_id", getattr(raw, "button_id", None))
+                    if source_kind and source_kind != event_kind:
+                        raise RuntimeError(
+                            f"Inline event '{attr_name}' on widget id '{node_id}' received "
+                            f"event kind '{source_kind}', expected '{event_kind}'."
+                        )
+                    if source_target and source_target != node_id:
+                        raise RuntimeError(
+                            f"Inline event '{attr_name}' on widget id '{node_id}' received "
+                            f"target id '{source_target}', expected '{node_id}'."
+                        )
+                stmts = _normalize_inline_event_stmts(raw)
+                if event_kind == "click":
+                    out.append(_OnClickSpec(node_id, stmts))
+                else:
+                    out.append(_EventSpec(event_kind, node_id, stmts))
+
+        children = getattr(node, "items", None)
+        if isinstance(children, (list, tuple)):
+            for child in children:
+                # Recurse only into widget-like nodes.
+                if hasattr(child, "__dict__"):
+                    _walk(child)
+
+    for item in items or []:
+        _walk(item)
+
+    return out
+
+
+def _merge_event_specs(explicit_specs, inline_specs):
+    merged = []
+    seen = {}
+    for origin, specs in (("explicit", explicit_specs or []), ("inline", inline_specs or [])):
+        for spec in specs:
+            event_kind = getattr(spec, "event_kind", "click")
+            target_id = getattr(spec, "target_id", getattr(spec, "button_id", None))
+            key = (event_kind, target_id)
+            if key in seen:
+                prev_origin = seen[key]
+                raise RuntimeError(
+                    f"Duplicate event binding for {event_kind} target '{target_id}' "
+                    f"({prev_origin} and {origin}). Keep only one binding."
+                )
+            seen[key] = origin
+            merged.append(spec)
+    return merged
+
+
 def Navigate(target):
     from .ast import _StmtNavigate
     return _StmtNavigate(target)
@@ -845,6 +931,8 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
 
     state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
+    inline_event_specs = _collect_inline_event_specs(ui_spec.items)
+    event_specs = _merge_event_specs(event_specs, inline_event_specs)
     has_screens = any(isinstance(item, _UIScreen) for item in ui_spec.items)
     if has_screens:
         non_screens = [item for item in ui_spec.items if not isinstance(item, _UIScreen)]

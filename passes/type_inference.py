@@ -284,18 +284,43 @@ class TypeInferencePass:
             left_t = self._infer_expr_type(expr.left)
             right_t = self._infer_expr_type(expr.right)
 
+            int_like = {AnaliType.INT, "I", "B", "C", "S"}
+            float_like = {AnaliType.FLOAT, "F"}
+
             if expr.op in {"+", "-", "*", "/", "%"}:
                 if AnaliType.UNKNOWN in (left_t, right_t):
                     return AnaliType.UNKNOWN
-                if left_t == right_t == AnaliType.INT:
+                if left_t in int_like and right_t in int_like:
                     return AnaliType.INT
-                if left_t == right_t == AnaliType.FLOAT:
+                if left_t in float_like and right_t in float_like:
                     return AnaliType.FLOAT
                 if left_t == right_t and left_t in ("J", "D"):
                     return left_t
 
                 raise TypeInferenceError(
                     f"Invalid arithmetic: {left_t} {expr.op} {right_t}"
+                )
+
+            if expr.op in {"&", "|", "^"}:
+                if AnaliType.UNKNOWN in (left_t, right_t):
+                    return AnaliType.UNKNOWN
+                if left_t in int_like and right_t in int_like:
+                    return AnaliType.INT
+                if left_t == right_t == "J":
+                    return "J"
+                raise TypeInferenceError(
+                    f"Invalid bitwise operation: {left_t} {expr.op} {right_t}"
+                )
+
+            if expr.op in {"<<", ">>", ">>>"}:
+                if AnaliType.UNKNOWN in (left_t, right_t):
+                    return AnaliType.UNKNOWN
+                if left_t in int_like and right_t in int_like:
+                    return AnaliType.INT
+                if left_t == "J" and right_t in int_like:
+                    return "J"
+                raise TypeInferenceError(
+                    f"Invalid shift operation: {left_t} {expr.op} {right_t}"
                 )
 
         if isinstance(expr, Compare):

@@ -121,6 +121,19 @@ Current effective behavior:
 - `app_config(label=...)` locks label
 - module `APP_LABEL` overrides label at build extraction stage
 
+## APK Packaging Pipeline
+
+Current packaging path in toolchain:
+
+1. `aapt2 compile/link` creates `unsigned.apk` with manifest/resources.
+2. `classes.dex` is added to `unsigned.apk`.
+3. `zipalign -f -p 4` produces `aligned.apk`.
+4. `apksigner sign` signs `aligned.apk` into final `signed.apk`.
+
+Notes:
+- `zipalign` runs before signing (required ordering).
+- Toolchain diagnostics now require `aapt2`, `zipalign`, and `apksigner`.
+
 See also:
 - [[11_Navigation_State_and_Screens]]
 - [[13_Validation_and_Diagnostics]]

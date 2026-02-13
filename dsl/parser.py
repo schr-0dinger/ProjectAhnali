@@ -194,6 +194,13 @@ def _parse_expr(node):
         lhs = _parse_expr(node.left)
         rhs = _parse_expr(node.right)
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id in ("ushr", "unsigned_rshift"):
+            if len(node.args) != 2:
+                raise RuntimeError("ushr expects exactly two arguments")
+            lhs = _parse_expr(node.args[0])
+            rhs = _parse_expr(node.args[1])
+            return _ExprBinary(lhs, ">>>", rhs)
     if isinstance(node, ast.Compare):
         if len(node.ops) != 1 or len(node.comparators) != 1:
             raise RuntimeError("Only single comparisons are supported")
@@ -544,9 +551,21 @@ def _binop_symbol(op):
         return "*"
     if isinstance(op, ast.Div):
         return "/"
+    if isinstance(op, ast.FloorDiv):
+        return "/"
     if isinstance(op, ast.Mod):
         return "%"
-    raise RuntimeError("Only +, -, *, /, % are supported")
+    if isinstance(op, ast.BitAnd):
+        return "&"
+    if isinstance(op, ast.BitOr):
+        return "|"
+    if isinstance(op, ast.BitXor):
+        return "^"
+    if isinstance(op, ast.LShift):
+        return "<<"
+    if isinstance(op, ast.RShift):
+        return ">>"
+    raise RuntimeError("Only +, -, *, /, %, &, |, ^, <<, >> are supported")
 
 
 def _cmpop_symbol(op):

@@ -292,6 +292,30 @@ class DRem(DBinaryOp):
     op = "rem"
 
 
+class DAnd(DBinaryOp):
+    op = "and"
+
+
+class DOr(DBinaryOp):
+    op = "or"
+
+
+class DXor(DBinaryOp):
+    op = "xor"
+
+
+class DShl(DBinaryOp):
+    op = "shl"
+
+
+class DShr(DBinaryOp):
+    op = "shr"
+
+
+class DUshr(DBinaryOp):
+    op = "ushr"
+
+
 class DCompare(DInstr):
     """
     Primitive compare:

@@ -275,7 +275,7 @@ Implemented:
 - ✅ Wrapper activity emission
 - ✅ Click listener support class emission
 - ✅ Multi-event support class emission (`click`, `change`, `text_change`, `item_selected`, `focus_change`, `menu_item_selected`)
-- ✅ APK packaging via `aapt2` + `apksigner`
+- ✅ APK packaging via `aapt2` + `zipalign` + `apksigner`
 - ✅ Debug keystore auto-generation
 - ✅ Release signing mode with explicit keystore workflow
 - ✅ Reproducibility hash check support for unsigned archive content
