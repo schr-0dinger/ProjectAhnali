@@ -1253,12 +1253,12 @@ All animations and effects must be explicit and imperative.
 ## Phase 12: RecyclerView (Static v1)
 
 ### DSL
-❌ Add `ListView(items=[...], item_layout=...)` static-only shape.
+✅ Add `ListView(items=[...], item_layout=...)` static-only shape.
 
 ### Lowering
-❌ Deterministic adapter class generation.
+⚠️ Deterministic adapter generation (static `ArrayAdapter` path; dedicated RecyclerView adapter class still pending).
 ❌ Stable view holder + bind logic.
-❌ Compile-time-only dataset (no runtime diffing).
+✅ Compile-time-only dataset (no runtime diffing).
 
 ## Phase 13: Validation and Linting
 

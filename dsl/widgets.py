@@ -922,6 +922,55 @@ class _UIProgressBar(_UIView):
         self.indeterminate = bool(indeterminate)
 
 
+class _UIListView(_UIView):
+    _ITEM_LAYOUTS = {
+        "simple_list_item_1": 0x1090003,  # android.R.layout.simple_list_item_1
+    }
+
+    def __init__(
+        self,
+        *,
+        id="list_view",
+        items=None,
+        item_layout="simple_list_item_1",
+        **kwargs,
+    ):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+
+        if items is None:
+            items = []
+        if not isinstance(items, (list, tuple)):
+            raise RuntimeError("ListView items must be a list or tuple of static values.")
+
+        normalized_items = []
+        for value in items:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "ListView items must contain only static primitive values "
+                    "(str/int/float/bool)."
+                )
+            normalized_items.append(str(value))
+        self.items = tuple(normalized_items)
+
+        if isinstance(item_layout, str):
+            if item_layout not in self._ITEM_LAYOUTS:
+                allowed = ", ".join(sorted(self._ITEM_LAYOUTS.keys()))
+                raise RuntimeError(
+                    f"Unsupported ListView item_layout '{item_layout}'. "
+                    f"Allowed values: {allowed}."
+                )
+            item_layout_res = self._ITEM_LAYOUTS[item_layout]
+        elif isinstance(item_layout, int):
+            item_layout_res = int(item_layout)
+        else:
+            raise RuntimeError(
+                "ListView item_layout must be a layout name string or an int resource id."
+            )
+        self.item_layout = item_layout
+        self.item_layout_res = item_layout_res
+
+
 # TODO(material-pending): Add DSL primitives for pending Material components.
 # Planned additions:
 # - NumberField, Rating, TransferList, ToggleButtonGroup
@@ -1240,6 +1289,10 @@ class RadioGroup(_UIRadioGroup):
 
 
 class ProgressBar(_UIProgressBar):
+    pass
+
+
+class ListView(_UIListView):
     pass
 
 
@@ -2112,6 +2165,15 @@ def radio_group(*items, id="radio_group", orientation="vertical", **kwargs):
 
 def progress_bar(*, id="progress", value=0, min=0, max=100, indeterminate=False, **kwargs):
     return _UIProgressBar(id=id, value=value, min=min, max=max, indeterminate=indeterminate, **kwargs)
+
+
+def list_view(*, id="list_view", items=None, item_layout="simple_list_item_1", **kwargs):
+    return _UIListView(
+        id=id,
+        items=items,
+        item_layout=item_layout,
+        **kwargs,
+    )
 
 
 def simple_dialog(title, message):

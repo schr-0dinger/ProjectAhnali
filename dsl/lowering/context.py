@@ -93,6 +93,7 @@ from dsl.widgets import (
     _UIIcon,
     _UIIconButton,
     _UIImage,
+    _UIListView,
     _UIPopupMenuButton,
     _UIProgressBar,
     _UIRadio,
@@ -193,6 +194,8 @@ class _PythonicContext:
             return "Landroid/widget/ImageView;"
         if kind == "progress_bar":
             return "Landroid/widget/ProgressBar;"
+        if kind == "list_view":
+            return "Landroid/widget/ListView;"
         if kind == "radio_group":
             return "Landroid/widget/RadioGroup;"
         if kind == "container":
@@ -238,6 +241,7 @@ class _PythonicContext:
             "icon",
             "radio_group",
             "progress",
+            "list_view",
             "screen",
         }
         resolved_id = item_id
@@ -2317,6 +2321,52 @@ class _PythonicContext:
                         owner="Landroid/widget/Spinner;",
                     ),
                 ]
+            )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIListView):
+            item.id = self._register_view(item.id, "list_view")
+            if item.layout is None:
+                item.layout = ("match_parent", "wrap")
+            adapter_name = f"adapter_{item.id}"
+            body.extend(
+                [
+                    assign(item.id, new("Landroid/widget/ListView;", args=[var("ctx")])),
+                    assign(
+                        adapter_name,
+                        new(
+                            "Landroid/widget/ArrayAdapter;",
+                            args=[var("ctx"), const(int(item.item_layout_res))],
+                        ),
+                    ),
+                ]
+            )
+            for val in item.items:
+                item_key = self._add_string_resource(f"{item.id}_item", str(val))
+                item_load, item_expr = self._load_string_expr(
+                    item_key,
+                    ctx_expr=var("ctx"),
+                    prefix=f"{item.id}_item",
+                )
+                body.extend(item_load)
+                body.append(
+                    call_stmt(
+                        "add",
+                        args=[var(adapter_name), item_expr],
+                        return_type=None,
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/ArrayAdapter;",
+                    )
+                )
+            body.append(
+                call_stmt(
+                    "setAdapter",
+                    args=[var(item.id), var(adapter_name)],
+                    return_type=None,
+                    invoke_kind="virtual",
+                    owner="Landroid/widget/ListView;",
+                )
             )
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
