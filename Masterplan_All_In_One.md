@@ -715,12 +715,12 @@ Phase status:
 - ✅ Phase 5 Input configuration expansion
 - ✅ Phase 6 Accessibility expansion
 - ✅ Phase 7 Elevation and shadow
-- ⚠️ Phase 8 Visual effects pack
-- ⚠️ Phase 9 Explicit animation DSL
-- ⚠️ Phase 10 Theme channel expansion
-- ⚠️ Phase 11 Scroll controls as explicit DSL widgets
-- ⚠️ Phase 12 Recycler/static list deterministic adapter layer
-- ⚠️ Phase 13 Validation/lint hardening expansion
+- ✅ Phase 8 Visual effects pack
+- ✅ Phase 9 Explicit animation DSL
+- ✅ Phase 10 Theme channel expansion
+- ✅ Phase 11 Scroll controls as explicit DSL widgets
+- ✅ Phase 12 Recycler/static list deterministic adapter layer
+- ✅ Phase 13 Validation/lint hardening expansion
 
 ---
 
@@ -1285,11 +1285,11 @@ All animations and effects must be explicit and imperative.
 
 ## Execution Order (Recommended)
 
-❌ Wave A: Phases 1, 2, 3 (style primitives + state colors).
-❌ Wave B: Phases 4, 5, 6 (events + input + accessibility).
-❌ Wave C: Phases 7, 8 (visual polish primitives).
-❌ Wave D: Phase 9 (explicit animation layer).
-❌ Wave E: Phases 10, 11, 12, 13 (theme expansion + containers + validation hardening).
+⚠️ Wave A: Phases 1, 2, 3 (style primitives + state colors).
+✅ Wave B: Phases 4, 5, 6 (events + input + accessibility).
+✅ Wave C: Phases 7, 8 (visual polish primitives).
+✅ Wave D: Phase 9 (explicit animation layer).
+✅ Wave E: Phases 10, 11, 12, 13 (theme expansion + containers + validation hardening).
 
 
 ---

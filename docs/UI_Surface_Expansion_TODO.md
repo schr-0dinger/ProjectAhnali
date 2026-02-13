@@ -1,6 +1,6 @@
 # Anali UI Surface Expansion TODO (v1)
 
-Last updated: 2026-02-12
+Last updated: 2026-02-13
 
 Goal:
 - Expand UI depth and polish while preserving:
@@ -14,11 +14,11 @@ All animations and effects must be explicit and imperative.
 
 ## Global Constraints (Apply to Every Phase)
 
-- [ ] Keep handlers named and statically registered (no lambdas/dynamic callbacks).
-- [ ] Keep compile-time ID validation for all widget/event references.
-- [ ] Keep deterministic lowering only (no runtime behavior inference).
-- [ ] Add compile-time lint for unsupported widget/style combinations.
-- [ ] Add focused lowering tests and at least one integration smoke test per phase.
+- [x] Keep handlers named and statically registered (no lambdas/dynamic callbacks).
+- [x] Keep compile-time ID validation for all widget/event references.
+- [x] Keep deterministic lowering only (no runtime behavior inference).
+- [x] Add compile-time lint for unsupported widget/style combinations.
+- [x] Add focused lowering tests and at least one integration smoke test per phase.
 
 ## Phase 1: Typography v1
 
@@ -43,9 +43,9 @@ All animations and effects must be explicit and imperative.
 - [x] Lower `ellipsize` to `setEllipsize`.
 
 ### Coverage
-- [ ] Text
-- [ ] Button family
-- [ ] Radio / Checkbox / Switch
+- [x] Text
+- [x] Button family
+- [x] Radio / Checkbox / Switch
 - [ ] Dropdown text surface
 - [ ] Popup menu item text surface
 
@@ -79,7 +79,7 @@ All animations and effects must be explicit and imperative.
 ### Lowering (`dsl/lowering/context.py`)
 - [x] Convert `ColorState` to `ColorStateList`.
 - [x] Support `ColorState` in `text_color`.
-- [x] Support `ColorState` in `background`/tint channels.
+- [x] Support `ColorState` in `background`/tint channels (background currently uses default-color fallback + lint warning).
 - [x] Support `ColorState` in progress/tint fields.
 
 ## Phase 4: Event Surface Expansion
@@ -190,88 +190,88 @@ All animations and effects must be explicit and imperative.
 ## Phase 9: Explicit Animation DSL (Imperative Only)
 
 ### DSL (`dsl/app.py` or `dsl/animation.py`)
-- [ ] Add `animate(id, ...)`.
-- [ ] Add helpers: `fade_in`, `fade_out`, `rotate`, `scale`, `translate`, `animate_elevation`.
-- [ ] Add composition helpers: `sequence(...)`, `parallel(...)`.
+- [x] Add `animate(id, ...)`.
+- [x] Add helpers: `fade_in`, `fade_out`, `rotate`, `scale`, `translate`, `animate_elevation`.
+- [x] Add composition helpers: `sequence(...)`, `parallel(...)`.
 
 ### Supported Properties
-- [ ] `rotate`
-- [ ] `scale`
-- [ ] `scale_x`
-- [ ] `scale_y`
-- [ ] `translate_x`
-- [ ] `translate_y`
-- [ ] `alpha`
-- [ ] `elevation`
+- [x] `rotate`
+- [x] `scale`
+- [x] `scale_x`
+- [x] `scale_y`
+- [x] `translate_x`
+- [x] `translate_y`
+- [x] `alpha`
+- [x] `elevation`
 
 ### Common Params
-- [ ] `duration`
-- [ ] `delay`
-- [ ] `interpolator`
+- [x] `duration`
+- [x] `delay`
+- [x] `interpolator`
 
 ### Lowering
-- [ ] `ViewPropertyAnimator`.
-- [ ] `ObjectAnimator`.
-- [ ] `AnimatorSet`.
+- [x] `ViewPropertyAnimator`.
+- [x] `ObjectAnimator`.
+- [x] `AnimatorSet`.
 
 ### Navigation Transitions
-- [ ] Add `Screen(..., transition=...)`.
-- [ ] Support `fade`, `slide_left`, `slide_right`, `slide_up`, `slide_down`.
-- [ ] Lower to predefined animator methods.
+- [x] Add `Screen(..., transition=...)`.
+- [x] Support `fade`, `slide_left`, `slide_right`, `slide_up`, `slide_down`.
+- [x] Lower to predefined animator methods.
 
 ### Forbidden (must stay forbidden)
-- [ ] No state-bound implicit animations.
-- [ ] No diff-based recomposition.
-- [ ] No reactive animation runtime.
+- [x] No state-bound implicit animations.
+- [x] No diff-based recomposition.
+- [x] No reactive animation runtime.
 
 ## Phase 10: Theme Expansion
 
 ### Theme Channels (`dsl/widgets.py`)
-- [ ] Add `input`.
-- [ ] Add `selector`.
-- [ ] Add `progress`.
-- [ ] Add `icon`.
-- [ ] Add `container`.
-- [ ] Add `appbar`.
+- [x] Add `input`.
+- [x] Add `selector`.
+- [x] Add `progress`.
+- [x] Add `icon`.
+- [x] Add `container`.
+- [x] Add `appbar`.
 
 ### Resolution Order
-- [ ] Enforce `inline attrs > style= > Theme channel > widget defaults`.
-- [ ] Add lint/tests for deterministic precedence.
+- [x] Enforce `inline attrs > style= > Theme channel > widget defaults`.
+- [x] Add lint/tests for deterministic precedence.
 
 ## Phase 11: Scroll Controls
 
 ### DSL and Validation
-- [ ] Add `ScrollView`.
-- [ ] Add `HorizontalScrollView`.
-- [ ] Enforce single direct child at compile time.
+- [x] Add `ScrollView`.
+- [x] Add `HorizontalScrollView`.
+- [x] Enforce single direct child at compile time.
 
 ### Lowering
-- [ ] Emit corresponding widget constructors and layout wiring.
+- [x] Emit corresponding widget constructors and layout wiring.
 
 ## Phase 12: RecyclerView (Static v1)
 
 ### DSL
-- [ ] Add `ListView(items=[...], item_layout=...)` static-only shape.
+- [x] Add `ListView(items=[...], item_layout=...)` static-only shape.
 
 ### Lowering
-- [ ] Deterministic adapter class generation.
-- [ ] Stable view holder + bind logic.
-- [ ] Compile-time-only dataset (no runtime diffing).
+- [x] Deterministic adapter generation.
+- [x] Stable view holder + bind logic.
+- [x] Compile-time-only dataset (no runtime diffing).
 
 ## Phase 13: Validation and Linting
 
 ### Compile-time Checks
-- [ ] Style field incompatible with widget.
-- [ ] Invalid state keys.
-- [ ] Unsupported event binding target.
-- [ ] Duplicate IDs.
-- [ ] Animation target ID not found.
-- [ ] Blur below API 31.
-- [ ] Invalid gradient config.
+- [x] Style field incompatible with widget.
+- [x] Invalid state keys.
+- [x] Unsupported event binding target.
+- [x] Duplicate IDs.
+- [x] Animation target ID not found.
+- [x] Blur below API 31.
+- [x] Invalid gradient config.
 
 ### Diagnostics
-- [ ] Error messages with widget id and field name.
-- [ ] Warnings for degraded fallback behavior.
+- [x] Error messages with widget id and field name.
+- [x] Warnings for degraded fallback behavior.
 
 ## Phase 14: Material Plugin Backlog (Pending)
 
@@ -323,7 +323,7 @@ All animations and effects must be explicit and imperative.
 ## Execution Order (Recommended)
 
 - [ ] Wave A: Phases 1, 2, 3 (style primitives + state colors).
-- [ ] Wave B: Phases 4, 5, 6 (events + input + accessibility).
-- [ ] Wave C: Phases 7, 8 (visual polish primitives).
-- [ ] Wave D: Phase 9 (explicit animation layer).
-- [ ] Wave E: Phases 10, 11, 12, 13 (theme expansion + containers + validation hardening).
+- [x] Wave B: Phases 4, 5, 6 (events + input + accessibility).
+- [x] Wave C: Phases 7, 8 (visual polish primitives).
+- [x] Wave D: Phase 9 (explicit animation layer).
+- [x] Wave E: Phases 10, 11, 12, 13 (theme expansion + containers + validation hardening).
