@@ -3084,20 +3084,78 @@ class _PythonicContext:
             return None
         return (h or 0) | (v or 0)
 
+    def _theme_style_for_item(self, item):
+        theme = self.theme_spec
+        if isinstance(item, _UIAppBar):
+            return theme.text.merged(theme.appbar)
+        if isinstance(item, _UITextField):
+            return theme.text.merged(theme.input)
+        if isinstance(item, (_UICheckbox, _UIRadio, _UISwitch)):
+            return theme.text.merged(theme.selector)
+        if isinstance(item, (_UISlider, _UIDropdownButton, _UIPopupMenuButton, _UIRadioGroup)):
+            return theme.selector
+        if isinstance(item, _UIProgressBar):
+            return theme.progress
+        if isinstance(item, _UIIcon):
+            return theme.text.merged(theme.icon)
+        if isinstance(item, _UIRow):
+            # Backward-compatible override path for existing row/column channels.
+            return theme.container.merged(theme.row)
+        if isinstance(item, _UIColumn) and not isinstance(item, (_UIContainer, _UICard)):
+            return theme.container.merged(theme.column)
+        if isinstance(item, (_UIContainer, _UICard, _UIRelative, _UIConstraint, _UIScreen)):
+            return theme.container
+        if isinstance(item, _UIText):
+            return theme.text
+        if isinstance(item, _UIButton) and not isinstance(
+            item, (_UISlider, _UIDropdownButton, _UIPopupMenuButton)
+        ):
+            return theme.button
+        return Style()
+
+    def _widget_default_style_for_item(self, item):
+        if isinstance(item, _UIRow):
+            return Style(layout=("match_parent", "wrap"))
+        if isinstance(item, _UICard):
+            return Style(
+                background="#FFFFFFFF",
+                radius=Dp(12),
+                padding=Dp(12),
+            )
+        if isinstance(item, _UIDivider):
+            return Style(
+                layout=("match_parent", getattr(item, "thickness", Dp(1))),
+                background=getattr(item, "color", "#FFD1D5DB"),
+            )
+        return Style()
+
+    def _emit_style_precedence_lints(self, item, theme_style, item_style):
+        if not isinstance(item_style, Style):
+            return
+        keys = tuple(item_style.__dict__.keys())
+        for attr_name in keys:
+            inline_set = getattr(item, attr_name, None) is not None
+            style_set = getattr(item_style, attr_name, None) is not None
+            theme_set = getattr(theme_style, attr_name, None) is not None
+            if not style_set:
+                continue
+            # Emit only when there is a real overlap among user-controlled layers.
+            if inline_set or theme_set:
+                self._warn_once(
+                    f"precedence:{item.id}:{attr_name}",
+                    f"'{item.id}.{attr_name}' is defined in multiple layers; "
+                    "precedence is inline attrs > style= > Theme channel > widget defaults.",
+                )
+
     def _apply_view_layout(self, item, parent_id):
         out = []
-        theme_style = Style()
-        if isinstance(item, _UIText):
-            theme_style = self.theme_spec.text
-        elif isinstance(item, _UIButton) and not isinstance(item, (_UISlider, _UIDropdownButton, _UIPopupMenuButton)):
-            theme_style = self.theme_spec.button
-        elif isinstance(item, _UIRow):
-            theme_style = self.theme_spec.row
-        elif isinstance(item, _UIColumn):
-            theme_style = self.theme_spec.column
 
         item_style = item.style if getattr(item, "style", None) else None
-        style = theme_style.merged(item_style)
+        theme_style = self._theme_style_for_item(item)
+        widget_default_style = self._widget_default_style_for_item(item)
+        # Deterministic precedence: inline attrs > style= > Theme channel > widget defaults.
+        style = widget_default_style.merged(theme_style).merged(item_style)
+        self._emit_style_precedence_lints(item, theme_style, item_style)
 
         padding_value = item.padding if item.padding is not None else style.padding
         gravity_value = item.gravity if item.gravity is not None else style.gravity

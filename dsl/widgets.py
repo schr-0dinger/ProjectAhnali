@@ -464,7 +464,7 @@ class _UIRow:
         self.items = items
         self.width = width
         self.height = height
-        self.layout = _layout_with_size(layout, width, height, default=("match_parent", "wrap"))
+        self.layout = _layout_with_size(layout, width, height)
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
@@ -839,9 +839,9 @@ class _UIPopupMenuButton(_UIButton):
 class _UIDivider(_UIView):
     def __init__(self, *, id="divider", color="#FFD1D5DB", thickness=dp(1), **kwargs):
         kwargs.setdefault("id", id)
-        kwargs.setdefault("layout", ("match_parent", thickness))
-        kwargs.setdefault("background", color)
         super().__init__(**kwargs)
+        self.color = color
+        self.thickness = thickness
 
 
 class _UIImage(_UIView):
@@ -872,9 +872,6 @@ class _UIContainer(_UIColumn):
 class _UICard(_UIColumn):
     def __init__(self, *items, id="card", **kwargs):
         kwargs.setdefault("id", id)
-        kwargs.setdefault("background", "#FFFFFFFF")
-        kwargs.setdefault("radius", dp(12))
-        kwargs.setdefault("padding", dp(12))
         super().__init__(*items, **kwargs)
 
 
@@ -1122,12 +1119,25 @@ class Theme:
         palette=None,
         text=None,
         button=None,
+        input=None,
+        selector=None,
+        progress=None,
+        icon=None,
+        container=None,
+        appbar=None,
         row=None,
         column=None,
     ):
         self.palette = palette or {}
         self.text = text or Style()
         self.button = button or Style()
+        self.input = input or Style()
+        self.selector = selector or Style()
+        self.progress = progress or Style()
+        self.icon = icon or Style()
+        self.container = container or Style()
+        self.appbar = appbar or Style()
+        # Backward compatibility channels.
         self.row = row or Style()
         self.column = column or Style()
 

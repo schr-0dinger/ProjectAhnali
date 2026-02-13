@@ -1229,16 +1229,16 @@ All animations and effects must be explicit and imperative.
 ## Phase 10: Theme Expansion
 
 ### Theme Channels (`dsl/widgets.py`)
-❌ Add `input`.
-❌ Add `selector`.
-❌ Add `progress`.
-❌ Add `icon`.
-❌ Add `container`.
-❌ Add `appbar`.
+✅ Add `input`.
+✅ Add `selector`.
+✅ Add `progress`.
+✅ Add `icon`.
+✅ Add `container`.
+✅ Add `appbar`.
 
 ### Resolution Order
-❌ Enforce `inline attrs > style= > Theme channel > widget defaults`.
-❌ Add lint/tests for deterministic precedence.
+✅ Enforce `inline attrs > style= > Theme channel > widget defaults`.
+✅ Add lint/tests for deterministic precedence.
 
 ## Phase 11: Scroll Controls
 
