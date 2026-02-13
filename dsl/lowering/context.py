@@ -1496,7 +1496,7 @@ class _PythonicContext:
                         f"on_click target '{target_id}' is not clickable (kind={view_kind})."
                     )
                 handler_name = f"onClick_{target_id}"
-                listener_desc = f"Lcom/anali/preview/AnaliClickListener_{target_id};"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliClickListener_{target_id};"
                 tmp_btn = f"_btn_{target_id}"
                 body.append(assign(tmp_btn, static_get(view_field, view_desc)))
                 body.extend(on_click_view(var(tmp_btn), handler_name=handler_name, listener_class_desc=listener_desc))
@@ -1517,7 +1517,7 @@ class _PythonicContext:
                         f"'{target_id}' must be checkbox/switch/radio/slider/radio_group (kind={view_kind})."
                     )
                 handler_name = f"onChange_{target_id}"
-                listener_desc = f"Lcom/anali/preview/AnaliChangeListener_{target_id};"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliChangeListener_{target_id};"
                 if view_kind in {"checkbox", "switch", "radio"}:
                     tmp_btn = f"_chg_{target_id}"
                     body.append(assign(tmp_btn, static_get(view_field, view_desc)))
@@ -1576,7 +1576,7 @@ class _PythonicContext:
                         f"on_text_change target '{target_id}' must be text_field (kind={view_kind})."
                     )
                 handler_name = f"onTextChange_{target_id}"
-                listener_desc = f"Lcom/anali/preview/AnaliTextChangeListener_{target_id};"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliTextChangeListener_{target_id};"
                 tmp_input = f"_txt_{target_id}"
                 body.append(assign(tmp_input, static_get(view_field, view_desc)))
                 body.extend(
@@ -1602,7 +1602,7 @@ class _PythonicContext:
                         f"on_item_selected target '{target_id}' must be dropdown (kind={view_kind})."
                     )
                 handler_name = f"onItemSelected_{target_id}"
-                listener_desc = f"Lcom/anali/preview/AnaliItemSelectedListener_{target_id};"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliItemSelectedListener_{target_id};"
                 tmp_spinner = f"_item_{target_id}"
                 body.append(assign(tmp_spinner, static_get(view_field, view_desc)))
                 body.extend(
@@ -1624,7 +1624,7 @@ class _PythonicContext:
                 method_class_map[handler_name] = handler_owner_desc
             elif event_kind == "focus_change":
                 handler_name = f"onFocusChange_{target_id}"
-                listener_desc = f"Lcom/anali/preview/AnaliFocusChangeListener_{target_id};"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliFocusChangeListener_{target_id};"
                 tmp_view = f"_focus_{target_id}"
                 body.append(assign(tmp_view, static_get(view_field, view_desc)))
                 body.extend(
@@ -1650,7 +1650,7 @@ class _PythonicContext:
                         f"on_menu_item_selected target '{target_id}' must be popup_button (kind={view_kind})."
                     )
                 handler_name = f"onMenuItemSelected_{target_id}"
-                listener_desc = f"Lcom/anali/preview/AnaliMenuItemListener_{target_id};"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliMenuItemListener_{target_id};"
                 support_classes.append((listener_desc, handler_name, handler_owner_desc, "menu_item_selected"))
                 handler_methods.append(
                     (
@@ -1676,7 +1676,7 @@ class _PythonicContext:
             if not popup_items and popup_id not in popup_menu_listener_map:
                 continue
             handler_name = f"onClick_{popup_id}_popup"
-            listener_desc = f"Lcom/anali/preview/AnaliClickListener_{popup_id}_popup;"
+            listener_desc = f"Lcom/ahnali/preview/AhnaliClickListener_{popup_id}_popup;"
             view_desc = self._view_desc(self.view_types[popup_id])
             view_field = self.view_fields[popup_id]
             tmp_btn = f"_btn_{popup_id}_popup"
@@ -2397,7 +2397,7 @@ class _PythonicContext:
                 )
             adapter_name = f"adapter_{item.id}"
             items_array_name = f"items_{item.id}"
-            adapter_class_desc = f"Lcom/anali/preview/AnaliListAdapter_{item.id};"
+            adapter_class_desc = f"Lcom/ahnali/preview/AhnaliListAdapter_{item.id};"
             body.extend(
                 [
                     assign(item.id, new("Landroid/widget/ListView;", args=[var("ctx")])),

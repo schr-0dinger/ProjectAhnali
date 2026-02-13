@@ -201,14 +201,14 @@ def primitive_cast(value, from_desc, to_desc):
     return PrimitiveCast(value=value, from_desc=from_desc, to_desc=to_desc)
 
 
-def hello_world_activity(message="Hello, Anali!"):
+def hello_world_activity(message="Hello, Ahnali!"):
     """
     Compiler-driven HelloWorld Activity:
     - new TextView(ctx)
     - setText(message)
     - setContentView(view)
     """
-    from ir.types import AnaliType
+    from ir.types import AhnaliType
 
     return program([
         method(
@@ -479,10 +479,10 @@ def event_handler(name, body, *, params=None, param_types=None, return_type=None
     )
 
 
-def on_click_view(view, handler_name="onClick", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliClickListener;"):
+def on_click_view(view, handler_name="onClick", listener_var="listener", listener_class_desc="Lcom/ahnali/preview/AhnaliClickListener;"):
     """
     Wire a click listener that calls LTest;->handler_name(View)V.
-    Requires support class AnaliClickListener to be emitted by toolchain.
+    Requires support class AhnaliClickListener to be emitted by toolchain.
     Returns a list of statements.
     """
     return [
@@ -503,7 +503,7 @@ def on_click_view(view, handler_name="onClick", listener_var="listener", listene
     ]
 
 
-def on_change_view(view, handler_name="onChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliChangeListener;"):
+def on_change_view(view, handler_name="onChange", listener_var="listener", listener_class_desc="Lcom/ahnali/preview/AhnaliChangeListener;"):
     return [
         assign(
             listener_var,
@@ -526,7 +526,7 @@ def on_slider_change_view(
     view,
     handler_name="onChange",
     listener_var="listener",
-    listener_class_desc="Lcom/anali/preview/AnaliSliderChangeListener;",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliSliderChangeListener;",
 ):
     return [
         assign(
@@ -550,7 +550,7 @@ def on_radio_group_change_view(
     view,
     handler_name="onChange",
     listener_var="listener",
-    listener_class_desc="Lcom/anali/preview/AnaliRadioGroupChangeListener;",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliRadioGroupChangeListener;",
 ):
     return [
         assign(
@@ -570,7 +570,7 @@ def on_radio_group_change_view(
     ]
 
 
-def on_text_change_view(view, handler_name="onTextChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliTextChangeListener;"):
+def on_text_change_view(view, handler_name="onTextChange", listener_var="listener", listener_class_desc="Lcom/ahnali/preview/AhnaliTextChangeListener;"):
     return [
         assign(
             listener_var,
@@ -589,7 +589,7 @@ def on_text_change_view(view, handler_name="onTextChange", listener_var="listene
     ]
 
 
-def on_item_selected_view(view, handler_name="onItemSelected", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliItemSelectedListener;"):
+def on_item_selected_view(view, handler_name="onItemSelected", listener_var="listener", listener_class_desc="Lcom/ahnali/preview/AhnaliItemSelectedListener;"):
     return [
         assign(
             listener_var,
@@ -608,7 +608,7 @@ def on_item_selected_view(view, handler_name="onItemSelected", listener_var="lis
     ]
 
 
-def on_focus_change_view(view, handler_name="onFocusChange", listener_var="listener", listener_class_desc="Lcom/anali/preview/AnaliFocusChangeListener;"):
+def on_focus_change_view(view, handler_name="onFocusChange", listener_var="listener", listener_class_desc="Lcom/ahnali/preview/AhnaliFocusChangeListener;"):
     return [
         assign(
             listener_var,

@@ -1,5 +1,5 @@
 ---
-tags: [anali, app-model, build]
+tags: [ahnali, app-model, build]
 ---
 
 # App Model and Build/Run API
@@ -39,7 +39,7 @@ Signature:
 ```python
 app_config(
     *,
-    package="com.anali.preview",
+    package="com.ahnali.preview",
     min_sdk=21,
     target_sdk=33,
     version_code=1,
@@ -116,7 +116,7 @@ If any `Screen(...)` is present in `ui(...)`:
 ## Label Resolution Order
 
 Current effective behavior:
-- default `app_name = "AnaliPreview"`
+- default `app_name = "AhnaliPreview"`
 - `AppBar(text=...)` may set label if no explicit label is locked
 - `app_config(label=...)` locks label
 - module `APP_LABEL` overrides label at build extraction stage

@@ -25,11 +25,11 @@ def test_emit_build_dir_with_wrapper_writes_activity_and_main(tmp_path):
         out_dir=tmp_path,
         class_name="LTest;",
         emit_wrapper=True,
-        wrapper_class_desc="Lcom/anali/preview/MainActivity;",
+        wrapper_class_desc="Lcom/ahnali/preview/MainActivity;",
     )
 
     main_path = out_dir / "smali" / "Test.smali"
-    activity_path = out_dir / "smali" / "com" / "anali" / "preview" / "MainActivity.smali"
+    activity_path = out_dir / "smali" / "com" / "ahnali" / "preview" / "MainActivity.smali"
 
     assert main_path.exists()
     assert activity_path.exists()
@@ -38,7 +38,7 @@ def test_emit_build_dir_with_wrapper_writes_activity_and_main(tmp_path):
     activity_text = activity_path.read_text(encoding="utf-8")
 
     assert ".class public LTest;" in main_text
-    assert ".class public Lcom/anali/preview/MainActivity;" in activity_text
+    assert ".class public Lcom/ahnali/preview/MainActivity;" in activity_text
     assert "invoke-static {}, LTest;->main()V" in activity_text
 
 
@@ -160,7 +160,7 @@ def test_emit_build_dir_writes_split_handler_class_and_listener_target(tmp_path)
     )
 
     handlers_path = out_dir / "smali" / "TestHandlers.smali"
-    listener_path = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliClickListener_inc.smali"
+    listener_path = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliClickListener_inc.smali"
     assert handlers_path.exists()
     assert listener_path.exists()
     listener_text = listener_path.read_text(encoding="utf-8")
@@ -193,7 +193,7 @@ def test_emit_wrapper_wires_system_back_for_screen_navigation(tmp_path):
         wrapper_target_sig="(Landroid/app/Activity;)V",
     )
 
-    activity_path = out_dir / "smali" / "com" / "anali" / "preview" / "MainActivity.smali"
+    activity_path = out_dir / "smali" / "com" / "ahnali" / "preview" / "MainActivity.smali"
     activity_text = activity_path.read_text(encoding="utf-8")
     assert ".method public onBackPressed()V" in activity_text
     assert "invoke-static {}, LTest;->onSystemBack()I" in activity_text

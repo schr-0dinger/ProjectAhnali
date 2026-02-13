@@ -41,14 +41,14 @@ from dsl.app import (
 )
 
 
-APP_PACKAGE = "com.anali.materialwidgetzoo"
+APP_PACKAGE = "com.ahnali.materialwidgetzoo"
 APP_MIN_SDK = 21
 APP_TARGET_SDK = 34
 APP_VERSION_CODE = 1
 APP_VERSION_NAME = "1.0"
 APP_DEBUGGABLE = False
 APP_SHOW_ACTION_BAR = False
-APP_LABEL = "Anali Material Widget Zoo"
+APP_LABEL = "Ahnali Material Widget Zoo"
 
 # Material must be explicitly enabled by the app script.
 APP_PLUGINS = ["material"]
@@ -135,7 +135,7 @@ def show_dialog_btn():
 items = [
     Screen(
         "Home",
-        AppBar("Anali Material Widget Zoo", id="home_appbar", inline=True),
+        AppBar("Ahnali Material Widget Zoo", id="home_appbar", inline=True),
         Text("Material-only widget showcase", id="home_title", padding=(dp(16), dp(12), dp(16), dp(8))),
         Row(
             Icon("★", id="home_icon", margin=(dp(16), dp(0), dp(8), dp(8))),

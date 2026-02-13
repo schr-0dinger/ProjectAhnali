@@ -70,7 +70,7 @@ def test_emit_change_listener_for_switch(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliChangeListener_toggle.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliChangeListener_toggle.smali"
     main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 
@@ -93,7 +93,7 @@ def test_emit_change_listener_for_slider(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliChangeListener_slider.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliChangeListener_slider.smali"
     main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 
@@ -121,7 +121,7 @@ def test_emit_change_listener_for_radio_group(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliChangeListener_group.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliChangeListener_group.smali"
     main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 
@@ -144,7 +144,7 @@ def test_emit_text_change_listener_for_text_field(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliTextChangeListener_input.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliTextChangeListener_input.smali"
     main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 
@@ -168,7 +168,7 @@ def test_emit_item_selected_listener_for_dropdown(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliItemSelectedListener_choices.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliItemSelectedListener_choices.smali"
     main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 
@@ -194,7 +194,7 @@ def test_emit_focus_change_listener(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliFocusChangeListener_input_focus.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliFocusChangeListener_input_focus.smali"
     main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 
@@ -217,8 +217,8 @@ def test_emit_popup_menu_item_selected_listener(tmp_path):
     ).build()
 
     out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
-    listener = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliMenuItemListener_menu.smali"
-    auto_popup_click = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliClickListener_menu_popup.smali"
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliMenuItemListener_menu.smali"
+    auto_popup_click = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliClickListener_menu_popup.smali"
     handlers_smali = (out_dir / "smali" / "TestHandlers.smali").read_text(encoding="utf-8")
     listener_text = listener.read_text(encoding="utf-8")
 

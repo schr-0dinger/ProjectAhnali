@@ -76,5 +76,5 @@ def test_smali_emits_typed_field_array_and_cast_opcodes():
     assert "aget-boolean" in smali
     assert "aput-short" in smali
     assert "new-array" in smali
-    assert "i-to-f" in smali
+    assert "int-to-float" in smali
     assert "check-cast" in smali

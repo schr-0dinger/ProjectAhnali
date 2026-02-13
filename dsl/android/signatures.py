@@ -1,5 +1,5 @@
 from ir.expr import Const
-from ir.types import AnaliType
+from ir.types import AhnaliType
 import json
 import os
 import zipfile
@@ -7,17 +7,17 @@ from pathlib import Path
 
 
 _TYPE_DESC_MAP = {
-    AnaliType.INT: "I",
-    AnaliType.FLOAT: "F",
-    AnaliType.BOOL: "Z",
-    AnaliType.STRING: "Ljava/lang/String;",
-    AnaliType.OBJECT: "Ljava/lang/Object;",
+    AhnaliType.INT: "I",
+    AhnaliType.FLOAT: "F",
+    AhnaliType.BOOL: "Z",
+    AhnaliType.STRING: "Ljava/lang/String;",
+    AhnaliType.OBJECT: "Ljava/lang/Object;",
 }
 
 
 def _normalize_type(value):
-    if isinstance(value, AnaliType):
-        if value is AnaliType.UNKNOWN:
+    if isinstance(value, AhnaliType):
+        if value is AhnaliType.UNKNOWN:
             return None
         return _TYPE_DESC_MAP.get(value)
     return value
@@ -596,7 +596,7 @@ _CTOR_SIGS_MANUAL = {
         "Landroid/graphics/drawable/Drawable;",
         "Landroid/graphics/drawable/Drawable;",
     ],
-    "Lcom/anali/preview/AnaliClickListener;": [],
+    "Lcom/ahnali/preview/AhnaliClickListener;": [],
     "Ljava/lang/StringBuilder;": [],
     "Landroid/widget/RelativeLayout;": ["Landroid/content/Context;"],
     "Landroidx/constraintlayout/widget/ConstraintLayout;": ["Landroid/content/Context;"],

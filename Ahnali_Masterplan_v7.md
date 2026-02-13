@@ -1,8 +1,8 @@
-# Anali Masterplan — v7 (Foundational Release Alignment)
+# Ahnali Masterplan — v7 (Foundational Release Alignment)
 
 Last updated: 2026-02-10
 
-Anali is an ahead-of-time Android compiler that translates a restricted, Python-like DSL directly into Smali/Dalvik bytecode.
+Ahnali is an ahead-of-time Android compiler that translates a restricted, Python-like DSL directly into Smali/Dalvik bytecode.
 
 There is:
 - no Python runtime
@@ -17,19 +17,19 @@ v1 is the long-term foundation.
 
 ## 1. Core Philosophy
 
-Anali is built on three non-negotiable principles:
+Ahnali is built on three non-negotiable principles:
 
 1. Ahead-of-time compilation only
 2. Deterministic behavior
 3. Explicit capabilities, not implicit magic
 
-Anali intentionally rejects:
+Ahnali intentionally rejects:
 - runtime interpretation
 - reflection
 - dynamic widget trees
 - plugin-driven execution models
 
-Anali embraces:
+Ahnali embraces:
 - static analysis
 - explicit structure
 - compile-time validation
@@ -40,7 +40,7 @@ Anali embraces:
 ## 2. High-Level Architecture
 
 User DSL (restricted Python-like syntax)
-→ Anali Compiler (AST → CFG → SSA → Dalvik)
+→ Ahnali Compiler (AST → CFG → SSA → Dalvik)
 → Runtime Support (static + modular)
 → Android Framework APIs
 
@@ -69,7 +69,7 @@ No user code is interpreted at runtime.
 
 ## 4. Runtime Strategy
 
-Anali uses a hybrid static + modular runtime model.
+Ahnali uses a hybrid static + modular runtime model.
 
 ### 4.1 Core Runtime (Always Linked)
 
@@ -90,7 +90,7 @@ Properties:
 - No permissions
 - No heavy Android APIs
 
-This is Anali’s identity layer.
+This is Ahnali’s identity layer.
 
 ---
 
@@ -99,13 +99,13 @@ This is Anali’s identity layer.
 Included only if the DSL references them.
 
 Examples:
-- anali.runtime.audio
-- anali.runtime.video
-- anali.runtime.webview
-- anali.runtime.sensors
-- anali.runtime.storage
-- anali.runtime.permissions
-- anali.runtime.intent
+- ahnali.runtime.audio
+- ahnali.runtime.video
+- ahnali.runtime.webview
+- ahnali.runtime.sensors
+- ahnali.runtime.storage
+- ahnali.runtime.permissions
+- ahnali.runtime.intent
 
 Properties:
 - Statically analyzable
@@ -363,16 +363,16 @@ Goal: Smali errors trace back to DSL.
 
 ---
 
-## 16. What Anali Is / Is Not
+## 16. What Ahnali Is / Is Not
 
-Anali is:
+Ahnali is:
 - A compiler
 - Android-native
 - Deterministic
 - Capability-driven
 - Ahead-of-time
 
-Anali is not:
+Ahnali is not:
 - React
 - Flutter
 - Compose
@@ -383,7 +383,7 @@ Anali is not:
 
 ## Final Position
 
-Anali will ship only when:
+Ahnali will ship only when:
 - Core runtime is statically linked
 - Capabilities are modular and scoped
 - Heavy features are Play-deliverable
@@ -422,7 +422,7 @@ Anali will ship only when:
 - Multi-platform abstractions: FletApp, FletTestApp, PagePlatform, WebRenderer, WebBrowserName, BrowserConfiguration, BrowserContextMenu.
 - iOS/macOS specific: IosUtsname, KeychainAccessibility, Cupertino* enums.
 - “Services” that require OS-level background services or cross-platform plugin layer without a runtime: Wakelock, SemanticsService, ShakeDetector (possible but big runtime scope).
-- React-style hooks: use_state, use_effect, use_memo, etc. (requires a reactive runtime not currently in Anali).
+- React-style hooks: use_state, use_effect, use_memo, etc. (requires a reactive runtime not currently in Ahnali).
 
 ### Classes / Enums
 - Most style/geometry/value classes (Padding, Margin, Border, Color, Size, Gradient, TextStyle, Theme, etc.) are implementable.

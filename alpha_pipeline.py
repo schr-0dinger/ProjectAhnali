@@ -225,42 +225,42 @@ def alpha_pipeline(frontend_ir, *, ssa_opt=None):
 def _infer_value_type(val):
     from ir.expr import Const
     from ssa.value import SSAValue
-    from ir.types import AnaliType
+    from ir.types import AhnaliType
 
     if isinstance(val, SSAValue):
         return val.type
     if isinstance(val, Const):
         v = val.value
         if isinstance(v, bool):
-            return AnaliType.BOOL
+            return AhnaliType.BOOL
         if isinstance(v, int):
-            return AnaliType.INT
+            return AhnaliType.INT
         if isinstance(v, float):
-            return AnaliType.FLOAT
+            return AhnaliType.FLOAT
         if isinstance(v, str):
-            return AnaliType.STRING
-    return AnaliType.UNKNOWN
+            return AhnaliType.STRING
+    return AhnaliType.UNKNOWN
 
 
 def _verify_method_returns(ssa_blocks, return_type):
     from ir.stmt import Return
-    from ir.types import AnaliType
+    from ir.types import AhnaliType
     def _type_from_desc(desc):
         if desc in ("I", "B", "C", "S"):
-            return AnaliType.INT
+            return AhnaliType.INT
         if desc == "J":
             return "J"
         if desc == "Z":
-            return AnaliType.BOOL
+            return AhnaliType.BOOL
         if desc == "F":
-            return AnaliType.FLOAT
+            return AhnaliType.FLOAT
         if desc == "D":
             return "D"
         if desc == "Ljava/lang/String;":
-            return AnaliType.STRING
+            return AhnaliType.STRING
         if isinstance(desc, str) and (desc.startswith("L") or desc.startswith("[")):
-            return AnaliType.OBJECT
-        return AnaliType.UNKNOWN
+            return AhnaliType.OBJECT
+        return AhnaliType.UNKNOWN
 
     if isinstance(return_type, str):
         return_type = _type_from_desc(return_type)
@@ -275,5 +275,5 @@ def _verify_method_returns(ssa_blocks, return_type):
                 if stmt.value is None:
                     raise RuntimeError("Non-void method must return a value")
                 vtype = _infer_value_type(stmt.value)
-                if vtype == AnaliType.UNKNOWN or vtype != return_type:
+                if vtype == AhnaliType.UNKNOWN or vtype != return_type:
                     raise RuntimeError("Return type mismatch")

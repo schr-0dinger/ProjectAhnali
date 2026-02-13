@@ -4,7 +4,7 @@ from alpha_pipeline import alpha_pipeline
 from ir.expr import Call
 from ir.stmt import Throw
 from ir.expr import Var
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from tests.ir_stub import Assign, TryCatch
 
 
@@ -15,7 +15,7 @@ def test_throw_lowering_emits_throw():
             Call(
                 "make",
                 args=[],
-                return_type=AnaliType.OBJECT,
+                return_type=AhnaliType.OBJECT,
                 arg_types=[],
             ),
         ),
@@ -37,7 +37,7 @@ def test_throw_requires_object_type():
             Call(
                 "make",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         ),

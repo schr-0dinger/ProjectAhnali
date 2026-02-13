@@ -116,7 +116,7 @@ def test_omega_apk_packaging_manifest_permissions(tmp_path):
         out_dir=tmp_path / "build",
         class_name="LTest;",
         emit_wrapper=True,
-        wrapper_class_desc="Lcom/anali/preview/MainActivity;",
+        wrapper_class_desc="Lcom/ahnali/preview/MainActivity;",
     )
     dex_path = run_smali(
         out_dir / "smali",
@@ -127,8 +127,8 @@ def test_omega_apk_packaging_manifest_permissions(tmp_path):
     signed_apk = package_apk_from_dex(
         dex_path,
         out_dir=out_dir,
-        application_id="com.anali.preview",
-        activity_class_desc="Lcom/anali/preview/MainActivity;",
+        application_id="com.ahnali.preview",
+        activity_class_desc="Lcom/ahnali/preview/MainActivity;",
         permissions=frontend.permissions,
     )
 
@@ -184,7 +184,7 @@ def test_omega_apk_adb_smoke(tmp_path):
         pytest.skip("no adb devices in 'device' state")
     smali_jar = _smali_jar()
 
-    activity_desc = "Lcom/anali/preview/MainActivity;"
+    activity_desc = "Lcom/ahnali/preview/MainActivity;"
     out_dir = emit_build_dir_from_program(
         [assign("x", const(1))],
         out_dir=tmp_path / "build",
@@ -202,16 +202,16 @@ def test_omega_apk_adb_smoke(tmp_path):
     signed_apk = package_apk_from_dex(
         dex_path,
         out_dir=out_dir,
-        application_id="com.anali.preview",
+        application_id="com.ahnali.preview",
         activity_class_desc=activity_desc,
     )
 
     adb = _adb_path()
-    subprocess.run([adb, "uninstall", "com.anali.preview"], check=False)
+    subprocess.run([adb, "uninstall", "com.ahnali.preview"], check=False)
     subprocess.run([adb, "install", "-r", str(signed_apk)], check=True)
     subprocess.run([adb, "logcat", "-c"], check=True)
     subprocess.run(
-        [adb, "shell", "am", "start", "-n", "com.anali.preview/.MainActivity"],
+        [adb, "shell", "am", "start", "-n", "com.ahnali.preview/.MainActivity"],
         check=True,
     )
     time.sleep(1.0)
@@ -221,7 +221,7 @@ def test_omega_apk_adb_smoke(tmp_path):
         capture_output=True,
         text=True,
     ).stdout
-    if "FATAL EXCEPTION" in logcat or "Process: com.anali.preview" in logcat:
+    if "FATAL EXCEPTION" in logcat or "Process: com.ahnali.preview" in logcat:
         raise AssertionError(f"App crash detected in logcat:\n{logcat}")
 
 
@@ -255,7 +255,7 @@ def test_omega_smali_register_nibble_safety_integration(tmp_path):
         out_dir=tmp_path / "build",
         class_name="LTest;",
         emit_wrapper=True,
-        wrapper_class_desc="Lcom/anali/preview/MainActivity;",
+        wrapper_class_desc="Lcom/ahnali/preview/MainActivity;",
     )
     dex_path = run_smali(
         out_dir / "smali",

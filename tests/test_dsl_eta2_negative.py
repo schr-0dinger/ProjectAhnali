@@ -2,7 +2,7 @@ import pytest
 
 from alpha_pipeline import alpha_pipeline
 from dsl.app import program, method, assign, call, call_stmt, const, ret
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from passes.type_inference import TypeInferenceError
 from passes.type_verify import TypeVerificationError
 
@@ -18,7 +18,7 @@ def test_dsl_call_arg_types_length_mismatch_rejected():
                     call(
                         "foo",
                         args=[const(1)],
-                        return_type=AnaliType.INT,
+                        return_type=AhnaliType.INT,
                         arg_types=[],
                     ),
                 ),
@@ -62,7 +62,7 @@ def test_dsl_nonvoid_call_must_assign():
                 call_stmt(
                     "foo",
                     args=[],
-                    return_type=AnaliType.INT,
+                    return_type=AhnaliType.INT,
                     arg_types=[],
                 ),
             ],
@@ -92,7 +92,7 @@ def test_dsl_nonvoid_method_must_return_value():
     prog = program([
         method(
             "main",
-            return_type=AnaliType.INT,
+            return_type=AhnaliType.INT,
             body=[
                 ret(),
             ],

@@ -4,7 +4,7 @@ from dalvik.block import DalvikBlock
 from dalvik.ir import DInvoke, DReturn, DValue
 from dalvik.method import DalvikMethod
 from emit.smali_emit import emit_program_smali
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from passes.regalloc_linear import LiveInterval
 from ssa.value import SSAValue
 
@@ -25,17 +25,17 @@ def test_smali_emits_invoke_and_return():
     d1 = DalvikBlock(b1)
 
     arg = SSAValue("a", 0)
-    arg.type = AnaliType.INT
+    arg.type = AhnaliType.INT
     ret = SSAValue("r", 0)
-    ret.type = AnaliType.INT
+    ret.type = AhnaliType.INT
 
     d0.emit(
         DInvoke(
             method="foo",
             args=[DValue(arg)],
             dst=DValue(ret),
-            return_type=AnaliType.INT,
-            arg_types=[AnaliType.INT],
+            return_type=AhnaliType.INT,
+            arg_types=[AhnaliType.INT],
         )
     )
     d1.emit(DReturn(DValue(ret)))

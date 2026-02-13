@@ -1,5 +1,5 @@
 ---
-tags: [anali, getting-started]
+tags: [ahnali, getting-started]
 ---
 
 # Getting Started
@@ -15,7 +15,7 @@ app_spec = app(
     activity(
         "MainActivity",
         ui(
-            text("Hello Anali", id="title"),
+            text("Hello Ahnali", id="title"),
         ),
     )
 )

@@ -58,13 +58,13 @@ from dsl.colors import colors
 from dsl.widgets import Relative
 
 
-APP_PACKAGE = "com.anali.scratch"
+APP_PACKAGE = "com.ahnali.scratch"
 APP_MIN_SDK = 21
 APP_TARGET_SDK = 34
 APP_VERSION_CODE = 1
 APP_VERSION_NAME = "1.0"
 APP_SHOW_ACTION_BAR = False
-APP_LABEL = "Anali Scratch"
+APP_LABEL = "Ahnali Scratch"
 
 
 palette = {
@@ -152,7 +152,7 @@ app_spec = app(
         ui(
             Screen(
                 "Home",
-                AppBar("Anali Native Scratch", id="home_appbar", inline=True),
+                AppBar("Ahnali Native Scratch", id="home_appbar", inline=True),
                 Text("Getting Started + API Reality Demo", id="home_title", style=Style(text_size=sp(18)), padding=(dp(16), dp(10), dp(16), dp(6))),
                 Text(
                     "Every button below uses inline on_click event attributes.",

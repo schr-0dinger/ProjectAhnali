@@ -1,6 +1,6 @@
 from alpha_pipeline import alpha_pipeline
 from dsl.app import program, method, assign, call, const, ret
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_dsl_typed_args_and_nonvoid_return():
@@ -8,8 +8,8 @@ def test_dsl_typed_args_and_nonvoid_return():
         method(
             "inc",
             params=["p"],
-            param_types=[AnaliType.INT],
-            return_type=AnaliType.INT,
+            param_types=[AhnaliType.INT],
+            return_type=AhnaliType.INT,
             body=[
                 ret(const(2)),
             ],
@@ -23,8 +23,8 @@ def test_dsl_typed_args_and_nonvoid_return():
                     call(
                         "inc",
                         args=[const(1)],
-                        return_type=AnaliType.INT,
-                        arg_types=[AnaliType.INT],
+                        return_type=AhnaliType.INT,
+                        arg_types=[AhnaliType.INT],
                     ),
                 ),
             ],

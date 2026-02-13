@@ -166,11 +166,11 @@ def test_phase4_integration_smoke(tmp_path):
     assert "Landroid/widget/AdapterView;->setOnItemSelectedListener" in smali
     assert "Landroid/view/View;->setOnFocusChangeListener" in smali
     assert "Landroid/widget/PopupMenu;->setOnMenuItemClickListener" in smali
-    assert _smali_path(out_dir, "Lcom/anali/preview/AnaliChangeListener_toggle;").exists()
-    assert _smali_path(out_dir, "Lcom/anali/preview/AnaliTextChangeListener_input;").exists()
-    assert _smali_path(out_dir, "Lcom/anali/preview/AnaliItemSelectedListener_choices;").exists()
-    assert _smali_path(out_dir, "Lcom/anali/preview/AnaliFocusChangeListener_input;").exists()
-    assert _smali_path(out_dir, "Lcom/anali/preview/AnaliMenuItemListener_menu;").exists()
+    assert _smali_path(out_dir, "Lcom/ahnali/preview/AhnaliChangeListener_toggle;").exists()
+    assert _smali_path(out_dir, "Lcom/ahnali/preview/AhnaliTextChangeListener_input;").exists()
+    assert _smali_path(out_dir, "Lcom/ahnali/preview/AhnaliItemSelectedListener_choices;").exists()
+    assert _smali_path(out_dir, "Lcom/ahnali/preview/AhnaliFocusChangeListener_input;").exists()
+    assert _smali_path(out_dir, "Lcom/ahnali/preview/AhnaliMenuItemListener_menu;").exists()
     assert any(entry[3] == "menu_item_selected" for entry in prog.support_classes)
 
 
@@ -398,10 +398,10 @@ def test_phase12_integration_smoke(tmp_path):
     assert ".field public static view_todos:Landroid/widget/ListView;" in smali
     assert "Landroid/widget/ListView;->setAdapter(Landroid/widget/ListAdapter;)V" in smali
     assert any(
-        entry[0] == "Lcom/anali/preview/AnaliListAdapter_todos;" and entry[3] == "list_adapter"
+        entry[0] == "Lcom/ahnali/preview/AhnaliListAdapter_todos;" and entry[3] == "list_adapter"
         for entry in prog.support_classes
     )
-    assert _smali_path(out_dir, "Lcom/anali/preview/AnaliListAdapter_todos;").exists()
+    assert _smali_path(out_dir, "Lcom/ahnali/preview/AhnaliListAdapter_todos;").exists()
 
 
 def test_phase13_integration_smoke(tmp_path):

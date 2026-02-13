@@ -1,6 +1,6 @@
 # passes/type_verify.py
 
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from ir.expr import BinaryOp, Compare, Call
 from ir.stmt import CallStmt
 from passes.ignored_return import allow_ignored_return
@@ -71,7 +71,7 @@ def verify_types(ssa_blocks):
         for phi in block.phis:
             if (
                 phi.target in required
-                and phi.target.type == AnaliType.UNKNOWN
+                and phi.target.type == AhnaliType.UNKNOWN
             ):
                 raise TypeVerificationError(
                     f"Untyped phi {phi.target}"
@@ -82,7 +82,7 @@ def verify_types(ssa_blocks):
             if (
                 isinstance(dst, SSAValue)
                 and dst in required
-                and dst.type == AnaliType.UNKNOWN
+                and dst.type == AhnaliType.UNKNOWN
             ):
                 raise TypeVerificationError(
                     f"Untyped value {dst}"

@@ -1,4 +1,4 @@
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from ir.expr import (
     Const,
     BinaryOp,
@@ -46,7 +46,7 @@ class TypeInferencePass:
                     incoming_types = {
                         v.type
                         for v in incoming_vals
-                        if isinstance(v, SSAValue) and v.type not in (None, AnaliType.UNKNOWN)
+                        if isinstance(v, SSAValue) and v.type not in (None, AhnaliType.UNKNOWN)
                     }
                     if not incoming_types:
                         continue
@@ -74,11 +74,11 @@ class TypeInferencePass:
                     expr = stmt.expr
                     if expr is None:
                         continue
-                    if isinstance(expr, SSAValue) and expr.type == AnaliType.UNKNOWN:
+                    if isinstance(expr, SSAValue) and expr.type == AhnaliType.UNKNOWN:
                         continue
 
                     inferred = self._infer_expr_type(expr)
-                    if inferred in (None, AnaliType.UNKNOWN):
+                    if inferred in (None, AhnaliType.UNKNOWN):
                         continue
                     if target.type != inferred:
                         target.type = inferred
@@ -94,12 +94,12 @@ class TypeInferencePass:
                         continue
                     if isinstance(stmt, Throw):
                         if isinstance(stmt.value, SSAValue):
-                            if stmt.value.type not in (None, AnaliType.UNKNOWN):
+                            if stmt.value.type not in (None, AhnaliType.UNKNOWN):
                                 if not self._is_ref_type(stmt.value.type):
                                     raise RuntimeError(
                                         f"Throw requires object type, got {stmt.value.type}"
                                     )
-                            if self._set_type(stmt.value, AnaliType.OBJECT):
+                            if self._set_type(stmt.value, AhnaliType.OBJECT):
                                 changed = True
                         continue
                     if isinstance(stmt, StaticFieldSet):
@@ -121,7 +121,7 @@ class TypeInferencePass:
                             if self._set_type(stmt.array, array_desc):
                                 changed = True
                         if isinstance(stmt.index, SSAValue):
-                            if self._set_type(stmt.index, AnaliType.INT):
+                            if self._set_type(stmt.index, AhnaliType.INT):
                                 changed = True
                         if isinstance(stmt.value, SSAValue):
                             if self._set_type(stmt.value, stmt.elem_desc):
@@ -133,7 +133,7 @@ class TypeInferencePass:
                         if expr.invoke_kind in ("virtual", "direct", "interface", "super") and expr.args:
                             recv = expr.args[0]
                             if isinstance(recv, SSAValue):
-                                if self._set_type(recv, expr.owner or AnaliType.OBJECT):
+                                if self._set_type(recv, expr.owner or AhnaliType.OBJECT):
                                     changed = True
                         if expr.arg_types is not None:
                             arg_types = list(expr.arg_types)
@@ -159,7 +159,7 @@ class TypeInferencePass:
                         continue
                     if isinstance(expr, NewArray):
                         if isinstance(expr.length, SSAValue):
-                            if self._set_type(expr.length, AnaliType.INT):
+                            if self._set_type(expr.length, AhnaliType.INT):
                                 changed = True
                         continue
                     if isinstance(expr, FilledNewArray):
@@ -173,7 +173,7 @@ class TypeInferencePass:
                             if self._set_type(expr.array, f"[{expr.elem_desc}"):
                                 changed = True
                         if isinstance(expr.index, SSAValue):
-                            if self._set_type(expr.index, AnaliType.INT):
+                            if self._set_type(expr.index, AhnaliType.INT):
                                 changed = True
                         continue
                     if isinstance(expr, FieldGet):
@@ -183,12 +183,12 @@ class TypeInferencePass:
                         continue
                     if isinstance(expr, CheckCast):
                         if isinstance(expr.value, SSAValue):
-                            if self._set_type(expr.value, AnaliType.OBJECT):
+                            if self._set_type(expr.value, AhnaliType.OBJECT):
                                 changed = True
                         continue
                     if isinstance(expr, InstanceOf):
                         if isinstance(expr.value, SSAValue):
-                            if self._set_type(expr.value, AnaliType.OBJECT):
+                            if self._set_type(expr.value, AhnaliType.OBJECT):
                                 changed = True
                         continue
                     if isinstance(expr, PrimitiveCast):
@@ -215,7 +215,7 @@ class TypeInferencePass:
                                 elif not self._is_unknown_type(right_t):
                                     preferred = right_t
                                 if preferred is None:
-                                    preferred = AnaliType.INT
+                                    preferred = AhnaliType.INT
                                 if isinstance(left, SSAValue):
                                     if self._set_type(left, preferred):
                                         changed = True
@@ -226,10 +226,10 @@ class TypeInferencePass:
                             left_ref = self._is_ref_type(getattr(left, "type", None))
                             right_ref = self._is_ref_type(getattr(right, "type", None))
                             if left_ref and isinstance(right, SSAValue):
-                                if self._set_type(right, AnaliType.OBJECT):
+                                if self._set_type(right, AhnaliType.OBJECT):
                                     changed = True
                             if right_ref and isinstance(left, SSAValue):
-                                if self._set_type(left, AnaliType.OBJECT):
+                                if self._set_type(left, AhnaliType.OBJECT):
                                     changed = True
                             if not (left_ref or right_ref):
                                 left_t = getattr(left, "type", None)
@@ -240,7 +240,7 @@ class TypeInferencePass:
                                 elif not self._is_unknown_type(right_t):
                                     preferred = right_t
                                 if preferred is None:
-                                    preferred = AnaliType.INT
+                                    preferred = AhnaliType.INT
                                 if isinstance(left, SSAValue):
                                     if self._set_type(left, preferred):
                                         changed = True
@@ -248,7 +248,7 @@ class TypeInferencePass:
                                     if self._set_type(right, preferred):
                                         changed = True
                     elif isinstance(cond, SSAValue):
-                        if self._set_type(cond, AnaliType.BOOL):
+                        if self._set_type(cond, AhnaliType.BOOL):
                             changed = True
 
             if not changed:
@@ -261,13 +261,13 @@ class TypeInferencePass:
     # -----------------------------
     def _infer_expr_type(self, expr):
         if isinstance(expr, int):
-            return AnaliType.INT
+            return AhnaliType.INT
         if isinstance(expr, float):
-            return AnaliType.FLOAT
+            return AhnaliType.FLOAT
         if isinstance(expr, bool):
-            return AnaliType.BOOL
+            return AhnaliType.BOOL
         if isinstance(expr, str):
-            return AnaliType.STRING
+            return AhnaliType.STRING
 
         if isinstance(expr, Const):
             return self._infer_expr_type(expr.value)
@@ -284,16 +284,16 @@ class TypeInferencePass:
             left_t = self._infer_expr_type(expr.left)
             right_t = self._infer_expr_type(expr.right)
 
-            int_like = {AnaliType.INT, "I", "B", "C", "S"}
-            float_like = {AnaliType.FLOAT, "F"}
+            int_like = {AhnaliType.INT, "I", "B", "C", "S"}
+            float_like = {AhnaliType.FLOAT, "F"}
 
             if expr.op in {"+", "-", "*", "/", "%"}:
-                if AnaliType.UNKNOWN in (left_t, right_t):
-                    return AnaliType.UNKNOWN
+                if AhnaliType.UNKNOWN in (left_t, right_t):
+                    return AhnaliType.UNKNOWN
                 if left_t in int_like and right_t in int_like:
-                    return AnaliType.INT
+                    return AhnaliType.INT
                 if left_t in float_like and right_t in float_like:
-                    return AnaliType.FLOAT
+                    return AhnaliType.FLOAT
                 if left_t == right_t and left_t in ("J", "D"):
                     return left_t
 
@@ -302,10 +302,10 @@ class TypeInferencePass:
                 )
 
             if expr.op in {"&", "|", "^"}:
-                if AnaliType.UNKNOWN in (left_t, right_t):
-                    return AnaliType.UNKNOWN
+                if AhnaliType.UNKNOWN in (left_t, right_t):
+                    return AhnaliType.UNKNOWN
                 if left_t in int_like and right_t in int_like:
-                    return AnaliType.INT
+                    return AhnaliType.INT
                 if left_t == right_t == "J":
                     return "J"
                 raise TypeInferenceError(
@@ -313,10 +313,10 @@ class TypeInferencePass:
                 )
 
             if expr.op in {"<<", ">>", ">>>"}:
-                if AnaliType.UNKNOWN in (left_t, right_t):
-                    return AnaliType.UNKNOWN
+                if AhnaliType.UNKNOWN in (left_t, right_t):
+                    return AhnaliType.UNKNOWN
                 if left_t in int_like and right_t in int_like:
-                    return AnaliType.INT
+                    return AhnaliType.INT
                 if left_t == "J" and right_t in int_like:
                     return "J"
                 raise TypeInferenceError(
@@ -324,14 +324,14 @@ class TypeInferencePass:
                 )
 
         if isinstance(expr, Compare):
-            return AnaliType.BOOL
+            return AhnaliType.BOOL
         
         if isinstance(expr, Call):
             if expr.return_type is not None:
                 if isinstance(expr.return_type, str):
                     return self._type_from_desc(expr.return_type)
                 return expr.return_type
-            return AnaliType.UNKNOWN
+            return AhnaliType.UNKNOWN
         if isinstance(expr, New):
             return expr.class_desc
         if isinstance(expr, NewArray):
@@ -345,38 +345,38 @@ class TypeInferencePass:
         if isinstance(expr, ArrayGet):
             return self._type_from_desc(expr.elem_desc)
         if isinstance(expr, ArrayLength):
-            return AnaliType.INT
+            return AhnaliType.INT
         if isinstance(expr, CheckCast):
             return self._type_from_desc(expr.desc)
         if isinstance(expr, InstanceOf):
-            return AnaliType.BOOL
+            return AhnaliType.BOOL
         if isinstance(expr, FilledNewArray):
             return self._type_from_desc(expr.array_desc)
 
-        return AnaliType.UNKNOWN
+        return AhnaliType.UNKNOWN
 
     def _type_from_desc(self, desc):
         if desc in ("I", "B", "C", "S"):
-            return AnaliType.INT
+            return AhnaliType.INT
         if desc == "J":
             return "J"
         if desc == "Z":
-            return AnaliType.BOOL
+            return AhnaliType.BOOL
         if desc == "F":
-            return AnaliType.FLOAT
+            return AhnaliType.FLOAT
         if desc == "D":
             return "D"
         if desc == "Ljava/lang/String;":
-            return AnaliType.STRING
+            return AhnaliType.STRING
         if isinstance(desc, str) and (desc.startswith("L") or desc.startswith("[")):
-            return AnaliType.OBJECT
-        return AnaliType.UNKNOWN
+            return AhnaliType.OBJECT
+        return AhnaliType.UNKNOWN
 
     def _normalize_hint(self, hint):
         if hint is None:
             return None
-        if isinstance(hint, AnaliType):
-            if hint is AnaliType.UNKNOWN:
+        if isinstance(hint, AhnaliType):
+            if hint is AhnaliType.UNKNOWN:
                 return None
             return hint
         if isinstance(hint, str):
@@ -388,17 +388,17 @@ class TypeInferencePass:
         return hint
 
     def _is_ref_type(self, t):
-        if t in (AnaliType.OBJECT, AnaliType.STRING):
+        if t in (AhnaliType.OBJECT, AhnaliType.STRING):
             return True
         if isinstance(t, str) and (t.startswith("L") or t.startswith("[")):
             return True
         return False
 
     def _is_generic_object(self, t):
-        return t in (AnaliType.OBJECT, "Ljava/lang/Object;")
+        return t in (AhnaliType.OBJECT, "Ljava/lang/Object;")
 
     def _is_unknown_type(self, t):
-        return t in (None, AnaliType.UNKNOWN)
+        return t in (None, AhnaliType.UNKNOWN)
 
     def _set_type(self, val, hint):
         if not isinstance(val, SSAValue):
@@ -407,21 +407,21 @@ class TypeInferencePass:
         if hint is None:
             return False
         cur = val.type
-        if cur in (None, AnaliType.UNKNOWN):
+        if cur in (None, AhnaliType.UNKNOWN):
             val.type = hint
             return True
         cur_norm = self._normalize_hint(cur)
         if cur_norm is None:
             val.type = hint
             return True
-        if cur_norm is not cur and isinstance(cur_norm, AnaliType):
+        if cur_norm is not cur and isinstance(cur_norm, AhnaliType):
             val.type = cur_norm
         cur = cur_norm
         if cur == hint:
             return False
         if (
-            (cur == AnaliType.STRING and hint == "Ljava/lang/String;")
-            or (hint == AnaliType.STRING and cur == "Ljava/lang/String;")
+            (cur == AhnaliType.STRING and hint == "Ljava/lang/String;")
+            or (hint == AhnaliType.STRING and cur == "Ljava/lang/String;")
         ):
             return False
         cur_ref = self._is_ref_type(cur)

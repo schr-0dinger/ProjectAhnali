@@ -1,6 +1,6 @@
-# Anali Unified Masterplan (All-In-One)
+# Ahnali Unified Masterplan (All-In-One)
 
-Last consolidated: 2026-02-12  
+Last consolidated: 2026-02-13  
 Consolidation basis: code reality + tests in current repository
 
 ---
@@ -9,9 +9,9 @@ Consolidation basis: code reality + tests in current repository
 
 Merged into this single masterplan:
 - ✅ `Masterplan_Ultimate.md`
-- ✅ `Anali_Masterplan_v7.md`
-- ✅ `Anali_implement_immediate_plan.md`
-- ✅ `Anali_Dual_Mode_Architecture.md`
+- ✅ `Ahnali_Masterplan_v7.md`
+- ✅ `Ahnali_implement_immediate_plan.md`
+- ✅ `Ahnali_Dual_Mode_Architecture.md`
 - ✅ `README.md`
 - ✅ `docs/Widgets.md`
 - ✅ `docs/UI_Surface_Expansion_TODO.md`
@@ -20,14 +20,14 @@ Merged into this single masterplan:
 
 ## 1) Canonical Product Definition
 
-Anali is:
+Ahnali is:
 - ✅ Ahead-of-time (AOT) Android compiler
 - ✅ Deterministic pipeline and emission
 - ✅ Smali/Dalvik-native output
 - ✅ Static-first UI, state, navigation, and handler wiring
 - ✅ Capability-scoped Android integration
 
-Anali is not:
+Ahnali is not:
 - Runtime scripting engine
 - Dynamic UI tree runtime
 - Reflection-driven plugin host
@@ -60,9 +60,9 @@ Hybrid rollout status:
 
 ---
 
-## 3) Code Reality Snapshot (As of 2026-02-12)
+## 3) Code Reality Snapshot (As of 2026-02-13)
 
-- ✅ Test suite reality: `205 passed` (`PYTHONPATH=. pytest -q`)
+- ✅ Test suite reality: `248 passed` (`PYTHONPATH=. pytest -q`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -292,9 +292,9 @@ Pending:
 
 ---
 
-## 8) Anali API Master Inventory (Exhaustive Surface Envelope)
+## 8) Ahnali API Master Inventory (Exhaustive Surface Envelope)
 
-This inventory reorganizes the full practical native Android Java surface into Anali architectural layers:
+This inventory reorganizes the full practical native Android Java surface into Ahnali architectural layers:
 - Structure
 - Style
 - Interaction
@@ -302,7 +302,7 @@ This inventory reorganizes the full practical native Android Java surface into A
 - Capability
 - Motion
 
-This is the complete growth envelope under Anali AOT deterministic constraints.  
+This is the complete growth envelope under Ahnali AOT deterministic constraints.  
 It is not a promise that all items ship in v1.
 
 Status legend:
@@ -777,9 +777,9 @@ When updating roadmap/status:
 
 ---
 
-## Appendix A) Verbatim Import — Anali_Dual_Mode_Architecture.md
+## Appendix A) Verbatim Import — Ahnali_Dual_Mode_Architecture.md
 
-# Anali Architecture Plan --- Dual Mode (Static + Hybrid)
+# Ahnali Architecture Plan --- Dual Mode (Static + Hybrid)
 
 Status: Architectural Definition\
 Phase Target: v1 Static Foundation → Stage 2 Hybrid Extension\
@@ -789,7 +789,7 @@ Scope: Android-only
 
 # 1. Core Philosophy
 
-Anali is and will always be:
+Ahnali is and will always be:
 
 -   An ahead-of-time (AOT) Android compiler
 -   Deterministic
@@ -797,7 +797,7 @@ Anali is and will always be:
 -   Runtime-minimal
 -   Static-first
 
-Hybrid mode does not redefine Anali.
+Hybrid mode does not redefine Ahnali.
 
 Hybrid mode is: - An optional plugin layer - Capability-scoped -
 Strictly bounded - Never structural by default
@@ -806,11 +806,11 @@ Strictly bounded - Never structural by default
 
 # 2. Two Operating Modes
 
-Anali operates in two clearly defined modes.
+Ahnali operates in two clearly defined modes.
 
 ## Mode A --- Static Mode (Default)
 
-Canonical Anali behavior.
+Canonical Ahnali behavior.
 
 Characteristics:
 
@@ -934,12 +934,12 @@ Step 2 --- Shared Object Integration
 
 APK includes:
 
-lib/armeabi-v7a/libanali_native.so\
-lib/arm64-v8a/libanali_native.so
+lib/armeabi-v7a/libahnali_native.so\
+lib/arm64-v8a/libahnali_native.so
 
 Loaded via:
 
-System.loadLibrary("anali_native")
+System.loadLibrary("ahnali_native")
 
 ------------------------------------------------------------------------
 
@@ -983,7 +983,7 @@ bridge API - State mutation only - Optional bounded dynamic regions
 
 # Final Position
 
-Anali is:
+Ahnali is:
 
 -   A static Android compiler at its core
 -   With optional controlled dynamic logic
@@ -1000,7 +1000,7 @@ Boundaries preserve integrity.
 
 ## Appendix B) Verbatim Import — docs/UI_Surface_Expansion_TODO.md
 
-# Anali UI Surface Expansion TODO (v1)
+# Ahnali UI Surface Expansion TODO (v1)
 
 Last updated: 2026-02-11
 
@@ -1285,7 +1285,7 @@ All animations and effects must be explicit and imperative.
 
 ## Execution Order (Recommended)
 
-⚠️ Wave A: Phases 1, 2, 3 (style primitives + state colors).
+✅ Wave A: Phases 1, 2, 3 (style primitives + state colors).
 ✅ Wave B: Phases 4, 5, 6 (events + input + accessibility).
 ✅ Wave C: Phases 7, 8 (visual polish primitives).
 ✅ Wave D: Phase 9 (explicit animation layer).
@@ -1294,16 +1294,16 @@ All animations and effects must be explicit and imperative.
 
 ---
 
-## Appendix C) Verbatim Import — Anali_implement_immediate_plan.md
+## Appendix C) Verbatim Import — Ahnali_implement_immediate_plan.md
 
-# Anali Implementation — Immediate Masterplan (Corrected & Locked)
+# Ahnali Implementation — Immediate Masterplan (Corrected & Locked)
 
 Last updated: 2026-02-10
 
-This document is a **corrected, implementation-ready refinement** of the Anali v7 masterplan.
+This document is a **corrected, implementation-ready refinement** of the Ahnali v7 masterplan.
 It resolves contradictions, tightens scope, and aligns the plan with the **non-negotiable decision**:
 
-> **Anali will not ship until it supports a statically linked core runtime,
+> **Ahnali will not ship until it supports a statically linked core runtime,
 > capability-scoped optional modules, and Play-delivered dynamic features.**
 
 This is not aspirational. This is the execution plan.
@@ -1321,9 +1321,9 @@ This replaces earlier ambiguous drafts.
 
 ---
 
-## 1. What Anali *Is* (Reconfirmed)
+## 1. What Ahnali *Is* (Reconfirmed)
 
-Anali is:
+Ahnali is:
 
 - An **ahead-of-time compiler**
 - Targeting **Android/Dalvik directly**
@@ -1331,7 +1331,7 @@ Anali is:
 - Producing **fully native Android apps**
 - With **no interpreter, no reflection, no runtime code execution**
 
-Anali is **not**:
+Ahnali is **not**:
 - A scripting engine
 - A Python runtime
 - A reactive framework
@@ -1344,7 +1344,7 @@ Anali is **not**:
 ```
 User DSL
   ↓
-Anali Compiler
+Ahnali Compiler
   - AST validation
   - CFG / SSA construction
   - Static capability resolution
@@ -1412,7 +1412,7 @@ Properties:
 - No heavy APIs
 - No Play dependencies
 
-This runtime defines **Anali identity**.
+This runtime defines **Ahnali identity**.
 
 ---
 
@@ -1424,14 +1424,14 @@ They are **conditionally linked libraries**.
 Included **only if referenced by DSL**.
 
 Examples:
-- `anali.runtime.audio`
-- `anali.runtime.video`
-- `anali.runtime.webview`
-- `anali.runtime.sensors`
-- `anali.runtime.storage`
-- `anali.runtime.permissions`
-- `anali.runtime.network`
-- `anali.runtime.intent`
+- `ahnali.runtime.audio`
+- `ahnali.runtime.video`
+- `ahnali.runtime.webview`
+- `ahnali.runtime.sensors`
+- `ahnali.runtime.storage`
+- `ahnali.runtime.permissions`
+- `ahnali.runtime.network`
+- `ahnali.runtime.intent`
 
 Properties:
 - Ahead-of-time compiled
@@ -1462,7 +1462,7 @@ Properties:
 - Loaded via system classloader
 - No custom loaders, no hacks
 
-Anali orchestrates usage — Android delivers code.
+Ahnali orchestrates usage — Android delivers code.
 
 ---
 
@@ -1674,7 +1674,7 @@ This keeps base APK small.
 
 ---
 
-## 14. What Anali Will *Never* Do
+## 14. What Ahnali Will *Never* Do
 
 - Runtime Python execution
 - Reflection-based dispatch
@@ -1737,4 +1737,4 @@ This plan is:
 - Competitive
 - Honest about tradeoffs
 
-If Anali ships with **this architecture**, it will be taken seriously.
+If Ahnali ships with **this architecture**, it will be taken seriously.

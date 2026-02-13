@@ -20,11 +20,11 @@ def test_list_view_static_lowering_uses_deterministic_generated_adapter():
 
     smali = alpha_pipeline(prog)["smali_class"]
     assert ".field public static view_todos:Landroid/widget/ListView;" in smali
-    assert "Lcom/anali/preview/AnaliListAdapter_todos;" in smali
+    assert "Lcom/ahnali/preview/AhnaliListAdapter_todos;" in smali
     assert "Landroid/widget/ListView;->setAdapter(Landroid/widget/ListAdapter;)V" in smali
     assert "todos_item" in prog.resources
     assert any(
-        entry[0] == "Lcom/anali/preview/AnaliListAdapter_todos;" and entry[3] == "list_adapter"
+        entry[0] == "Lcom/ahnali/preview/AhnaliListAdapter_todos;" and entry[3] == "list_adapter"
         for entry in prog.support_classes
     )
 
@@ -102,9 +102,9 @@ def test_list_view_emits_adapter_support_class_with_holder_bind_logic(tmp_path):
         out_dir
         / "smali"
         / "com"
-        / "anali"
+        / "ahnali"
         / "preview"
-        / "AnaliListAdapter_todos_emit.smali"
+        / "AhnaliListAdapter_todos_emit.smali"
     )
     assert adapter_path.exists()
     adapter_smali = adapter_path.read_text(encoding="utf-8")

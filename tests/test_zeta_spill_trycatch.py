@@ -10,7 +10,7 @@ from dsl.app import (
     throw,
 )
 from alpha_pipeline import alpha_pipeline
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_zeta_spill_across_trycatch_edges():
@@ -22,7 +22,7 @@ def test_zeta_spill_across_trycatch_edges():
             call(
                 "seed",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         )
@@ -31,7 +31,7 @@ def test_zeta_spill_across_trycatch_edges():
         body.append(assign(f"a{i}", binary("+", var("seed"), const(i))))
 
     call_args = [var("a0")] + [var(f"a{i}") for i in range(1, 19)]
-    call_types = [AnaliType.INT] * len(call_args)
+    call_types = [AhnaliType.INT] * len(call_args)
 
     body.append(
         try_catch(
@@ -42,7 +42,7 @@ def test_zeta_spill_across_trycatch_edges():
                     call(
                         "bar",
                         args=call_args,
-                        return_type=AnaliType.INT,
+                        return_type=AhnaliType.INT,
                         arg_types=call_types,
                     ),
                 ),
@@ -52,7 +52,7 @@ def test_zeta_spill_across_trycatch_edges():
                     call(
                         "make",
                         args=[],
-                        return_type=AnaliType.OBJECT,
+                        return_type=AhnaliType.OBJECT,
                         arg_types=[],
                     ),
                 ),
@@ -103,7 +103,7 @@ def test_zeta_spill_across_nested_trycatch_and_handlers():
             call(
                 "seed",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         )
@@ -112,7 +112,7 @@ def test_zeta_spill_across_nested_trycatch_and_handlers():
         body.append(assign(f"a{i}", binary("+", var("seed"), const(i))))
 
     call_args = [var("a0")] + [var(f"a{i}") for i in range(1, 20)]
-    call_types = [AnaliType.INT] * len(call_args)
+    call_types = [AhnaliType.INT] * len(call_args)
 
     body.append(
         try_catch(
@@ -125,7 +125,7 @@ def test_zeta_spill_across_nested_trycatch_and_handlers():
                             call(
                                 "bar",
                                 args=call_args,
-                                return_type=AnaliType.INT,
+                                return_type=AhnaliType.INT,
                                 arg_types=call_types,
                             ),
                         ),
@@ -135,7 +135,7 @@ def test_zeta_spill_across_nested_trycatch_and_handlers():
                             call(
                                 "make",
                                 args=[],
-                                return_type=AnaliType.OBJECT,
+                                return_type=AhnaliType.OBJECT,
                                 arg_types=[],
                             ),
                         ),

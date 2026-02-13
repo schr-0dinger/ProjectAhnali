@@ -13,7 +13,7 @@ from dsl.app import (
     ret,
     var,
 )
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_dsl_new_array_cast_and_invoke_interface_super_lowering():
@@ -23,7 +23,7 @@ def test_dsl_new_array_cast_and_invoke_interface_super_lowering():
                 "main",
                 params=["list", "obj"],
                 param_types=["Ljava/util/List;", "Ljava/lang/Object;"],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 body=[
                     assign("n", const(3)),
                     assign("arr", new_array(var("n"), "I")),
@@ -36,7 +36,7 @@ def test_dsl_new_array_cast_and_invoke_interface_super_lowering():
                         call(
                             "size",
                             args=[var("list")],
-                            return_type=AnaliType.INT,
+                            return_type=AhnaliType.INT,
                             arg_types=["Ljava/util/List;"],
                             invoke_kind="interface",
                             owner="Ljava/util/List;",
@@ -63,7 +63,7 @@ def test_dsl_new_array_cast_and_invoke_interface_super_lowering():
     assert "new-array" in smali
     assert "aput" in smali
     assert "aget" in smali
-    assert "i-to-f" in smali
+    assert "int-to-float" in smali
     assert "check-cast" in smali
     assert "invoke-interface" in smali
     assert "invoke-super" in smali

@@ -9,7 +9,7 @@
 - We grow bytecode coverage by production impact, not by completeness first.
 
 **Plan reconciliation (2026-02-12)**
-- ✅ Reviewed and reconciled: `Anali_Masterplan_v7.md`, `Anali_implement_immediate_plan.md`, `Masterplan_Ultimate.md`, `Anali_Dual_Mode_Architecture.md`.
+- ✅ Reviewed and reconciled: `Ahnali_Masterplan_v7.md`, `Ahnali_implement_immediate_plan.md`, `Masterplan_Ultimate.md`, `Ahnali_Dual_Mode_Architecture.md`.
 - ✅ Canonical position: static AOT mode is default and identity; hybrid runtime is optional, capability-scoped, and non-structural by default.
 
 ---
@@ -44,7 +44,7 @@
 - Optional activation via app config/plugin boundary.
 - Stage-gated and capability-scoped.
 - UI remains static; hybrid logic can mutate state and trigger approved actions.
-- Android API access remains via Anali capability wrappers.
+- Android API access remains via Ahnali capability wrappers.
 
 ### Hybrid Rollout Phases
 - ✅ Phase 0 (static foundation): deterministic emission, navigation, capabilities, permissions/manifest wiring, AAR merge foundations.
@@ -325,9 +325,9 @@ Execution follows wave ordering from the tracker to keep lowering deterministic 
 
 ---
 
-## 8) Anali API Master Inventory (Exhaustive Surface Envelope)
+## 8) Ahnali API Master Inventory (Exhaustive Surface Envelope)
 
-This inventory reorganizes the full practical native Android Java surface into Anali architectural layers:
+This inventory reorganizes the full practical native Android Java surface into Ahnali architectural layers:
 - Structure
 - Style
 - Interaction
@@ -335,7 +335,7 @@ This inventory reorganizes the full practical native Android Java surface into A
 - Capability
 - Motion
 
-This is the complete growth envelope under Anali AOT deterministic constraints.
+This is the complete growth envelope under Ahnali AOT deterministic constraints.
 It is not a promise that all items ship in v1.
 
 ### 8.1 Structure APIs (UI Tree and Layout)
@@ -727,9 +727,9 @@ Build config:
 - trace sections
 
 Conclusion:
-- This inventory covers nearly everything achievable in standard native Android Java, reorganized into Anali layers.
+- This inventory covers nearly everything achievable in standard native Android Java, reorganized into Ahnali layers.
 - Not all items belong in v1.
-- Architecturally, this is the full surface Anali can grow into without violating AOT deterministic principles.
+- Architecturally, this is the full surface Ahnali can grow into without violating AOT deterministic principles.
 
 ### 8.11 API Surface Modularization Plan (`dsl/api.py` Simplification)
 

@@ -1,5 +1,5 @@
 ---
-tags: [anali, components, structure]
+tags: [ahnali, components, structure]
 ---
 
 # Structure Components

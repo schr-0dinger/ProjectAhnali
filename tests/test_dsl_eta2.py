@@ -1,13 +1,13 @@
 from alpha_pipeline import alpha_pipeline
 from dsl.app import program, method, assign, call, const, ret
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_dsl_method_and_typed_call():
     prog = program([
         method(
             "foo",
-            return_type=AnaliType.INT,
+            return_type=AhnaliType.INT,
             body=[
                 assign("x", const(1)),
                 ret(const(1)),
@@ -22,7 +22,7 @@ def test_dsl_method_and_typed_call():
                     call(
                         "foo",
                         args=[],
-                        return_type=AnaliType.INT,
+                        return_type=AhnaliType.INT,
                         arg_types=[],
                     ),
                 ),

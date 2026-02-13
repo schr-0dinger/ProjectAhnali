@@ -11,7 +11,7 @@ from dsl.app import (
     call,
 )
 from alpha_pipeline import alpha_pipeline
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_zeta_spill_across_branch_phi():
@@ -32,7 +32,7 @@ def test_zeta_spill_across_branch_phi():
             call(
                 "seed",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         )
@@ -55,14 +55,14 @@ def test_zeta_spill_across_branch_phi():
 
     # --- Force x and many a's to be live after merge via a typed call ---
     call_args = [var("x")] + [var(f"a{i}") for i in range(18)]
-    call_types = [AnaliType.INT] * len(call_args)
+    call_types = [AhnaliType.INT] * len(call_args)
     body.append(
         assign(
             "y",
             call(
                 "bar",
                 args=call_args,
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=call_types,
             ),
         )

@@ -31,7 +31,7 @@ def test_emit_click_listener_support_class(tmp_path):
         click_listener_target_method="onClick",
     )
 
-    listener_path = out_dir / "smali" / "com" / "anali" / "preview" / "AnaliClickListener.smali"
+    listener_path = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliClickListener.smali"
     assert listener_path.exists()
     text = listener_path.read_text(encoding="utf-8")
     assert "implements Landroid/view/View$OnClickListener;" in text

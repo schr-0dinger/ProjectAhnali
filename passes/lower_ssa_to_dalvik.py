@@ -48,7 +48,7 @@ from ir.expr import (
     FilledNewArray,
 )
 from ir.stmt import StaticFieldSet, FieldSet, ArraySet, CallStmt
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from dalvik.ir import DAdd, DSub, DMul, DDiv, DRem, DAnd, DOr, DXor, DShl, DShr, DUshr
 
 
@@ -186,7 +186,7 @@ class LowerSSAToDalvik:
             f"Dalvik lowering received unsupported value: {value}"
         )
 
-    def _new_temp(self, *, prefix="tmp", typ=AnaliType.INT):
+    def _new_temp(self, *, prefix="tmp", typ=AhnaliType.INT):
         v = SSAValue(prefix, self._tmp_idx)
         self._tmp_idx += 1
         v.type = typ
@@ -195,29 +195,29 @@ class LowerSSAToDalvik:
     def _value_type(self, value):
         if isinstance(value, Const):
             if isinstance(value.value, bool):
-                return AnaliType.BOOL
+                return AhnaliType.BOOL
             if isinstance(value.value, int):
-                return AnaliType.INT
+                return AhnaliType.INT
             if isinstance(value.value, float):
-                return AnaliType.FLOAT
+                return AhnaliType.FLOAT
             if isinstance(value.value, str):
-                return AnaliType.STRING
+                return AhnaliType.STRING
             return None
         if isinstance(value, SSAValue):
             return value.type
         return None
 
     def _is_ref_type(self, t):
-        if t in (AnaliType.OBJECT, AnaliType.STRING):
+        if t in (AhnaliType.OBJECT, AhnaliType.STRING):
             return True
         if isinstance(t, str) and (t.startswith("L") or t.startswith("[")):
             return True
         return False
 
     def _normalize_prim_type(self, t):
-        if t in (AnaliType.INT, AnaliType.BOOL):
+        if t in (AhnaliType.INT, AhnaliType.BOOL):
             return "I"
-        if t == AnaliType.FLOAT:
+        if t == AhnaliType.FLOAT:
             return "F"
         if t in ("I", "J", "F", "D"):
             return t
@@ -307,7 +307,7 @@ class LowerSSAToDalvik:
                             nan_mode = "cmpl"
                         else:
                             nan_mode = "cmpg"
-                        tmp = self._new_temp(prefix="cmp", typ=AnaliType.INT)
+                        tmp = self._new_temp(prefix="cmp", typ=AhnaliType.INT)
                         db.emit(
                             DCompare(
                                 DValue(tmp),
@@ -364,7 +364,7 @@ class LowerSSAToDalvik:
         elif kind == "return":
             if hasattr(term, "value") and term.value is not None:
                 ret = self._as_dvalue(term.value, db)
-                if isinstance(ret.ssa, SSAValue) and ret.ssa.type == AnaliType.UNKNOWN:
+                if isinstance(ret.ssa, SSAValue) and ret.ssa.type == AhnaliType.UNKNOWN:
                     raise RuntimeError(
                         f"Return type UNKNOWN for {ret.ssa}"
                     )
@@ -375,7 +375,7 @@ class LowerSSAToDalvik:
         elif kind == "throw":
             val = self._as_dvalue(term.value, db)
             if isinstance(val.ssa, SSAValue):
-                if val.ssa.type != AnaliType.OBJECT:
+                if val.ssa.type != AhnaliType.OBJECT:
                     raise RuntimeError(
                         f"Throw requires OBJECT type, got {val.ssa.type}"
                     )
@@ -458,9 +458,9 @@ class LowerSSAToDalvik:
 
             expr_type = stmt.defines().type
 
-            if expr_type in (AnaliType.INT, AnaliType.BOOL):
+            if expr_type in (AhnaliType.INT, AhnaliType.BOOL):
                 type_desc = "I"
-            elif expr_type == AnaliType.FLOAT:
+            elif expr_type == AhnaliType.FLOAT:
                 type_desc = "F"
             elif expr_type in ("J", "D"):
                 type_desc = expr_type
@@ -484,7 +484,7 @@ class LowerSSAToDalvik:
                 if type_desc not in {"I", "J"}:
                     raise RuntimeError(f"Operator {expr.op} does not support type {expr_type}")
                 rhs_type = self._value_type(expr.right)
-                if rhs_type not in (AnaliType.INT, AnaliType.BOOL, "I", "B", "C", "S"):
+                if rhs_type not in (AhnaliType.INT, AhnaliType.BOOL, "I", "B", "C", "S"):
                     raise RuntimeError(
                         f"Shift rhs must be int-like for {expr.op}, got {rhs_type}"
                     )
@@ -546,7 +546,7 @@ class LowerSSAToDalvik:
                 raise RuntimeError(
                     "Non-void call must assign to a destination"
                 )
-            if return_type == AnaliType.UNKNOWN:
+            if return_type == AhnaliType.UNKNOWN:
                 raise RuntimeError(
                     "Call return type is UNKNOWN; Eta-2 requires typed calls."
                 )
@@ -555,21 +555,21 @@ class LowerSSAToDalvik:
 
             def _infer_arg_type(dval):
                 if not hasattr(dval, "ssa"):
-                    return AnaliType.UNKNOWN
+                    return AhnaliType.UNKNOWN
                 ssa = dval.ssa
                 if isinstance(ssa, SSAValue):
                     return ssa.type
                 if isinstance(ssa, Const):
                     v = ssa.value
                     if isinstance(v, bool):
-                        return AnaliType.BOOL
+                        return AhnaliType.BOOL
                     if isinstance(v, int):
-                        return AnaliType.INT
+                        return AhnaliType.INT
                     if isinstance(v, float):
-                        return AnaliType.FLOAT
+                        return AhnaliType.FLOAT
                     if isinstance(v, str):
-                        return AnaliType.STRING
-                return AnaliType.UNKNOWN
+                        return AhnaliType.STRING
+                return AhnaliType.UNKNOWN
 
             if expr.arg_types is None:
                 arg_types = [_infer_arg_type(a) for a in args]
@@ -577,7 +577,7 @@ class LowerSSAToDalvik:
                 arg_types = expr.arg_types
 
             for t in arg_types:
-                if t == AnaliType.UNKNOWN:
+                if t == AhnaliType.UNKNOWN:
                     raise RuntimeError(
                         "Call arg type UNKNOWN; Eta-2 requires typed calls."
                     )

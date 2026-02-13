@@ -50,8 +50,8 @@ def _activity_name_from_desc(desc: str, application_id: str) -> str:
 
 def _find_default_launcher_icon() -> Path | None:
     candidates = [
-        Path.cwd() / "anali_launcher_icon.png",
-        Path(__file__).resolve().parents[1] / "anali_launcher_icon.png",
+        Path.cwd() / "ahnali_launcher_icon.png",
+        Path(__file__).resolve().parents[1] / "ahnali_launcher_icon.png",
     ]
     for path in candidates:
         if path.exists():
@@ -189,7 +189,7 @@ _TOOLS_NS = "http://schemas.android.com/tools"
 ET.register_namespace("android", _ANDROID_NS)
 _BLOCKED_AAR_APP_COMPONENTS = {
     # These auto-init paths pull Kotlin/lifecycle runtime chains that are not
-    # currently bundled in Anali's runtime envelope.
+    # currently bundled in Ahnali's runtime envelope.
     "androidx.startup.InitializationProvider",
     "androidx.profileinstaller.ProfileInstallReceiver",
 }
@@ -382,7 +382,7 @@ def _generate_resource_symbols(
             if isinstance(resources, dict):
                 resources = resources_from_mapping(resources)
             if resources is None:
-                resources = AndroidResources(strings={"app_name": "AnaliPreview"})
+                resources = AndroidResources(strings={"app_name": "AhnaliPreview"})
             resources.write_to_dir(tmp)
 
         icon_ref = _ensure_default_launcher_icon(tmp / "res", _find_default_launcher_icon())
@@ -465,7 +465,7 @@ def _generate_resource_symbols(
                 debuggable=False,
                 show_action_bar=True,
                 activity_name=".MainActivity",
-                label="AnaliPreview",
+                label="AhnaliPreview",
                 icon=icon_ref,
                 permissions=permissions,
             ),
@@ -495,12 +495,12 @@ def emit_build_dir(
     class_name: str | None = None,
     *,
     emit_wrapper: bool = False,
-    wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
+    wrapper_class_desc: str = "Lcom/ahnali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
     emit_system_back_bridge: bool = False,
     emit_support_classes: bool = False,
-    click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
 ) -> Path:
     out_dir = Path(out_dir)
@@ -554,12 +554,12 @@ def emit_build_dir_from_program(
     class_name: str = "LTest;",
     *,
     emit_wrapper: bool = False,
-    wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
+    wrapper_class_desc: str = "Lcom/ahnali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
     emit_system_back_bridge: bool | None = None,
     emit_support_classes: bool = False,
-    click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
 ) -> Path:
     result = alpha_pipeline(frontend_ir)
@@ -1055,7 +1055,7 @@ def package_apk_from_dex(
     dex_path: str | Path,
     out_dir: str | Path = "build",
     *,
-    application_id: str = "com.anali.preview",
+    application_id: str = "com.ahnali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
     version_code: int = 1,
@@ -1108,8 +1108,8 @@ def package_apk_from_dex(
     if activity_name is None:
         activity_name = ".MainActivity"
     if resources is None and not (out_dir / "res").exists():
-        resources = {"app_name": "AnaliPreview"}
-    label = "@string/app_name" if (resources is not None or (out_dir / "res").exists()) else "AnaliPreview"
+        resources = {"app_name": "AhnaliPreview"}
+    label = "@string/app_name" if (resources is not None or (out_dir / "res").exists()) else "AhnaliPreview"
 
     with tempfile.TemporaryDirectory(dir=out_dir) as tmp:
         tmp = Path(tmp)
@@ -1120,7 +1120,7 @@ def package_apk_from_dex(
             if isinstance(resources, dict):
                 resources = resources_from_mapping(resources)
             if resources is None:
-                resources = AndroidResources(strings={"app_name": "AnaliPreview"})
+                resources = AndroidResources(strings={"app_name": "AhnaliPreview"})
             resources.write_to_dir(tmp)
 
         icon_ref = _ensure_default_launcher_icon(tmp / "res", _find_default_launcher_icon())
@@ -1278,13 +1278,13 @@ def build_install_run(
     out_dir: str | Path = "build",
     class_name: str = "LTest;",
     emit_wrapper: bool = True,
-    wrapper_class_desc: str = "Lcom/anali/preview/MainActivity;",
+    wrapper_class_desc: str = "Lcom/ahnali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "(Landroid/app/Activity;)V",
     emit_support_classes: bool = True,
-    click_listener_class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
-    application_id: str = "com.anali.preview",
+    application_id: str = "com.ahnali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
     version_code: int = 1,

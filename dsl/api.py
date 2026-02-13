@@ -1,10 +1,10 @@
 """
-Anali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode.
+Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode.
 All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time
-with no runtime interpretation. Alongside this, Anali ships a statically linked, capability-scoped support runtime: a small
+with no runtime interpretation. Alongside this, Ahnali ships a statically linked, capability-scoped support runtime: a small
 set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView,
 etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in
-user code are included in the final APK. As a result, Anali applications have deterministic behavior, minimal binary size,
+user code are included in the final APK. As a result, Ahnali applications have deterministic behavior, minimal binary size,
 zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable
 DSL.
 """
@@ -311,7 +311,7 @@ class AppConfig:
     def __init__(
         self,
         *,
-        package: str = "com.anali.preview",
+        package: str = "com.ahnali.preview",
         min_sdk: int = 21,
         target_sdk: int = 33,
         version_code: int = 1,
@@ -401,7 +401,7 @@ def activity(name, *parts):
 
 def app_config(
     *,
-    package: str = "com.anali.preview",
+    package: str = "com.ahnali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
     version_code: int = 1,
@@ -901,7 +901,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     ui_spec = None
     theme_spec = Theme()
     event_specs = []
-    resources = {"app_name": "AnaliPreview"}
+    resources = {"app_name": "AhnaliPreview"}
     label_locked = False
 
     for part in activity_spec.parts:

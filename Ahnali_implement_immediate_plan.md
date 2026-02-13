@@ -1,11 +1,11 @@
-# Anali Implementation — Immediate Masterplan (Corrected & Locked)
+# Ahnali Implementation — Immediate Masterplan (Corrected & Locked)
 
 Last updated: 2026-02-10
 
-This document is a **corrected, implementation-ready refinement** of the Anali v7 masterplan.
+This document is a **corrected, implementation-ready refinement** of the Ahnali v7 masterplan.
 It resolves contradictions, tightens scope, and aligns the plan with the **non-negotiable decision**:
 
-> **Anali will not ship until it supports a statically linked core runtime,
+> **Ahnali will not ship until it supports a statically linked core runtime,
 > capability-scoped optional modules, and Play-delivered dynamic features.**
 
 This is not aspirational. This is the execution plan.
@@ -23,9 +23,9 @@ This replaces earlier ambiguous drafts.
 
 ---
 
-## 1. What Anali *Is* (Reconfirmed)
+## 1. What Ahnali *Is* (Reconfirmed)
 
-Anali is:
+Ahnali is:
 
 - An **ahead-of-time compiler**
 - Targeting **Android/Dalvik directly**
@@ -33,7 +33,7 @@ Anali is:
 - Producing **fully native Android apps**
 - With **no interpreter, no reflection, no runtime code execution**
 
-Anali is **not**:
+Ahnali is **not**:
 - A scripting engine
 - A Python runtime
 - A reactive framework
@@ -46,7 +46,7 @@ Anali is **not**:
 ```
 User DSL
   ↓
-Anali Compiler
+Ahnali Compiler
   - AST validation
   - CFG / SSA construction
   - Static capability resolution
@@ -114,7 +114,7 @@ Properties:
 - No heavy APIs
 - No Play dependencies
 
-This runtime defines **Anali identity**.
+This runtime defines **Ahnali identity**.
 
 ---
 
@@ -126,14 +126,14 @@ They are **conditionally linked libraries**.
 Included **only if referenced by DSL**.
 
 Examples:
-- `anali.runtime.audio`
-- `anali.runtime.video`
-- `anali.runtime.webview`
-- `anali.runtime.sensors`
-- `anali.runtime.storage`
-- `anali.runtime.permissions`
-- `anali.runtime.network`
-- `anali.runtime.intent`
+- `ahnali.runtime.audio`
+- `ahnali.runtime.video`
+- `ahnali.runtime.webview`
+- `ahnali.runtime.sensors`
+- `ahnali.runtime.storage`
+- `ahnali.runtime.permissions`
+- `ahnali.runtime.network`
+- `ahnali.runtime.intent`
 
 Properties:
 - Ahead-of-time compiled
@@ -164,7 +164,7 @@ Properties:
 - Loaded via system classloader
 - No custom loaders, no hacks
 
-Anali orchestrates usage — Android delivers code.
+Ahnali orchestrates usage — Android delivers code.
 
 ---
 
@@ -376,7 +376,7 @@ This keeps base APK small.
 
 ---
 
-## 14. What Anali Will *Never* Do
+## 14. What Ahnali Will *Never* Do
 
 - Runtime Python execution
 - Reflection-based dispatch
@@ -439,4 +439,4 @@ This plan is:
 - Competitive
 - Honest about tradeoffs
 
-If Anali ships with **this architecture**, it will be taken seriously.
+If Ahnali ships with **this architecture**, it will be taken seriously.

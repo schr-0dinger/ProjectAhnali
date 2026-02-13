@@ -10,7 +10,7 @@ def test_string_const_assign_emits_const_string():
             param_types=["Landroid/app/Activity;"],
             return_type=None,
             body=[
-                assign("msg", const("Hello, Anali!")),
+                assign("msg", const("Hello, Ahnali!")),
                 call_stmt(
                     "setTitle",
                     args=[var("ctx"), var("msg")],

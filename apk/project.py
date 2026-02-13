@@ -12,7 +12,7 @@ from emit.smali_activity import emit_activity_smali
 
 def render_manifest(
     *,
-    application_id: str = "com.anali.preview",
+    application_id: str = "com.ahnali.preview",
     min_sdk: int = 21,
     target_sdk: int = 33,
     version_code: int = 1,
@@ -109,7 +109,7 @@ ANDROID_MANIFEST = render_manifest()
 # ------------------------------------------------------------
 
 APKTOOL_YML = """!!brut.androlib.meta.MetaInfo
-apkFileName: AnaliPreview.apk
+apkFileName: AhnaliPreview.apk
 isFrameworkApk: false
 packageInfo:
   forcedPackageId: '127'
@@ -154,7 +154,7 @@ def emit_apktool_project(dalvik_blocks, out_dir="out_apk"):
         dalvik_blocks,
         reg_map,
         locals_count,
-        package="com/anali/preview",
+        package="com/ahnali/preview",
         activity="MainActivity",
     )
 

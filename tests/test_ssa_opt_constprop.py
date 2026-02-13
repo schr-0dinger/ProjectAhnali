@@ -1,7 +1,7 @@
 from alpha_pipeline import alpha_pipeline
 from tests.ir_stub import Assign, If
 from ir.expr import BinaryOp, Var, Const, Call, Compare
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_constprop_folds_binaryop():
@@ -129,7 +129,7 @@ def test_constfold_skips_non_const_operand():
             Call(
                 "foo",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         ),

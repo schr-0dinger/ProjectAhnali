@@ -1,6 +1,6 @@
 # ssa/value.py
 
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from ir.expr import Expr
 
 
@@ -12,7 +12,7 @@ class SSAValue(Expr):
     def __init__(self, name: str, version: int):
         self.name = name      # original variable name
         self.version = version
-        self.type = AnaliType.UNKNOWN
+        self.type = AhnaliType.UNKNOWN
         self.def_block = None
         self.is_undef = False
 

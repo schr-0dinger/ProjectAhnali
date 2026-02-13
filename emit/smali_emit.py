@@ -45,7 +45,7 @@ from dalvik.ir import (
     DFilledNewArray,
     DCompare,
 )
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from ir.expr import Const
 import struct
 
@@ -101,7 +101,7 @@ def emit_method_smali(method: DalvikMethod):
 
     def _is_object_ssa(ssa):
         t = getattr(ssa, "type", None)
-        if t in (AnaliType.OBJECT, AnaliType.STRING):
+        if t in (AhnaliType.OBJECT, AhnaliType.STRING):
             return True
         if isinstance(t, str) and (t.startswith("L") or t.startswith("[")):
             return True
@@ -240,15 +240,15 @@ def emit_method_smali(method: DalvikMethod):
     def _coerce_type_desc(t, *, allow_none=False):
         if isinstance(t, str):
             return t
-        if t == AnaliType.INT:
+        if t == AhnaliType.INT:
             return "I"
-        if t == AnaliType.FLOAT:
+        if t == AhnaliType.FLOAT:
             return "F"
-        if t == AnaliType.BOOL:
+        if t == AhnaliType.BOOL:
             return "Z"
-        if t == AnaliType.STRING:
+        if t == AhnaliType.STRING:
             return "Ljava/lang/String;"
-        if t == AnaliType.OBJECT:
+        if t == AhnaliType.OBJECT:
             return "Ljava/lang/Object;"
         if t is None and allow_none:
             return None
@@ -855,24 +855,24 @@ def emit_method_smali(method: DalvikMethod):
             elif isinstance(instr, DReturn):
                 rd = reg_map[instr.value.ssa]
                 value_type = getattr(instr.value.ssa, "type", None)
-                if value_type in (None, AnaliType.UNKNOWN):
+                if value_type in (None, AhnaliType.UNKNOWN):
                     if isinstance(instr.value.ssa, Const):
                         v = instr.value.ssa.value
                         if isinstance(v, bool):
-                            value_type = AnaliType.BOOL
+                            value_type = AhnaliType.BOOL
                         elif isinstance(v, int):
-                            value_type = AnaliType.INT
+                            value_type = AhnaliType.INT
                         elif isinstance(v, float):
-                            value_type = AnaliType.FLOAT
+                            value_type = AhnaliType.FLOAT
                         elif isinstance(v, str):
-                            value_type = AnaliType.STRING
-                    if value_type in (None, AnaliType.UNKNOWN):
+                            value_type = AhnaliType.STRING
+                    if value_type in (None, AhnaliType.UNKNOWN):
                         raise RuntimeError("Return type UNKNOWN; cannot emit Smali")
                 if value_type in ("J", "D"):
                     lines.append(f"    return-wide {rd}")
                 elif (
-                    value_type == AnaliType.OBJECT
-                    or value_type == AnaliType.STRING
+                    value_type == AhnaliType.OBJECT
+                    or value_type == AhnaliType.STRING
                     or (isinstance(value_type, str) and value_type.startswith("L"))
                 ):
                     lines.append(f"    return-object {rd}")

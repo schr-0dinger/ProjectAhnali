@@ -1,12 +1,12 @@
-# Project Anali
+# Project Ahnali
 
-Anali is a Python DSL -> IR -> CFG -> SSA -> Typed SSA -> Dalvik IR -> Smali compiler.
+Ahnali is a Python DSL -> IR -> CFG -> SSA -> Typed SSA -> Dalvik IR -> Smali compiler.
 This repository contains the compiler pipeline, validation gates, and tests for a
 phase-by-phase architecture-first build.
 
-Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, Anali ships a statically linked, capability-scoped support runtime: a small set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView, etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in user code are included in the final APK. As a result, Anali applications have deterministic behavior, minimal binary size, zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable DSL.
+Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, Ahnali ships a statically linked, capability-scoped support runtime: a small set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView, etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in user code are included in the final APK. As a result, Ahnali applications have deterministic behavior, minimal binary size, zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable DSL.
 
-Last updated: 2026-02-06
+Last updated: 2026-02-13
 
 ## Goals
 
@@ -62,11 +62,12 @@ Phases completed:
 - Epsilon-3: CFG simplification (redundant goto removal, block merging)
 
 Active:
-- Zeta refinement wrap-up (exceptional-edge spill + determinism done)
-- Omega toolchain prep
+- UI/compiler expansion through Phase 13 complete (events, input, accessibility, effects, animations, themes, scroll controls, static list view, lint hardening)
+- Packaging flow complete (`aapt2` + `zipalign` + `apksigner`)
+- Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last full run: `77` passing tests (`python -m pytest`)
+- Last full run: `248` passing tests (`PYTHONPATH=. pytest -q`)
 
 ## DSL Surface (Current)
 
@@ -180,90 +181,53 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Omega toolchain scaffolding (emit build dir + integrate smali/baksmali entrypoints)
-2) APK packaging for a minimal class
-3) Runtime smoke test harness
+1) Capability module runtime ABI surface
+2) Size/perf benchmark automation (APK size + cold start)
+3) First capability wave for real app logic (network/storage primitives)
+4) Ongoing integration smoke expansion for each new capability area
 
-## Completion Roadmap (Detailed)
+## Completion Roadmap (Current)
 
-### Phase 1: Zeta Refinement (current)
-
-Objectives:
-- Prove allocator stability under stress and complex control flow.
-- Validate spills across branches, invokes, and exception paths.
-
-Work items:
-- Add register-pressure stress tests with >16 live intervals.
-- Add spill/reload tests around:
-  - `DIf` branch joins
-  - `DInvoke` argument and result paths
-  - try/catch handler transitions
-- Add deterministic-output tests:
-  - same input program -> identical register assignment and normalized Smali.
-  - multi-method programs compile deterministically per-method.
-
-Exit criteria:
-- No allocator regressions under stress.
-- Spill correctness verified in branch/call/handler scenarios.
-- Determinism tests stable across repeated runs.
-
-### Phase 2: Omega Toolchain Integration
+### Track A: Runtime Capability ABI
 
 Objectives:
-- Move from compiler output validation to executable artifact validation.
+- Lock stable runtime helper ABI for capability-scoped module linking.
 
 Work items:
-- Build integration:
-  - emit complete class/method files to a build directory.
-  - integrate `smali`/`baksmali` invocation flow.
-- Packaging:
-  - generate a minimal APK from emitted Smali.
-  - establish reproducible build commands and output paths.
-- Runtime smoke:
-  - install APK on emulator/device.
-  - run minimal startup path and verify no verifier/runtime crashes.
+- Define runtime helper class/interface contracts and versioning rules.
+- Add ABI compatibility tests (compile-time and runtime smoke).
+- Document capability-to-runtime mapping in docs.
 
 Exit criteria:
-- One-command compile-to-APK workflow.
-- APK installs and launches for baseline test apps.
-- Runtime smoke suite green.
+- ABI contract frozen for v1.
+- New capabilities can be added without breaking existing apps.
 
-### Phase 3: End-to-End DSL Validation
+### Track B: Benchmark Automation
 
 Objectives:
-- Validate language surface against real build/runtime behavior.
+- Make performance/size regressions visible and blocking.
 
 Work items:
-- Add end-to-end fixtures:
-  - typed method calls/returns
-  - nested branches and loops
-  - try/catch with multi-handlers
-  - throw/catch paths
-- Golden checks:
-  - expected Smali fragments for each fixture
-  - expected runtime behavior for smoke scenarios
+- Add deterministic APK size reporting in CI.
+- Add cold-start benchmark harness and threshold checks.
+- Track regressions per commit in artifacts/logs.
 
 Exit criteria:
-- DSL-to-APK flow validated for representative programs.
-- No phase-local workaround required to pass runtime checks.
+- Benchmark gates are automated and reliable.
+- Regressions are caught before merge.
 
-### Phase 4: Stabilization and Release Readiness
+### Track C: Capability Expansion
 
 Objectives:
-- Lock behavior and make future changes safe.
+- Enable practical app logic beyond static UI/state.
 
 Work items:
-- CI matrix for unit + integration + end-to-end tests.
-- Regression dashboard for optimization and lowering changes.
-- Developer docs:
-  - architecture invariants
-  - pass ordering constraints
-  - adding a new IR feature checklist
+- Add capability-scoped networking primitives.
+- Add capability-scoped storage primitives.
+- Add permission/capability diagnostics for new surfaces.
 
 Exit criteria:
-- Stable CI on all critical paths.
-- Regression turnaround is quick and actionable.
-- Architecture and contribution path documented.
+- At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
 
 ## How to Run Tests
 
@@ -273,12 +237,12 @@ Exit criteria:
 
 ```python
 from dsl.app import program, method, assign, call, const, ret
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 prog = program([
-    method("foo", return_type=AnaliType.INT, body=[ret(const(1))]),
+    method("foo", return_type=AhnaliType.INT, body=[ret(const(1))]),
     method("main", return_type=None, body=[
-        assign("y", call("foo", args=[], return_type=AnaliType.INT, arg_types=[]))
+        assign("y", call("foo", args=[], return_type=AhnaliType.INT, arg_types=[]))
     ])
 ])
 

@@ -13,7 +13,7 @@ from dsl.app import (
     call,
     ret,
 )
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def _normalize_smali(smali):
@@ -27,7 +27,7 @@ def _build_program():
             call(
                 "seed",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         ),
@@ -43,7 +43,7 @@ def _build_program():
             call(
                 "seed",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         ),
@@ -54,8 +54,8 @@ def _build_program():
     m2_body.append(ret(var("b1")))
 
     return program([
-        method("alpha", return_type=AnaliType.INT, body=m1_body),
-        method("beta", return_type=AnaliType.INT, body=m2_body),
+        method("alpha", return_type=AhnaliType.INT, body=m1_body),
+        method("beta", return_type=AhnaliType.INT, body=m2_body),
     ])
 
 

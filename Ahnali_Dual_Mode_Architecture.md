@@ -1,4 +1,4 @@
-# Anali Architecture Plan --- Dual Mode (Static + Hybrid)
+# Ahnali Architecture Plan --- Dual Mode (Static + Hybrid)
 
 Status: Architectural Definition\
 Phase Target: v1 Static Foundation → Stage 2 Hybrid Extension\
@@ -8,7 +8,7 @@ Scope: Android-only
 
 # 1. Core Philosophy
 
-Anali is and will always be:
+Ahnali is and will always be:
 
 -   An ahead-of-time (AOT) Android compiler
 -   Deterministic
@@ -16,7 +16,7 @@ Anali is and will always be:
 -   Runtime-minimal
 -   Static-first
 
-Hybrid mode does not redefine Anali.
+Hybrid mode does not redefine Ahnali.
 
 Hybrid mode is: - An optional plugin layer - Capability-scoped -
 Strictly bounded - Never structural by default
@@ -25,11 +25,11 @@ Strictly bounded - Never structural by default
 
 # 2. Two Operating Modes
 
-Anali operates in two clearly defined modes.
+Ahnali operates in two clearly defined modes.
 
 ## Mode A --- Static Mode (Default)
 
-Canonical Anali behavior.
+Canonical Ahnali behavior.
 
 Characteristics:
 
@@ -153,12 +153,12 @@ Step 2 --- Shared Object Integration
 
 APK includes:
 
-lib/armeabi-v7a/libanali_native.so\
-lib/arm64-v8a/libanali_native.so
+lib/armeabi-v7a/libahnali_native.so\
+lib/arm64-v8a/libahnali_native.so
 
 Loaded via:
 
-System.loadLibrary("anali_native")
+System.loadLibrary("ahnali_native")
 
 ------------------------------------------------------------------------
 
@@ -202,7 +202,7 @@ bridge API - State mutation only - Optional bounded dynamic regions
 
 # Final Position
 
-Anali is:
+Ahnali is:
 
 -   A static Android compiler at its core
 -   With optional controlled dynamic logic

@@ -46,11 +46,11 @@ def test_smali_emits_group4_primitive_casts():
     method = DalvikMethod("main", {b0: d0}, allocator)
     smali = emit_program_smali([method])
 
-    assert "i-to-f" in smali
-    assert "i-to-l" in smali
-    assert "l-to-i" in smali
-    assert "f-to-d" in smali
-    assert "d-to-f" in smali
+    assert "int-to-float" in smali
+    assert "int-to-long" in smali
+    assert "long-to-int" in smali
+    assert "float-to-double" in smali
+    assert "double-to-float" in smali
     assert "int-to-byte" in smali
     assert "int-to-short" in smali
     assert "int-to-char" in smali

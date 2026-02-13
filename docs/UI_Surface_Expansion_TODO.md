@@ -1,4 +1,4 @@
-# Anali UI Surface Expansion TODO (v1)
+# Ahnali UI Surface Expansion TODO (v1)
 
 Last updated: 2026-02-13
 

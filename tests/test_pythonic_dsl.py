@@ -246,7 +246,7 @@ def test_pythonic_dsl_navigation_screens():
 
 @on_click("log_btn")
 def log_btn():
-    log("Anali", "clicked")
+    log("Ahnali", "clicked")
 
 
 def test_pythonic_dsl_log_stmt():

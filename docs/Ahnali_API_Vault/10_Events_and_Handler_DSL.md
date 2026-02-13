@@ -1,5 +1,5 @@
 ---
-tags: [anali, events, handlers]
+tags: [ahnali, events, handlers]
 ---
 
 # Events and Handler DSL

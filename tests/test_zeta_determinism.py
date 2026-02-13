@@ -10,7 +10,7 @@ from dsl.app import (
     call,
 )
 from alpha_pipeline import alpha_pipeline
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def _build_pressure_body():
@@ -23,7 +23,7 @@ def _build_pressure_body():
             call(
                 "seed",
                 args=[],
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=[],
             ),
         )
@@ -33,7 +33,7 @@ def _build_pressure_body():
         body.append(assign(f"a{i}", binary("+", var("seed"), const(i))))
 
     args = [var(f"a{i}") for i in range(8)]
-    arg_types = [AnaliType.INT] * len(args)
+    arg_types = [AhnaliType.INT] * len(args)
 
     body.append(
         if_(
@@ -44,7 +44,7 @@ def _build_pressure_body():
                     call(
                         "foo",
                         args=args,
-                        return_type=AnaliType.INT,
+                        return_type=AhnaliType.INT,
                         arg_types=arg_types,
                     ),
                 ),
@@ -55,7 +55,7 @@ def _build_pressure_body():
                     call(
                         "foo",
                         args=args,
-                        return_type=AnaliType.INT,
+                        return_type=AhnaliType.INT,
                         arg_types=arg_types,
                     ),
                 ),
@@ -65,14 +65,14 @@ def _build_pressure_body():
 
     # Merge pressure and force a wide call.
     call_args = [var("r")] + [var(f"a{i}") for i in range(20)]
-    call_types = [AnaliType.INT] * len(call_args)
+    call_types = [AhnaliType.INT] * len(call_args)
     body.append(
         assign(
             "y",
             call(
                 "bar",
                 args=call_args,
-                return_type=AnaliType.INT,
+                return_type=AhnaliType.INT,
                 arg_types=call_types,
             ),
         )

@@ -4,7 +4,7 @@ def emit_activity_smali(
     dalvik_blocks,
     reg_map,
     locals_count,
-    package="com/anali/preview",
+    package="com/ahnali/preview",
     activity="MainActivity",
 ):
     cls = f"L{package}/{activity};"
@@ -310,39 +310,39 @@ def emit_activity_smali(
                     )
 
                 def _type_desc(t):
-                    from ir.types import AnaliType
+                    from ir.types import AhnaliType
                     if isinstance(t, str):
                         if len(t) == 1:
                             return t
                         return t
                     if t is None:
                         raise RuntimeError("Call arg type missing")
-                    if t == AnaliType.INT:
+                    if t == AhnaliType.INT:
                         return "I"
-                    if t == AnaliType.FLOAT:
+                    if t == AhnaliType.FLOAT:
                         return "F"
-                    if t == AnaliType.BOOL:
+                    if t == AhnaliType.BOOL:
                         return "Z"
-                    if t == AnaliType.STRING:
+                    if t == AhnaliType.STRING:
                         return "Ljava/lang/String;"
-                    if t == AnaliType.OBJECT:
+                    if t == AhnaliType.OBJECT:
                         return "Ljava/lang/Object;"
                     raise RuntimeError(f"Unsupported type {t}")
 
                 arg_desc = "".join(_type_desc(t) for t in arg_types)
 
-                from ir.types import AnaliType
+                from ir.types import AhnaliType
                 if instr.return_type is None:
                     ret_desc = "V"
-                elif instr.return_type == AnaliType.INT:
+                elif instr.return_type == AhnaliType.INT:
                     ret_desc = "I"
-                elif instr.return_type == AnaliType.FLOAT:
+                elif instr.return_type == AhnaliType.FLOAT:
                     ret_desc = "F"
-                elif instr.return_type == AnaliType.BOOL:
+                elif instr.return_type == AhnaliType.BOOL:
                     ret_desc = "Z"
-                elif instr.return_type == AnaliType.STRING:
+                elif instr.return_type == AhnaliType.STRING:
                     ret_desc = "Ljava/lang/String;"
-                elif instr.return_type == AnaliType.OBJECT:
+                elif instr.return_type == AhnaliType.OBJECT:
                     ret_desc = "Ljava/lang/Object;"
                 elif isinstance(instr.return_type, str):
                     ret_desc = instr.return_type
@@ -359,8 +359,8 @@ def emit_activity_smali(
                     if instr.return_type in ("J", "D"):
                         lines.append(f"    move-result-wide {rd}")
                     elif (
-                        instr.return_type == AnaliType.OBJECT
-                        or instr.return_type == AnaliType.STRING
+                        instr.return_type == AhnaliType.OBJECT
+                        or instr.return_type == AhnaliType.STRING
                         or (isinstance(instr.return_type, str) and instr.return_type.startswith("L"))
                     ):
                         lines.append(f"    move-result-object {rd}")
@@ -386,7 +386,7 @@ def emit_activity_smali(
 
 
 def emit_activity_wrapper_smali(
-    activity_desc: str = "Lcom/anali/preview/MainActivity;",
+    activity_desc: str = "Lcom/ahnali/preview/MainActivity;",
     target_desc: str = "LTest;",
     target_sig: str = "()V",
     emit_system_back_bridge: bool = False,
@@ -421,9 +421,9 @@ def emit_activity_wrapper_smali(
         lines.append("    .locals 1")
         lines.append(f"    invoke-static {{}}, {target_desc}->{back_method}{back_sig}")
         lines.append("    move-result v0")
-        lines.append("    if-eqz v0, :anali_call_super")
+        lines.append("    if-eqz v0, :ahnali_call_super")
         lines.append("    return-void")
-        lines.append("  :anali_call_super")
+        lines.append("  :ahnali_call_super")
         lines.append("    invoke-super {p0}, Landroid/app/Activity;->onBackPressed()V")
         lines.append("    return-void")
         lines.append(".end method")
@@ -651,7 +651,7 @@ def emit_event_listener_smali(
 
 
 def emit_click_listener_smali(
-    class_desc: str = "Lcom/anali/preview/AnaliClickListener;",
+    class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     target_desc: str = "LTest;",
     target_method: str = "onClick",
 ):

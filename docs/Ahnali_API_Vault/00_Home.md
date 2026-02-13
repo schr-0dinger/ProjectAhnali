@@ -1,8 +1,8 @@
 ---
-tags: [anali, api, docs, vault]
+tags: [ahnali, api, docs, vault]
 ---
 
-# Anali Getting Started + API Documentation (Code Reality)
+# Ahnali Getting Started + API Documentation (Code Reality)
 
 This vault is generated from the current repository implementation and tests.
 It documents the native/core DSL surface (Material plugin is paused and not part of default runtime behavior).

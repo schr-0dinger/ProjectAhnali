@@ -1,7 +1,7 @@
 # ir/types.py
 from enum import Enum, auto
 
-class AnaliType(Enum):
+class AhnaliType(Enum):
     INT = auto()
     FLOAT = auto()
     BOOL = auto()

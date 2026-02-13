@@ -1,5 +1,5 @@
 ---
-tags: [anali, animation]
+tags: [ahnali, animation]
 ---
 
 # Animation DSL (Explicit/Imperative)

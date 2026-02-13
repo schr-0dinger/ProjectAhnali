@@ -1,6 +1,6 @@
 from alpha_pipeline import alpha_pipeline
 from ir.expr import Call, Const
-from ir.types import AnaliType
+from ir.types import AhnaliType
 from tests.ir_stub import Assign
 
 
@@ -11,8 +11,8 @@ def test_eta2_typed_call_from_ir():
             Call(
                 "foo",
                 args=[Const(1)],
-                return_type=AnaliType.INT,
-                arg_types=[AnaliType.INT],
+                return_type=AhnaliType.INT,
+                arg_types=[AhnaliType.INT],
                 invoke_kind="static",
                 owner="LTest;",
             ),

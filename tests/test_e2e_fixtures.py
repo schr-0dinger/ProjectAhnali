@@ -15,7 +15,7 @@ from dsl.app import (
     add_view,
 )
 from alpha_pipeline import alpha_pipeline
-from ir.types import AnaliType
+from ir.types import AhnaliType
 
 
 def test_e2e_helloworld_smali_golden():
@@ -32,7 +32,7 @@ def test_e2e_trycatch_smali_golden():
     prog = program([
         method(
             "main",
-            return_type=AnaliType.INT,
+            return_type=AhnaliType.INT,
             body=[
                 try_catch(
                     try_body=[
