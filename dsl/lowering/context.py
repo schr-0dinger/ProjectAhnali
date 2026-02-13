@@ -1,5 +1,6 @@
 import hashlib
 import copy
+import re
 from typing import Any
 
 from ir.expr import Var
@@ -612,6 +613,73 @@ class _PythonicContext:
             return
         self._lint_warning_keys.add(key)
         self._lint_warnings.append(message)
+
+    def _style_field_supported_kinds(self, field_name: str, field_value):
+        if field_name in {"font_family", "font_weight", "font_style"}:
+            meta = ATTR_METHODS.get("typeface")
+            if meta and meta.supported_kinds is not None:
+                return set(meta.supported_kinds)
+            return None
+
+        if field_name == "track_tint":
+            supported = set()
+            for key in ("slider_track_tint", "switch_track_tint"):
+                meta = ATTR_METHODS.get(key)
+                if meta and meta.supported_kinds is not None:
+                    supported.update(meta.supported_kinds)
+            return supported or None
+
+        if field_name == "text_color" and isinstance(field_value, ColorState):
+            meta = ATTR_METHODS.get("text_color_state")
+            if meta and meta.supported_kinds is not None:
+                return set(meta.supported_kinds)
+            return None
+
+        meta = ATTR_METHODS.get(field_name)
+        if meta and meta.supported_kinds is not None:
+            return set(meta.supported_kinds)
+        return None
+
+    def _validate_style_fields_for_widget(self, item, style_obj, *, source: str):
+        if not isinstance(style_obj, Style):
+            return
+        kind = self.view_types.get(item.id)
+        if kind is None:
+            return
+        for field_name, field_value in style_obj.__dict__.items():
+            if field_value is None:
+                continue
+            supported = self._style_field_supported_kinds(field_name, field_value)
+            if supported is None:
+                continue
+            if kind in supported:
+                continue
+            supported_list = ", ".join(sorted(supported))
+            raise RuntimeError(
+                f"Incompatible style field '{field_name}' on widget '{item.id}' "
+                f"(kind={kind}) in {source}. Supported kinds: [{supported_list}]"
+            )
+
+    def _validate_state_keys(self):
+        reserved_keys = {"app_ctx", "nav_stack", "nav_size", "nav_current"}
+        view_field_names = set(self.view_fields.values())
+        for key in self.state_spec.values.keys():
+            if not isinstance(key, str):
+                raise RuntimeError(
+                    f"Invalid state key {key!r}. State keys must be strings."
+                )
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                raise RuntimeError(
+                    f"Invalid state key '{key}'. Expected pattern: [A-Za-z_][A-Za-z0-9_]*."
+                )
+            if key in reserved_keys:
+                raise RuntimeError(
+                    f"Invalid state key '{key}'. This key is reserved by the runtime."
+                )
+            if key in view_field_names:
+                raise RuntimeError(
+                    f"Invalid state key '{key}'. It conflicts with a generated widget field name."
+                )
 
     def _resolve_text_input_type_value(self, item):
         type_class_text = 0x00000001
@@ -1342,6 +1410,7 @@ class _PythonicContext:
             fields.append(static_field("nav_current", "I", access="public static"))
 
         # State fields
+        self._validate_state_keys()
         for name, value in self.state_spec.values.items():
             if not isinstance(value, int) or isinstance(value, bool):
                 raise RuntimeError(
@@ -3243,6 +3312,8 @@ class _PythonicContext:
         item_style = item.style if getattr(item, "style", None) else None
         theme_style = self._theme_style_for_item(item)
         widget_default_style = self._widget_default_style_for_item(item)
+        self._validate_style_fields_for_widget(item, theme_style, source="Theme channel")
+        self._validate_style_fields_for_widget(item, item_style, source="style=")
         # Deterministic precedence: inline attrs > style= > Theme channel > widget defaults.
         style = widget_default_style.merged(theme_style).merged(item_style)
         self._emit_style_precedence_lints(item, theme_style, item_style)
@@ -4006,21 +4077,44 @@ class _PythonicContext:
         gradient_value = background_value if isinstance(background_value, Gradient) else None
         if gradient_value is None:
             if isinstance(background_value, ColorState):
-                bg_color_value = _parse_color(background_value.default, palette)
+                self._warn_once(
+                    f"background_color_state_default:{view_id}",
+                    f"'{view_id}.background' uses ColorState; only the default color is applied to background fill.",
+                )
+                try:
+                    bg_color_value = _parse_color(background_value.default, palette)
+                except RuntimeError as exc:
+                    raise RuntimeError(
+                        f"Invalid color on '{view_id}.background': {exc}"
+                    ) from None
             else:
-                bg_color_value = _parse_color(background_value, palette)
+                try:
+                    bg_color_value = _parse_color(background_value, palette)
+                except RuntimeError as exc:
+                    raise RuntimeError(
+                        f"Invalid color on '{view_id}.background': {exc}"
+                    ) from None
         else:
             bg_color_value = None
 
         if isinstance(border_color_value, ColorState):
             border_color_value = border_color_value.default
-        border_color = _parse_color(border_color_value, palette)
+        try:
+            border_color = _parse_color(border_color_value, palette)
+        except RuntimeError as exc:
+            raise RuntimeError(
+                f"Invalid color on '{view_id}.border_color': {exc}"
+            ) from None
 
         effective_radius = border_radius_value if border_radius_value is not None else radius_value
         corner_values, uniform_corners = self._normalize_corner_radii(effective_radius)
 
         if border_width_value is None and border_color is not None:
             border_width_value = Dp(1)
+            self._warn_once(
+                f"border_width_default:{view_id}",
+                f"'{view_id}.border_width' is not set; defaulting to dp(1) because border_color is provided.",
+            )
         if border_width_value is not None and border_color is None:
             raise RuntimeError("border_color is required when border_width is set.")
 
@@ -4051,10 +4145,35 @@ class _PythonicContext:
         )
 
         if gradient_value is not None:
-            orientation_field = self._normalize_gradient_direction(gradient_value.direction)
+            try:
+                start_color = _parse_color(gradient_value.start, palette)
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    f"Invalid gradient config on '{view_id}.background.start': {exc}"
+                ) from None
+            try:
+                end_color = _parse_color(gradient_value.end, palette)
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    f"Invalid gradient config on '{view_id}.background.end': {exc}"
+                ) from None
+            if start_color is None:
+                raise RuntimeError(
+                    f"Invalid gradient config on '{view_id}.background.start': "
+                    f"expected a parseable color, got {gradient_value.start!r}."
+                )
+            if end_color is None:
+                raise RuntimeError(
+                    f"Invalid gradient config on '{view_id}.background.end': "
+                    f"expected a parseable color, got {gradient_value.end!r}."
+                )
+            try:
+                orientation_field = self._normalize_gradient_direction(gradient_value.direction)
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    f"Invalid gradient config on '{view_id}.background.direction': {exc}"
+                ) from None
             orientation_var = self._next_tmp(f"{view_id}_grad_orientation")
-            start_color = _parse_color(gradient_value.start, palette)
-            end_color = _parse_color(gradient_value.end, palette)
             colors_var = self._next_tmp(f"{view_id}_grad_colors")
             out.extend(
                 [

@@ -1263,17 +1263,17 @@ All animations and effects must be explicit and imperative.
 ## Phase 13: Validation and Linting
 
 ### Compile-time Checks
-❌ Style field incompatible with widget.
-❌ Invalid state keys.
-❌ Unsupported event binding target.
-❌ Duplicate IDs.
-❌ Animation target ID not found.
-❌ Blur below API 31.
-❌ Invalid gradient config.
+✅ Style field incompatible with widget.
+✅ Invalid state keys.
+✅ Unsupported event binding target.
+✅ Duplicate IDs.
+✅ Animation target ID not found.
+✅ Blur below API 31.
+✅ Invalid gradient config.
 
 ### Diagnostics
-❌ Error messages with widget id and field name.
-❌ Warnings for degraded fallback behavior.
+✅ Error messages with widget id and field name.
+✅ Warnings for degraded fallback behavior.
 
 ## Non-Goals (Locked)
 

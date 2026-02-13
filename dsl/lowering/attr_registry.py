@@ -311,6 +311,7 @@ ATTR_METHODS = {
             "radio",
             "switch",
             "popup_button",
+            "icon",
         ],
     ),
 
