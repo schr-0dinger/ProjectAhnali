@@ -1025,24 +1025,24 @@ All animations and effects must be explicit and imperative.
 ## Phase 1: Typography v1
 
 ### DSL and Style Surface (`dsl/widgets.py`)
-- [ ] Add `font_family` to `Style`.
-- [ ] Add `font_weight` to `Style`.
-- [ ] Add `font_style` to `Style`.
-- [ ] Add `letter_spacing` to `Style`.
-- [ ] Add `line_height` to `Style`.
-- [ ] Add `text_alignment` to `Style`.
-- [ ] Add `all_caps` to `Style`.
-- [ ] Add `max_lines` to `Style`.
-- [ ] Add `ellipsize` to `Style`.
+- [x] Add `font_family` to `Style`.
+- [x] Add `font_weight` to `Style`.
+- [x] Add `font_style` to `Style`.
+- [x] Add `letter_spacing` to `Style`.
+- [x] Add `line_height` to `Style`.
+- [x] Add `text_alignment` to `Style`.
+- [x] Add `all_caps` to `Style`.
+- [x] Add `max_lines` to `Style`.
+- [x] Add `ellipsize` to `Style`.
 
 ### Lowering (`dsl/lowering/attr_registry.py`, `dsl/lowering/context.py`)
-- [ ] Lower `font_*` to `setTypeface`.
-- [ ] Lower `letter_spacing` to `setLetterSpacing`.
-- [ ] Lower `line_height` to `setLineSpacing`.
-- [ ] Lower `text_alignment` to `setTextAlignment`.
-- [ ] Lower `all_caps` to `setAllCaps`.
-- [ ] Lower `max_lines` to `setMaxLines`.
-- [ ] Lower `ellipsize` to `setEllipsize`.
+- [x] Lower `font_*` to `setTypeface`.
+- [x] Lower `letter_spacing` to `setLetterSpacing`.
+- [x] Lower `line_height` to `setLineSpacing`.
+- [x] Lower `text_alignment` to `setTextAlignment`.
+- [x] Lower `all_caps` to `setAllCaps`.
+- [x] Lower `max_lines` to `setMaxLines`.
+- [x] Lower `ellipsize` to `setEllipsize`.
 
 ### Coverage
 - [ ] Text
@@ -1054,22 +1054,22 @@ All animations and effects must be explicit and imperative.
 ## Phase 2: Control Tinting v1
 
 ### DSL and Style Surface (`dsl/widgets.py`)
-- [ ] Add `tint`.
-- [ ] Add `thumb_tint`.
-- [ ] Add `track_tint`.
-- [ ] Add `progress_tint`.
-- [ ] Add `button_tint`.
+- [x] Add `tint`.
+- [x] Add `thumb_tint`.
+- [x] Add `track_tint`.
+- [x] Add `progress_tint`.
+- [x] Add `button_tint`.
 
 ### Lowering (`dsl/lowering/context.py`)
-- [ ] Slider: `setThumbTintList`.
-- [ ] Slider: `setProgressTintList`.
-- [ ] Slider: `setProgressBackgroundTintList`.
-- [ ] ProgressBar: `setProgressTintList`.
-- [ ] ProgressBar: `setIndeterminateTintList`.
-- [ ] Switch: `setThumbTintList`.
-- [ ] Switch: `setTrackTintList`.
-- [ ] Checkbox/Radio: `setButtonTintList`.
-- [ ] Button: `setBackgroundTintList`.
+- [x] Slider: `setThumbTintList`.
+- [x] Slider: `setProgressTintList`.
+- [x] Slider: `setProgressBackgroundTintList`.
+- [x] ProgressBar: `setProgressTintList`.
+- [x] ProgressBar: `setIndeterminateTintList`.
+- [x] Switch: `setThumbTintList`.
+- [x] Switch: `setTrackTintList`.
+- [x] Checkbox/Radio: `setButtonTintList`.
+- [x] Button: `setBackgroundTintList`.
 
 ## Phase 3: ColorStateList DSL
 
