@@ -1020,7 +1020,7 @@ All animations and effects must be explicit and imperative.
 ✅ Keep compile-time ID validation for all widget/event references.
 ✅ Keep deterministic lowering only (no runtime behavior inference).
 ✅ Add compile-time lint for unsupported widget/style combinations.
-⚠️ Add focused lowering tests and at least one integration smoke test per phase.
+✅ Add focused lowering tests and at least one integration smoke test per phase.
 
 ## Phase 1: Typography v1
 
