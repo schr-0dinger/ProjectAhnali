@@ -107,6 +107,14 @@ def _resolve_content_description(content_description, accessibility_label):
     return accessibility_label
 
 
+def _require_single_direct_child(widget_name, items):
+    if len(items) != 1:
+        raise RuntimeError(
+            f"{widget_name} requires exactly one direct child; got {len(items)}."
+        )
+    return items
+
+
 class _UIText:
     def __init__(
         self,
@@ -726,6 +734,22 @@ class _UIConstraint:
         self.style = style
 
 
+class _UIScrollView(_UIView):
+    def __init__(self, *items, id="scroll_view", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.items = tuple(_require_single_direct_child("ScrollView", items))
+
+
+class _UIHorizontalScrollView(_UIView):
+    def __init__(self, *items, id="horizontal_scroll_view", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.items = tuple(
+            _require_single_direct_child("HorizontalScrollView", items)
+        )
+
+
 class _UIAppBar(_UIText):
     def __init__(self, text, *, id="appbar", inline=False, **kwargs):
         kwargs.setdefault("id", id)
@@ -1284,6 +1308,14 @@ class Relative(_UIRelative):
 
 
 class Constraint(_UIConstraint):
+    pass
+
+
+class ScrollView(_UIScrollView):
+    pass
+
+
+class HorizontalScrollView(_UIHorizontalScrollView):
     pass
 
 
@@ -1952,6 +1984,14 @@ def constraint(
         clip_children=clip_children,
         style=style,
     )
+
+
+def scroll_view(*items, id="scroll_view", **kwargs):
+    return _UIScrollView(*items, id=id, **kwargs)
+
+
+def horizontal_scroll_view(*items, id="horizontal_scroll_view", **kwargs):
+    return _UIHorizontalScrollView(*items, id=id, **kwargs)
 
 
 def app_bar(title, *, id="appbar", **kwargs):

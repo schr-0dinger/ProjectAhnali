@@ -89,6 +89,7 @@ from dsl.widgets import (
     _UIDropdownButton,
     _UIFlatButton,
     _UIFloatingActionButton,
+    _UIHorizontalScrollView,
     _UIIcon,
     _UIIconButton,
     _UIImage,
@@ -99,6 +100,7 @@ from dsl.widgets import (
     _UIRelative,
     _UIRaisedButton,
     _UIRow,
+    _UIScrollView,
     _UIScreen,
     _UISlider,
     _UISwitch,
@@ -169,6 +171,10 @@ class _PythonicContext:
             return "Landroid/widget/RelativeLayout;"
         if kind == "constraint":
             return "Landroidx/constraintlayout/widget/ConstraintLayout;"
+        if kind == "scroll_view":
+            return "Landroid/widget/ScrollView;"
+        if kind == "horizontal_scroll_view":
+            return "Landroid/widget/HorizontalScrollView;"
         if kind == "text_field":
             return "Landroid/widget/EditText;"
         if kind == "checkbox":
@@ -209,6 +215,8 @@ class _PythonicContext:
             "column",
             "relative",
             "constraint",
+            "scroll_view",
+            "horizontal_scroll_view",
             "appbar",
             "fab",
             "raised_btn",
@@ -2375,6 +2383,38 @@ class _PythonicContext:
                         raw_value=item.weight_sum,
                     )
                 )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UIScrollView):
+            if len(item.items) != 1:
+                raise RuntimeError(
+                    f"ScrollView requires exactly one direct child; got {len(item.items)}."
+                )
+            item.id = self._register_view(item.id, "scroll_view")
+            body.extend(
+                [assign(item.id, new("Landroid/widget/ScrollView;", args=[var("ctx")]))]
+            )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UIHorizontalScrollView):
+            if len(item.items) != 1:
+                raise RuntimeError(
+                    "HorizontalScrollView requires exactly one direct child; "
+                    f"got {len(item.items)}."
+                )
+            item.id = self._register_view(item.id, "horizontal_scroll_view")
+            body.extend(
+                [
+                    assign(
+                        item.id,
+                        new("Landroid/widget/HorizontalScrollView;", args=[var("ctx")]),
+                    )
+                ]
+            )
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))

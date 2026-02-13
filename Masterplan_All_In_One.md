@@ -1243,12 +1243,12 @@ All animations and effects must be explicit and imperative.
 ## Phase 11: Scroll Controls
 
 ### DSL and Validation
-❌ Add `ScrollView`.
-❌ Add `HorizontalScrollView`.
-❌ Enforce single direct child at compile time.
+✅ Add `ScrollView`.
+✅ Add `HorizontalScrollView`.
+✅ Enforce single direct child at compile time.
 
 ### Lowering
-❌ Emit corresponding widget constructors and layout wiring.
+✅ Emit corresponding widget constructors and layout wiring.
 
 ## Phase 12: RecyclerView (Static v1)
 
