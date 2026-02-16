@@ -235,7 +235,7 @@ Work items:
 - ✅ Add initial helper-call capability primitives:
   - `URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`
   - `Connectivity` → `Lcom/ahnali/runtime/ConnectivityHelper;->isConnected(...)I`
-  - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;`
+  - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I`
 - Add capability-scoped networking primitives.
 - Add capability-scoped storage primitives.
 - Add permission/capability diagnostics for new surfaces.

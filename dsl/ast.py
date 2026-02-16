@@ -128,6 +128,11 @@ class _StmtStorageGet:
         self.default_value = default_value
 
 
+class _StmtStorageRemove:
+    def __init__(self, key):
+        self.key = key
+
+
 class _StmtNavigate:
     def __init__(self, target):
         self.target = target

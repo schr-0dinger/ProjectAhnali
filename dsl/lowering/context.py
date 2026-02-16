@@ -30,6 +30,7 @@ from dsl.ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtStorageGet,
+    _StmtStorageRemove,
     _StmtStoragePut,
     _StmtLog,
     _StmtNavigate,
@@ -2750,6 +2751,8 @@ class _PythonicContext:
             return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtStorageGet):
             return self._compile_storage_get_stmt(stmt)
+        if isinstance(stmt, _StmtStorageRemove):
+            return self._compile_storage_remove_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -5363,6 +5366,38 @@ class _PythonicContext:
             tmp_prefix="storage_get_ignored",
         )
         return out
+
+    def _compile_storage_remove_stmt(self, stmt):
+        binding = self.capability_runtime_bindings.get("Storage")
+        if binding is None:
+            raise RuntimeError(
+                "storage_remove requires Storage capability. "
+                "Declare app_config(uses=[Caps.Storage]) first."
+            )
+        if binding.mode != "helper_call":
+            raise RuntimeError(
+                "Storage capability must be helper_call mode for storage_remove."
+            )
+        if not binding.helper_class_desc:
+            raise RuntimeError("Storage helper binding is missing helper class metadata.")
+        result_tmp = self._next_tmp("storage_remove_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "remove",
+                    args=[var("ctx"), const(str(stmt.key))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
 
     def _compile_request_permissions_stmt(self, stmt):
         from dsl.capabilities import normalize_permission

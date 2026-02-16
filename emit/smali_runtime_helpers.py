@@ -174,6 +174,34 @@ def _emit_storage_get_string_method() -> list[str]:
     ]
 
 
+def _emit_storage_remove_method() -> list[str]:
+    return [
+        ".method public static remove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 4",
+        "    if-eqz p0, :ahnali_storage_remove_fail",
+        "    if-eqz p1, :ahnali_storage_remove_fail",
+        "    :ahnali_storage_remove_try_start",
+        '    const-string v0, "ahnali_storage"',
+        "    const/4 v1, 0x0",
+        "    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_storage_remove_fail",
+        "    invoke-interface {v2}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;",
+        "    move-result-object v3",
+        "    invoke-interface {v3, p1}, Landroid/content/SharedPreferences$Editor;->remove(Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;",
+        "    move-result-object v3",
+        "    invoke-interface {v3}, Landroid/content/SharedPreferences$Editor;->apply()V",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_storage_remove_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_storage_remove_try_start .. :ahnali_storage_remove_try_end} :ahnali_storage_remove_fail",
+        "    :ahnali_storage_remove_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def emit_capability_helper_smali(
     *,
     class_desc: str,
@@ -217,6 +245,8 @@ def emit_capability_helper_smali(
         lines.extend(_emit_storage_put_string_method())
         lines.append("")
         lines.extend(_emit_storage_get_string_method())
+        lines.append("")
+        lines.extend(_emit_storage_remove_method())
         return "\n".join(lines)
 
     locals_count = 0 if ret_desc == "V" else 2 if ret_desc in {"J", "D"} else 1

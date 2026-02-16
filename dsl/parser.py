@@ -21,6 +21,7 @@ from .ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtStorageGet,
+    _StmtStorageRemove,
     _StmtStoragePut,
     _StmtAnimate,
     _StmtAnimationGroup,
@@ -192,6 +193,20 @@ def _parse_stmt(stmt):
                 if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
                     raise RuntimeError("storage_get default value must be a constant string")
                 return _StmtStorageGet(args[0].value, default_expr.value)
+            if fn in (
+                "storage_remove",
+                "StorageRemove",
+                "remove_storage",
+                "RemoveStorage",
+                "delete_storage",
+                "DeleteStorage",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("storage_remove requires key string argument")
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("storage_remove key must be a constant string")
+                return _StmtStorageRemove(args[0].value)
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions

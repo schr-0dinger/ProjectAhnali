@@ -1,6 +1,18 @@
 from alpha_pipeline import alpha_pipeline
 from apk.toolchain import emit_build_dir_from_program
-from dsl.app import Caps, activity, app, app_config, button, on_click, storage_get, storage_put, text, ui
+from dsl.app import (
+    Caps,
+    activity,
+    app,
+    app_config,
+    button,
+    on_click,
+    storage_get,
+    storage_put,
+    storage_remove,
+    text,
+    ui,
+)
 
 
 @on_click("save_btn")
@@ -12,6 +24,11 @@ def _save_btn_handler():
 def _load_btn_handler():
     msg = storage_get("greeting", "fallback")
     label.text = msg
+
+
+@on_click("remove_btn")
+def _remove_btn_handler():
+    storage_remove("greeting")
 
 
 def test_track_c_wave1_storage_put_lowers_to_runtime_helper_call():
@@ -54,6 +71,24 @@ def test_track_c_wave1_storage_get_lowers_to_runtime_helper_call_and_symbol_set_
     assert "Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V" in merged
 
 
+def test_track_c_wave1_storage_remove_lowers_to_runtime_helper_call():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Storage]),
+            ui(button("Remove", id="remove_btn")),
+            _remove_btn_handler,
+        )
+    ).build()
+
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert (
+        "Lcom/ahnali/runtime/StorageHelper;->remove("
+        "Landroid/app/Activity;Ljava/lang/String;)I"
+    ) in merged
+
+
 def test_track_c_wave1_storage_put_requires_storage_capability():
     prog = app(
         activity(
@@ -89,6 +124,21 @@ def test_track_c_wave1_storage_get_requires_storage_capability():
         assert "storage_get requires Storage capability" in str(exc)
 
 
+def test_track_c_wave1_storage_remove_requires_storage_capability():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(button("Remove", id="remove_btn")),
+            _remove_btn_handler,
+        )
+    )
+    try:
+        prog.build()
+        raise AssertionError("Expected build() to fail when Storage capability is missing")
+    except RuntimeError as exc:
+        assert "storage_remove requires Storage capability" in str(exc)
+
+
 def test_track_c_wave1_toolchain_emits_storage_helper_class(tmp_path):
     frontend = app(
         activity(
@@ -116,4 +166,12 @@ def test_track_c_wave1_toolchain_emits_storage_helper_class(tmp_path):
         ".method public static getString("
         "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
     ) in helper_smali
+    assert (
+        ".method public static remove("
+        "Landroid/app/Activity;Ljava/lang/String;)I"
+    ) in helper_smali
     assert "Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;" in helper_smali
+    assert (
+        "Landroid/content/SharedPreferences$Editor;->remove("
+        "Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;"
+    ) in helper_smali

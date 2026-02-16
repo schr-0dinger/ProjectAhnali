@@ -161,9 +161,11 @@ Deprecation policy:
   - Helper methods/sigs:
     - `putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
     - `getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `remove(Landroid/app/Activity;Ljava/lang/String;)I`
   - Return semantics:
     - `putString`: `1` on successful `SharedPreferences` write; `0` on null context/key or caught exception.
     - `getString`: stored value when present; fallback argument on null context/key, missing value, or caught exception.
+    - `remove`: `1` on successful `SharedPreferences` remove/apply; `0` on null context/key or caught exception.
 
 ## 9) Conformance References
 

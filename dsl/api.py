@@ -886,6 +886,18 @@ def load_storage(key: str, default_value: str = ""):
     return storage_get(key, default_value)
 
 
+def storage_remove(key: str):
+    return _StmtStorageRemove(str(key))
+
+
+def remove_storage(key: str):
+    return storage_remove(key)
+
+
+def delete_storage(key: str):
+    return storage_remove(key)
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 
