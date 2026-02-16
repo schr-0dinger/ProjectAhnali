@@ -27,6 +27,7 @@ from dsl.ast import (
     _StmtSnackbar,
     _StmtToast,
     _StmtOpenUrl,
+    _StmtCheckConnectivity,
     _StmtLog,
     _StmtNavigate,
     _StmtWhile,
@@ -2736,6 +2737,8 @@ class _PythonicContext:
             return self._compile_log_stmt(stmt)
         if isinstance(stmt, _StmtOpenUrl):
             return self._compile_open_url_stmt(stmt)
+        if isinstance(stmt, _StmtCheckConnectivity):
+            return self._compile_check_connectivity_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -5179,6 +5182,35 @@ class _PythonicContext:
                     args=[var("ctx"), const(str(stmt.url))],
                     return_type="I",
                     arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_check_connectivity_stmt(self, stmt):
+        binding = self.capability_runtime_bindings.get("Connectivity")
+        if binding is None:
+            raise RuntimeError(
+                "check_connectivity requires Connectivity capability. "
+                "Declare app_config(uses=[Caps.Connectivity]) first."
+            )
+        if binding.mode != "helper_call":
+            raise RuntimeError(
+                "Connectivity capability must be helper_call mode for check_connectivity."
+            )
+        if not (binding.helper_class_desc and binding.helper_method):
+            raise RuntimeError("Connectivity helper binding is missing helper metadata.")
+        result_tmp = self._next_tmp("connectivity_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx")],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),

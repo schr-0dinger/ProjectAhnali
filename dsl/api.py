@@ -850,6 +850,18 @@ def launch_url(url: str):
     return open_url(url)
 
 
+def check_connectivity():
+    return _StmtCheckConnectivity()
+
+
+def connectivity_check():
+    return check_connectivity()
+
+
+def is_connected():
+    return check_connectivity()
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 

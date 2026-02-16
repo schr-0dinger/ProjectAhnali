@@ -96,6 +96,32 @@ def _emit_url_launcher_open_url_method() -> list[str]:
     ]
 
 
+def _emit_connectivity_is_connected_method() -> list[str]:
+    return [
+        ".method public static isConnected(Landroid/app/Activity;)I",
+        "    .locals 4",
+        "    if-eqz p0, :ahnali_conn_fail",
+        "    :ahnali_conn_try_start",
+        '    const-string v0, "connectivity"',
+        "    invoke-virtual {p0, v0}, Landroid/app/Activity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v1",
+        "    check-cast v1, Landroid/net/ConnectivityManager;",
+        "    if-eqz v1, :ahnali_conn_fail",
+        "    invoke-virtual {v1}, Landroid/net/ConnectivityManager;->getActiveNetworkInfo()Landroid/net/NetworkInfo;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_conn_fail",
+        "    invoke-virtual {v2}, Landroid/net/NetworkInfo;->isConnected()Z",
+        "    move-result v3",
+        "    return v3",
+        "    :ahnali_conn_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_conn_try_start .. :ahnali_conn_try_end} :ahnali_conn_fail",
+        "    :ahnali_conn_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def emit_capability_helper_smali(
     *,
     class_desc: str,
@@ -121,6 +147,14 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
     ):
         lines.extend(_emit_url_launcher_open_url_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/ConnectivityHelper;"
+        and helper_method == "isConnected"
+        and helper_sig == "(Landroid/app/Activity;)I"
+    ):
+        lines.extend(_emit_connectivity_is_connected_method())
         return "\n".join(lines)
 
     locals_count = 0 if ret_desc == "V" else 2 if ret_desc in {"J", "D"} else 1

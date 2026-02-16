@@ -205,6 +205,9 @@ register_default_capability(
 register_default_capability(
     "Connectivity",
     ["android.permission.ACCESS_NETWORK_STATE", "android.permission.INTERNET"],
+    helper_class_desc="Lcom/ahnali/runtime/ConnectivityHelper;",
+    helper_method="isConnected",
+    helper_sig="(Landroid/app/Activity;)I",
 )
 register_default_capability(
     "URLLauncher",

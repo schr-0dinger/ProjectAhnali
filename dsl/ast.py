@@ -105,6 +105,11 @@ class _StmtOpenUrl:
         self.url = url
 
 
+class _StmtCheckConnectivity:
+    def __init__(self):
+        pass
+
+
 class _StmtNavigate:
     def __init__(self, target):
         self.target = target

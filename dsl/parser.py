@@ -18,6 +18,7 @@ from .ast import (
     _StmtSnackbar,
     _StmtToast,
     _StmtOpenUrl,
+    _StmtCheckConnectivity,
     _StmtAnimate,
     _StmtAnimationGroup,
     _StmtLog,
@@ -144,6 +145,17 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("open_url url must be a constant string")
                 return _StmtOpenUrl(args[0].value)
+            if fn in (
+                "check_connectivity",
+                "CheckConnectivity",
+                "connectivity_check",
+                "ConnectivityCheck",
+                "is_connected",
+                "IsConnected",
+            ):
+                if call.args:
+                    raise RuntimeError("check_connectivity takes no arguments")
+                return _StmtCheckConnectivity()
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions

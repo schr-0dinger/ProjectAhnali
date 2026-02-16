@@ -12,7 +12,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Aliases are accepted compatibility inputs and resolve to canonical names.
 - Permissions are deterministic and ordered.
 - Runtime helper integration mode is capability-specific (`permission_only` or `helper_call`).
-- Track C Wave 1 introduces first helper-call binding for URL launcher.
+- Track C Wave 1 introduces initial helper-call bindings for URL launcher and connectivity checks.
 
 ## Mapping Table (v1)
 
@@ -26,7 +26,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `Sensors` | `Sensors` | `android.permission.BODY_SENSORS` | n/a | n/a | `permission_only` |
 | `Storage` | `Storage` | `android.permission.READ_EXTERNAL_STORAGE`, `android.permission.WRITE_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |
 | `FilePicker` | `FilePicker`, `File Picker` | `android.permission.READ_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |
-| `Connectivity` | `Connectivity` | `android.permission.ACCESS_NETWORK_STATE`, `android.permission.INTERNET` | n/a | n/a | `permission_only` |
+| `Connectivity` | `Connectivity` | `android.permission.ACCESS_NETWORK_STATE`, `android.permission.INTERNET` | `Lcom/ahnali/runtime/ConnectivityHelper;` | `isConnected(Landroid/app/Activity;)I` | `helper_call` |
 | `URLLauncher` | `URLLauncher`, `URL launcher` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/UrlLauncherHelper;` | `openUrl(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Permissions` | `Permissions` | none | n/a | n/a | `permission_only` |
 | `Maps` | `Maps` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |

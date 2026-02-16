@@ -245,7 +245,7 @@ Implemented:
 - ✅ Runtime helper ABI v1 contract document (`runtime_abi_v1.md`)
 - ✅ Capability-to-runtime mapping contract (`docs/capability_runtime_mapping_v1.md`)
 - ✅ Capability/runtime ABI guard tests (`tests/test_runtime_abi_v1.py`, `tests/test_capabilities.py`)
-- ✅ Track C Wave 1 starter: `URLLauncher` helper-call binding + emitted runtime helper class (`Lcom/ahnali/runtime/UrlLauncherHelper;`)
+- ✅ Track C Wave 1 starter: `URLLauncher` + `Connectivity` helper-call bindings + emitted runtime helper classes (`Lcom/ahnali/runtime/UrlLauncherHelper;`, `Lcom/ahnali/runtime/ConnectivityHelper;`)
 
 Pending:
 - ⚠️ Remaining capability runtime helper-call implementations (Track C: broader network/storage wave)

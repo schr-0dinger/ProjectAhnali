@@ -183,7 +183,7 @@ Constraints:
 
 1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
 2) Track B complete: size benchmark enforced on PR/push; cold-start benchmark enforced on manual dispatch
-3) Track C Wave 1 in progress: URL launcher helper-call landed; continue networking/storage primitives
+3) Track C Wave 1 in progress: URL launcher + connectivity helper-calls landed; continue networking/storage primitives
 4) Ongoing integration smoke expansion for each new capability area
 5) Optimization backlog execution (see `docs/Ahnali_Optimization_Backlog.md`)
 
@@ -226,13 +226,15 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 started with URL launcher helper-call ABI/runtime path)
+- ⚠️ In progress (Wave 1 started with URL launcher + connectivity helper-call ABI/runtime paths)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
 
 Work items:
-- ✅ Add first helper-call capability primitive (`URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`).
+- ✅ Add initial helper-call capability primitives:
+  - `URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`
+  - `Connectivity` → `Lcom/ahnali/runtime/ConnectivityHelper;->isConnected(...)I`
 - Add capability-scoped networking primitives.
 - Add capability-scoped storage primitives.
 - Add permission/capability diagnostics for new surfaces.

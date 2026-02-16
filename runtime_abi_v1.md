@@ -14,10 +14,10 @@ In scope:
 - Static ListView adapter helper class (`AhnaliListAdapter_*`)
 - `ProgramIR.support_classes` entry schema used by toolchain emission
 - Capability-to-runtime mapping contract for registered capabilities
-- Track C Wave 1 capability helper ABI: URL launcher helper
+- Track C Wave 1 capability helper ABI: URL launcher + connectivity helpers
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher helper (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -150,6 +150,11 @@ Deprecation policy:
   - Helper class: `Lcom/ahnali/runtime/UrlLauncherHelper;`
   - Helper method/sig: `openUrl(Landroid/app/Activity;Ljava/lang/String;)I`
   - Return semantics: `1` on successful dispatch to `Activity.startActivity`, `0` on null input or caught exception.
+- Track C Wave 1 helper-call binding:
+  - Capability: `Connectivity`
+  - Helper class: `Lcom/ahnali/runtime/ConnectivityHelper;`
+  - Helper method/sig: `isConnected(Landroid/app/Activity;)I`
+  - Return semantics: `1` when active network is connected, `0` for null context, no active network, or caught exception.
 
 ## 9) Conformance References
 

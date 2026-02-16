@@ -33,6 +33,11 @@ def test_capability_runtime_mapping_v1_shape():
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/UrlLauncherHelper;"
             assert binding.helper_method == "openUrl"
             assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+        elif cap_name == "Connectivity":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/ConnectivityHelper;"
+            assert binding.helper_method == "isConnected"
+            assert binding.helper_sig == "(Landroid/app/Activity;)I"
         else:
             assert binding.mode == "permission_only"
             assert binding.helper_class_desc is None
