@@ -255,3 +255,12 @@ def test_runtime_abi_connectivity_helper_binding_contract():
     assert binding.helper_class_desc == "Lcom/ahnali/runtime/ConnectivityHelper;"
     assert binding.helper_method == "isConnected"
     assert binding.helper_sig == "(Landroid/app/Activity;)I"
+
+
+def test_runtime_abi_storage_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["Storage"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/StorageHelper;"
+    assert binding.helper_method == "putString"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"

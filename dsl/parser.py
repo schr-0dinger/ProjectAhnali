@@ -19,6 +19,7 @@ from .ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtStoragePut,
     _StmtAnimate,
     _StmtAnimationGroup,
     _StmtLog,
@@ -156,6 +157,22 @@ def _parse_stmt(stmt):
                 if call.args:
                     raise RuntimeError("check_connectivity takes no arguments")
                 return _StmtCheckConnectivity()
+            if fn in (
+                "storage_put",
+                "StoragePut",
+                "set_storage",
+                "SetStorage",
+                "save_storage",
+                "SaveStorage",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) < 2:
+                    raise RuntimeError("storage_put requires key and value string arguments")
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("storage_put key must be a constant string")
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("storage_put value must be a constant string")
+                return _StmtStoragePut(args[0].value, args[1].value)
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions

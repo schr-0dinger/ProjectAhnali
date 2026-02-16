@@ -862,6 +862,18 @@ def is_connected():
     return check_connectivity()
 
 
+def storage_put(key: str, value: str):
+    return _StmtStoragePut(str(key), str(value))
+
+
+def set_storage(key: str, value: str):
+    return storage_put(key, value)
+
+
+def save_storage(key: str, value: str):
+    return storage_put(key, value)
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 

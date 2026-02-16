@@ -110,6 +110,12 @@ class _StmtCheckConnectivity:
         pass
 
 
+class _StmtStoragePut:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+
 class _StmtNavigate:
     def __init__(self, target):
         self.target = target

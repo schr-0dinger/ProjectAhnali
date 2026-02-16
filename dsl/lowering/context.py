@@ -28,6 +28,7 @@ from dsl.ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtStoragePut,
     _StmtLog,
     _StmtNavigate,
     _StmtWhile,
@@ -2739,6 +2740,8 @@ class _PythonicContext:
             return self._compile_open_url_stmt(stmt)
         if isinstance(stmt, _StmtCheckConnectivity):
             return self._compile_check_connectivity_stmt(stmt)
+        if isinstance(stmt, _StmtStoragePut):
+            return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -5211,6 +5214,39 @@ class _PythonicContext:
                     args=[var("ctx")],
                     return_type="I",
                     arg_types=["Landroid/app/Activity;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_storage_put_stmt(self, stmt):
+        binding = self.capability_runtime_bindings.get("Storage")
+        if binding is None:
+            raise RuntimeError(
+                "storage_put requires Storage capability. "
+                "Declare app_config(uses=[Caps.Storage]) first."
+            )
+        if binding.mode != "helper_call":
+            raise RuntimeError(
+                "Storage capability must be helper_call mode for storage_put."
+            )
+        if not (binding.helper_class_desc and binding.helper_method):
+            raise RuntimeError("Storage helper binding is missing helper metadata.")
+        result_tmp = self._next_tmp("storage_put_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(stmt.key)), const(str(stmt.value))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),

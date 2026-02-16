@@ -196,6 +196,9 @@ register_default_capability(
 register_default_capability(
     "Storage",
     ["android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"],
+    helper_class_desc="Lcom/ahnali/runtime/StorageHelper;",
+    helper_method="putString",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
 )
 register_default_capability(
     "FilePicker",
