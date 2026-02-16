@@ -209,7 +209,7 @@ Exit criteria:
 ### Track B: Benchmark Automation
 
 Status:
-- ⚠️ In progress (foundation implemented 2026-02-16)
+- ⚠️ In progress (size enforcement active; cold-start PR gating deferred)
 
 Objectives:
 - Make performance/size regressions visible and blocking.
@@ -217,11 +217,11 @@ Objectives:
 Work items:
 - ✅ Add deterministic APK size reporting in CI (`tools/benchmark_apk.py`, `.github/workflows/ci.yml` size gate).
 - ⚠️ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py` + manual CI emulator gate; PR gate deferred).
-- ⚠️ Track regressions per commit in artifacts/logs (baseline collection phase active; strict regression caps deferred).
+- ✅ Track size regressions with committed baseline + threshold caps (`cfg/benchmark_baseline.json`, `cfg/benchmark_thresholds.json`).
 
 Exit criteria:
-- ⚠️ Benchmark gates are automated; reliability tuning continues with real CI history.
-- ⚠️ Regression thresholds are intentionally non-strict until baseline history is established.
+- ⚠️ Benchmark gates are automated; size gate is strict, cold-start gate remains manual.
+- ⚠️ Cold-start regression thresholds remain deferred until dedicated baseline history is established.
 
 ### Track C: Capability Expansion
 
@@ -258,7 +258,7 @@ Exit criteria:
 
 - Local usage and CI details: `docs/Benchmarking.md`
 - Size-only gate (no adb device):
-  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --report-file build/benchmark/size_report.json --skip-cold-start`
+  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --baseline-file cfg/benchmark_baseline.json --report-file build/benchmark/size_report.json --skip-cold-start`
 - Cold-start gate (adb device/emulator required):
   - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --report-file build/benchmark/cold_start_report.json --require-cold-start --cold-start-iterations 3`
 

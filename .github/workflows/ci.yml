@@ -68,8 +68,7 @@ jobs:
         run: |
           PYTHONPATH=. python tools/benchmark_apk.py \
             --threshold-file cfg/benchmark_thresholds.json \
-            --baseline-file build/benchmark/size_baseline.json \
-            --write-baseline-if-missing \
+            --baseline-file cfg/benchmark_baseline.json \
             --report-file build/benchmark/size_report.json \
             --skip-cold-start
 

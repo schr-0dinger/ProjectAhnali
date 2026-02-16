@@ -36,8 +36,8 @@ Current checks:
 - optional regression caps when baseline metrics are available
 
 Current rollout mode:
-- Baseline collection first. Regression caps are intentionally unset until enough CI history is collected.
-- Size gate remains active in CI.
+- Size baseline is locked in `cfg/benchmark_baseline.json` and enforced in CI.
+- Signed APK regression cap is active (`max_signed_apk_regression_bytes`).
 - Cold-start gate is available but not part of PR flow yet.
 
 ## CI Gates

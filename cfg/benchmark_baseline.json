@@ -1,4 +1,8 @@
 {
   "benchmark_schema_version": "1.0.0",
-  "metrics": {}
+  "metrics": {
+    "signed_apk_bytes": 53723,
+    "classes_dex_bytes": 724,
+    "cold_start_total_ms_median": null
+  }
 }

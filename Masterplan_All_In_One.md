@@ -292,9 +292,10 @@ Integration and smoke:
 - ✅ Deterministic benchmark harness (`tools/benchmark_apk.py`)
 - ✅ CI size benchmark gate on push/PR (`.github/workflows/ci.yml`)
 - ✅ Manual CI cold-start benchmark gate (workflow dispatch)
+- ✅ Committed size baseline + strict size threshold caps (`cfg/benchmark_baseline.json`, `cfg/benchmark_thresholds.json`)
 
 Pending:
-- ⚠️ Benchmark baseline tuning from CI history (threshold hardening)
+- ⚠️ Cold-start baseline tuning and PR-gate rollout
 
 ---
 
@@ -1731,6 +1732,7 @@ never as core behavior.
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests
 - ✅ APK size tracking (benchmark harness + CI gate)
+- ✅ APK size enforcement (committed baseline + strict thresholds)
 - ⚠️ Cold start benchmarks (harness implemented; CI gate is manual-only for now)
 
 ---
