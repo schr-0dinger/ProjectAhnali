@@ -158,8 +158,12 @@ Deprecation policy:
 - Track C Wave 1 helper-call binding:
   - Capability: `Storage`
   - Helper class: `Lcom/ahnali/runtime/StorageHelper;`
-  - Helper method/sig: `putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
-  - Return semantics: `1` on successful `SharedPreferences` write; `0` on null context/key or caught exception.
+  - Helper methods/sigs:
+    - `putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+  - Return semantics:
+    - `putString`: `1` on successful `SharedPreferences` write; `0` on null context/key or caught exception.
+    - `getString`: stored value when present; fallback argument on null context/key, missing value, or caught exception.
 
 ## 9) Conformance References
 

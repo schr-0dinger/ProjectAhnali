@@ -8,6 +8,7 @@ from .ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprStorageGet,
     _ExprSymbol,
     _ExprUnary,
     _StmtAssign,
@@ -19,6 +20,7 @@ from .ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtStorageGet,
     _StmtStoragePut,
     _StmtAnimate,
     _StmtAnimationGroup,
@@ -173,6 +175,23 @@ def _parse_stmt(stmt):
                 if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
                     raise RuntimeError("storage_put value must be a constant string")
                 return _StmtStoragePut(args[0].value, args[1].value)
+            if fn in (
+                "storage_get",
+                "StorageGet",
+                "get_storage",
+                "GetStorage",
+                "load_storage",
+                "LoadStorage",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("storage_get requires key string argument")
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("storage_get key must be a constant string")
+                default_expr = args[1] if len(args) > 1 else _ExprConst("")
+                if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                    raise RuntimeError("storage_get default value must be a constant string")
+                return _StmtStorageGet(args[0].value, default_expr.value)
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions
@@ -232,6 +251,23 @@ def _parse_expr(node):
         rhs = _parse_expr(node.right)
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id in (
+            "storage_get",
+            "StorageGet",
+            "get_storage",
+            "GetStorage",
+            "load_storage",
+            "LoadStorage",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not args:
+                raise RuntimeError("storage_get requires key string argument")
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("storage_get key must be a constant string")
+            default_expr = args[1] if len(args) > 1 else _ExprConst("")
+            if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                raise RuntimeError("storage_get default value must be a constant string")
+            return _ExprStorageGet(args[0].value, default_expr.value)
         if node.func.id in ("ushr", "unsigned_rshift"):
             if len(node.args) != 2:
                 raise RuntimeError("ushr expects exactly two arguments")

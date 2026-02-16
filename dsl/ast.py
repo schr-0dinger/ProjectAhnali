@@ -64,6 +64,12 @@ class _ExprFormat:
         self.parts = parts
 
 
+class _ExprStorageGet:
+    def __init__(self, key, default_value):
+        self.key = key
+        self.default_value = default_value
+
+
 class _StmtAssign:
     def __init__(self, target, value):
         self.target = target
@@ -114,6 +120,12 @@ class _StmtStoragePut:
     def __init__(self, key, value):
         self.key = key
         self.value = value
+
+
+class _StmtStorageGet:
+    def __init__(self, key, default_value):
+        self.key = key
+        self.default_value = default_value
 
 
 class _StmtNavigate:
@@ -200,7 +212,16 @@ def set_text(view, value):
 def _coerce_expr(value):
     if isinstance(
         value,
-        (_ExprSymbol, _ExprBinary, _ExprCompare, _ExprBoolOp, _ExprUnary, _ExprFormat, _ExprConst),
+        (
+            _ExprSymbol,
+            _ExprBinary,
+            _ExprCompare,
+            _ExprBoolOp,
+            _ExprUnary,
+            _ExprFormat,
+            _ExprStorageGet,
+            _ExprConst,
+        ),
     ):
         return value
     return _ExprConst(value)

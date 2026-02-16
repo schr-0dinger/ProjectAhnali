@@ -874,6 +874,18 @@ def save_storage(key: str, value: str):
     return storage_put(key, value)
 
 
+def storage_get(key: str, default_value: str = ""):
+    return _ExprStorageGet(str(key), str(default_value))
+
+
+def get_storage(key: str, default_value: str = ""):
+    return storage_get(key, default_value)
+
+
+def load_storage(key: str, default_value: str = ""):
+    return storage_get(key, default_value)
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 

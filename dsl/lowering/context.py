@@ -12,6 +12,7 @@ from dsl.ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprStorageGet,
     _ExprSymbol,
     _ExprUnary,
     _StmtAssign,
@@ -28,6 +29,7 @@ from dsl.ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtStorageGet,
     _StmtStoragePut,
     _StmtLog,
     _StmtNavigate,
@@ -146,6 +148,7 @@ class _PythonicContext:
         self._resource_styles = {}
         self._resource_style_ids = {}
         self._local_vars = set()
+        self._local_var_types: dict[str, str] = {}
         self._container_orientation = {self.root_id: "vertical"}
         self._lint_warnings = []
         self._lint_warning_keys = set()
@@ -2690,13 +2693,16 @@ class _PythonicContext:
 
     def _compile_stmts(self, stmts):
         prev_locals = self._local_vars
+        prev_local_types = self._local_var_types
         try:
             self._local_vars = set()
+            self._local_var_types = {}
             out = self._compile_stmt_block(stmts)
             out.append(ret())
             return out
         finally:
             self._local_vars = prev_locals
+            self._local_var_types = prev_local_types
 
     def _compile_stmt_block(self, stmts):
         out = []
@@ -2742,6 +2748,8 @@ class _PythonicContext:
             return self._compile_check_connectivity_stmt(stmt)
         if isinstance(stmt, _StmtStoragePut):
             return self._compile_storage_put_stmt(stmt)
+        if isinstance(stmt, _StmtStorageGet):
+            return self._compile_storage_get_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -4732,15 +4740,28 @@ class _PythonicContext:
             raise RuntimeError("Assignment target must be a symbol")
         name = stmt.target.name
 
+        value_type = "I"
         if isinstance(stmt.value, (_ExprConst, _ExprSymbol, _ExprBinary)):
             prefix, result = self._compile_int_expr(stmt.value)
+        elif isinstance(stmt.value, _ExprStorageGet):
+            prefix, result = self._compile_storage_get_call(
+                key=stmt.value.key,
+                default_value=stmt.value.default_value,
+                tmp_prefix="storage_get_result",
+            )
+            value_type = "Ljava/lang/String;"
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
-                "Expected int const/symbol/arithmetic expression."
+                "Expected int const/symbol/arithmetic expression or storage_get(...)."
             )
 
         if name in self.state_spec.values:
+            if value_type != "I":
+                raise RuntimeError(
+                    f"State variable '{name}' only supports integer assignment; "
+                    f"got {value_type}."
+                )
             accessor = self._state_accessor(name)
             if accessor:
                 _, setter = accessor
@@ -4758,6 +4779,7 @@ class _PythonicContext:
             return [*prefix, static_set(name, "I", result)]
 
         self._local_vars.add(name)
+        self._local_var_types[name] = value_type
         local_expr = result.name if isinstance(result, Var) else result
         return [*prefix, assign(name, local_expr)]
 
@@ -4799,6 +4821,11 @@ class _PythonicContext:
                     ], var(t)
                 return [assign(t, static_get(expr.name, "I"))], var(t)
             if expr.name in self._local_vars:
+                local_type = self._local_var_types.get(expr.name, "I")
+                if local_type != "I":
+                    raise RuntimeError(
+                        f"Arithmetic expression requires int symbol '{expr.name}', got {local_type}."
+                    )
                 return [], var(expr.name)
             raise RuntimeError(
                 f"Undefined variable '{expr.name}' in arithmetic expression. "
@@ -4836,6 +4863,49 @@ class _PythonicContext:
                     owner=view_desc,
                 ),
             ]
+        if isinstance(stmt.value, _ExprSymbol):
+            name = stmt.value.name
+            if name in self._local_var_types:
+                local_type = self._local_var_types[name]
+                if local_type == "Ljava/lang/String;":
+                    return [
+                        assign("v", static_get(view_field, view_desc)),
+                        call_stmt(
+                            "setText",
+                            args=[var("v"), var(name)],
+                            return_type=None,
+                            arg_types=["Ljava/lang/CharSequence;"],
+                            invoke_kind="virtual",
+                            owner=view_desc,
+                        ),
+                    ]
+                if local_type == "I":
+                    return [
+                        assign(
+                            "s",
+                            call(
+                                "valueOf",
+                                args=[var(name)],
+                                return_type="Ljava/lang/String;",
+                                arg_types=["I"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/String;",
+                            ),
+                        ),
+                        assign("v", static_get(view_field, view_desc)),
+                        call_stmt(
+                            "setText",
+                            args=[var("v"), var("s")],
+                            return_type=None,
+                            arg_types=["Ljava/lang/CharSequence;"],
+                            invoke_kind="virtual",
+                            owner=view_desc,
+                        ),
+                    ]
+            raise RuntimeError(
+                f"{view_id}.text references unknown symbol '{name}'. "
+                "Only local assigned symbols are supported here."
+            )
         if isinstance(stmt.value, _ExprFormat):
             return self._compile_format_set_text(view_desc, view_field, stmt.value)
         raise RuntimeError("Unsupported set_text value")
@@ -5253,6 +5323,47 @@ class _PythonicContext:
             ),
         ]
 
+    def _compile_storage_get_call(self, *, key: str, default_value: str, tmp_prefix: str):
+        binding = self.capability_runtime_bindings.get("Storage")
+        if binding is None:
+            raise RuntimeError(
+                "storage_get requires Storage capability. "
+                "Declare app_config(uses=[Caps.Storage]) first."
+            )
+        if binding.mode != "helper_call":
+            raise RuntimeError(
+                "Storage capability must be helper_call mode for storage_get."
+            )
+        if not binding.helper_class_desc:
+            raise RuntimeError("Storage helper binding is missing helper class metadata.")
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getString",
+                    args=[var("ctx"), const(str(key)), const(str(default_value))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_storage_get_stmt(self, stmt):
+        out, _ = self._compile_storage_get_call(
+            key=stmt.key,
+            default_value=stmt.default_value,
+            tmp_prefix="storage_get_ignored",
+        )
+        return out
+
     def _compile_request_permissions_stmt(self, stmt):
         from dsl.capabilities import normalize_permission
 
@@ -5478,6 +5589,10 @@ class _PythonicContext:
                         f"Undefined variable '{part.name}' in f-string. "
                         "Declare it earlier in the handler or add it to state(...)."
                     )
+                local_type = self._local_var_types.get(part.name)
+                append_arg_types = ["I"]
+                if local_type == "Ljava/lang/String;":
+                    append_arg_types = ["Ljava/lang/String;"]
                 stmts.append(
                     assign(
                         "sb",
@@ -5485,7 +5600,7 @@ class _PythonicContext:
                             "append",
                             args=[var("sb"), var("x")],
                             return_type="Ljava/lang/StringBuilder;",
-                            arg_types=["I"],
+                            arg_types=append_arg_types,
                             invoke_kind="virtual",
                             owner="Ljava/lang/StringBuilder;",
                         ),
