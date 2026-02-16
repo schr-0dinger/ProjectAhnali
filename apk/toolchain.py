@@ -637,6 +637,37 @@ def _which_tool(name: str) -> str | None:
     return None
 
 
+def _run_java_tool_from_jar(
+    *,
+    jar_path: Path,
+    args: list[str],
+    main_classes: list[str],
+    tool_name: str,
+) -> None:
+    attempts: list[list[str]] = [["java", "-jar", str(jar_path), *args]]
+    attempts.extend(
+        [["java", "-cp", str(jar_path), main_class, *args] for main_class in main_classes]
+    )
+
+    failures: list[tuple[list[str], subprocess.CompletedProcess[str]]] = []
+    for cmd in attempts:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return
+        failures.append((cmd, result))
+
+    lines = []
+    for cmd, result in failures:
+        stderr = (result.stderr or "").strip()
+        stdout = (result.stdout or "").strip()
+        detail = stderr or stdout or f"exit code {result.returncode}"
+        lines.append(f"{' '.join(cmd)} -> {detail}")
+    raise RuntimeError(
+        f"Unable to run {tool_name} from jar '{jar_path}'. Tried launchers:\n- "
+        + "\n- ".join(lines)
+    )
+
+
 def run_smali(
     smali_dir: str | Path,
     out_dir: str | Path | None = None,
@@ -652,17 +683,22 @@ def run_smali(
     api_args = ["--api", str(api)] if api is not None else []
     if smali_jar:
         jar_path = Path(smali_jar)
-        if jar_path.suffix == ".jar":
-            cmd = ["java", "-jar", str(jar_path), "assemble", *api_args, str(smali_dir), "-o", str(out_dir)]
+        if jar_path.suffix.lower() == ".jar":
+            _run_java_tool_from_jar(
+                jar_path=jar_path,
+                args=["assemble", *api_args, str(smali_dir), "-o", str(out_dir)],
+                main_classes=["org.jf.smali.Main", "org.jf.smali.Smali"],
+                tool_name="smali",
+            )
         else:
             cmd = [str(jar_path), "assemble", *api_args, str(smali_dir), "-o", str(out_dir)]
+            subprocess.run(cmd, check=True)
     else:
         smali = _which_tool("smali")
         if smali is None:
             raise RuntimeError("smali not found on PATH and smali_jar not provided")
         cmd = [smali, "assemble", *api_args, str(smali_dir), "-o", str(out_dir)]
-
-    subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True)
     return out_dir
 
 
@@ -673,17 +709,22 @@ def run_baksmali(dex_path: str | Path, out_dir: str | Path, baksmali_jar: str | 
 
     if baksmali_jar:
         jar_path = Path(baksmali_jar)
-        if jar_path.suffix == ".jar":
-            cmd = ["java", "-jar", str(jar_path), "disassemble", str(dex_path), "-o", str(out_dir)]
+        if jar_path.suffix.lower() == ".jar":
+            _run_java_tool_from_jar(
+                jar_path=jar_path,
+                args=["disassemble", str(dex_path), "-o", str(out_dir)],
+                main_classes=["org.jf.baksmali.Main", "org.jf.baksmali.Baksmali"],
+                tool_name="baksmali",
+            )
         else:
             cmd = [str(jar_path), "disassemble", str(dex_path), "-o", str(out_dir)]
+            subprocess.run(cmd, check=True)
     else:
         baksmali = _which_tool("baksmali")
         if baksmali is None:
             raise RuntimeError("baksmali not found on PATH and baksmali_jar not provided")
         cmd = [baksmali, "disassemble", str(dex_path), "-o", str(out_dir)]
-
-    subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True)
     return out_dir
 
 

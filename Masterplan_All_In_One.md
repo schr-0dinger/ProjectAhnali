@@ -293,9 +293,11 @@ Integration and smoke:
 - ✅ CI size benchmark gate on push/PR (`.github/workflows/ci.yml`)
 - ✅ Manual CI cold-start benchmark gate (workflow dispatch)
 - ✅ Committed size baseline + strict size threshold caps (`cfg/benchmark_baseline.json`, `cfg/benchmark_thresholds.json`)
+- ✅ CI smali jar launcher fallback for jars without `Main-Class` manifest (classpath main-class retry)
+- ✅ Cold-start gate uses committed benchmark baseline reference (`cfg/benchmark_baseline.json`)
 
-Pending:
-- ⚠️ Cold-start baseline tuning and PR-gate rollout
+Policy note:
+- Cold-start PR-gate rollout remains intentionally deferred; manual gate is the enforced path for now.
 
 ---
 
@@ -1733,7 +1735,7 @@ never as core behavior.
 - ✅ Smali ↔ baksmali roundtrip tests
 - ✅ APK size tracking (benchmark harness + CI gate)
 - ✅ APK size enforcement (committed baseline + strict thresholds)
-- ⚠️ Cold start benchmarks (harness implemented; CI gate is manual-only for now)
+- ✅ Cold-start benchmarks (strict on manual CI dispatch; PR rollout intentionally deferred)
 
 ---
 

@@ -182,7 +182,7 @@ Constraints:
 ## Immediate Plan (Next)
 
 1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
-2) Size/perf benchmark automation (APK size + cold start)
+2) Track B complete: size benchmark enforced on PR/push; cold-start benchmark enforced on manual dispatch
 3) First capability wave for real app logic (network/storage primitives)
 4) Ongoing integration smoke expansion for each new capability area
 5) Optimization backlog execution (see `docs/Ahnali_Optimization_Backlog.md`)
@@ -209,19 +209,19 @@ Exit criteria:
 ### Track B: Benchmark Automation
 
 Status:
-- ⚠️ In progress (size enforcement active; cold-start PR gating deferred)
+- ✅ Completed (2026-02-16; size strict on PR/push, cold-start strict on manual dispatch)
 
 Objectives:
 - Make performance/size regressions visible and blocking.
 
 Work items:
 - ✅ Add deterministic APK size reporting in CI (`tools/benchmark_apk.py`, `.github/workflows/ci.yml` size gate).
-- ⚠️ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py` + manual CI emulator gate; PR gate deferred).
+- ✅ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py` + manual CI emulator gate).
 - ✅ Track size regressions with committed baseline + threshold caps (`cfg/benchmark_baseline.json`, `cfg/benchmark_thresholds.json`).
 
 Exit criteria:
-- ⚠️ Benchmark gates are automated; size gate is strict, cold-start gate remains manual.
-- ⚠️ Cold-start regression thresholds remain deferred until dedicated baseline history is established.
+- ✅ Benchmark gates are automated and enforced according to policy.
+- ✅ Size gate is strict on PR/push; cold-start gate is strict on manual dispatch.
 
 ### Track C: Capability Expansion
 
@@ -258,9 +258,9 @@ Exit criteria:
 
 - Local usage and CI details: `docs/Benchmarking.md`
 - Size-only gate (no adb device):
-  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --baseline-file cfg/benchmark_baseline.json --report-file build/benchmark/size_report.json --skip-cold-start`
+  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --baseline-file cfg/benchmark_baseline.json --report-file build/benchmark/size_report.json --api 34 --skip-cold-start`
 - Cold-start gate (adb device/emulator required):
-  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --report-file build/benchmark/cold_start_report.json --require-cold-start --cold-start-iterations 3`
+  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --baseline-file cfg/benchmark_baseline.json --report-file build/benchmark/cold_start_report.json --api 34 --require-cold-start --cold-start-iterations 3`
 
 ## Example: Multi-Method Program
 

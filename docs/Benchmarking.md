@@ -9,7 +9,9 @@ Run size-only benchmark (no adb device required):
 ```bash
 PYTHONPATH=. python tools/benchmark_apk.py \
   --threshold-file cfg/benchmark_thresholds.json \
+  --baseline-file cfg/benchmark_baseline.json \
   --report-file build/benchmark/size_report.json \
+  --api 34 \
   --skip-cold-start
 ```
 
@@ -18,7 +20,9 @@ Run size + cold-start benchmark (adb device/emulator required):
 ```bash
 PYTHONPATH=. python tools/benchmark_apk.py \
   --threshold-file cfg/benchmark_thresholds.json \
+  --baseline-file cfg/benchmark_baseline.json \
   --report-file build/benchmark/cold_start_report.json \
+  --api 34 \
   --require-cold-start \
   --cold-start-iterations 3
 ```
@@ -38,7 +42,7 @@ Current checks:
 Current rollout mode:
 - Size baseline is locked in `cfg/benchmark_baseline.json` and enforced in CI.
 - Signed APK regression cap is active (`max_signed_apk_regression_bytes`).
-- Cold-start gate is available but not part of PR flow yet.
+- Cold-start gate is strict on manual CI dispatch (`workflow_dispatch`) and uses committed baseline reference.
 
 ## CI Gates
 

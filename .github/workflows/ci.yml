@@ -70,6 +70,7 @@ jobs:
             --threshold-file cfg/benchmark_thresholds.json \
             --baseline-file cfg/benchmark_baseline.json \
             --report-file build/benchmark/size_report.json \
+            --api 34 \
             --skip-cold-start
 
       - name: Upload benchmark artifacts
@@ -126,9 +127,9 @@ jobs:
           script: |
             PYTHONPATH=. SMALI_JAR=/tmp/smali.jar python tools/benchmark_apk.py \
               --threshold-file cfg/benchmark_thresholds.json \
-              --baseline-file build/benchmark/cold_start_baseline.json \
-              --write-baseline-if-missing \
+              --baseline-file cfg/benchmark_baseline.json \
               --report-file build/benchmark/cold_start_report.json \
+              --api 34 \
               --require-cold-start \
               --cold-start-iterations 3
 
