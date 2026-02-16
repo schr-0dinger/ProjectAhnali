@@ -15,6 +15,7 @@ Merged into this single masterplan:
 - ✅ `README.md`
 - ✅ `docs/Widgets.md`
 - ✅ `docs/UI_Surface_Expansion_TODO.md`
+- ✅ `docs/Ahnali_Optimization_Backlog.md`
 
 ---
 
@@ -289,6 +290,30 @@ Integration and smoke:
 
 Pending:
 - ⚠️ Size/perf benchmark automation
+
+---
+
+## 12) Optimization and Build-Intelligence Backlog
+
+Future optimization work is tracked in:
+- `docs/Ahnali_Optimization_Backlog.md`
+
+Backlog areas include:
+- Asset optimization
+- Resource optimization
+- Code-level optimization (DSL -> Smali)
+- Dependency optimization
+- Manifest optimization
+- Native layer optimization
+- Performance static analysis
+- Security optimization
+- Build-time enhancements
+- App architecture optimization
+- Packaging optimization
+- Developer experience enhancements
+
+Execution rule:
+- Each optimization item must preserve deterministic AOT behavior and be guarded by validation/tests before default enablement.
 
 ---
 

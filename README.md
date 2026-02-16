@@ -185,6 +185,7 @@ Constraints:
 2) Size/perf benchmark automation (APK size + cold start)
 3) First capability wave for real app logic (network/storage primitives)
 4) Ongoing integration smoke expansion for each new capability area
+5) Optimization backlog execution (see `docs/Ahnali_Optimization_Backlog.md`)
 
 ## Completion Roadmap (Current)
 
@@ -228,6 +229,20 @@ Work items:
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
+
+### Track D: Optimization and Build Intelligence
+
+Objectives:
+- Add static optimization/lint/security/performance intelligence without violating deterministic AOT constraints.
+
+Work items:
+- Execute optimization backlog tracks (assets, resources, code-level, dependencies, manifest, native, perf static analysis, security, packaging, DX).
+- Prioritize high-impact/low-risk items first (unused resource/permission detection, size diff reporting, build benchmarking).
+- Keep each optimization behind explicit flags until behavior is stable.
+
+Exit criteria:
+- Optimization passes are deterministic, test-covered, and measurable via CI reports.
+- No regressions in build reproducibility or runtime correctness.
 
 ## How to Run Tests
 
