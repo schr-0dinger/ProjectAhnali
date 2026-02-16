@@ -63,7 +63,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-16)
 
-- ✅ Test suite reality: `248 passed` (`PYTHONPATH=. pytest -q`)
+- ✅ Test suite reality: `264 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -242,9 +242,12 @@ Implemented:
 - ✅ Handler-based permission inference (`request_permissions(...)`)
 - ✅ Manifest permission rendering
 - ✅ Merge of permission/provider/service/receiver entries from AAR manifests
+- ✅ Runtime helper ABI v1 contract document (`runtime_abi_v1.md`)
+- ✅ Capability-to-runtime mapping contract (`docs/capability_runtime_mapping_v1.md`)
+- ✅ Capability/runtime ABI guard tests (`tests/test_runtime_abi_v1.py`, `tests/test_capabilities.py`)
 
 Pending:
-- ⚠️ Expanded capability module runtime ABI surface
+- ⚠️ Capability runtime helper-call module implementations (Track C: network/storage wave)
 
 ---
 
@@ -1712,13 +1715,13 @@ never as core behavior.
 ### Compiler
 - ✅ Finalize Screen-only UI enforcement
 - ✅ Lock attribute validation rules
-- Capability resolution graph
-- Permission inference
+- ✅ Capability resolution graph
+- ✅ Permission inference
 - ✅ Deterministic ordering everywhere
 
 ### Runtime
 - Core runtime stabilization
-- Capability module ABI
+- ✅ Capability module ABI (v1 helper/mapping contract)
 - ✅ Navigation engine
 - ✅ State storage
 

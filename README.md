@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `247 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
+- Last suite run: `264 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
 
 ## DSL Surface (Current)
 
@@ -181,7 +181,7 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Capability module runtime ABI surface
+1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
 2) Size/perf benchmark automation (APK size + cold start)
 3) First capability wave for real app logic (network/storage primitives)
 4) Ongoing integration smoke expansion for each new capability area
@@ -191,17 +191,20 @@ Constraints:
 
 ### Track A: Runtime Capability ABI
 
+Status:
+- ✅ Completed (2026-02-16)
+
 Objectives:
 - Lock stable runtime helper ABI for capability-scoped module linking.
 
 Work items:
-- Define runtime helper class/interface contracts and versioning rules.
-- Add ABI compatibility tests (compile-time and runtime smoke).
-- Document capability-to-runtime mapping in docs.
+- ✅ Define runtime helper class/interface contracts and versioning rules (`runtime_abi_v1.md`).
+- ✅ Add ABI compatibility tests (compile-time and runtime smoke for helper and mapping contracts).
+- ✅ Document capability-to-runtime mapping in docs (`docs/capability_runtime_mapping_v1.md`).
 
 Exit criteria:
-- ABI contract frozen for v1.
-- New capabilities can be added without breaking existing apps.
+- ✅ ABI contract frozen for v1.
+- ✅ New capabilities can be added without breaking existing apps (guarded by ABI tests).
 
 ### Track B: Benchmark Automation
 

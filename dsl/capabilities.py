@@ -12,6 +12,43 @@ class Capability:
     permissions: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class CapabilityRuntimeBinding:
+    capability: str
+    permissions: tuple[str, ...]
+    helper_class_desc: str | None = None
+    helper_method: str | None = None
+    helper_sig: str | None = None
+    mode: str = "permission_only"
+
+    def __post_init__(self):
+        if self.mode not in {"permission_only", "helper_call"}:
+            raise RuntimeError(
+                f"Unsupported capability runtime mode '{self.mode}' for '{self.capability}'"
+            )
+        if self.mode == "helper_call":
+            if not (self.helper_class_desc and self.helper_method and self.helper_sig):
+                raise RuntimeError(
+                    f"helper_call mode requires helper_class_desc/helper_method/helper_sig for '{self.capability}'"
+                )
+        if self.helper_class_desc is not None:
+            if not (
+                self.helper_class_desc.startswith("L")
+                and self.helper_class_desc.endswith(";")
+            ):
+                raise RuntimeError(
+                    f"Invalid helper class descriptor '{self.helper_class_desc}' for '{self.capability}'"
+                )
+        if self.helper_sig is not None:
+            if "(" not in self.helper_sig or ")" not in self.helper_sig:
+                raise RuntimeError(
+                    f"Invalid helper signature '{self.helper_sig}' for '{self.capability}'"
+                )
+
+
+CAPABILITY_RUNTIME_ABI_VERSION = "1.0.0"
+
+
 def normalize_permission(value: str) -> str:
     raw = str(value).strip()
     if not raw:
@@ -70,53 +107,119 @@ class CapabilityRegistry:
 
 
 DEFAULT_CAPABILITY_REGISTRY = CapabilityRegistry()
+DEFAULT_CAPABILITY_RUNTIME_BINDINGS: dict[str, CapabilityRuntimeBinding] = {}
+_CAPABILITY_BINDING_ALIASES: dict[str, str] = {}
+
+
+def _remember_capability_alias(alias: str, canonical: str):
+    key = str(alias).strip()
+    if not key:
+        return
+    _CAPABILITY_BINDING_ALIASES[key] = canonical
+    _CAPABILITY_BINDING_ALIASES[key.lower()] = canonical
+
+
+def register_default_capability(
+    name: str,
+    permissions: Iterable[str] | None = None,
+    *,
+    aliases: Iterable[str] | None = None,
+    helper_class_desc: str | None = None,
+    helper_method: str | None = None,
+    helper_sig: str | None = None,
+):
+    canonical = str(name).strip()
+    if not canonical:
+        raise RuntimeError("Capability name must be non-empty")
+    normalized_perms = tuple(
+        normalize_permission(p) for p in (permissions or []) if str(p).strip()
+    )
+    DEFAULT_CAPABILITY_REGISTRY.register(canonical, normalized_perms)
+    binding = CapabilityRuntimeBinding(
+        capability=canonical,
+        permissions=normalized_perms,
+        helper_class_desc=helper_class_desc,
+        helper_method=helper_method,
+        helper_sig=helper_sig,
+        mode="helper_call" if helper_class_desc else "permission_only",
+    )
+    DEFAULT_CAPABILITY_RUNTIME_BINDINGS[canonical] = binding
+    _remember_capability_alias(canonical, canonical)
+    for alias in aliases or []:
+        DEFAULT_CAPABILITY_REGISTRY.register(alias, normalized_perms)
+        _remember_capability_alias(str(alias), canonical)
+
+
+def default_capability_runtime_mapping() -> dict[str, CapabilityRuntimeBinding]:
+    return dict(DEFAULT_CAPABILITY_RUNTIME_BINDINGS)
+
+
+def resolve_runtime_bindings(uses: Iterable[str] | None) -> list[CapabilityRuntimeBinding]:
+    out: list[CapabilityRuntimeBinding] = []
+    seen: set[str] = set()
+    if not uses:
+        return out
+    for raw in uses:
+        if raw is None:
+            continue
+        item = str(raw).strip()
+        if not item:
+            continue
+        if item.startswith(ANDROID_PERMISSION_PREFIX):
+            continue
+        if item.isupper() or item.replace("_", "").isupper():
+            continue
+        canonical = _CAPABILITY_BINDING_ALIASES.get(item) or _CAPABILITY_BINDING_ALIASES.get(
+            item.lower()
+        )
+        if canonical is None:
+            raise RuntimeError(f"Unknown capability '{item}'")
+        if canonical in seen:
+            continue
+        seen.add(canonical)
+        out.append(DEFAULT_CAPABILITY_RUNTIME_BINDINGS[canonical])
+    return out
 
 # Conservative, initial map. Expand as capabilities ship.
-DEFAULT_CAPABILITY_REGISTRY.register("Camera", ["android.permission.CAMERA"])
-DEFAULT_CAPABILITY_REGISTRY.register("Microphone", ["android.permission.RECORD_AUDIO"])
-DEFAULT_CAPABILITY_REGISTRY.register("Audio", ["android.permission.RECORD_AUDIO"])
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability("Camera", ["android.permission.CAMERA"])
+register_default_capability("Microphone", ["android.permission.RECORD_AUDIO"])
+register_default_capability("Audio", ["android.permission.RECORD_AUDIO"])
+register_default_capability(
     "Video",
     ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register("WebView", ["android.permission.INTERNET"])
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability("WebView", ["android.permission.INTERNET"])
+register_default_capability(
     "Sensors",
     ["android.permission.BODY_SENSORS"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "Storage",
     ["android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "FilePicker",
     ["android.permission.READ_EXTERNAL_STORAGE"],
+    aliases=["File Picker"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
-    "File Picker",
-    ["android.permission.READ_EXTERNAL_STORAGE"],
-)
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "Connectivity",
     ["android.permission.ACCESS_NETWORK_STATE", "android.permission.INTERNET"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
-    "URL launcher",
-    ["android.permission.INTERNET"],
-)
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "URLLauncher",
     ["android.permission.INTERNET"],
+    aliases=["URL launcher"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "Permissions",
     [],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "Maps",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
-DEFAULT_CAPABILITY_REGISTRY.register(
+register_default_capability(
     "Location",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
