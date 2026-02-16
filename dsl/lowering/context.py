@@ -26,6 +26,7 @@ from dsl.ast import (
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtOpenUrl,
     _StmtLog,
     _StmtNavigate,
     _StmtWhile,
@@ -122,12 +123,14 @@ class _PythonicContext:
         *,
         min_sdk: int = 21,
         registry=None,
+        runtime_bindings=None,
     ):
         self.state_spec = state_spec
         self.ui_spec = ui_spec
         self.theme_spec = theme_spec
         self.min_sdk = int(min_sdk)
         self.registry = registry
+        self.capability_runtime_bindings = dict(runtime_bindings or {})
         self.view_types = {}
         self.view_fields = {}
         self.root_id = "root"
@@ -2731,6 +2734,8 @@ class _PythonicContext:
             return self._compile_dialog_stmt(stmt)
         if isinstance(stmt, _StmtLog):
             return self._compile_log_stmt(stmt)
+        if isinstance(stmt, _StmtOpenUrl):
+            return self._compile_open_url_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -5149,6 +5154,35 @@ class _PythonicContext:
                 invoke_kind="static",
                 owner="Landroid/util/Log;",
             )
+        ]
+
+    def _compile_open_url_stmt(self, stmt):
+        binding = self.capability_runtime_bindings.get("URLLauncher")
+        if binding is None:
+            raise RuntimeError(
+                "open_url requires URLLauncher capability. "
+                "Declare app_config(uses=[Caps.URLLauncher]) first."
+            )
+        if binding.mode != "helper_call":
+            raise RuntimeError(
+                "URLLauncher capability must be helper_call mode for open_url."
+            )
+        if not (binding.helper_class_desc and binding.helper_method):
+            raise RuntimeError("URLLauncher helper binding is missing helper metadata.")
+        result_tmp = self._next_tmp("url_launch_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(stmt.url))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
         ]
 
     def _compile_request_permissions_stmt(self, stmt):

@@ -237,3 +237,12 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
 def test_runtime_abi_capability_mapping_alias_resolution_contract():
     bindings = resolve_runtime_bindings(["File Picker", "URL launcher", "FilePicker", "URLLauncher"])
     assert [binding.capability for binding in bindings] == ["FilePicker", "URLLauncher"]
+
+
+def test_runtime_abi_url_launcher_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["URLLauncher"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/UrlLauncherHelper;"
+    assert binding.helper_method == "openUrl"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"

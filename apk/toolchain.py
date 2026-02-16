@@ -22,6 +22,7 @@ from emit.smali_activity import (
     emit_click_listener_smali,
     emit_event_listener_smali,
 )
+from emit.smali_runtime_helpers import emit_capability_helper_smali
 
 
 def _class_desc_from_smali(smali_text: str) -> str:
@@ -592,6 +593,32 @@ def emit_build_dir_from_program(
             extra_out = build_dir / "smali" / extra_path
             extra_out.parent.mkdir(parents=True, exist_ok=True)
             extra_out.write_text(extra_smali, encoding="utf-8")
+    capability_runtime_bindings = getattr(frontend_ir, "capability_runtime_bindings", []) or []
+    for binding in sorted(
+        capability_runtime_bindings,
+        key=lambda b: (getattr(b, "helper_class_desc", "") or "", getattr(b, "capability", "")),
+    ):
+        if getattr(binding, "mode", "permission_only") != "helper_call":
+            continue
+        helper_class_desc = getattr(binding, "helper_class_desc", None)
+        helper_method = getattr(binding, "helper_method", None)
+        helper_sig = getattr(binding, "helper_sig", None)
+        if not (helper_class_desc and helper_method and helper_sig):
+            raise RuntimeError(
+                f"helper_call binding for '{getattr(binding, 'capability', '?')}' "
+                "is missing helper_class_desc/helper_method/helper_sig"
+            )
+        helper_path = _class_desc_to_path(helper_class_desc).with_suffix(".smali")
+        helper_out = build_dir / "smali" / helper_path
+        helper_out.parent.mkdir(parents=True, exist_ok=True)
+        helper_out.write_text(
+            emit_capability_helper_smali(
+                class_desc=helper_class_desc,
+                helper_method=helper_method,
+                helper_sig=helper_sig,
+            ),
+            encoding="utf-8",
+        )
     if support_classes:
         for entry in sorted(support_classes, key=lambda e: e[0]):
             listener_kind = "click"

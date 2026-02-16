@@ -100,6 +100,11 @@ class _StmtLog:
         self.message = message
 
 
+class _StmtOpenUrl:
+    def __init__(self, url):
+        self.url = url
+
+
 class _StmtNavigate:
     def __init__(self, target):
         self.target = target

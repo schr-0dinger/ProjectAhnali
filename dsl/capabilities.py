@@ -210,6 +210,9 @@ register_default_capability(
     "URLLauncher",
     ["android.permission.INTERNET"],
     aliases=["URL launcher"],
+    helper_class_desc="Lcom/ahnali/runtime/UrlLauncherHelper;",
+    helper_method="openUrl",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;)I",
 )
 register_default_capability(
     "Permissions",

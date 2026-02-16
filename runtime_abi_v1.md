@@ -13,10 +13,11 @@ In scope:
 - Event listener helper classes (`Ahnali*Listener_*`)
 - Static ListView adapter helper class (`AhnaliListAdapter_*`)
 - `ProgramIR.support_classes` entry schema used by toolchain emission
-- Capability-to-runtime mapping contract for registered capabilities (v1: permission-only mode)
+- Capability-to-runtime mapping contract for registered capabilities
+- Track C Wave 1 capability helper ABI: URL launcher helper
 
 Out of scope:
-- Future capability module helper APIs (network/storage/etc. runtime helper modules are planned separately)
+- Future capability module helper APIs beyond URL launcher helper (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -143,7 +144,12 @@ Deprecation policy:
 - Companion mapping document: `docs/capability_runtime_mapping_v1.md`
 - Code source of truth: `dsl/capabilities.py`
 - ABI version constant: `CAPABILITY_RUNTIME_ABI_VERSION = "1.0.0"`
-- In v1, all current capabilities use mode `permission_only` (no runtime helper call ABI yet).
+- Capability modes are `permission_only` or `helper_call`.
+- Track C Wave 1 helper-call binding:
+  - Capability: `URLLauncher`
+  - Helper class: `Lcom/ahnali/runtime/UrlLauncherHelper;`
+  - Helper method/sig: `openUrl(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics: `1` on successful dispatch to `Activity.startActivity`, `0` on null input or caught exception.
 
 ## 9) Conformance References
 

@@ -11,8 +11,8 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Canonical capability names are stable in v1.
 - Aliases are accepted compatibility inputs and resolve to canonical names.
 - Permissions are deterministic and ordered.
-- Runtime helper integration mode in v1 is `permission_only` for all current capabilities.
-- Capability-scoped helper method ABIs (e.g., storage/network runtime helper calls) are planned for Track C.
+- Runtime helper integration mode is capability-specific (`permission_only` or `helper_call`).
+- Track C Wave 1 introduces first helper-call binding for URL launcher.
 
 ## Mapping Table (v1)
 
@@ -27,7 +27,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `Storage` | `Storage` | `android.permission.READ_EXTERNAL_STORAGE`, `android.permission.WRITE_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |
 | `FilePicker` | `FilePicker`, `File Picker` | `android.permission.READ_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |
 | `Connectivity` | `Connectivity` | `android.permission.ACCESS_NETWORK_STATE`, `android.permission.INTERNET` | n/a | n/a | `permission_only` |
-| `URLLauncher` | `URLLauncher`, `URL launcher` | `android.permission.INTERNET` | n/a | n/a | `permission_only` |
+| `URLLauncher` | `URLLauncher`, `URL launcher` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/UrlLauncherHelper;` | `openUrl(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Permissions` | `Permissions` | none | n/a | n/a | `permission_only` |
 | `Maps` | `Maps` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |
 | `Location` | `Location` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |
@@ -41,4 +41,3 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 
 - Mapping/runtime-binding tests: `tests/test_capabilities.py`
 - ABI contract tests: `tests/test_runtime_abi_v1.py`
-

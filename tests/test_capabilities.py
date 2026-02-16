@@ -27,10 +27,17 @@ def test_capability_runtime_mapping_v1_shape():
     mapping = default_capability_runtime_mapping()
     assert CAPABILITY_RUNTIME_ABI_VERSION == "1.0.0"
     assert mapping
-    assert all(binding.mode == "permission_only" for binding in mapping.values())
-    assert all(binding.helper_class_desc is None for binding in mapping.values())
-    assert all(binding.helper_method is None for binding in mapping.values())
-    assert all(binding.helper_sig is None for binding in mapping.values())
+    for cap_name, binding in mapping.items():
+        if cap_name == "URLLauncher":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/UrlLauncherHelper;"
+            assert binding.helper_method == "openUrl"
+            assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+        else:
+            assert binding.mode == "permission_only"
+            assert binding.helper_class_desc is None
+            assert binding.helper_method is None
+            assert binding.helper_sig is None
 
 
 def test_resolve_runtime_bindings_dedupes_aliases_and_ignores_raw_permissions():

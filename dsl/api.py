@@ -842,6 +842,14 @@ def request_permission(permission, request_code=0):
     return request_permissions(permission, request_code=request_code)
 
 
+def open_url(url: str):
+    return _StmtOpenUrl(str(url))
+
+
+def launch_url(url: str):
+    return open_url(url)
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 
@@ -962,6 +970,9 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             label_locked = True
 
     app_cfg = _extract_app_config(activity_spec, caller_module)
+    from .capabilities import resolve_runtime_bindings
+    runtime_bindings = resolve_runtime_bindings(app_cfg.uses)
+    runtime_binding_map = {binding.capability: binding for binding in runtime_bindings}
     plugin_names = _resolve_plugins(activity_spec, caller_module)
     registry = load_plugins(["core", *plugin_names])
     ctx = _PythonicContext(
@@ -970,6 +981,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         theme_spec,
         min_sdk=app_cfg.min_sdk,
         registry=registry,
+        runtime_bindings=runtime_binding_map,
     )
     if has_screens and state_spec.values:
         ctx._lint_warnings.append(
@@ -1016,6 +1028,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         seen.add(perm)
         merged.append(perm)
     program.permissions = merged
+    program.capability_runtime_bindings = runtime_bindings
     return program
 
 

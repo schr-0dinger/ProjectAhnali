@@ -17,6 +17,7 @@ from .ast import (
     _StmtSimpleDialog,
     _StmtSnackbar,
     _StmtToast,
+    _StmtOpenUrl,
     _StmtAnimate,
     _StmtAnimationGroup,
     _StmtLog,
@@ -136,6 +137,13 @@ def _parse_stmt(stmt):
                 if target is None:
                     raise RuntimeError("Navigate target must be a constant string")
                 return _StmtNavigate(target)
+            if fn in ("open_url", "OpenUrl", "launch_url", "LaunchUrl", "url_launcher", "URLLauncher"):
+                args = [_parse_expr(a) for a in call.args]
+                if not args:
+                    raise RuntimeError("open_url requires a url string argument")
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("open_url url must be a constant string")
+                return _StmtOpenUrl(args[0].value)
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions
