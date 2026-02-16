@@ -63,7 +63,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-16)
 
-- ✅ Test suite reality: `264 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
+- ✅ Test suite reality: `269 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -289,9 +289,11 @@ Integration and smoke:
 - ✅ Toolchain diagnostics checks
 - ✅ Integration tests for packaging and manifest wiring
 - ✅ Device smoke scaffolding in tests
+- ✅ Deterministic benchmark harness (`tools/benchmark_apk.py`)
+- ✅ CI benchmark gates (`.github/workflows/ci.yml`: size gate + emulator cold-start gate)
 
 Pending:
-- ⚠️ Size/perf benchmark automation
+- ⚠️ Benchmark baseline tuning from CI history (threshold hardening)
 
 ---
 
@@ -1727,8 +1729,8 @@ never as core behavior.
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests
-- APK size tracking
-- Cold start benchmarks
+- ✅ APK size tracking (benchmark harness + CI gate)
+- ✅ Cold start benchmarks (harness + emulator CI gate)
 
 ---
 

@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `264 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
+- Last suite run: `269 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
 
 ## DSL Surface (Current)
 
@@ -208,17 +208,20 @@ Exit criteria:
 
 ### Track B: Benchmark Automation
 
+Status:
+- ⚠️ In progress (foundation implemented 2026-02-16)
+
 Objectives:
 - Make performance/size regressions visible and blocking.
 
 Work items:
-- Add deterministic APK size reporting in CI.
-- Add cold-start benchmark harness and threshold checks.
-- Track regressions per commit in artifacts/logs.
+- ✅ Add deterministic APK size reporting in CI (`tools/benchmark_apk.py`, `.github/workflows/ci.yml` size gate).
+- ✅ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py`, CI emulator gate).
+- ⚠️ Track regressions per commit in artifacts/logs (baseline adoption and threshold tuning ongoing).
 
 Exit criteria:
-- Benchmark gates are automated and reliable.
-- Regressions are caught before merge.
+- ⚠️ Benchmark gates are automated; reliability tuning continues with real CI history.
+- ⚠️ Regression thresholds are enabled and may be tightened as baseline history matures.
 
 ### Track C: Capability Expansion
 
@@ -250,6 +253,14 @@ Exit criteria:
 ## How to Run Tests
 
 - python -m pytest
+
+## Benchmark Harness
+
+- Local usage and CI details: `docs/Benchmarking.md`
+- Size-only gate (no adb device):
+  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --report-file build/benchmark/size_report.json --skip-cold-start`
+- Cold-start gate (adb device/emulator required):
+  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --report-file build/benchmark/cold_start_report.json --require-cold-start --cold-start-iterations 3`
 
 ## Example: Multi-Method Program
 

@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      - name: Run test suite
+        run: PYTHONPATH=. pytest -q -rs
+
+  benchmark-size:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+
+      - name: Download smali
+        run: |
+          curl -fsSL \
+            -o /tmp/smali.jar \
+            https://repo1.maven.org/maven2/org/smali/smali/2.5.2/smali-2.5.2.jar
+
+      - name: Run APK size benchmark gate
+        env:
+          SMALI_JAR: /tmp/smali.jar
+        run: |
+          PYTHONPATH=. python tools/benchmark_apk.py \
+            --threshold-file cfg/benchmark_thresholds.json \
+            --baseline-file cfg/benchmark_baseline.json \
+            --report-file build/benchmark/size_report.json \
+            --skip-cold-start
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-size-report
+          path: build/benchmark/
+
+  benchmark-cold-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - benchmark-size
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "system-images;android-30;google_apis;x86_64"
+
+      - name: Download smali
+        run: |
+          curl -fsSL \
+            -o /tmp/smali.jar \
+            https://repo1.maven.org/maven2/org/smali/smali/2.5.2/smali-2.5.2.jar
+
+      - name: Run cold-start benchmark gate
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: |
+            PYTHONPATH=. SMALI_JAR=/tmp/smali.jar python tools/benchmark_apk.py \
+              --threshold-file cfg/benchmark_thresholds.json \
+              --baseline-file cfg/benchmark_baseline.json \
+              --report-file build/benchmark/cold_start_report.json \
+              --require-cold-start \
+              --cold-start-iterations 3
+
+      - name: Upload cold-start artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-cold-start-report
+          path: build/benchmark/

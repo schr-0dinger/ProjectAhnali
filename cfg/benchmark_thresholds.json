@@ -1,0 +1,8 @@
+{
+  "max_signed_apk_bytes": 15000000,
+  "max_classes_dex_bytes": 8000000,
+  "max_cold_start_total_ms": 2500,
+  "max_signed_apk_regression_bytes": 262144,
+  "max_cold_start_regression_ms": 250,
+  "require_cold_start": false
+}
