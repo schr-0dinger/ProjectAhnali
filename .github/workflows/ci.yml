@@ -56,15 +56,34 @@ jobs:
             "platforms;android-34" \
             "build-tools;34.0.0"
 
-      - name: Download smali
+      - name: Download smali toolchain jars
         run: |
-          curl -fsSL \
-            -o /tmp/smali.jar \
-            https://repo1.maven.org/maven2/org/smali/smali/2.5.2/smali-2.5.2.jar
+          set -euo pipefail
+          mkdir -p /tmp/smali-lib
+          base="https://repo1.maven.org/maven2"
+          for rel in \
+            org/smali/smali/2.5.2/smali-2.5.2.jar \
+            org/smali/dexlib2/2.5.2/dexlib2-2.5.2.jar \
+            org/smali/util/2.5.2/util-2.5.2.jar \
+            org/antlr/antlr/3.5.2/antlr-3.5.2.jar \
+            org/antlr/antlr-runtime/3.5.2/antlr-runtime-3.5.2.jar \
+            org/antlr/stringtemplate/3.2.1/stringtemplate-3.2.1.jar \
+            com/beust/jcommander/1.64/jcommander-1.64.jar \
+            com/google/guava/guava/27.1-android/guava-27.1-android.jar \
+            com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar \
+            com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar \
+            com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar \
+            org/checkerframework/checker-compat-qual/2.5.2/checker-compat-qual-2.5.2.jar \
+            com/google/errorprone/error_prone_annotations/2.2.0/error_prone_annotations-2.2.0.jar \
+            com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar \
+            org/codehaus/mojo/animal-sniffer-annotations/1.17/animal-sniffer-annotations-1.17.jar
+          do
+            curl -fsSL -o "/tmp/smali-lib/$(basename "$rel")" "$base/$rel"
+          done
 
       - name: Run APK size benchmark gate
         env:
-          SMALI_JAR: /tmp/smali.jar
+          SMALI_JAR: /tmp/smali-lib/smali-2.5.2.jar
         run: |
           PYTHONPATH=. python tools/benchmark_apk.py \
             --threshold-file cfg/benchmark_thresholds.json \
@@ -111,11 +130,30 @@ jobs:
             "build-tools;34.0.0" \
             "system-images;android-30;google_apis;x86_64"
 
-      - name: Download smali
+      - name: Download smali toolchain jars
         run: |
-          curl -fsSL \
-            -o /tmp/smali.jar \
-            https://repo1.maven.org/maven2/org/smali/smali/2.5.2/smali-2.5.2.jar
+          set -euo pipefail
+          mkdir -p /tmp/smali-lib
+          base="https://repo1.maven.org/maven2"
+          for rel in \
+            org/smali/smali/2.5.2/smali-2.5.2.jar \
+            org/smali/dexlib2/2.5.2/dexlib2-2.5.2.jar \
+            org/smali/util/2.5.2/util-2.5.2.jar \
+            org/antlr/antlr/3.5.2/antlr-3.5.2.jar \
+            org/antlr/antlr-runtime/3.5.2/antlr-runtime-3.5.2.jar \
+            org/antlr/stringtemplate/3.2.1/stringtemplate-3.2.1.jar \
+            com/beust/jcommander/1.64/jcommander-1.64.jar \
+            com/google/guava/guava/27.1-android/guava-27.1-android.jar \
+            com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar \
+            com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar \
+            com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar \
+            org/checkerframework/checker-compat-qual/2.5.2/checker-compat-qual-2.5.2.jar \
+            com/google/errorprone/error_prone_annotations/2.2.0/error_prone_annotations-2.2.0.jar \
+            com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar \
+            org/codehaus/mojo/animal-sniffer-annotations/1.17/animal-sniffer-annotations-1.17.jar
+          do
+            curl -fsSL -o "/tmp/smali-lib/$(basename "$rel")" "$base/$rel"
+          done
 
       - name: Run cold-start benchmark gate
         uses: reactivecircus/android-emulator-runner@v2
@@ -125,7 +163,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           script: |
-            PYTHONPATH=. SMALI_JAR=/tmp/smali.jar python tools/benchmark_apk.py \
+            PYTHONPATH=. SMALI_JAR=/tmp/smali-lib/smali-2.5.2.jar python tools/benchmark_apk.py \
               --threshold-file cfg/benchmark_thresholds.json \
               --baseline-file cfg/benchmark_baseline.json \
               --report-file build/benchmark/cold_start_report.json \

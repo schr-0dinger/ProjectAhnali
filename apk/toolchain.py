@@ -644,9 +644,10 @@ def _run_java_tool_from_jar(
     main_classes: list[str],
     tool_name: str,
 ) -> None:
+    cp = os.pathsep.join([str(jar_path), str(jar_path.parent / "*")])
     attempts: list[list[str]] = [["java", "-jar", str(jar_path), *args]]
     attempts.extend(
-        [["java", "-cp", str(jar_path), main_class, *args] for main_class in main_classes]
+        [["java", "-cp", cp, main_class, *args] for main_class in main_classes]
     )
 
     failures: list[tuple[list[str], subprocess.CompletedProcess[str]]] = []
