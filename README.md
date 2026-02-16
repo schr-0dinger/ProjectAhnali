@@ -216,12 +216,12 @@ Objectives:
 
 Work items:
 - ✅ Add deterministic APK size reporting in CI (`tools/benchmark_apk.py`, `.github/workflows/ci.yml` size gate).
-- ✅ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py`, CI emulator gate).
-- ⚠️ Track regressions per commit in artifacts/logs (baseline adoption and threshold tuning ongoing).
+- ⚠️ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py` + manual CI emulator gate; PR gate deferred).
+- ⚠️ Track regressions per commit in artifacts/logs (baseline collection phase active; strict regression caps deferred).
 
 Exit criteria:
 - ⚠️ Benchmark gates are automated; reliability tuning continues with real CI history.
-- ⚠️ Regression thresholds are enabled and may be tightened as baseline history matures.
+- ⚠️ Regression thresholds are intentionally non-strict until baseline history is established.
 
 ### Track C: Capability Expansion
 

@@ -35,11 +35,16 @@ Current checks:
 - cold-start median cap (`max_cold_start_total_ms`)
 - optional regression caps when baseline metrics are available
 
+Current rollout mode:
+- Baseline collection first. Regression caps are intentionally unset until enough CI history is collected.
+- Size gate remains active in CI.
+- Cold-start gate is available but not part of PR flow yet.
+
 ## CI Gates
 
 Workflow: `.github/workflows/ci.yml`
 
 - `benchmark-size`: runs on push/PR; enforces deterministic size thresholds.
-- `benchmark-cold-start`: runs on `main` pushes and manual dispatch; boots emulator and enforces cold-start threshold.
+- `benchmark-cold-start`: manual dispatch only for now; boots emulator and enforces cold-start threshold.
 
 Each benchmark job uploads JSON artifacts under `build/benchmark/`.

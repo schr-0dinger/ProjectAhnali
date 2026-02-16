@@ -290,7 +290,8 @@ Integration and smoke:
 - ✅ Integration tests for packaging and manifest wiring
 - ✅ Device smoke scaffolding in tests
 - ✅ Deterministic benchmark harness (`tools/benchmark_apk.py`)
-- ✅ CI benchmark gates (`.github/workflows/ci.yml`: size gate + emulator cold-start gate)
+- ✅ CI size benchmark gate on push/PR (`.github/workflows/ci.yml`)
+- ✅ Manual CI cold-start benchmark gate (workflow dispatch)
 
 Pending:
 - ⚠️ Benchmark baseline tuning from CI history (threshold hardening)
@@ -1730,7 +1731,7 @@ never as core behavior.
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests
 - ✅ APK size tracking (benchmark harness + CI gate)
-- ✅ Cold start benchmarks (harness + emulator CI gate)
+- ⚠️ Cold start benchmarks (harness implemented; CI gate is manual-only for now)
 
 ---
 

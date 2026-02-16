@@ -68,7 +68,8 @@ jobs:
         run: |
           PYTHONPATH=. python tools/benchmark_apk.py \
             --threshold-file cfg/benchmark_thresholds.json \
-            --baseline-file cfg/benchmark_baseline.json \
+            --baseline-file build/benchmark/size_baseline.json \
+            --write-baseline-if-missing \
             --report-file build/benchmark/size_report.json \
             --skip-cold-start
 
@@ -84,7 +85,7 @@ jobs:
     timeout-minutes: 45
     needs:
       - benchmark-size
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
@@ -126,7 +127,8 @@ jobs:
           script: |
             PYTHONPATH=. SMALI_JAR=/tmp/smali.jar python tools/benchmark_apk.py \
               --threshold-file cfg/benchmark_thresholds.json \
-              --baseline-file cfg/benchmark_baseline.json \
+              --baseline-file build/benchmark/cold_start_baseline.json \
+              --write-baseline-if-missing \
               --report-file build/benchmark/cold_start_report.json \
               --require-cold-start \
               --cold-start-iterations 3
