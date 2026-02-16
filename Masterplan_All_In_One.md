@@ -1,6 +1,6 @@
 # Ahnali Unified Masterplan (All-In-One)
 
-Last consolidated: 2026-02-13  
+Last consolidated: 2026-02-16  
 Consolidation basis: code reality + tests in current repository
 
 ---
@@ -61,7 +61,7 @@ Hybrid rollout status:
 
 ---
 
-## 3) Code Reality Snapshot (As of 2026-02-13)
+## 3) Code Reality Snapshot (As of 2026-02-16)
 
 - ✅ Test suite reality: `248 passed` (`PYTHONPATH=. pytest -q`)
 - ✅ One-command flow exists: `build_install_run(...)`
@@ -151,7 +151,6 @@ Implemented:
 
 Not yet implemented as first-class static v1 surfaces:
 - Grid (planned)
-- Recycler/static list surface (planned)
 
 ### 6.3 Widget Runtime Classes (Code Reality)
 
@@ -1512,8 +1511,6 @@ Capabilities:
 - Control permission wiring
 - Pull in the correct runtime module
 
-Implementation status (2026-02-10): capability/permission inference and manifest injection are not implemented yet.
-
 Optional explicit declaration:
 
 ```python
@@ -1644,8 +1641,6 @@ Initial screen = first declared.
 System back pops stack or exits.
 
 No parameters in v1.
-
-Implementation status (2026-02-10): stack navigation exists, but system back handling is not wired.
 
 ---
 

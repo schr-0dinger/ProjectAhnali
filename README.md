@@ -6,7 +6,7 @@ phase-by-phase architecture-first build.
 
 Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, Ahnali ships a statically linked, capability-scoped support runtime: a small set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView, etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in user code are included in the final APK. As a result, Ahnali applications have deterministic behavior, minimal binary size, zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable DSL.
 
-Last updated: 2026-02-13
+Last updated: 2026-02-16
 
 ## Goals
 
@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last full run: `248` passing tests (`PYTHONPATH=. pytest -q`)
+- Last suite run: `247 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
 
 ## DSL Surface (Current)
 
