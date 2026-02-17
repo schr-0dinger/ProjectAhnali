@@ -862,6 +862,26 @@ def is_connected():
     return check_connectivity()
 
 
+def check_location():
+    return _StmtCheckLocation()
+
+
+def check_location_enabled():
+    return check_location()
+
+
+def location_check():
+    return check_location()
+
+
+def location_enabled():
+    return _ExprLocationEnabled()
+
+
+def is_location_enabled():
+    return location_enabled()
+
+
 def http_get(url: str, default_value: str = ""):
     return _ExprHttpGet(str(url), str(default_value))
 

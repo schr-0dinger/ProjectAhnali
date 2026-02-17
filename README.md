@@ -228,7 +228,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -287,8 +287,13 @@ Work items:
 - ✅ Document Wave 4 async concurrency/request-options contract (`docs/TrackC_Wave4_Async_Concurrency.md`)
 - ✅ Add Wave 5 visible integration flow combining networking + storage + connectivity with deterministic fallback UI routing (`tests/test_track_c_wave5_visible_flow.py`)
 - ✅ Document Wave 5 visible flow (`docs/TrackC_Wave5_Visible_Flow.md`)
+- ✅ Add Wave 6 location capability helper-call primitive:
+  - `Location` → `Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(...)I`
+  - DSL surfaces: `location_enabled()`, `is_location_enabled()`, `check_location()`
+- ✅ Add Wave 6 visible integration flow combining location + networking + storage with deterministic fallback routing (`tests/test_track_c_wave6_visible_flow.py`)
+- ✅ Document Wave 6 location contract + flow (`docs/TrackC_Wave6_Location.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
-- Continue adding capability-scoped primitives beyond networking/storage.
+- Continue adding capability-scoped primitives beyond networking/storage/location.
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
@@ -299,6 +304,8 @@ Exit criteria:
 - ✅ Wave 4 async concurrency/request-options/typed-adapter/transport/race conformance is enforced by `tests/test_track_c_wave4_async_networking.py`.
 - ✅ Wave 4 device integration conformance is enforced by `tests/test_http_helper_device_integration.py` (requires `adb` device in `device` state).
 - ✅ Wave 5 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave5_visible_flow.py`.
+- ✅ Wave 6 location capability conformance is enforced by `tests/test_track_c_wave6_location.py`.
+- ✅ Wave 6 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave6_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`

@@ -239,6 +239,9 @@ register_default_capability(
 register_default_capability(
     "Location",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
+    helper_class_desc="Lcom/ahnali/runtime/LocationHelper;",
+    helper_method="isLocationEnabled",
+    helper_sig="(Landroid/app/Activity;)I",
 )
 
 

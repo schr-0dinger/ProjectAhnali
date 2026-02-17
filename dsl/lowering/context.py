@@ -26,6 +26,7 @@ from dsl.ast import (
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
+    _ExprLocationEnabled,
     _ExprStorageGet,
     _ExprStorageExists,
     _ExprSymbol,
@@ -44,6 +45,7 @@ from dsl.ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtCheckLocation,
     _StmtHttpGetError,
     _StmtHttpAsyncBody,
     _StmtHttpAsyncJsonArrayLength,
@@ -2790,6 +2792,8 @@ class _PythonicContext:
             return self._compile_open_url_stmt(stmt)
         if isinstance(stmt, _StmtCheckConnectivity):
             return self._compile_check_connectivity_stmt(stmt)
+        if isinstance(stmt, _StmtCheckLocation):
+            return self._compile_check_location_stmt(stmt)
         if isinstance(stmt, _StmtHttpGet):
             return self._compile_http_get_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetStatus):
@@ -4837,6 +4841,10 @@ class _PythonicContext:
                 key=stmt.value.key,
                 tmp_prefix="storage_exists_result",
             )
+        elif isinstance(stmt.value, _ExprLocationEnabled):
+            prefix, result = self._compile_location_enabled_call(
+                tmp_prefix="location_enabled_result",
+            )
         elif isinstance(stmt.value, _ExprHttpGet):
             prefix, result = self._compile_http_get_call(
                 url=stmt.value.url,
@@ -4937,7 +4945,7 @@ class _PythonicContext:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
-                "storage_exists(...), http_get_status(...), http_get_error(...), "
+                "storage_exists(...), location_enabled(...), http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
                 "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
                 "http_async_status(...), http_async_body(...), http_async_json_field(...), "
@@ -4988,6 +4996,10 @@ class _PythonicContext:
                     f"Integer expression expected an int constant, got {expr.value!r} ({type(expr.value).__name__})"
                 )
             return [], const(expr.value)
+        if isinstance(expr, _ExprLocationEnabled):
+            return self._compile_location_enabled_call(
+                tmp_prefix="location_enabled_expr",
+            )
         if isinstance(expr, _ExprSymbol):
             if expr.name in self.state_spec.values:
                 accessor = self._state_accessor(expr.name)
@@ -5483,6 +5495,50 @@ class _PythonicContext:
             require_helper_method=True,
         )
         result_tmp = self._next_tmp("connectivity_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx")],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_location_enabled_call(self, *, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="location_enabled",
+            capability_name="Location",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx")],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_check_location_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="check_location",
+            capability_name="Location",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp("location_enabled_ignored")
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             assign(
@@ -6004,7 +6060,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6032,7 +6087,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6060,7 +6114,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6088,7 +6141,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6116,7 +6168,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6144,7 +6195,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6172,7 +6222,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,
@@ -6200,7 +6249,6 @@ class _PythonicContext:
         )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
-            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             *token_prefix,
             assign(
                 result_tmp,

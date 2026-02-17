@@ -75,6 +75,11 @@ class _ExprStorageExists:
         self.key = key
 
 
+class _ExprLocationEnabled:
+    def __init__(self):
+        pass
+
+
 class _ExprHttpGet:
     def __init__(self, url, default_value):
         self.url = url
@@ -220,6 +225,11 @@ class _StmtOpenUrl:
 
 
 class _StmtCheckConnectivity:
+    def __init__(self):
+        pass
+
+
+class _StmtCheckLocation:
     def __init__(self):
         pass
 
@@ -460,6 +470,7 @@ def _coerce_expr(value):
             _ExprFormat,
             _ExprStorageGet,
             _ExprStorageExists,
+            _ExprLocationEnabled,
             _ExprHttpGet,
             _ExprHttpGetStatus,
             _ExprHttpGetError,

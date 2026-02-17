@@ -251,9 +251,10 @@ Implemented:
 - ✅ Track C Wave 3 completed: tokened async route dispatch (`http_get_route_async(..., progress_target_id, retries, timeout_ms)`) + token-scoped cancellation/progress/error/status/body primitives (`http_async_cancel(token)`, `http_async_progress(token)`, `http_async_error(token)`, `http_async_status(token)`, `http_async_body(token, fallback)`) with background worker + UI-thread success/failure/progress callback runnable support classes + timeout/retry controls + conformance tests (`tests/test_track_c_wave3_async_route.py`, `tests/test_track_c_wave3_visible_flow.py`)
 - ✅ Track C Wave 4 completed: multi-request token-indexed async runtime state + async request-option route wiring (`method/headers/body`) + typed async JSON adapters (`http_async_json_field`, `http_async_json_field_error`, `http_async_json_array_length`) + hardened request-option transport semantics (header parsing/application + explicit POST body transport) + concurrent token cancellation/race stress coverage (`tests/test_track_c_wave4_async_networking.py`) + real device/emulator HttpHelper integration execution coverage (`tests/test_http_helper_device_integration.py`)
 - ✅ Track C Wave 5 visible integration completed: end-to-end flow combining storage + async networking + connectivity check with deterministic fallback UI/cache routing (`tests/test_track_c_wave5_visible_flow.py`, `docs/TrackC_Wave5_Visible_Flow.md`)
+- ✅ Track C Wave 6 completed: `Location` helper-call capability (`Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(...)I`) + DSL (`location_enabled`, `check_location`) + visible integration flow combining location + networking + storage deterministic fallback routing (`tests/test_track_c_wave6_location.py`, `tests/test_track_c_wave6_visible_flow.py`, `docs/TrackC_Wave6_Location.md`)
 
 Pending:
-- ⚠️ Broaden capability modules beyond current network/storage helpers.
+- ⚠️ Broaden capability modules beyond current network/storage/location helpers.
 
 ---
 
@@ -1738,7 +1739,7 @@ never as core behavior.
 - ✅ State storage
 - ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
 - ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
-- ✅ Wave 1/Wave 2/Wave 3/Wave 5 visible capability integration flow compile coverage
+- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests

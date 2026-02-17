@@ -122,6 +122,37 @@ def _emit_connectivity_is_connected_method() -> list[str]:
     ]
 
 
+def _emit_location_is_enabled_method() -> list[str]:
+    return [
+        ".method public static isLocationEnabled(Landroid/app/Activity;)I",
+        "    .locals 5",
+        "    if-eqz p0, :ahnali_loc_fail",
+        "    :ahnali_loc_try_start",
+        '    const-string v0, "location"',
+        "    invoke-virtual {p0, v0}, Landroid/app/Activity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v1",
+        "    check-cast v1, Landroid/location/LocationManager;",
+        "    if-eqz v1, :ahnali_loc_fail",
+        '    const-string v2, "gps"',
+        "    invoke-virtual {v1, v2}, Landroid/location/LocationManager;->isProviderEnabled(Ljava/lang/String;)Z",
+        "    move-result v3",
+        "    if-nez v3, :ahnali_loc_true",
+        '    const-string v2, "network"',
+        "    invoke-virtual {v1, v2}, Landroid/location/LocationManager;->isProviderEnabled(Ljava/lang/String;)Z",
+        "    move-result v4",
+        "    return v4",
+        "    :ahnali_loc_true",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_loc_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_loc_try_start .. :ahnali_loc_try_end} :ahnali_loc_fail",
+        "    :ahnali_loc_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_http_get_method() -> list[str]:
     return [
         ".method public static httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
@@ -1410,6 +1441,14 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;)I"
     ):
         lines.extend(_emit_connectivity_is_connected_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/LocationHelper;"
+        and helper_method == "isLocationEnabled"
+        and helper_sig == "(Landroid/app/Activity;)I"
+    ):
+        lines.extend(_emit_location_is_enabled_method())
         return "\n".join(lines)
 
     if (

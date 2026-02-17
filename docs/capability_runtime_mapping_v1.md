@@ -15,6 +15,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Track C Wave 1 introduced initial helper-call bindings for URL launcher, connectivity checks, and storage put/get/remove/exists/clear.
 - Track C Wave 2 adds networking fetch/response/retry/typed-JSON helper-call bindings (`http_get`, `http_get_status`, `http_get_error`, `http_get_retry`, `http_get_json_field`, `http_get_json_field_error`).
 - Track C Wave 3/4 adds tokened async route dispatch (`http_get_route_async`) with deterministic cancellation/progress/error/status/body surfaces (`http_async_cancel`, `http_async_progress`, `http_async_error`, `http_async_status`, `http_async_body`), progress callback wiring, timeout/retry controls, request-option wiring (method/headers/body), hardened request-option transport semantics (header parsing/application + explicit POST body transport), typed async JSON adapters, and concurrent cancellation/race stress coverage.
+- Track C Wave 6 adds location provider helper-call binding (`location_enabled`, `check_location`) with deterministic enabled/disabled surface.
 
 ## Mapping Table (v1)
 
@@ -33,7 +34,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `URLLauncher` | `URLLauncher`, `URL launcher` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/UrlLauncherHelper;` | `openUrl(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Permissions` | `Permissions` | none | n/a | n/a | `permission_only` |
 | `Maps` | `Maps` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |
-| `Location` | `Location` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |
+| `Location` | `Location` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | `Lcom/ahnali/runtime/LocationHelper;` | `isLocationEnabled(Landroid/app/Activity;)I` | `helper_call` |
 
 ## Source of Truth in Code
 

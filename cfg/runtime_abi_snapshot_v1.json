@@ -163,6 +163,14 @@
       "source": "capability:Networking"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/LocationHelper;",
+      "methods": [
+        "<init>()V",
+        "isLocationEnabled(Landroid/app/Activity;)I"
+      ],
+      "source": "capability:Location"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/StorageHelper;",
       "methods": [
         "<init>()V",

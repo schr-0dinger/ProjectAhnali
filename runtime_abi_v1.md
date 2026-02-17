@@ -18,9 +18,10 @@ In scope:
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
 - Track C Wave 2 capability helper ABI: networking fetch/response/routing/retry/typed-JSON helpers
 - Track C Wave 3/4 capability helper ABI: tokened async route dispatch + deterministic cancellation/progress/error/status/body helper methods + runnable support classes + timeout/retry controls + request-option and typed async JSON adapter helpers
+- Track C Wave 6 capability helper ABI: location provider enabled surface
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -173,6 +174,14 @@ Deprecation policy:
     - `remove`: `1` on successful `SharedPreferences` remove/apply; `0` on null context/key or caught exception.
     - `exists`: `1` when key exists in `SharedPreferences`; `0` on missing key, null context/key, or caught exception.
     - `clear`: `1` on successful `SharedPreferences` clear/apply; `0` on null context or caught exception.
+- Track C Wave 6 helper-call binding:
+  - Capability: `Location`
+  - Helper class: `Lcom/ahnali/runtime/LocationHelper;`
+  - Helper method/sig:
+    - `isLocationEnabled(Landroid/app/Activity;)I`
+  - Return semantics:
+    - `1`: when either `gps` or `network` location provider is enabled
+    - `0`: null context, unavailable manager, disabled providers, or caught exception
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -284,6 +293,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave3_visible_flow.py`
 - `tests/test_track_c_wave4_async_networking.py`
 - `tests/test_http_helper_device_integration.py`
+- `tests/test_track_c_wave6_location.py`
+- `tests/test_track_c_wave6_visible_flow.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`

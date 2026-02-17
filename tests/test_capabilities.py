@@ -51,6 +51,11 @@ def test_capability_runtime_mapping_v1_shape():
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/StorageHelper;"
             assert binding.helper_method == "putString"
             assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+        elif cap_name == "Location":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/LocationHelper;"
+            assert binding.helper_method == "isLocationEnabled"
+            assert binding.helper_sig == "(Landroid/app/Activity;)I"
         else:
             assert binding.mode == "permission_only"
             assert binding.helper_class_desc is None

@@ -22,6 +22,7 @@ from .ast import (
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
+    _ExprLocationEnabled,
     _ExprStorageGet,
     _ExprStorageExists,
     _ExprSymbol,
@@ -35,6 +36,7 @@ from .ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtCheckLocation,
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncBody,
@@ -193,6 +195,21 @@ def _parse_stmt(stmt):
                 if call.args:
                     raise RuntimeError("check_connectivity expects no arguments. Usage: check_connectivity()")
                 return _StmtCheckConnectivity()
+            if fn in (
+                "check_location",
+                "CheckLocation",
+                "check_location_enabled",
+                "CheckLocationEnabled",
+                "location_check",
+                "LocationCheck",
+                "location_enabled",
+                "LocationEnabled",
+                "is_location_enabled",
+                "IsLocationEnabled",
+            ):
+                if call.args:
+                    raise RuntimeError("check_location expects no arguments. Usage: check_location()")
+                return _StmtCheckLocation()
             if fn in (
                 "http_get",
                 "HttpGet",
@@ -585,6 +602,21 @@ def _parse_expr(node):
         rhs = _parse_expr(node.right)
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id in (
+            "location_enabled",
+            "LocationEnabled",
+            "is_location_enabled",
+            "IsLocationEnabled",
+            "check_location",
+            "CheckLocation",
+            "check_location_enabled",
+            "CheckLocationEnabled",
+            "location_check",
+            "LocationCheck",
+        ):
+            if node.args:
+                raise RuntimeError("location_enabled expects no arguments. Usage: location_enabled()")
+            return _ExprLocationEnabled()
         if node.func.id in (
             "http_get",
             "HttpGet",
