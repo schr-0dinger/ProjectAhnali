@@ -30,6 +30,7 @@ from .ast import (
     _StmtHttpGetError,
     _StmtHttpGetJsonField,
     _StmtHttpGetJsonFieldError,
+    _StmtHttpGetRouteAsync,
     _StmtHttpGetRetry,
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
@@ -306,6 +307,30 @@ def _parse_stmt(stmt):
                 if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
                     raise RuntimeError("http_get_route argument 'default_value' must be a constant string")
                 return _StmtHttpGetRoute(
+                    args[0].value,
+                    args[1].value,
+                    args[2].value,
+                    default_expr.value,
+                )
+            if fn in (
+                "http_get_route_async",
+                "HttpGetRouteAsync",
+                "http_get_with_handlers_async",
+                "HttpGetWithHandlersAsync",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (3 <= len(args) <= 4):
+                    raise RuntimeError(
+                        'http_get_route_async expects 3 or 4 string arguments. '
+                        'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback")'
+                    )
+                for idx, label in ((0, "url"), (1, "success_target_id"), (2, "failure_target_id")):
+                    if not isinstance(args[idx], _ExprConst) or not isinstance(args[idx].value, str):
+                        raise RuntimeError(f"http_get_route_async argument '{label}' must be a constant string")
+                default_expr = args[3] if len(args) > 3 else _ExprConst("")
+                if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                    raise RuntimeError("http_get_route_async argument 'default_value' must be a constant string")
+                return _StmtHttpGetRouteAsync(
                     args[0].value,
                     args[1].value,
                     args[2].value,

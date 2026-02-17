@@ -921,6 +921,29 @@ def http_get_with_handlers(
     return http_get_route(url, success_target_id, failure_target_id, default_value)
 
 
+def http_get_route_async(
+    url: str,
+    success_target_id: str,
+    failure_target_id: str,
+    default_value: str = "",
+):
+    return _StmtHttpGetRouteAsync(
+        str(url),
+        str(success_target_id),
+        str(failure_target_id),
+        str(default_value),
+    )
+
+
+def http_get_with_handlers_async(
+    url: str,
+    success_target_id: str,
+    failure_target_id: str,
+    default_value: str = "",
+):
+    return http_get_route_async(url, success_target_id, failure_target_id, default_value)
+
+
 def storage_put(key: str, value: str):
     return _StmtStoragePut(str(key), str(value))
 

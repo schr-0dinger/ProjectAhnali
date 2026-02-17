@@ -512,6 +512,113 @@ def emit_list_view_adapter_smali(
     return "\n".join(lines)
 
 
+def emit_ui_runnable_click_smali(
+    class_desc: str,
+    target_desc: str,
+    target_method: str,
+):
+    lines = []
+    lines.append(f".class public {class_desc}")
+    lines.append(".super Ljava/lang/Object;")
+    lines.append(".implements Ljava/lang/Runnable;")
+    lines.append("")
+    lines.append(".field private final mView:Landroid/view/View;")
+    lines.append("")
+    lines.append(".method public constructor <init>(Landroid/view/View;)V")
+    lines.append("    .locals 0")
+    lines.append("    invoke-direct {p0}, Ljava/lang/Object;-><init>()V")
+    lines.append(f"    iput-object p1, p0, {class_desc}->mView:Landroid/view/View;")
+    lines.append("    return-void")
+    lines.append(".end method")
+    lines.append("")
+    lines.append(".method public run()V")
+    lines.append("    .locals 1")
+    lines.append(f"    iget-object v0, p0, {class_desc}->mView:Landroid/view/View;")
+    lines.append(f"    invoke-static {{v0}}, {target_desc}->{target_method}(Landroid/view/View;)V")
+    lines.append("    return-void")
+    lines.append(".end method")
+    return "\n".join(lines)
+
+
+def emit_http_route_async_worker_smali(class_desc: str):
+    lines = []
+    lines.append(f".class public {class_desc}")
+    lines.append(".super Ljava/lang/Object;")
+    lines.append(".implements Ljava/lang/Runnable;")
+    lines.append("")
+    lines.append(".field private final mCtx:Landroid/app/Activity;")
+    lines.append(".field private final mUrl:Ljava/lang/String;")
+    lines.append(".field private final mFallback:Ljava/lang/String;")
+    lines.append(".field private final mOnSuccess:Ljava/lang/Runnable;")
+    lines.append(".field private final mOnFailure:Ljava/lang/Runnable;")
+    lines.append("")
+    lines.append(
+        ".method public constructor <init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;)V"
+    )
+    lines.append("    .locals 0")
+    lines.append("    invoke-direct {p0}, Ljava/lang/Object;-><init>()V")
+    lines.append(f"    iput-object p1, p0, {class_desc}->mCtx:Landroid/app/Activity;")
+    lines.append(f"    iput-object p2, p0, {class_desc}->mUrl:Ljava/lang/String;")
+    lines.append(f"    iput-object p3, p0, {class_desc}->mFallback:Ljava/lang/String;")
+    lines.append(f"    iput-object p4, p0, {class_desc}->mOnSuccess:Ljava/lang/Runnable;")
+    lines.append(f"    iput-object p5, p0, {class_desc}->mOnFailure:Ljava/lang/Runnable;")
+    lines.append("    return-void")
+    lines.append(".end method")
+    lines.append("")
+    lines.append(".method public run()V")
+    lines.append("    .locals 6")
+    lines.append("    :ahnali_async_try_start")
+    lines.append(f"    iget-object v0, p0, {class_desc}->mCtx:Landroid/app/Activity;")
+    lines.append("    if-eqz v0, :ahnali_async_try_fail")
+    lines.append(f"    iget-object v1, p0, {class_desc}->mUrl:Ljava/lang/String;")
+    lines.append("    if-eqz v1, :ahnali_async_try_fail")
+    lines.append(
+        "    invoke-static {v0, v1}, Lcom/ahnali/runtime/HttpHelper;->httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I"
+    )
+    lines.append("    move-result v2")
+    lines.append(f"    iget-object v3, p0, {class_desc}->mFallback:Ljava/lang/String;")
+    lines.append(
+        "    invoke-static {v0, v1, v3}, Lcom/ahnali/runtime/HttpHelper;->httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+    )
+    lines.append("    move-result-object v4")
+    lines.append(
+        "    invoke-static {v0, v1}, Lcom/ahnali/runtime/HttpHelper;->httpGetError(Landroid/app/Activity;Ljava/lang/String;)I"
+    )
+    lines.append("    move-result v5")
+    lines.append("    const/16 v3, 0xc8")
+    lines.append("    if-ne v2, v3, :ahnali_async_fail_branch")
+    lines.append(f"    iget-object v3, p0, {class_desc}->mOnSuccess:Ljava/lang/Runnable;")
+    lines.append("    if-eqz v3, :ahnali_async_return")
+    lines.append("    invoke-virtual {v0, v3}, Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V")
+    lines.append("    goto :ahnali_async_return")
+    lines.append("    :ahnali_async_fail_branch")
+    lines.append(f"    iget-object v3, p0, {class_desc}->mOnFailure:Ljava/lang/Runnable;")
+    lines.append("    if-eqz v3, :ahnali_async_return")
+    lines.append("    invoke-virtual {v0, v3}, Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V")
+    lines.append("    goto :ahnali_async_return")
+    lines.append("    :ahnali_async_try_end")
+    lines.append(
+        "    .catch Ljava/lang/Exception; {:ahnali_async_try_start .. :ahnali_async_try_end} :ahnali_async_catch"
+    )
+    lines.append("    :ahnali_async_try_fail")
+    lines.append(f"    iget-object v0, p0, {class_desc}->mCtx:Landroid/app/Activity;")
+    lines.append("    if-eqz v0, :ahnali_async_return")
+    lines.append(f"    iget-object v1, p0, {class_desc}->mOnFailure:Ljava/lang/Runnable;")
+    lines.append("    if-eqz v1, :ahnali_async_return")
+    lines.append("    invoke-virtual {v0, v1}, Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V")
+    lines.append("    goto :ahnali_async_return")
+    lines.append("    :ahnali_async_catch")
+    lines.append(f"    iget-object v0, p0, {class_desc}->mCtx:Landroid/app/Activity;")
+    lines.append("    if-eqz v0, :ahnali_async_return")
+    lines.append(f"    iget-object v1, p0, {class_desc}->mOnFailure:Ljava/lang/Runnable;")
+    lines.append("    if-eqz v1, :ahnali_async_return")
+    lines.append("    invoke-virtual {v0, v1}, Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V")
+    lines.append("    :ahnali_async_return")
+    lines.append("    return-void")
+    lines.append(".end method")
+    return "\n".join(lines)
+
+
 def emit_event_listener_smali(
     class_desc: str,
     target_desc: str,
@@ -529,6 +636,14 @@ def emit_event_listener_smali(
             class_desc=class_desc,
             item_layout_res=item_layout_res,
         )
+    if kind == "ui_runnable_click":
+        return emit_ui_runnable_click_smali(
+            class_desc=class_desc,
+            target_desc=target_desc,
+            target_method=target_method,
+        )
+    if kind == "http_route_async_worker":
+        return emit_http_route_async_worker_smali(class_desc=class_desc)
 
     lines = []
 

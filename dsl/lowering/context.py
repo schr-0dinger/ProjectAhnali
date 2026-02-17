@@ -39,6 +39,7 @@ from dsl.ast import (
     _StmtHttpGetError,
     _StmtHttpGetJsonField,
     _StmtHttpGetJsonFieldError,
+    _StmtHttpGetRouteAsync,
     _StmtHttpGetRetry,
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
@@ -2781,6 +2782,8 @@ class _PythonicContext:
             return self._compile_http_get_error_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRoute):
             return self._compile_http_get_route_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetRouteAsync):
+            return self._compile_http_get_route_async_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRetry):
             return self._compile_http_get_retry_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetJsonField):
@@ -5693,6 +5696,107 @@ class _PythonicContext:
                         owner=owner,
                     )
                 ],
+            ),
+        ]
+
+    def _compile_http_get_route_async_stmt(self, stmt):
+        if getattr(self, "_current_event_kind", None) != "click":
+            raise RuntimeError(
+                "http_get_route_async is only supported inside @on_click handlers. "
+                "Fix: move http_get_route_async(...) into an @on_click(...) handler."
+            )
+        known_targets = getattr(self, "_click_event_targets", set())
+        for target_id, role in (
+            (stmt.success_target_id, "success_target_id"),
+            (stmt.failure_target_id, "failure_target_id"),
+        ):
+            if target_id not in known_targets:
+                raise RuntimeError(
+                    f"http_get_route_async argument '{role}' references unknown on_click target '{target_id}'. "
+                    f"Fix: add @on_click('{target_id}') handler in the same activity."
+                )
+
+        binding = self._require_helper_capability(
+            api_name="http_get_route_async",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        owner = getattr(self, "_handler_owner_desc", "LTestHandlers;")
+        success_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{stmt.success_target_id};"
+        failure_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{stmt.failure_target_id};"
+        worker_desc = "Lcom/ahnali/preview/AhnaliHttpRouteAsyncWorker;"
+
+        self._queue_support_class(
+            success_runnable_desc,
+            f"onClick_{stmt.success_target_id}",
+            owner,
+            "ui_runnable_click",
+        )
+        self._queue_support_class(
+            failure_runnable_desc,
+            f"onClick_{stmt.failure_target_id}",
+            owner,
+            "ui_runnable_click",
+        )
+        self._queue_support_class(
+            worker_desc,
+            "",
+            owner,
+            "http_route_async_worker",
+        )
+
+        success_tmp = self._next_tmp("http_route_async_success")
+        failure_tmp = self._next_tmp("http_route_async_failure")
+        worker_tmp = self._next_tmp("http_route_async_worker")
+        result_tmp = self._next_tmp("http_route_async_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                success_tmp,
+                new(
+                    success_runnable_desc,
+                    args=[var("view")],
+                    arg_types=["Landroid/view/View;"],
+                ),
+            ),
+            assign(
+                failure_tmp,
+                new(
+                    failure_runnable_desc,
+                    args=[var("view")],
+                    arg_types=["Landroid/view/View;"],
+                ),
+            ),
+            assign(
+                worker_tmp,
+                new(
+                    worker_desc,
+                    args=[
+                        var("ctx"),
+                        const(str(stmt.url)),
+                        const(str(stmt.default_value)),
+                        var(success_tmp),
+                        var(failure_tmp),
+                    ],
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/Runnable;",
+                        "Ljava/lang/Runnable;",
+                    ],
+                ),
+            ),
+            assign(
+                result_tmp,
+                call(
+                    "startAsync",
+                    args=[var(worker_tmp)],
+                    return_type="I",
+                    arg_types=["Ljava/lang/Runnable;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
             ),
         ]
 

@@ -15,10 +15,11 @@ In scope:
 - `ProgramIR.support_classes` entry schema used by toolchain emission
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
-- Track C Wave 2 capability helper ABI: networking fetch/response/retry helpers
+- Track C Wave 2 capability helper ABI: networking fetch/response/routing/retry/typed-JSON helpers
+- Track C Wave 3 capability helper ABI (initial slice): async route dispatch helper + runnable support classes
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/retry helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -111,7 +112,7 @@ Where:
 - `target_method`: static method name on `target_desc`  
   For `list_adapter`, this is the decimal/string form of layout resource id.
 - `target_desc`: class descriptor containing static callback method
-- `kind`: one of `click`, `change`, `slider_change`, `radiogroup_change`, `text_change`, `item_selected`, `focus_change`, `menu_item_selected`, `list_adapter`
+- `kind`: one of `click`, `change`, `slider_change`, `radiogroup_change`, `text_change`, `item_selected`, `focus_change`, `menu_item_selected`, `list_adapter`, `ui_runnable_click`, `http_route_async_worker`
 
 Compatibility note:
 - Toolchain currently accepts legacy tuple lengths (2/3 entries), but 4-entry form is the stable ABI form for v1.
@@ -181,6 +182,7 @@ Deprecation policy:
     - `httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `startAsync(Ljava/lang/Runnable;)I`
   - Return semantics:
     - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
     - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
@@ -206,6 +208,12 @@ Deprecation policy:
       - Success condition: `httpGetError(...) == 0`
       - Retry policy: total attempts = `max(0, retries) + 1`
       - Backoff policy: fixed sleep `max(0, backoff_ms)` between failed attempts (no jitter)
+    - `startAsync`: starts a background thread for a provided `Runnable`.
+      - Returns `1` when thread dispatch succeeds
+      - Returns `0` for null runnable or caught exception during dispatch
+  - Async route support classes:
+    - `ui_runnable_click`: Runnable proxy that captures `View` and invokes static click handler on `target_desc`.
+    - `http_route_async_worker`: Runnable worker that evaluates `httpGetStatus/httpGet/httpGetError` in background and posts success/failure runnable callbacks via `Activity.runOnUiThread(...)`.
 
 ## 9) Conformance References
 
@@ -213,6 +221,8 @@ Current behavior is enforced by tests including:
 - `tests/test_runtime_abi_v1.py`
 - `tests/test_capabilities.py`
 - `tests/test_track_c_wave2_http_get.py`
+- `tests/test_track_c_wave2_visible_flow.py`
+- `tests/test_track_c_wave3_async_route.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`

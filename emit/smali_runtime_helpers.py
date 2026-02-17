@@ -379,6 +379,26 @@ def _emit_http_get_json_field_method() -> list[str]:
     ]
 
 
+def _emit_http_start_async_method() -> list[str]:
+    return [
+        ".method public static startAsync(Ljava/lang/Runnable;)I",
+        "    .locals 2",
+        "    if-eqz p0, :ahnali_http_async_fail",
+        "    :ahnali_http_async_try_start",
+        "    new-instance v0, Ljava/lang/Thread;",
+        "    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V",
+        "    invoke-virtual {v0}, Ljava/lang/Thread;->start()V",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_http_async_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_async_try_start .. :ahnali_http_async_try_end} :ahnali_http_async_fail",
+        "    :ahnali_http_async_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_storage_put_string_method() -> list[str]:
     return [
         ".method public static putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -561,6 +581,8 @@ def emit_capability_helper_smali(
         lines.extend(_emit_http_get_json_field_error_method())
         lines.append("")
         lines.extend(_emit_http_get_json_field_method())
+        lines.append("")
+        lines.extend(_emit_http_start_async_method())
         return "\n".join(lines)
 
     if (

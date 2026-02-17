@@ -3,7 +3,7 @@
 Status: Closed for Wave 1  
 Date: 2026-02-17
 
-This flow demonstrates one screen that uses all Wave 1 capability helpers together:
+This flow demonstrates one screen that uses the core Wave 1 capability helpers together:
 - `URLLauncher` via `open_url(...)`
 - `Connectivity` via `check_connectivity()`
 - `Storage` via `storage_put(...)`, `storage_get(...)`, `storage_remove(...)`

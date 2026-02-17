@@ -245,11 +245,12 @@ Implemented:
 - ✅ Runtime helper ABI v1 contract document (`runtime_abi_v1.md`)
 - ✅ Capability-to-runtime mapping contract (`docs/capability_runtime_mapping_v1.md`)
 - ✅ Capability/runtime ABI guard tests (`tests/test_runtime_abi_v1.py`, `tests/test_capabilities.py`)
-- ✅ Track C Wave 1 closed: `URLLauncher` + `Connectivity` + `Storage` helper-call bindings + emitted runtime helper classes (`Lcom/ahnali/runtime/UrlLauncherHelper;`, `Lcom/ahnali/runtime/ConnectivityHelper;`, `Lcom/ahnali/runtime/StorageHelper;` with put/get/remove primitives) + integrated visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
-- ✅ Track C Wave 2 completed: `Networking` helper-call binding via `Lcom/ahnali/runtime/HttpHelper;` with response/retry surface `httpGet(...)`, `httpGetStatus(...)`, `httpGetError(...)`, `httpGetRetry(...)` + DSL `http_get(...)`, `http_get_status(...)`, `http_get_error(...)`, `http_get_retry(...)`, `http_get_route(...)` + conformance tests (`tests/test_track_c_wave2_http_get.py`)
+- ✅ Track C Wave 1 closed: `URLLauncher` + `Connectivity` + `Storage` helper-call bindings + emitted runtime helper classes (`Lcom/ahnali/runtime/UrlLauncherHelper;`, `Lcom/ahnali/runtime/ConnectivityHelper;`, `Lcom/ahnali/runtime/StorageHelper;` with put/get/remove/exists/clear primitives) + integrated visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
+- ✅ Track C Wave 2 completed: `Networking` helper-call binding via `Lcom/ahnali/runtime/HttpHelper;` with response/routing/retry/typed-JSON surface `httpGet(...)`, `httpGetStatus(...)`, `httpGetError(...)`, `httpGetRetry(...)`, `httpGetJsonField(...)`, `httpGetJsonFieldError(...)` + DSL `http_get(...)`, `http_get_status(...)`, `http_get_error(...)`, `http_get_retry(...)`, `http_get_route(...)`, `http_get_json_field(...)`, `http_get_json_field_error(...)` + conformance tests (`tests/test_track_c_wave2_http_get.py`) + visible integration flow coverage (`tests/test_track_c_wave2_visible_flow.py`)
+- ✅ Track C Wave 3 started: async route dispatch primitive (`http_get_route_async(...)`) with background worker + UI-thread callback runnable support classes + conformance tests (`tests/test_track_c_wave3_async_route.py`)
 
 Pending:
-- ⚠️ Remaining capability runtime helper-call implementations (Track C: broader network/storage wave)
+- ⚠️ Remaining capability runtime helper-call implementations (Track C Wave 3+): expand async networking beyond route dispatch (cancellation/progress), and add additional capability modules beyond current network/storage helpers
 
 ---
 
@@ -1732,6 +1733,9 @@ never as core behavior.
 - ✅ Capability module ABI (v1 helper/mapping contract)
 - ✅ Navigation engine
 - ✅ State storage
+- ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
+- ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
+- ✅ Wave 1 and Wave 2 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests

@@ -160,6 +160,41 @@ def test_runtime_abi_list_adapter_contract_shape():
     assert "Landroid/view/View;->getTag()Ljava/lang/Object;" in smali
 
 
+def test_runtime_abi_ui_runnable_click_contract_shape():
+    smali = emit_event_listener_smali(
+        class_desc="Lcom/ahnali/preview/AhnaliUiRunnable_demo;",
+        target_desc="LTarget;",
+        target_method="onClick_demo",
+        listener_kind="ui_runnable_click",
+    )
+
+    assert ".super Ljava/lang/Object;" in smali
+    assert ".implements Ljava/lang/Runnable;" in smali
+    assert ".field private final mView:Landroid/view/View;" in smali
+    assert ".method public constructor <init>(Landroid/view/View;)V" in smali
+    assert ".method public run()V" in smali
+    assert "invoke-static {v0}, LTarget;->onClick_demo(Landroid/view/View;)V" in smali
+
+
+def test_runtime_abi_http_route_async_worker_contract_shape():
+    smali = emit_event_listener_smali(
+        class_desc="Lcom/ahnali/preview/AhnaliHttpRouteAsyncWorker;",
+        target_desc="LTarget;",
+        target_method="unused",
+        listener_kind="http_route_async_worker",
+    )
+
+    assert ".super Ljava/lang/Object;" in smali
+    assert ".implements Ljava/lang/Runnable;" in smali
+    assert ".field private final mCtx:Landroid/app/Activity;" in smali
+    assert ".field private final mOnSuccess:Ljava/lang/Runnable;" in smali
+    assert ".field private final mOnFailure:Ljava/lang/Runnable;" in smali
+    assert ".method public constructor <init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;)V" in smali
+    assert ".method public run()V" in smali
+    assert "Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V" in smali
+    assert "Lcom/ahnali/runtime/HttpHelper;->httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I" in smali
+
+
 @on_click("inc")
 def _inc():
     count += 1

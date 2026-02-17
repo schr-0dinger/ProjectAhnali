@@ -209,6 +209,14 @@ class _StmtHttpGetRoute:
         self.default_value = default_value
 
 
+class _StmtHttpGetRouteAsync:
+    def __init__(self, url, success_target_id, failure_target_id, default_value):
+        self.url = url
+        self.success_target_id = success_target_id
+        self.failure_target_id = failure_target_id
+        self.default_value = default_value
+
+
 class _StmtHttpGetRetry:
     def __init__(self, url, retries, backoff_ms, default_value):
         self.url = url
