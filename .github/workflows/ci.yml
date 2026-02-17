@@ -27,6 +27,9 @@ jobs:
       - name: Check runtime ABI snapshot
         run: PYTHONPATH=. python tools/runtime_abi_snapshot.py --check --out cfg/runtime_abi_snapshot_v1.json
 
+      - name: Check v1 scope matrix
+        run: PYTHONPATH=. python tools/v1_scope_matrix.py --check --masterplan Masterplan_All_In_One.md --matrix cfg/v1_scope_matrix.yaml
+
       - name: Run test suite
         run: PYTHONPATH=. pytest -q -rs
 

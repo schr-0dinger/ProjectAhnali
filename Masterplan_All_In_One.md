@@ -61,9 +61,9 @@ Hybrid rollout status:
 
 ---
 
-## 3) Code Reality Snapshot (As of 2026-02-16)
+## 3) Code Reality Snapshot (As of 2026-02-17)
 
-- ✅ Test suite reality: `269 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
+- ✅ Test suite reality: `397 passed` (`PYTHONPATH=. pytest -q -rs`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -303,6 +303,7 @@ Integration and smoke:
 - ✅ Committed size baseline + strict size threshold caps (`cfg/benchmark_baseline.json`, `cfg/benchmark_thresholds.json`)
 - ✅ CI smali jar launcher fallback for jars without `Main-Class` manifest (classpath main-class retry)
 - ✅ Cold-start gate uses committed benchmark baseline reference (`cfg/benchmark_baseline.json`)
+- ✅ v1 scope matrix gate for full-scope release tracking (`cfg/v1_scope_matrix.yaml`, `tools/v1_scope_matrix.py`, `.github/workflows/ci.yml`)
 
 Policy note:
 - Cold-start PR-gate rollout remains intentionally deferred; manual gate is the enforced path for now.
@@ -804,7 +805,8 @@ Phase status:
 4. ✅ Complete Phase 6 accessibility surface (`important_for_accessibility`, alias coverage, tests).
 5. ✅ Execute Phase 7 elevation/shadow surface (`setElevation`, text shadow, pressed-elevation state animator).
 6. ⚠️ Begin Hybrid Phase 1 (NDK/JNI skeleton, capability-scoped entrypoints).
-7. ⚠️ Continue API modularization (`dsl/api.py` split into domain modules) while preserving compatibility.
+7. ⚠️ Continue API modularization (`dsl/api.py` split into domain modules) while preserving compatibility.  
+   Started: domain scaffolding modules added under `dsl/api_domains/` with compatibility imports.
 
 ---
 

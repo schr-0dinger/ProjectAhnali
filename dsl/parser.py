@@ -2,6 +2,7 @@ import ast
 import inspect
 import textwrap
 
+from .parser_dispatch import EXPR_FN_BY_DOMAIN, STATEMENT_FN_BY_DOMAIN
 from .ast import (
     _ExprBinary,
     _ExprBoolOp,
@@ -110,26 +111,7 @@ def _parse_stmt(stmt):
         call = stmt.value
         if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):
             fn = call.func.id
-            if fn in (
-                "animate",
-                "Animate",
-                "fade_in",
-                "FadeIn",
-                "fade_out",
-                "FadeOut",
-                "rotate",
-                "Rotate",
-                "scale",
-                "Scale",
-                "translate",
-                "Translate",
-                "animate_elevation",
-                "AnimateElevation",
-                "sequence",
-                "Sequence",
-                "parallel",
-                "Parallel",
-            ):
+            if fn in STATEMENT_FN_BY_DOMAIN["motion"]:
                 return _parse_animation_call(call)
             if fn in ("toast", "Toast"):
                 args = [_parse_expr(a) for a in call.args]
@@ -179,7 +161,11 @@ def _parse_stmt(stmt):
                 if target is None:
                     raise RuntimeError("Navigate target must be a constant string")
                 return _StmtNavigate(target)
-            if fn in ("open_url", "OpenUrl", "launch_url", "LaunchUrl", "url_launcher", "URLLauncher"):
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"open_url", "OpenUrl", "launch_url", "LaunchUrl", "url_launcher", "URLLauncher"}
+                )
+            ):
                 args = [_parse_expr(a) for a in call.args]
                 if len(args) != 1:
                     raise RuntimeError('open_url expects exactly 1 string argument. Usage: open_url("https://...")')
@@ -187,36 +173,43 @@ def _parse_stmt(stmt):
                     raise RuntimeError("open_url argument 'url' must be a constant string")
                 return _StmtOpenUrl(args[0].value)
             if fn in (
-                "check_connectivity",
-                "CheckConnectivity",
-                "connectivity_check",
-                "ConnectivityCheck",
-                "is_connected",
-                "IsConnected",
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {
+                        "check_connectivity",
+                        "CheckConnectivity",
+                        "connectivity_check",
+                        "ConnectivityCheck",
+                        "is_connected",
+                        "IsConnected",
+                    }
+                )
             ):
                 if call.args:
                     raise RuntimeError("check_connectivity expects no arguments. Usage: check_connectivity()")
                 return _StmtCheckConnectivity()
             if fn in (
-                "check_location",
-                "CheckLocation",
-                "check_location_enabled",
-                "CheckLocationEnabled",
-                "location_check",
-                "LocationCheck",
-                "location_enabled",
-                "LocationEnabled",
-                "is_location_enabled",
-                "IsLocationEnabled",
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {
+                        "check_location",
+                        "CheckLocation",
+                        "check_location_enabled",
+                        "CheckLocationEnabled",
+                        "location_check",
+                        "LocationCheck",
+                        "location_enabled",
+                        "LocationEnabled",
+                        "is_location_enabled",
+                        "IsLocationEnabled",
+                    }
+                )
             ):
                 if call.args:
                     raise RuntimeError("check_location expects no arguments. Usage: check_location()")
                 return _StmtCheckLocation()
             if fn in (
-                "check_permission",
-                "CheckPermission",
-                "permission_check",
-                "PermissionCheck",
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"check_permission", "CheckPermission", "permission_check", "PermissionCheck"}
+                )
             ):
                 args = [_parse_expr(a) for a in call.args]
                 if len(args) != 1:
@@ -559,7 +552,11 @@ def _parse_stmt(stmt):
                 if call.args:
                     raise RuntimeError("storage_clear expects no arguments. Usage: storage_clear()")
                 return _StmtStorageClear()
-            if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"request_permissions", "request_permission", "RequestPermissions", "RequestPermission"}
+                )
+            ):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions
                 return _StmtRequestPermissions(perms, request_code=request_code)
@@ -619,10 +616,9 @@ def _parse_expr(node):
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         if node.func.id in (
-            "permission_granted",
-            "PermissionGranted",
-            "has_permission",
-            "HasPermission",
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"permission_granted", "PermissionGranted", "has_permission", "HasPermission"}
+            )
         ):
             args = [_parse_expr(a) for a in node.args]
             if len(args) != 1:
@@ -633,16 +629,20 @@ def _parse_expr(node):
                 raise RuntimeError("permission_granted argument 'permission' must be a constant string")
             return _ExprPermissionGranted(args[0].value)
         if node.func.id in (
-            "location_enabled",
-            "LocationEnabled",
-            "is_location_enabled",
-            "IsLocationEnabled",
-            "check_location",
-            "CheckLocation",
-            "check_location_enabled",
-            "CheckLocationEnabled",
-            "location_check",
-            "LocationCheck",
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {
+                    "location_enabled",
+                    "LocationEnabled",
+                    "is_location_enabled",
+                    "IsLocationEnabled",
+                    "check_location",
+                    "CheckLocation",
+                    "check_location_enabled",
+                    "CheckLocationEnabled",
+                    "location_check",
+                    "LocationCheck",
+                }
+            )
         ):
             if node.args:
                 raise RuntimeError("location_enabled expects no arguments. Usage: location_enabled()")

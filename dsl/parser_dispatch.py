@@ -1,0 +1,88 @@
+"""
+Parser dispatch aliases grouped by domain.
+
+These tables keep handler parser aliases centralized so new API additions
+do not silently grow ad-hoc tuple checks across the parser.
+"""
+
+STATEMENT_FN_BY_DOMAIN = {
+    "motion": {
+        "animate",
+        "Animate",
+        "fade_in",
+        "FadeIn",
+        "fade_out",
+        "FadeOut",
+        "rotate",
+        "Rotate",
+        "scale",
+        "Scale",
+        "translate",
+        "Translate",
+        "animate_elevation",
+        "AnimateElevation",
+        "sequence",
+        "Sequence",
+        "parallel",
+        "Parallel",
+    },
+    "navigation": {
+        "navigate",
+        "Navigate",
+        "back",
+        "Back",
+        "replace",
+        "Replace",
+    },
+    "capabilities": {
+        "open_url",
+        "OpenUrl",
+        "launch_url",
+        "LaunchUrl",
+        "url_launcher",
+        "URLLauncher",
+        "check_connectivity",
+        "CheckConnectivity",
+        "connectivity_check",
+        "ConnectivityCheck",
+        "is_connected",
+        "IsConnected",
+        "check_location",
+        "CheckLocation",
+        "check_location_enabled",
+        "CheckLocationEnabled",
+        "location_check",
+        "LocationCheck",
+        "location_enabled",
+        "LocationEnabled",
+        "is_location_enabled",
+        "IsLocationEnabled",
+        "check_permission",
+        "CheckPermission",
+        "permission_check",
+        "PermissionCheck",
+        "request_permissions",
+        "request_permission",
+        "RequestPermissions",
+        "RequestPermission",
+    },
+}
+
+EXPR_FN_BY_DOMAIN = {
+    "capabilities": {
+        "permission_granted",
+        "PermissionGranted",
+        "has_permission",
+        "HasPermission",
+        "location_enabled",
+        "LocationEnabled",
+        "is_location_enabled",
+        "IsLocationEnabled",
+        "check_location",
+        "CheckLocation",
+        "check_location_enabled",
+        "CheckLocationEnabled",
+        "location_check",
+        "LocationCheck",
+    }
+}

@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `391 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `397 passed` (`PYTHONPATH=. pytest -q -rs`)
 
 ## DSL Surface (Current)
 
@@ -186,6 +186,7 @@ Constraints:
 3) Track C Wave 7 complete: permissions helper-call surface + visible deterministic flow (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave7_visible_flow.py`)
 4) Start Track C Wave 8 next capability slice (same end-to-end pattern: DSL + lowering + helper + tests + visible flow)
 5) Start Track D first tranche: deterministic optimization passes with test/benchmark gates (see `docs/Ahnali_Optimization_Backlog.md`)
+6) Program 0 launched for full-scope v1: machine-readable scope matrix + CI policy gate (`cfg/v1_scope_matrix.yaml`, `tools/v1_scope_matrix.py`, `.github/workflows/ci.yml`)
 
 ## Completion Roadmap (Current)
 
