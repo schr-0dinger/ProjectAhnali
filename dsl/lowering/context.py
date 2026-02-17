@@ -28,6 +28,8 @@ from dsl.ast import (
     _ExprHttpGet,
     _ExprLocationEnabled,
     _ExprPermissionGranted,
+    _ExprStateBackendGet,
+    _ExprStateBackendExists,
     _ExprStorageGet,
     _ExprStorageExists,
     _ExprSymbol,
@@ -71,6 +73,11 @@ from dsl.ast import (
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
+    _StmtStateBackendClear,
+    _StmtStateBackendExists,
+    _StmtStateBackendGet,
+    _StmtStateBackendPut,
+    _StmtStateBackendRemove,
     _StmtLog,
     _StmtNavigate,
     _StmtWhile,
@@ -174,6 +181,91 @@ from dsl.widgets import (
     _UIView,
 )
 from dsl.lowering.attr_registry import ATTR_METHODS
+
+
+_STATE_BACKEND_METHODS = {
+    "datastore": {
+        "put": "dataStorePutString",
+        "get": "dataStoreGetString",
+        "remove": "dataStoreRemove",
+        "exists": "dataStoreExists",
+        "clear": "dataStoreClear",
+    },
+    "file": {
+        "put": "fileWriteString",
+        "get": "fileReadString",
+        "remove": "fileRemove",
+        "exists": "fileExists",
+        "clear": "fileClear",
+    },
+    "sqlite": {
+        "put": "sqlitePutString",
+        "get": "sqliteGetString",
+        "remove": "sqliteRemove",
+        "exists": "sqliteExists",
+        "clear": "sqliteClear",
+    },
+    "room": {
+        "put": "roomPutString",
+        "get": "roomGetString",
+        "remove": "roomRemove",
+        "exists": "roomExists",
+        "clear": "roomClear",
+    },
+    "encrypted": {
+        "put": "encryptedPutString",
+        "get": "encryptedGetString",
+        "remove": "encryptedRemove",
+        "exists": "encryptedExists",
+        "clear": "encryptedClear",
+    },
+}
+
+_STATE_BACKEND_API_NAMES = {
+    "datastore": {
+        "put": "datastore_put",
+        "get": "datastore_get",
+        "remove": "datastore_remove",
+        "exists": "datastore_exists",
+        "clear": "datastore_clear",
+    },
+    "file": {
+        "put": "file_write",
+        "get": "file_read",
+        "remove": "file_remove",
+        "exists": "file_exists",
+        "clear": "file_clear",
+    },
+    "sqlite": {
+        "put": "sqlite_put",
+        "get": "sqlite_get",
+        "remove": "sqlite_remove",
+        "exists": "sqlite_exists",
+        "clear": "sqlite_clear",
+    },
+    "room": {
+        "put": "room_put",
+        "get": "room_get",
+        "remove": "room_remove",
+        "exists": "room_exists",
+        "clear": "room_clear",
+    },
+    "encrypted": {
+        "put": "encrypted_storage_put",
+        "get": "encrypted_storage_get",
+        "remove": "encrypted_storage_remove",
+        "exists": "encrypted_storage_exists",
+        "clear": "encrypted_storage_clear",
+    },
+}
+
+_LIFECYCLE_KIND_TO_METHOD = {
+    "start": "onStart",
+    "resume": "onResume",
+    "pause": "onPause",
+    "stop": "onStop",
+    "destroy": "onDestroy",
+}
 
 
 class _PythonicContext:
@@ -1438,7 +1530,7 @@ class _PythonicContext:
             static_set(field_name, desc, var(item_id)),
         ]
 
-    def build_program(self, event_specs, resources=None):
+    def build_program(self, event_specs, resources=None, lifecycle_specs=None):
         body = []
         fields = []
         methods = []
@@ -2110,6 +2202,25 @@ class _PythonicContext:
 
         for name, params, param_types, hbody in handler_methods:
             methods.append(event_handler(name, hbody, params=params, param_types=param_types))
+
+        for lifecycle_spec in lifecycle_specs or []:
+            lifecycle_kind = str(getattr(lifecycle_spec, "lifecycle_kind", "")).strip().lower()
+            method_name = _LIFECYCLE_KIND_TO_METHOD.get(lifecycle_kind)
+            if method_name is None:
+                raise RuntimeError(f"Unsupported lifecycle hook kind: {lifecycle_kind!r}")
+            try:
+                self._current_event_kind = f"lifecycle_{lifecycle_kind}"
+                lifecycle_body = self._compile_stmts(getattr(lifecycle_spec, "stmts", None) or [])
+            finally:
+                self._current_event_kind = None
+            methods.append(
+                event_handler(
+                    method_name,
+                    lifecycle_body,
+                    params=[],
+                    param_types=[],
+                )
+            )
 
         return program(
             methods,
@@ -3732,6 +3843,16 @@ class _PythonicContext:
             return self._compile_storage_remove_stmt(stmt)
         if isinstance(stmt, _StmtStorageClear):
             return self._compile_storage_clear_stmt(stmt)
+        if isinstance(stmt, _StmtStateBackendPut):
+            return self._compile_state_backend_put_stmt(stmt)
+        if isinstance(stmt, _StmtStateBackendGet):
+            return self._compile_state_backend_get_stmt(stmt)
+        if isinstance(stmt, _StmtStateBackendExists):
+            return self._compile_state_backend_exists_stmt(stmt)
+        if isinstance(stmt, _StmtStateBackendRemove):
+            return self._compile_state_backend_remove_stmt(stmt)
+        if isinstance(stmt, _StmtStateBackendClear):
+            return self._compile_state_backend_clear_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -6037,6 +6158,20 @@ class _PythonicContext:
                 key=stmt.value.key,
                 tmp_prefix="storage_exists_result",
             )
+        elif isinstance(stmt.value, _ExprStateBackendGet):
+            prefix, result = self._compile_state_backend_get_call(
+                backend=stmt.value.backend,
+                key=stmt.value.key,
+                default_value=stmt.value.default_value,
+                tmp_prefix=f"{stmt.value.backend}_get_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprStateBackendExists):
+            prefix, result = self._compile_state_backend_exists_call(
+                backend=stmt.value.backend,
+                key=stmt.value.key,
+                tmp_prefix=f"{stmt.value.backend}_exists_result",
+            )
         elif isinstance(stmt.value, _ExprLocationEnabled):
             prefix, result = self._compile_location_enabled_call(
                 tmp_prefix="location_enabled_result",
@@ -6146,7 +6281,10 @@ class _PythonicContext:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
-                "storage_exists(...), location_enabled(...), permission_granted(...), http_get_status(...), http_get_error(...), "
+                "storage_exists(...), datastore_get(...), file_read(...), sqlite_get(...), room_get(...), "
+                "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
+                "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
+                "http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
                 "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
                 "http_async_status(...), http_async_body(...), http_async_json_field(...), "
@@ -6205,6 +6343,17 @@ class _PythonicContext:
             return self._compile_permission_granted_call(
                 permission=expr.permission,
                 tmp_prefix="permission_granted_expr",
+            )
+        if isinstance(expr, _ExprStorageExists):
+            return self._compile_storage_exists_call(
+                key=expr.key,
+                tmp_prefix="storage_exists_expr",
+            )
+        if isinstance(expr, _ExprStateBackendExists):
+            return self._compile_state_backend_exists_call(
+                backend=expr.backend,
+                key=expr.key,
+                tmp_prefix=f"{expr.backend}_exists_expr",
             )
         if isinstance(expr, _ExprSymbol):
             if expr.name in self.state_spec.values:
@@ -6375,6 +6524,17 @@ class _PythonicContext:
                 *left_stmts,
                 *right_stmts,
             ], compare(expr.op, left_expr, right_expr)
+        if isinstance(
+            expr,
+            (
+                _ExprStorageExists,
+                _ExprStateBackendExists,
+                _ExprLocationEnabled,
+                _ExprPermissionGranted,
+            ),
+        ):
+            prefix, value = self._compile_int_expr(expr)
+            return prefix, compare("!=", value, const(0))
         if isinstance(expr, _ExprSymbol):
             if expr.name in self.state_spec.values:
                 accessor = self._state_accessor(expr.name)
@@ -7704,6 +7864,166 @@ class _PythonicContext:
                 result_tmp,
                 call(
                     "clear",
+                    args=[var("ctx")],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _state_backend_contract(self, *, backend: str, op: str):
+        backend_key = str(backend or "").strip().lower()
+        methods = _STATE_BACKEND_METHODS.get(backend_key)
+        api_names = _STATE_BACKEND_API_NAMES.get(backend_key)
+        if methods is None or api_names is None:
+            raise RuntimeError(f"Unsupported state backend '{backend}'.")
+        method_name = methods.get(op)
+        api_name = api_names.get(op)
+        if not method_name or not api_name:
+            raise RuntimeError(f"Unsupported state backend operation '{backend_key}:{op}'.")
+        return api_name, method_name
+
+    def _compile_state_backend_put_stmt(self, stmt):
+        api_name, method_name = self._state_backend_contract(backend=stmt.backend, op="put")
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(f"{stmt.backend}_put_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    method_name,
+                    args=[var("ctx"), const(str(stmt.key)), const(str(stmt.value))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_state_backend_get_call(self, *, backend: str, key: str, default_value: str, tmp_prefix: str):
+        api_name, method_name = self._state_backend_contract(backend=backend, op="get")
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    method_name,
+                    args=[var("ctx"), const(str(key)), const(str(default_value))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_state_backend_get_stmt(self, stmt):
+        out, _ = self._compile_state_backend_get_call(
+            backend=stmt.backend,
+            key=stmt.key,
+            default_value=stmt.default_value,
+            tmp_prefix=f"{stmt.backend}_get_ignored",
+        )
+        return out
+
+    def _compile_state_backend_exists_call(self, *, backend: str, key: str, tmp_prefix: str):
+        api_name, method_name = self._state_backend_contract(backend=backend, op="exists")
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    method_name,
+                    args=[var("ctx"), const(str(key))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_state_backend_exists_stmt(self, stmt):
+        out, _ = self._compile_state_backend_exists_call(
+            backend=stmt.backend,
+            key=stmt.key,
+            tmp_prefix=f"{stmt.backend}_exists_ignored",
+        )
+        return out
+
+    def _compile_state_backend_remove_stmt(self, stmt):
+        api_name, method_name = self._state_backend_contract(backend=stmt.backend, op="remove")
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(f"{stmt.backend}_remove_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    method_name,
+                    args=[var("ctx"), const(str(stmt.key))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_state_backend_clear_stmt(self, stmt):
+        api_name, method_name = self._state_backend_contract(backend=stmt.backend, op="clear")
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(f"{stmt.backend}_clear_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    method_name,
                     args=[var("ctx")],
                     return_type="I",
                     arg_types=[

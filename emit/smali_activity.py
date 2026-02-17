@@ -392,6 +392,7 @@ def emit_activity_wrapper_smali(
     emit_system_back_bridge: bool = False,
     back_sig: str = "()I",
     back_method: str = "onSystemBack",
+    lifecycle_bridges: list[str] | tuple[str, ...] | None = None,
 ):
     lines = []
 
@@ -415,6 +416,18 @@ def emit_activity_wrapper_smali(
         lines.append(f"    invoke-static {{p0}}, {target_desc}->main{target_sig}")
     lines.append("    return-void")
     lines.append(".end method")
+    lifecycle_set = {str(name).strip() for name in (lifecycle_bridges or []) if str(name).strip()}
+    for method_name in ("onStart", "onResume", "onPause", "onStop", "onDestroy"):
+        if method_name not in lifecycle_set:
+            continue
+        lines.append("")
+        lines.append(f".method protected {method_name}()V")
+        lines.append("    .locals 0")
+        lines.append(f"    invoke-super {{p0}}, Landroid/app/Activity;->{method_name}()V")
+        lines.append(f"    invoke-static {{}}, {target_desc}->{method_name}()V")
+        lines.append("    return-void")
+        lines.append(".end method")
+
     if emit_system_back_bridge:
         lines.append("")
         lines.append(".method public onBackPressed()V")

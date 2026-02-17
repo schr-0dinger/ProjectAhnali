@@ -507,19 +507,19 @@ Global state:
 - ✅ branching
 
 Persistence:
-- ⚠️ SharedPreferences
-- ❌ DataStore
-- ❌ file storage (internal/external)
-- ❌ SQLite
-- ❌ Room (if statically supported)
-- ❌ encrypted storage
+- ✅ SharedPreferences
+- ✅ DataStore
+- ✅ file storage (internal/external)
+- ✅ SQLite
+- ✅ Room (if statically supported)
+- ✅ encrypted storage
 
 Lifecycle state:
-- ❌ on_start
-- ❌ on_resume
-- ❌ on_pause
-- ❌ on_stop
-- ❌ on_destroy
+- ✅ on_start
+- ✅ on_resume
+- ✅ on_pause
+- ✅ on_stop
+- ✅ on_destroy
 
 ### 8.5 Capability APIs (Platform Services)
 

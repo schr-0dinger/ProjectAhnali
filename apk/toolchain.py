@@ -500,6 +500,7 @@ def emit_build_dir(
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
     emit_system_back_bridge: bool = False,
+    wrapper_lifecycle_bridges: list[str] | tuple[str, ...] | None = None,
     emit_support_classes: bool = False,
     click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
@@ -529,6 +530,7 @@ def emit_build_dir(
                 target_desc=wrapper_target_desc,
                 target_sig=wrapper_target_sig,
                 emit_system_back_bridge=emit_system_back_bridge,
+                lifecycle_bridges=wrapper_lifecycle_bridges,
             ),
             encoding="utf-8",
         )
@@ -559,6 +561,7 @@ def emit_build_dir_from_program(
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "()V",
     emit_system_back_bridge: bool | None = None,
+    wrapper_lifecycle_bridges: list[str] | tuple[str, ...] | None = None,
     emit_support_classes: bool = False,
     click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
@@ -568,6 +571,14 @@ def emit_build_dir_from_program(
     if emit_system_back_bridge is None:
         methods = getattr(frontend_ir, "methods", []) or []
         emit_system_back_bridge = any(getattr(m, "name", "") == "onSystemBack" for m in methods)
+    if wrapper_lifecycle_bridges is None:
+        methods = getattr(frontend_ir, "methods", []) or []
+        method_names = {str(getattr(m, "name", "")) for m in methods}
+        wrapper_lifecycle_bridges = [
+            name
+            for name in ("onStart", "onResume", "onPause", "onStop", "onDestroy")
+            if name in method_names
+        ]
     build_dir = emit_build_dir(
         smali_text,
         out_dir=out_dir,
@@ -577,6 +588,7 @@ def emit_build_dir_from_program(
         wrapper_target_desc=wrapper_target_desc,
         wrapper_target_sig=wrapper_target_sig,
         emit_system_back_bridge=bool(emit_system_back_bridge),
+        wrapper_lifecycle_bridges=wrapper_lifecycle_bridges,
         emit_support_classes=emit_support_classes or bool(getattr(frontend_ir, "support_classes", [])),
         click_listener_class_desc=click_listener_class_desc,
         click_listener_target_method=click_listener_target_method,

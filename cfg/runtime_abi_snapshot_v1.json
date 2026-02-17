@@ -102,7 +102,12 @@
       "methods": [
         "<init>()V",
         "onBackPressed()V",
-        "onCreate(Landroid/os/Bundle;)V"
+        "onCreate(Landroid/os/Bundle;)V",
+        "onDestroy()V",
+        "onPause()V",
+        "onResume()V",
+        "onStart()V",
+        "onStop()V"
       ],
       "source": "wrapper"
     },
@@ -183,10 +188,35 @@
       "methods": [
         "<init>()V",
         "clear(Landroid/app/Activity;)I",
+        "dataStoreClear(Landroid/app/Activity;)I",
+        "dataStoreExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "dataStoreGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "dataStorePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "dataStoreRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "encryptedClear(Landroid/app/Activity;)I",
+        "encryptedExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "encryptedGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "encryptedPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "encryptedRemove(Landroid/app/Activity;Ljava/lang/String;)I",
         "exists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "fileClear(Landroid/app/Activity;)I",
+        "fileExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "fileReadString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "fileRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "fileWriteString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
         "getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
         "putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
-        "remove(Landroid/app/Activity;Ljava/lang/String;)I"
+        "remove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "roomClear(Landroid/app/Activity;)I",
+        "roomExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "roomGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "roomPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "roomRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "sqliteClear(Landroid/app/Activity;)I",
+        "sqliteExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "sqliteGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "sqlitePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "sqliteRemove(Landroid/app/Activity;Ljava/lang/String;)I"
       ],
       "source": "capability:Storage"
     },

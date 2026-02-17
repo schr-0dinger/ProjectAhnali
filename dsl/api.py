@@ -340,6 +340,12 @@ class _OnClickSpec(_EventSpec):
         self.button_id = button_id
 
 
+class _LifecycleSpec:
+    def __init__(self, lifecycle_kind, stmts):
+        self.lifecycle_kind = lifecycle_kind
+        self.stmts = stmts
+
+
 class _ActivitySpec:
     def __init__(self, name, *parts):
         self.name = name
@@ -600,6 +606,36 @@ def on_menu_item_selected(view_id, stmts=None):
 
 def on_focus_change(view_id, stmts=None):
     return _make_event_spec("focus_change", view_id, stmts)
+
+
+def _make_lifecycle_spec(lifecycle_kind, stmts=None):
+    if stmts is None:
+        def decorator(fn):
+            return _LifecycleSpec(lifecycle_kind, _parse_handler_ast(fn))
+        return decorator
+    if callable(stmts):
+        return _LifecycleSpec(lifecycle_kind, _parse_handler_ast(stmts))
+    return _LifecycleSpec(lifecycle_kind, stmts)
+
+
+def on_start(stmts=None):
+    return _make_lifecycle_spec("start", stmts)
+
+
+def on_resume(stmts=None):
+    return _make_lifecycle_spec("resume", stmts)
+
+
+def on_pause(stmts=None):
+    return _make_lifecycle_spec("pause", stmts)
+
+
+def on_stop(stmts=None):
+    return _make_lifecycle_spec("stop", stmts)
+
+
+def on_destroy(stmts=None):
+    return _make_lifecycle_spec("destroy", stmts)
 
 
 _INLINE_EVENT_ATTRS = (
@@ -1249,6 +1285,126 @@ def clear_storage():
     return storage_clear()
 
 
+def datastore_put(key: str, value: str):
+    return _StmtStateBackendPut("datastore", str(key), str(value))
+
+
+def datastore_get(key: str, default_value: str = ""):
+    return _ExprStateBackendGet("datastore", str(key), str(default_value))
+
+
+def datastore_exists(key: str):
+    return _ExprStateBackendExists("datastore", str(key))
+
+
+def datastore_remove(key: str):
+    return _StmtStateBackendRemove("datastore", str(key))
+
+
+def datastore_clear():
+    return _StmtStateBackendClear("datastore")
+
+
+def file_write(path: str, value: str):
+    return _StmtStateBackendPut("file", str(path), str(value))
+
+
+def file_read(path: str, default_value: str = ""):
+    return _ExprStateBackendGet("file", str(path), str(default_value))
+
+
+def file_exists(path: str):
+    return _ExprStateBackendExists("file", str(path))
+
+
+def file_remove(path: str):
+    return _StmtStateBackendRemove("file", str(path))
+
+
+def file_clear():
+    return _StmtStateBackendClear("file")
+
+
+def sqlite_put(key: str, value: str):
+    return _StmtStateBackendPut("sqlite", str(key), str(value))
+
+
+def sqlite_get(key: str, default_value: str = ""):
+    return _ExprStateBackendGet("sqlite", str(key), str(default_value))
+
+
+def sqlite_exists(key: str):
+    return _ExprStateBackendExists("sqlite", str(key))
+
+
+def sqlite_remove(key: str):
+    return _StmtStateBackendRemove("sqlite", str(key))
+
+
+def sqlite_clear():
+    return _StmtStateBackendClear("sqlite")
+
+
+def room_put(key: str, value: str):
+    return _StmtStateBackendPut("room", str(key), str(value))
+
+
+def room_get(key: str, default_value: str = ""):
+    return _ExprStateBackendGet("room", str(key), str(default_value))
+
+
+def room_exists(key: str):
+    return _ExprStateBackendExists("room", str(key))
+
+
+def room_remove(key: str):
+    return _StmtStateBackendRemove("room", str(key))
+
+
+def room_clear():
+    return _StmtStateBackendClear("room")
+
+
+def encrypted_storage_put(key: str, value: str):
+    return _StmtStateBackendPut("encrypted", str(key), str(value))
+
+
+def encrypted_storage_get(key: str, default_value: str = ""):
+    return _ExprStateBackendGet("encrypted", str(key), str(default_value))
+
+
+def encrypted_storage_exists(key: str):
+    return _ExprStateBackendExists("encrypted", str(key))
+
+
+def encrypted_storage_remove(key: str):
+    return _StmtStateBackendRemove("encrypted", str(key))
+
+
+def encrypted_storage_clear():
+    return _StmtStateBackendClear("encrypted")
+
+
+def secure_storage_put(key: str, value: str):
+    return encrypted_storage_put(key, value)
+
+
+def secure_storage_get(key: str, default_value: str = ""):
+    return encrypted_storage_get(key, default_value)
+
+
+def secure_storage_exists(key: str):
+    return encrypted_storage_exists(key)
+
+
+def secure_storage_remove(key: str):
+    return encrypted_storage_remove(key)
+
+
+def secure_storage_clear():
+    return encrypted_storage_clear()
+
+
 def style(**kwargs):
     return style_widget(**kwargs)
 
@@ -1308,6 +1464,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     ui_spec = None
     theme_spec = Theme()
     event_specs = []
+    lifecycle_specs = []
     resources = {"app_name": "AhnaliPreview"}
     label_locked = False
 
@@ -1316,6 +1473,8 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             for subpart in part:
                 if isinstance(subpart, _EventSpec):
                     event_specs.append(subpart)
+                elif isinstance(subpart, _LifecycleSpec):
+                    lifecycle_specs.append(subpart)
             continue
         if isinstance(part, State):
             state_spec = part
@@ -1335,6 +1494,8 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             theme_spec = part
         elif isinstance(part, _EventSpec):
             event_specs.append(part)
+        elif isinstance(part, _LifecycleSpec):
+            lifecycle_specs.append(part)
 
     state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
@@ -1386,7 +1547,11 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         ctx._lint_warnings.append(
             "State values are global across Screens. Screen-local state is not yet supported."
         )
-    program = ctx.build_program(event_specs, resources=resources)
+    program = ctx.build_program(
+        event_specs,
+        resources=resources,
+        lifecycle_specs=lifecycle_specs,
+    )
     inferred_required_artifacts, inferred_jar_allowlist = registry.collect_deps(ui_spec.items, event_specs)
     explicit_required_artifacts = set(app_cfg.deps or [])
     if app_cfg.auto_deps:

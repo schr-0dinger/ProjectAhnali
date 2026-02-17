@@ -37,6 +37,17 @@ def test_runtime_abi_snapshot_includes_permission_helper_surface():
     assert "isGranted(Landroid/app/Activity;Ljava/lang/String;)I" in permission_methods
 
 
+def test_runtime_abi_snapshot_includes_program5_storage_backend_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    storage_methods = classes["Lcom/ahnali/runtime/StorageHelper;"]
+    assert "dataStorePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in storage_methods
+    assert "fileWriteString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in storage_methods
+    assert "sqlitePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in storage_methods
+    assert "roomPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in storage_methods
+    assert "encryptedPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in storage_methods
+
+
 def test_runtime_abi_snapshot_check_detects_drift(tmp_path):
     baseline = build_runtime_abi_snapshot()
     snapshot_path = tmp_path / "runtime_abi_snapshot_v1.json"

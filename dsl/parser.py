@@ -25,6 +25,8 @@ from .ast import (
     _ExprHttpGet,
     _ExprLocationEnabled,
     _ExprPermissionGranted,
+    _ExprStateBackendGet,
+    _ExprStateBackendExists,
     _ExprStorageGet,
     _ExprStorageExists,
     _ExprSymbol,
@@ -61,6 +63,11 @@ from .ast import (
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
+    _StmtStateBackendClear,
+    _StmtStateBackendExists,
+    _StmtStateBackendGet,
+    _StmtStateBackendPut,
+    _StmtStateBackendRemove,
     _StmtAnimate,
     _StmtAnimationGroup,
     _StmtLog,
@@ -89,6 +96,163 @@ def _parse_handler_ast(fn):
     return out
 
 
+_STATE_BACKEND_STMT_ALIASES = {
+    "datastore_put": ("datastore", "put", "datastore_put"),
+    "DatastorePut": ("datastore", "put", "datastore_put"),
+    "datastore_get": ("datastore", "get", "datastore_get"),
+    "DatastoreGet": ("datastore", "get", "datastore_get"),
+    "datastore_exists": ("datastore", "exists", "datastore_exists"),
+    "DatastoreExists": ("datastore", "exists", "datastore_exists"),
+    "datastore_remove": ("datastore", "remove", "datastore_remove"),
+    "DatastoreRemove": ("datastore", "remove", "datastore_remove"),
+    "datastore_clear": ("datastore", "clear", "datastore_clear"),
+    "DatastoreClear": ("datastore", "clear", "datastore_clear"),
+    "file_write": ("file", "put", "file_write"),
+    "FileWrite": ("file", "put", "file_write"),
+    "file_read": ("file", "get", "file_read"),
+    "FileRead": ("file", "get", "file_read"),
+    "file_exists": ("file", "exists", "file_exists"),
+    "FileExists": ("file", "exists", "file_exists"),
+    "file_remove": ("file", "remove", "file_remove"),
+    "FileRemove": ("file", "remove", "file_remove"),
+    "file_clear": ("file", "clear", "file_clear"),
+    "FileClear": ("file", "clear", "file_clear"),
+    "sqlite_put": ("sqlite", "put", "sqlite_put"),
+    "SqlitePut": ("sqlite", "put", "sqlite_put"),
+    "sqlite_get": ("sqlite", "get", "sqlite_get"),
+    "SqliteGet": ("sqlite", "get", "sqlite_get"),
+    "sqlite_exists": ("sqlite", "exists", "sqlite_exists"),
+    "SqliteExists": ("sqlite", "exists", "sqlite_exists"),
+    "sqlite_remove": ("sqlite", "remove", "sqlite_remove"),
+    "SqliteRemove": ("sqlite", "remove", "sqlite_remove"),
+    "sqlite_clear": ("sqlite", "clear", "sqlite_clear"),
+    "SqliteClear": ("sqlite", "clear", "sqlite_clear"),
+    "room_put": ("room", "put", "room_put"),
+    "RoomPut": ("room", "put", "room_put"),
+    "room_get": ("room", "get", "room_get"),
+    "RoomGet": ("room", "get", "room_get"),
+    "room_exists": ("room", "exists", "room_exists"),
+    "RoomExists": ("room", "exists", "room_exists"),
+    "room_remove": ("room", "remove", "room_remove"),
+    "RoomRemove": ("room", "remove", "room_remove"),
+    "room_clear": ("room", "clear", "room_clear"),
+    "RoomClear": ("room", "clear", "room_clear"),
+    "encrypted_storage_put": ("encrypted", "put", "encrypted_storage_put"),
+    "EncryptedStoragePut": ("encrypted", "put", "encrypted_storage_put"),
+    "encrypted_storage_get": ("encrypted", "get", "encrypted_storage_get"),
+    "EncryptedStorageGet": ("encrypted", "get", "encrypted_storage_get"),
+    "encrypted_storage_exists": ("encrypted", "exists", "encrypted_storage_exists"),
+    "EncryptedStorageExists": ("encrypted", "exists", "encrypted_storage_exists"),
+    "encrypted_storage_remove": ("encrypted", "remove", "encrypted_storage_remove"),
+    "EncryptedStorageRemove": ("encrypted", "remove", "encrypted_storage_remove"),
+    "encrypted_storage_clear": ("encrypted", "clear", "encrypted_storage_clear"),
+    "EncryptedStorageClear": ("encrypted", "clear", "encrypted_storage_clear"),
+    "secure_storage_put": ("encrypted", "put", "secure_storage_put"),
+    "SecureStoragePut": ("encrypted", "put", "secure_storage_put"),
+    "secure_storage_get": ("encrypted", "get", "secure_storage_get"),
+    "SecureStorageGet": ("encrypted", "get", "secure_storage_get"),
+    "secure_storage_exists": ("encrypted", "exists", "secure_storage_exists"),
+    "SecureStorageExists": ("encrypted", "exists", "secure_storage_exists"),
+    "secure_storage_remove": ("encrypted", "remove", "secure_storage_remove"),
+    "SecureStorageRemove": ("encrypted", "remove", "secure_storage_remove"),
+    "secure_storage_clear": ("encrypted", "clear", "secure_storage_clear"),
+    "SecureStorageClear": ("encrypted", "clear", "secure_storage_clear"),
+}
+
+_STATE_BACKEND_EXPR_ALIASES = {
+    fn: (backend, op, canonical)
+    for fn, (backend, op, canonical) in _STATE_BACKEND_STMT_ALIASES.items()
+    if op in {"get", "exists"}
+}
+
+
+def _const_string_arg(expr, *, fn_name: str, arg_name: str):
+    if not isinstance(expr, _ExprConst) or not isinstance(expr.value, str):
+        raise RuntimeError(f"{fn_name} argument '{arg_name}' must be a constant string")
+    return expr.value
+
+
+def _parse_state_backend_stmt_call(fn, call):
+    spec = _STATE_BACKEND_STMT_ALIASES.get(fn)
+    if spec is None:
+        return None
+    backend, op, canonical_name = spec
+    args = [_parse_expr(a) for a in call.args]
+    if op == "put":
+        if len(args) != 2:
+            raise RuntimeError(
+                f'{canonical_name} expects exactly 2 string arguments. Usage: {canonical_name}("key", "value")'
+            )
+        return _StmtStateBackendPut(
+            backend,
+            _const_string_arg(args[0], fn_name=canonical_name, arg_name="key"),
+            _const_string_arg(args[1], fn_name=canonical_name, arg_name="value"),
+        )
+    if op == "get":
+        if not (1 <= len(args) <= 2):
+            raise RuntimeError(
+                f'{canonical_name} expects 1 or 2 string arguments. Usage: {canonical_name}("key", "default")'
+            )
+        default_expr = args[1] if len(args) > 1 else _ExprConst("")
+        return _StmtStateBackendGet(
+            backend,
+            _const_string_arg(args[0], fn_name=canonical_name, arg_name="key"),
+            _const_string_arg(default_expr, fn_name=canonical_name, arg_name="default_value"),
+        )
+    if op == "exists":
+        if len(args) != 1:
+            raise RuntimeError(
+                f'{canonical_name} expects exactly 1 string argument. Usage: {canonical_name}("key")'
+            )
+        return _StmtStateBackendExists(
+            backend,
+            _const_string_arg(args[0], fn_name=canonical_name, arg_name="key"),
+        )
+    if op == "remove":
+        if len(args) != 1:
+            raise RuntimeError(
+                f'{canonical_name} expects exactly 1 string argument. Usage: {canonical_name}("key")'
+            )
+        return _StmtStateBackendRemove(
+            backend,
+            _const_string_arg(args[0], fn_name=canonical_name, arg_name="key"),
+        )
+    if op == "clear":
+        if args:
+            raise RuntimeError(f"{canonical_name} expects no arguments. Usage: {canonical_name}()")
+        return _StmtStateBackendClear(backend)
+    raise RuntimeError(f"Unsupported state backend op '{op}'")
+
+
+def _parse_state_backend_expr_call(fn, node):
+    spec = _STATE_BACKEND_EXPR_ALIASES.get(fn)
+    if spec is None:
+        return None
+    backend, op, canonical_name = spec
+    args = [_parse_expr(a) for a in node.args]
+    if op == "get":
+        if not (1 <= len(args) <= 2):
+            raise RuntimeError(
+                f'{canonical_name} expects 1 or 2 string arguments. Usage: {canonical_name}("key", "default")'
+            )
+        default_expr = args[1] if len(args) > 1 else _ExprConst("")
+        return _ExprStateBackendGet(
+            backend,
+            _const_string_arg(args[0], fn_name=canonical_name, arg_name="key"),
+            _const_string_arg(default_expr, fn_name=canonical_name, arg_name="default_value"),
+        )
+    if op == "exists":
+        if len(args) != 1:
+            raise RuntimeError(
+                f'{canonical_name} expects exactly 1 string argument. Usage: {canonical_name}("key")'
+            )
+        return _ExprStateBackendExists(
+            backend,
+            _const_string_arg(args[0], fn_name=canonical_name, arg_name="key"),
+        )
+    raise RuntimeError(f"Unsupported state backend expr op '{op}'")
+
+
 def _parse_stmt(stmt):
     if isinstance(stmt, ast.AugAssign):
         if not isinstance(stmt.target, ast.Name):
@@ -113,6 +277,9 @@ def _parse_stmt(stmt):
             fn = call.func.id
             if fn in STATEMENT_FN_BY_DOMAIN["motion"]:
                 return _parse_animation_call(call)
+            parsed_state_backend = _parse_state_backend_stmt_call(fn, call)
+            if parsed_state_backend is not None:
+                return parsed_state_backend
             if fn in ("toast", "Toast"):
                 args = [_parse_expr(a) for a in call.args]
                 if not args:
@@ -625,6 +792,9 @@ def _parse_expr(node):
         rhs = _parse_expr(node.right)
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        parsed_state_backend_expr = _parse_state_backend_expr_call(node.func.id, node)
+        if parsed_state_backend_expr is not None:
+            return parsed_state_backend_expr
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {"permission_granted", "PermissionGranted", "has_permission", "HasPermission"}

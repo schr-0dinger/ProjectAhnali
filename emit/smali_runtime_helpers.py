@@ -1298,18 +1298,26 @@ def _emit_http_get_async_json_array_length_method() -> list[str]:
     ]
 
 
-def _emit_storage_put_string_method() -> list[str]:
+def _sanitize_method_tag(method_name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(method_name).strip().lower())
+
+
+def _emit_pref_put_string_method(method_name: str, pref_name: str) -> list[str]:
+    tag = _sanitize_method_tag(method_name)
+    fail = f":ahnali_{tag}_fail"
+    try_start = f":ahnali_{tag}_try_start"
+    try_end = f":ahnali_{tag}_try_end"
     return [
-        ".method public static putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        f".method public static {method_name}(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
         "    .locals 4",
-        "    if-eqz p0, :ahnali_storage_fail",
-        "    if-eqz p1, :ahnali_storage_fail",
-        "    :ahnali_storage_try_start",
-        '    const-string v0, "ahnali_storage"',
+        f"    if-eqz p0, {fail}",
+        f"    if-eqz p1, {fail}",
+        f"    {try_start}",
+        f'    const-string v0, "{pref_name}"',
         "    const/4 v1, 0x0",
         "    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
         "    move-result-object v2",
-        "    if-eqz v2, :ahnali_storage_fail",
+        f"    if-eqz v2, {fail}",
         "    invoke-interface {v2}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;",
         "    move-result-object v3",
         "    invoke-interface {v3, p1, p2}, Landroid/content/SharedPreferences$Editor;->putString(Ljava/lang/String;Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;",
@@ -1317,51 +1325,59 @@ def _emit_storage_put_string_method() -> list[str]:
         "    invoke-interface {v3}, Landroid/content/SharedPreferences$Editor;->apply()V",
         "    const/4 v0, 0x1",
         "    return v0",
-        "    :ahnali_storage_try_end",
-        "    .catch Ljava/lang/Exception; {:ahnali_storage_try_start .. :ahnali_storage_try_end} :ahnali_storage_fail",
-        "    :ahnali_storage_fail",
+        f"    {try_end}",
+        f"    .catch Ljava/lang/Exception; {{{try_start} .. {try_end}}} {fail}",
+        f"    {fail}",
         "    const/4 v0, 0x0",
         "    return v0",
         ".end method",
     ]
 
 
-def _emit_storage_get_string_method() -> list[str]:
+def _emit_pref_get_string_method(method_name: str, pref_name: str) -> list[str]:
+    tag = _sanitize_method_tag(method_name)
+    fallback = f":ahnali_{tag}_fallback"
+    try_start = f":ahnali_{tag}_try_start"
+    try_end = f":ahnali_{tag}_try_end"
     return [
-        ".method public static getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        f".method public static {method_name}(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
         "    .locals 4",
-        "    if-eqz p0, :ahnali_storage_get_fallback",
-        "    if-eqz p1, :ahnali_storage_get_fallback",
-        "    :ahnali_storage_get_try_start",
-        '    const-string v0, "ahnali_storage"',
+        f"    if-eqz p0, {fallback}",
+        f"    if-eqz p1, {fallback}",
+        f"    {try_start}",
+        f'    const-string v0, "{pref_name}"',
         "    const/4 v1, 0x0",
         "    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
         "    move-result-object v2",
-        "    if-eqz v2, :ahnali_storage_get_fallback",
+        f"    if-eqz v2, {fallback}",
         "    invoke-interface {v2, p1, p2}, Landroid/content/SharedPreferences;->getString(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
         "    move-result-object v3",
-        "    if-eqz v3, :ahnali_storage_get_fallback",
+        f"    if-eqz v3, {fallback}",
         "    return-object v3",
-        "    :ahnali_storage_get_try_end",
-        "    .catch Ljava/lang/Exception; {:ahnali_storage_get_try_start .. :ahnali_storage_get_try_end} :ahnali_storage_get_fallback",
-        "    :ahnali_storage_get_fallback",
+        f"    {try_end}",
+        f"    .catch Ljava/lang/Exception; {{{try_start} .. {try_end}}} {fallback}",
+        f"    {fallback}",
         "    return-object p2",
         ".end method",
     ]
 
 
-def _emit_storage_remove_method() -> list[str]:
+def _emit_pref_remove_method(method_name: str, pref_name: str) -> list[str]:
+    tag = _sanitize_method_tag(method_name)
+    fail = f":ahnali_{tag}_fail"
+    try_start = f":ahnali_{tag}_try_start"
+    try_end = f":ahnali_{tag}_try_end"
     return [
-        ".method public static remove(Landroid/app/Activity;Ljava/lang/String;)I",
+        f".method public static {method_name}(Landroid/app/Activity;Ljava/lang/String;)I",
         "    .locals 4",
-        "    if-eqz p0, :ahnali_storage_remove_fail",
-        "    if-eqz p1, :ahnali_storage_remove_fail",
-        "    :ahnali_storage_remove_try_start",
-        '    const-string v0, "ahnali_storage"',
+        f"    if-eqz p0, {fail}",
+        f"    if-eqz p1, {fail}",
+        f"    {try_start}",
+        f'    const-string v0, "{pref_name}"',
         "    const/4 v1, 0x0",
         "    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
         "    move-result-object v2",
-        "    if-eqz v2, :ahnali_storage_remove_fail",
+        f"    if-eqz v2, {fail}",
         "    invoke-interface {v2}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;",
         "    move-result-object v3",
         "    invoke-interface {v3, p1}, Landroid/content/SharedPreferences$Editor;->remove(Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;",
@@ -1369,50 +1385,58 @@ def _emit_storage_remove_method() -> list[str]:
         "    invoke-interface {v3}, Landroid/content/SharedPreferences$Editor;->apply()V",
         "    const/4 v0, 0x1",
         "    return v0",
-        "    :ahnali_storage_remove_try_end",
-        "    .catch Ljava/lang/Exception; {:ahnali_storage_remove_try_start .. :ahnali_storage_remove_try_end} :ahnali_storage_remove_fail",
-        "    :ahnali_storage_remove_fail",
+        f"    {try_end}",
+        f"    .catch Ljava/lang/Exception; {{{try_start} .. {try_end}}} {fail}",
+        f"    {fail}",
         "    const/4 v0, 0x0",
         "    return v0",
         ".end method",
     ]
 
 
-def _emit_storage_exists_method() -> list[str]:
+def _emit_pref_exists_method(method_name: str, pref_name: str) -> list[str]:
+    tag = _sanitize_method_tag(method_name)
+    fail = f":ahnali_{tag}_fail"
+    try_start = f":ahnali_{tag}_try_start"
+    try_end = f":ahnali_{tag}_try_end"
     return [
-        ".method public static exists(Landroid/app/Activity;Ljava/lang/String;)I",
+        f".method public static {method_name}(Landroid/app/Activity;Ljava/lang/String;)I",
         "    .locals 4",
-        "    if-eqz p0, :ahnali_storage_exists_fail",
-        "    if-eqz p1, :ahnali_storage_exists_fail",
-        "    :ahnali_storage_exists_try_start",
-        '    const-string v0, "ahnali_storage"',
+        f"    if-eqz p0, {fail}",
+        f"    if-eqz p1, {fail}",
+        f"    {try_start}",
+        f'    const-string v0, "{pref_name}"',
         "    const/4 v1, 0x0",
         "    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
         "    move-result-object v2",
-        "    if-eqz v2, :ahnali_storage_exists_fail",
+        f"    if-eqz v2, {fail}",
         "    invoke-interface {v2, p1}, Landroid/content/SharedPreferences;->contains(Ljava/lang/String;)Z",
         "    move-result v3",
         "    return v3",
-        "    :ahnali_storage_exists_try_end",
-        "    .catch Ljava/lang/Exception; {:ahnali_storage_exists_try_start .. :ahnali_storage_exists_try_end} :ahnali_storage_exists_fail",
-        "    :ahnali_storage_exists_fail",
+        f"    {try_end}",
+        f"    .catch Ljava/lang/Exception; {{{try_start} .. {try_end}}} {fail}",
+        f"    {fail}",
         "    const/4 v0, 0x0",
         "    return v0",
         ".end method",
     ]
 
 
-def _emit_storage_clear_method() -> list[str]:
+def _emit_pref_clear_method(method_name: str, pref_name: str) -> list[str]:
+    tag = _sanitize_method_tag(method_name)
+    fail = f":ahnali_{tag}_fail"
+    try_start = f":ahnali_{tag}_try_start"
+    try_end = f":ahnali_{tag}_try_end"
     return [
-        ".method public static clear(Landroid/app/Activity;)I",
+        f".method public static {method_name}(Landroid/app/Activity;)I",
         "    .locals 4",
-        "    if-eqz p0, :ahnali_storage_clear_fail",
-        "    :ahnali_storage_clear_try_start",
-        '    const-string v0, "ahnali_storage"',
+        f"    if-eqz p0, {fail}",
+        f"    {try_start}",
+        f'    const-string v0, "{pref_name}"',
         "    const/4 v1, 0x0",
         "    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;",
         "    move-result-object v2",
-        "    if-eqz v2, :ahnali_storage_clear_fail",
+        f"    if-eqz v2, {fail}",
         "    invoke-interface {v2}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;",
         "    move-result-object v3",
         "    invoke-interface {v3}, Landroid/content/SharedPreferences$Editor;->clear()Landroid/content/SharedPreferences$Editor;",
@@ -1420,13 +1444,33 @@ def _emit_storage_clear_method() -> list[str]:
         "    invoke-interface {v3}, Landroid/content/SharedPreferences$Editor;->apply()V",
         "    const/4 v0, 0x1",
         "    return v0",
-        "    :ahnali_storage_clear_try_end",
-        "    .catch Ljava/lang/Exception; {:ahnali_storage_clear_try_start .. :ahnali_storage_clear_try_end} :ahnali_storage_clear_fail",
-        "    :ahnali_storage_clear_fail",
+        f"    {try_end}",
+        f"    .catch Ljava/lang/Exception; {{{try_start} .. {try_end}}} {fail}",
+        f"    {fail}",
         "    const/4 v0, 0x0",
         "    return v0",
         ".end method",
     ]
+
+
+def _emit_storage_put_string_method() -> list[str]:
+    return _emit_pref_put_string_method("putString", "ahnali_storage")
+
+
+def _emit_storage_get_string_method() -> list[str]:
+    return _emit_pref_get_string_method("getString", "ahnali_storage")
+
+
+def _emit_storage_remove_method() -> list[str]:
+    return _emit_pref_remove_method("remove", "ahnali_storage")
+
+
+def _emit_storage_exists_method() -> list[str]:
+    return _emit_pref_exists_method("exists", "ahnali_storage")
+
+
+def _emit_storage_clear_method() -> list[str]:
+    return _emit_pref_clear_method("clear", "ahnali_storage")
 
 
 def emit_capability_helper_smali(
@@ -1569,15 +1613,40 @@ def emit_capability_helper_smali(
         and helper_method == "putString"
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
     ):
-        lines.extend(_emit_storage_put_string_method())
-        lines.append("")
-        lines.extend(_emit_storage_get_string_method())
-        lines.append("")
-        lines.extend(_emit_storage_remove_method())
-        lines.append("")
-        lines.extend(_emit_storage_exists_method())
-        lines.append("")
-        lines.extend(_emit_storage_clear_method())
+        families = [
+            ("ahnali_storage", "putString", "getString", "remove", "exists", "clear"),
+            (
+                "ahnali_datastore",
+                "dataStorePutString",
+                "dataStoreGetString",
+                "dataStoreRemove",
+                "dataStoreExists",
+                "dataStoreClear",
+            ),
+            ("ahnali_file", "fileWriteString", "fileReadString", "fileRemove", "fileExists", "fileClear"),
+            ("ahnali_sqlite", "sqlitePutString", "sqliteGetString", "sqliteRemove", "sqliteExists", "sqliteClear"),
+            ("ahnali_room", "roomPutString", "roomGetString", "roomRemove", "roomExists", "roomClear"),
+            (
+                "ahnali_encrypted",
+                "encryptedPutString",
+                "encryptedGetString",
+                "encryptedRemove",
+                "encryptedExists",
+                "encryptedClear",
+            ),
+        ]
+        for idx, (pref, put_name, get_name, remove_name, exists_name, clear_name) in enumerate(families):
+            if idx > 0:
+                lines.append("")
+            lines.extend(_emit_pref_put_string_method(put_name, pref))
+            lines.append("")
+            lines.extend(_emit_pref_get_string_method(get_name, pref))
+            lines.append("")
+            lines.extend(_emit_pref_remove_method(remove_name, pref))
+            lines.append("")
+            lines.extend(_emit_pref_exists_method(exists_name, pref))
+            lines.append("")
+            lines.extend(_emit_pref_clear_method(clear_name, pref))
         return "\n".join(lines)
 
     locals_count = 0 if ret_desc == "V" else 2 if ret_desc in {"J", "D"} else 1

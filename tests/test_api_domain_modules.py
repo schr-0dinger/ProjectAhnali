@@ -48,7 +48,17 @@ def test_api_domain_modules_expose_legacy_compatible_symbols():
     assert interaction.on_key is legacy_api.on_key
     assert interaction.pop_to_root is legacy_api.pop_to_root
     assert interaction.clear_stack is legacy_api.clear_stack
+    assert state.on_start is legacy_api.on_start
+    assert state.on_resume is legacy_api.on_resume
+    assert state.on_pause is legacy_api.on_pause
+    assert state.on_stop is legacy_api.on_stop
+    assert state.on_destroy is legacy_api.on_destroy
     assert state.storage_put is legacy_api.storage_put
+    assert state.datastore_put is legacy_api.datastore_put
+    assert state.file_write is legacy_api.file_write
+    assert state.sqlite_put is legacy_api.sqlite_put
+    assert state.room_put is legacy_api.room_put
+    assert state.encrypted_storage_put is legacy_api.encrypted_storage_put
     assert capabilities.open_url is legacy_api.open_url
     assert motion.animate is legacy_api.animate
 

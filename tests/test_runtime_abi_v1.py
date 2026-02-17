@@ -50,6 +50,26 @@ def test_runtime_abi_wrapper_activity_arg_and_back_bridge_signature():
     assert "invoke-super {p0}, Landroid/app/Activity;->onBackPressed()V" in smali
 
 
+def test_runtime_abi_wrapper_lifecycle_bridge_signature():
+    smali = emit_activity_wrapper_smali(
+        activity_desc="Lcom/ahnali/preview/MainActivity;",
+        target_desc="LTest;",
+        target_sig="(Landroid/app/Activity;)V",
+        lifecycle_bridges=["onStart", "onResume", "onPause", "onStop", "onDestroy"],
+    )
+
+    assert ".method protected onStart()V" in smali
+    assert ".method protected onResume()V" in smali
+    assert ".method protected onPause()V" in smali
+    assert ".method protected onStop()V" in smali
+    assert ".method protected onDestroy()V" in smali
+    assert "invoke-static {}, LTest;->onStart()V" in smali
+    assert "invoke-static {}, LTest;->onResume()V" in smali
+    assert "invoke-static {}, LTest;->onPause()V" in smali
+    assert "invoke-static {}, LTest;->onStop()V" in smali
+    assert "invoke-static {}, LTest;->onDestroy()V" in smali
+
+
 @pytest.mark.parametrize(
     "kind, iface, callback_sig, invoke_sig, extra_fragments",
     [

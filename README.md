@@ -307,6 +307,9 @@ Work items:
 - ✅ Add Wave 7 visible integration flow combining permissions + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave7_visible_flow.py`)
 - ✅ Document Wave 7 permissions contract + flow (`docs/TrackC_Wave7_Permissions.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
+- ✅ Complete Program 5 state surfaces:
+  - lifecycle hooks: `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
+  - deterministic state backends: `datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_storage_*`/`secure_storage_*`
 - Continue adding capability-scoped primitives beyond networking/storage/location/permissions.
 
 Exit criteria:
@@ -425,6 +428,27 @@ Networking response contract:
 Storage introspection contract:
 - `storage_exists("key")` returns `1` when key exists, else `0`.
 - `storage_clear()` clears all app storage keys for this helper namespace and returns `1` on success, else `0`.
+
+Program 5 state backend contract:
+- DataStore:
+  - `datastore_put/get/exists/remove/clear`
+- File storage (deterministic key/value surface):
+  - `file_write/read/exists/remove/clear`
+- SQLite static-safe surface:
+  - `sqlite_put/get/exists/remove/clear`
+- Room static-safe surface:
+  - `room_put/get/exists/remove/clear`
+- Encrypted storage surface:
+  - `encrypted_storage_put/get/exists/remove/clear`
+  - aliases: `secure_storage_put/get/exists/remove/clear`
+- Deterministic behavior model:
+  - `*_put/remove/clear` return `1` on success, `0` on invalid input or caught exception.
+  - `*_get` returns stored value, else fallback argument.
+  - `*_exists` returns `1` when key exists, else `0`.
+
+Lifecycle hook contract:
+- `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy` compile to static lifecycle methods on generated target class.
+- Wrapper bridge emits corresponding Activity lifecycle methods when hooks are present and forwards to static handlers.
 
 Known limits (current networking surface):
 - Retry policy is fixed-backoff without jitter.

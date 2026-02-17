@@ -75,6 +75,19 @@ class _ExprStorageExists:
         self.key = key
 
 
+class _ExprStateBackendGet:
+    def __init__(self, backend, key, default_value):
+        self.backend = backend
+        self.key = key
+        self.default_value = default_value
+
+
+class _ExprStateBackendExists:
+    def __init__(self, backend, key):
+        self.backend = backend
+        self.key = key
+
+
 class _ExprLocationEnabled:
     def __init__(self):
         pass
@@ -269,6 +282,37 @@ class _StmtStorageExists:
 class _StmtStorageClear:
     def __init__(self):
         pass
+
+
+class _StmtStateBackendPut:
+    def __init__(self, backend, key, value):
+        self.backend = backend
+        self.key = key
+        self.value = value
+
+
+class _StmtStateBackendGet:
+    def __init__(self, backend, key, default_value):
+        self.backend = backend
+        self.key = key
+        self.default_value = default_value
+
+
+class _StmtStateBackendRemove:
+    def __init__(self, backend, key):
+        self.backend = backend
+        self.key = key
+
+
+class _StmtStateBackendExists:
+    def __init__(self, backend, key):
+        self.backend = backend
+        self.key = key
+
+
+class _StmtStateBackendClear:
+    def __init__(self, backend):
+        self.backend = backend
 
 
 class _StmtHttpGet:
@@ -490,6 +534,8 @@ def _coerce_expr(value):
             _ExprFormat,
             _ExprStorageGet,
             _ExprStorageExists,
+            _ExprStateBackendGet,
+            _ExprStateBackendExists,
             _ExprLocationEnabled,
             _ExprPermissionGranted,
             _ExprHttpGet,

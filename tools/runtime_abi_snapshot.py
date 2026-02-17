@@ -50,6 +50,7 @@ def _build_wrapper_contract() -> dict[str, object]:
         emit_system_back_bridge=True,
         back_sig="()I",
         back_method="onSystemBack",
+        lifecycle_bridges=["onStart", "onResume", "onPause", "onStop", "onDestroy"],
     )
     return _build_class_entry(smali, "wrapper")
 

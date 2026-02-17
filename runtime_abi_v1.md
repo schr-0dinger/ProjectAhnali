@@ -20,6 +20,8 @@ In scope:
 - Track C Wave 3/4 capability helper ABI: tokened async route dispatch + deterministic cancellation/progress/error/status/body helper methods + runnable support classes + timeout/retry controls + request-option and typed async JSON adapter helpers
 - Track C Wave 6 capability helper ABI: location provider enabled surface
 - Track C Wave 7 capability helper ABI: permissions granted surface
+- Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
+- Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 
 Out of scope:
 - Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions wave expansion planned separately)
@@ -72,9 +74,19 @@ Optional back bridge (enabled when `onSystemBack` exists and wrapper bridge is e
 - Must call: `invoke-static {}, <target_desc>->onSystemBack()I`
 - Return semantics: `1` means "handled" and suppresses `invoke-super ... onBackPressed()V`; `0` means "not handled" and wrapper must call `invoke-super ... onBackPressed()V`
 
+Optional lifecycle bridges (emitted when target methods exist):
+- `.method protected onStart()V` calling `invoke-static {}, <target_desc>->onStart()V`
+- `.method protected onResume()V` calling `invoke-static {}, <target_desc>->onResume()V`
+- `.method protected onPause()V` calling `invoke-static {}, <target_desc>->onPause()V`
+- `.method protected onStop()V` calling `invoke-static {}, <target_desc>->onStop()V`
+- `.method protected onDestroy()V` calling `invoke-static {}, <target_desc>->onDestroy()V`
+- Current v1 ordering is deterministic: wrapper calls `invoke-super ...` first, then static lifecycle hook.
+
 Target class ABI required by wrapper:
 - `main()V` or `main(Landroid/app/Activity;)V` (selected by configured wrapper target signature)
 - Optional `onSystemBack()I` when back bridge is enabled
+- Optional lifecycle hook methods when lifecycle bridges are enabled:
+  - `onStart()V`, `onResume()V`, `onPause()V`, `onStop()V`, `onDestroy()V`
 
 ## 4) Event Listener Helper ABI
 
@@ -197,12 +209,38 @@ Deprecation policy:
     - `remove(Landroid/app/Activity;Ljava/lang/String;)I`
     - `exists(Landroid/app/Activity;Ljava/lang/String;)I`
     - `clear(Landroid/app/Activity;)I`
+    - `dataStorePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `dataStoreGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `dataStoreRemove(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `dataStoreExists(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `dataStoreClear(Landroid/app/Activity;)I`
+    - `fileWriteString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `fileReadString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `fileRemove(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `fileExists(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `fileClear(Landroid/app/Activity;)I`
+    - `sqlitePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `sqliteGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `sqliteRemove(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `sqliteExists(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `sqliteClear(Landroid/app/Activity;)I`
+    - `roomPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `roomGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `roomRemove(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `roomExists(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `roomClear(Landroid/app/Activity;)I`
+    - `encryptedPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `encryptedGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `encryptedRemove(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `encryptedExists(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `encryptedClear(Landroid/app/Activity;)I`
   - Return semantics:
     - `putString`: `1` on successful `SharedPreferences` write; `0` on null context/key or caught exception.
     - `getString`: stored value when present; fallback argument on null context/key, missing value, or caught exception.
     - `remove`: `1` on successful `SharedPreferences` remove/apply; `0` on null context/key or caught exception.
     - `exists`: `1` when key exists in `SharedPreferences`; `0` on missing key, null context/key, or caught exception.
     - `clear`: `1` on successful `SharedPreferences` clear/apply; `0` on null context or caught exception.
+    - Program 5 backend variants (`dataStore*`, `file*`, `sqlite*`, `room*`, `encrypted*`) keep the same deterministic success/fallback semantics, scoped to backend-specific namespaces.
 - Track C Wave 6 helper-call binding:
   - Capability: `Location`
   - Helper class: `Lcom/ahnali/runtime/LocationHelper;`
@@ -334,6 +372,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave6_visible_flow.py`
 - `tests/test_track_c_wave7_permissions.py`
 - `tests/test_track_c_wave7_visible_flow.py`
+- `tests/test_program5_state_backends.py`
+- `tests/test_program5_lifecycle.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`
