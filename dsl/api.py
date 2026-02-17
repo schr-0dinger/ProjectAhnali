@@ -926,12 +926,18 @@ def http_get_route_async(
     success_target_id: str,
     failure_target_id: str,
     default_value: str = "",
+    progress_target_id: str = "",
+    retries: int = 0,
+    timeout_ms: int = 8000,
 ):
     return _StmtHttpGetRouteAsync(
         str(url),
         str(success_target_id),
         str(failure_target_id),
         str(default_value),
+        str(progress_target_id),
+        int(retries),
+        int(timeout_ms),
     )
 
 
@@ -940,20 +946,39 @@ def http_get_with_handlers_async(
     success_target_id: str,
     failure_target_id: str,
     default_value: str = "",
+    progress_target_id: str = "",
+    retries: int = 0,
+    timeout_ms: int = 8000,
 ):
-    return http_get_route_async(url, success_target_id, failure_target_id, default_value)
+    return http_get_route_async(
+        url,
+        success_target_id,
+        failure_target_id,
+        default_value,
+        progress_target_id,
+        retries,
+        timeout_ms,
+    )
 
 
-def http_async_cancel():
-    return _StmtHttpAsyncCancel()
+def http_async_cancel(token=None):
+    return _StmtHttpAsyncCancel(token)
 
 
-def http_async_progress():
-    return _ExprHttpAsyncProgress()
+def http_async_progress(token=None):
+    return _ExprHttpAsyncProgress(token)
 
 
-def http_async_error():
-    return _ExprHttpAsyncError()
+def http_async_error(token=None):
+    return _ExprHttpAsyncError(token)
+
+
+def http_async_status(token=None):
+    return _ExprHttpAsyncStatus(token)
+
+
+def http_async_body(token=None, fallback: str = ""):
+    return _ExprHttpAsyncBody(token, str(fallback))
 
 
 def storage_put(key: str, value: str):

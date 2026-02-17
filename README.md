@@ -184,7 +184,7 @@ Constraints:
 1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
 2) Track B enforcing: size benchmark strict on PR/push; cold-start benchmark strict on manual dispatch
 3) Track C Wave 2 complete: networking response/retry/routing/typed-JSON + visible capability flow coverage (`tests/test_track_c_wave2_http_get.py`, `tests/test_track_c_wave2_visible_flow.py`)
-4) Track C Wave 3 advanced: async route + cancellation/progress/error primitives landed (`tests/test_track_c_wave3_async_route.py`); continue with cancellation tokens and progress callbacks
+4) Track C Wave 3 complete: tokened async route + cancellation/progress/error/status/body + timeout/retry + visible flow coverage (`tests/test_track_c_wave3_async_route.py`, `tests/test_track_c_wave3_visible_flow.py`)
 5) Start Track D first tranche: deterministic optimization passes with test/benchmark gates (see `docs/Ahnali_Optimization_Backlog.md`)
 
 ## Completion Roadmap (Current)
@@ -226,7 +226,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 includes async route + cancellation/progress/error primitives)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -248,22 +248,26 @@ Work items:
   - `http_get_json_field(url, key, fallback)` → `httpGetJsonField(...)Ljava/lang/String;`
   - `http_get_json_field_error(url, key)` → `httpGetJsonFieldError(...)I`
 - ✅ Start Wave 3 async route primitive:
-  - `http_get_route_async(url, "success_btn", "failure_btn", fallback)` → background route worker + UI-thread callback dispatch
-- ✅ Add Wave 3 cancellation/progress/error primitives:
-  - `http_async_cancel()` → cancellation request
-  - `http_async_progress()` → deterministic progress surface (`0..100`)
-  - `http_async_error()` → deterministic async error surface
+  - `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id, retries, timeout_ms)` → tokened background route worker + UI-thread callback dispatch
+- ✅ Add Wave 3 tokened async primitives:
+  - `http_async_cancel(token)` → token-scoped cancellation request
+  - `http_async_progress(token)` → token-scoped deterministic progress surface (`0..100`)
+  - `http_async_error(token)` → token-scoped deterministic async error surface
+  - `http_async_status(token)` → token-scoped completion status surface
+  - `http_async_body(token, fallback)` → token-scoped completion body surface
+- ✅ Add Wave 3 async progress callback wiring:
+  - optional `progress_target_id` in `http_get_route_async(...)` posts UI-thread progress callbacks
+- ✅ Add Wave 3 async completion payload routing:
+  - success/failure handlers can read deterministic token-scoped `status/body/error`
+- ✅ Add Wave 3 timeout/retry controls in async worker:
+  - optional `retries` + `timeout_ms` arguments in `http_get_route_async(...)`
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - ✅ Add Wave 2 visible capability integration flow (`tests/test_track_c_wave2_visible_flow.py`)
 - ✅ Document visible Wave 2 app flow (`docs/TrackC_Wave2_Visible_Flow.md`)
-- ✅ Document Wave 3 async route initial slice (`docs/TrackC_Wave3_Async_Route.md`)
-- Next Wave 3 execution order:
-  1. Add per-request async token contract (start returns token; cancel/progress/error token-scoped).
-  2. Add progress callback wiring (`on_progress` handler target) with deterministic update cadence.
-  3. Add completion callback payload surface for async route (`status/body/error` handoff).
-  4. Add timeout and retry policy controls for async route worker with deterministic error mapping.
-  5. Close Wave 3 with one visible tokened async app flow + strict conformance tests.
+- ✅ Document Wave 3 async route contract (`docs/TrackC_Wave3_Async_Route.md`)
+- ✅ Add Wave 3 visible tokened async capability flow (`tests/test_track_c_wave3_visible_flow.py`)
+- ✅ Document Wave 3 visible tokened flow (`docs/TrackC_Wave3_Visible_Flow.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - Continue adding capability-scoped primitives beyond networking/storage.
 
@@ -272,6 +276,7 @@ Exit criteria:
 - ✅ Wave 2 networking response/retry conformance is enforced by `tests/test_track_c_wave2_http_get.py`.
 - ✅ Wave 2 visible capability integration flow conformance is enforced by `tests/test_track_c_wave2_visible_flow.py`.
 - ✅ Wave 3 async route dispatch conformance is enforced by `tests/test_track_c_wave3_async_route.py`.
+- ✅ Wave 3 visible tokened async flow conformance is enforced by `tests/test_track_c_wave3_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
@@ -341,23 +346,26 @@ Networking response contract:
   - `4` empty body
   - `5` malformed payload
   - `6` missing key (or null value)
-- `http_get_route_async(url, "success_btn", "failure_btn", fallback)` dispatches network route checks in a background thread and posts success/failure handlers to the UI thread.
-- `http_async_cancel()` requests cancellation for current async networking route worker.
-- `http_async_progress()` returns deterministic progress (`0..100`) for current async networking work.
-- `http_async_error()` returns deterministic async error code:
+- `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id="", retries=0, timeout_ms=8000)` dispatches tokened network route checks in a background thread and posts success/failure/progress handlers to the UI thread.
+- `http_async_cancel(token)` requests token-scoped cancellation for async networking work.
+- `http_async_progress(token)` returns token-scoped deterministic progress (`0..100`).
+- `http_async_error(token)` returns token-scoped deterministic async error code:
   - `0` success
   - `1` invalid input
   - `2` transport/runtime exception
   - `3` non-200 status
   - `4` empty body
   - `7` cancelled
+  - `8` stale/unknown token
+- `http_async_status(token)` returns token-scoped completion status (`-1` on stale/unknown token).
+- `http_async_body(token, fallback)` returns token-scoped completion body, else deterministic fallback.
 
 Storage introspection contract:
 - `storage_exists("key")` returns `1` when key exists, else `0`.
 - `storage_clear()` clears all app storage keys for this helper namespace and returns `1` on success, else `0`.
 
 Known limits (current networking surface):
-- Async surface currently centers on route dispatch (`http_get_route_async`) with global cancellation/progress/error state (per-request tokened cancellation/progress is not exposed yet).
+- Async route currently uses single-active-token lifecycle (new route replaces prior active token).
 - HTTP method is GET only; request headers/body customization is not exposed yet.
 - Retry policy is fixed-backoff without jitter.
 

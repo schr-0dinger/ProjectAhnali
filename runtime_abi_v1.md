@@ -16,10 +16,10 @@ In scope:
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
 - Track C Wave 2 capability helper ABI: networking fetch/response/routing/retry/typed-JSON helpers
-- Track C Wave 3 capability helper ABI (initial slice): async route dispatch + deterministic cancellation/progress/error helper methods + runnable support classes
+- Track C Wave 3 capability helper ABI: tokened async route dispatch + deterministic cancellation/progress/error/status/body helper methods + runnable support classes + timeout/retry controls
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON/async-cancel-progress helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON/tokened-async helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -179,13 +179,21 @@ Deprecation policy:
     - `httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I`
     - `httpGetError(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;`
+    - `httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I`
+    - `httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I`
     - `httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `nextAsyncToken()I`
+    - `getCurrentAsyncToken()I`
     - `startAsync(Ljava/lang/Runnable;)I`
-    - `cancelAsync()I`
-    - `getAsyncProgress()I`
-    - `getAsyncError()I`
+    - `startAsyncWithToken(ILjava/lang/Runnable;)I`
+    - `cancelAsync()I` and `cancelAsync(I)I`
+    - `getAsyncProgress()I` and `getAsyncProgress(I)I`
+    - `getAsyncError()I` and `getAsyncError(I)I`
+    - `getAsyncStatus(I)I`
+    - `getAsyncBody(ILjava/lang/String;)Ljava/lang/String;`
   - Return semantics:
     - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
     - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
@@ -211,22 +219,29 @@ Deprecation policy:
       - Success condition: `httpGetError(...) == 0`
       - Retry policy: total attempts = `max(0, retries) + 1`
       - Backoff policy: fixed sleep `max(0, backoff_ms)` between failed attempts (no jitter)
-    - `startAsync`: starts a background thread for a provided `Runnable`.
-      - Returns `1` when thread dispatch succeeds
+    - `nextAsyncToken`: allocates and returns a positive token, resets token-scoped async state.
+    - `startAsync`: allocates a token and starts a background thread for a provided `Runnable`.
+      - Returns token (`>0`) when dispatch succeeds
       - Returns `0` for null runnable or caught exception during dispatch
-    - `cancelAsync`: sets async cancel flag.
-      - Returns `1` after cancellation request is recorded
-    - `getAsyncProgress`: returns deterministic async progress state (`0..100`).
-    - `getAsyncError`: returns deterministic async error code:
+    - `startAsyncWithToken`: starts background thread for provided token/runnable pair.
+      - Returns same token on success
+      - Returns `0` for invalid token, token mismatch, null runnable, or caught exception
+    - `cancelAsync(I)`: token-scoped cancellation request.
+      - Returns `1` when token matches current active token and cancellation is recorded; else `0`.
+    - `getAsyncProgress(I)`: token-scoped deterministic progress (`0..100`); returns `0` on token mismatch.
+    - `getAsyncError(I)`: token-scoped deterministic async error code:
       - `0`: success
       - `1`: invalid input
       - `2`: transport/runtime exception
       - `3`: non-200 HTTP status
       - `4`: empty body
       - `7`: cancelled
+      - `8`: stale/unknown token
+    - `getAsyncStatus(I)`: token-scoped HTTP status surface; returns `-1` on token mismatch.
+    - `getAsyncBody(I, fallback)`: token-scoped response-body surface; returns fallback when body missing or token mismatch.
   - Async route support classes:
     - `ui_runnable_click`: Runnable proxy that captures `View` and invokes static click handler on `target_desc`.
-    - `http_route_async_worker`: Runnable worker that evaluates `httpGetStatus/httpGet/httpGetError` in background and posts success/failure runnable callbacks via `Activity.runOnUiThread(...)`.
+    - `http_route_async_worker`: Runnable worker that evaluates timeout-aware fetch/status/error in background with deterministic retry, checks token-scoped cancellation, stores token-scoped completion payload (`status/body/error`), and posts success/failure/progress runnable callbacks via `Activity.runOnUiThread(...)`.
 
 ## 9) Conformance References
 
@@ -236,6 +251,7 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave2_http_get.py`
 - `tests/test_track_c_wave2_visible_flow.py`
 - `tests/test_track_c_wave3_async_route.py`
+- `tests/test_track_c_wave3_visible_flow.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`

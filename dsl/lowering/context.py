@@ -13,10 +13,13 @@ from dsl.ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpAsyncBody,
     _ExprHttpAsyncError,
+    _ExprHttpAsyncStatus,
     _ExprHttpAsyncProgress,
     _ExprHttpGetJsonField,
     _ExprHttpGetJsonFieldError,
+    _ExprHttpGetRouteAsync,
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
@@ -39,8 +42,10 @@ from dsl.ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpAsyncBody,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncError,
+    _StmtHttpAsyncStatus,
     _StmtHttpAsyncProgress,
     _StmtHttpGetJsonField,
     _StmtHttpGetJsonFieldError,
@@ -2795,6 +2800,10 @@ class _PythonicContext:
             return self._compile_http_async_progress_stmt(stmt)
         if isinstance(stmt, _StmtHttpAsyncError):
             return self._compile_http_async_error_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncStatus):
+            return self._compile_http_async_status_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncBody):
+            return self._compile_http_async_body_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRetry):
             return self._compile_http_get_retry_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetJsonField):
@@ -4856,21 +4865,47 @@ class _PythonicContext:
                 key=stmt.value.key,
                 tmp_prefix="http_get_json_field_error_result",
             )
+        elif isinstance(stmt.value, _ExprHttpGetRouteAsync):
+            prefix, result = self._compile_http_get_route_async_call(
+                url=stmt.value.url,
+                success_target_id=stmt.value.success_target_id,
+                failure_target_id=stmt.value.failure_target_id,
+                default_value=stmt.value.default_value,
+                progress_target_id=stmt.value.progress_target_id,
+                retries=stmt.value.retries,
+                timeout_ms=stmt.value.timeout_ms,
+                tmp_prefix="http_get_route_async_result",
+            )
         elif isinstance(stmt.value, _ExprHttpAsyncProgress):
             prefix, result = self._compile_http_async_progress_call(
+                token_expr=stmt.value.token,
                 tmp_prefix="http_async_progress_result",
             )
         elif isinstance(stmt.value, _ExprHttpAsyncError):
             prefix, result = self._compile_http_async_error_call(
+                token_expr=stmt.value.token,
                 tmp_prefix="http_async_error_result",
             )
+        elif isinstance(stmt.value, _ExprHttpAsyncStatus):
+            prefix, result = self._compile_http_async_status_call(
+                token_expr=stmt.value.token,
+                tmp_prefix="http_async_status_result",
+            )
+        elif isinstance(stmt.value, _ExprHttpAsyncBody):
+            prefix, result = self._compile_http_async_body_call(
+                token_expr=stmt.value.token,
+                fallback=stmt.value.fallback,
+                tmp_prefix="http_async_body_result",
+            )
+            value_type = "Ljava/lang/String;"
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
                 "storage_exists(...), http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
-                "http_async_progress(), or http_async_error()."
+                "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
+                "http_async_status(...), or http_async_body(...)."
             )
 
         if name in self.state_spec.values:
@@ -5719,7 +5754,18 @@ class _PythonicContext:
             ),
         ]
 
-    def _compile_http_get_route_async_stmt(self, stmt):
+    def _compile_http_get_route_async_call(
+        self,
+        *,
+        url: str,
+        success_target_id: str,
+        failure_target_id: str,
+        default_value: str,
+        progress_target_id: str,
+        retries: int,
+        timeout_ms: int,
+        tmp_prefix: str,
+    ):
         if getattr(self, "_current_event_kind", None) != "click":
             raise RuntimeError(
                 "http_get_route_async is only supported inside @on_click handlers. "
@@ -5727,14 +5773,19 @@ class _PythonicContext:
             )
         known_targets = getattr(self, "_click_event_targets", set())
         for target_id, role in (
-            (stmt.success_target_id, "success_target_id"),
-            (stmt.failure_target_id, "failure_target_id"),
+            (success_target_id, "success_target_id"),
+            (failure_target_id, "failure_target_id"),
         ):
             if target_id not in known_targets:
                 raise RuntimeError(
                     f"http_get_route_async argument '{role}' references unknown on_click target '{target_id}'. "
                     f"Fix: add @on_click('{target_id}') handler in the same activity."
                 )
+        if progress_target_id and progress_target_id not in known_targets:
+            raise RuntimeError(
+                "http_get_route_async argument 'progress_target_id' references unknown on_click target "
+                f"'{progress_target_id}'. Fix: add @on_click('{progress_target_id}') handler in the same activity."
+            )
 
         binding = self._require_helper_capability(
             api_name="http_get_route_async",
@@ -5742,22 +5793,32 @@ class _PythonicContext:
             require_helper_method=False,
         )
         owner = getattr(self, "_handler_owner_desc", "LTestHandlers;")
-        success_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{stmt.success_target_id};"
-        failure_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{stmt.failure_target_id};"
+        success_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{success_target_id};"
+        failure_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{failure_target_id};"
         worker_desc = "Lcom/ahnali/preview/AhnaliHttpRouteAsyncWorker;"
 
         self._queue_support_class(
             success_runnable_desc,
-            f"onClick_{stmt.success_target_id}",
+            f"onClick_{success_target_id}",
             owner,
             "ui_runnable_click",
         )
         self._queue_support_class(
             failure_runnable_desc,
-            f"onClick_{stmt.failure_target_id}",
+            f"onClick_{failure_target_id}",
             owner,
             "ui_runnable_click",
         )
+        if progress_target_id:
+            progress_runnable_desc = f"Lcom/ahnali/preview/AhnaliUiRunnable_{progress_target_id};"
+            self._queue_support_class(
+                progress_runnable_desc,
+                f"onClick_{progress_target_id}",
+                owner,
+                "ui_runnable_click",
+            )
+        else:
+            progress_runnable_desc = ""
         self._queue_support_class(
             worker_desc,
             "",
@@ -5767,8 +5828,10 @@ class _PythonicContext:
 
         success_tmp = self._next_tmp("http_route_async_success")
         failure_tmp = self._next_tmp("http_route_async_failure")
+        progress_tmp = self._next_tmp("http_route_async_progress")
+        token_tmp = self._next_tmp("http_route_async_token")
         worker_tmp = self._next_tmp("http_route_async_worker")
-        result_tmp = self._next_tmp("http_route_async_result")
+        result_tmp = self._next_tmp(tmp_prefix)
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
             assign(
@@ -5788,15 +5851,40 @@ class _PythonicContext:
                 ),
             ),
             assign(
+                progress_tmp,
+                new(
+                    progress_runnable_desc,
+                    args=[var("view")],
+                    arg_types=["Landroid/view/View;"],
+                ),
+            )
+            if progress_runnable_desc
+            else assign(progress_tmp, const(0)),
+            assign(
+                token_tmp,
+                call(
+                    "nextAsyncToken",
+                    args=[],
+                    return_type="I",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+            assign(
                 worker_tmp,
                 new(
                     worker_desc,
                     args=[
                         var("ctx"),
-                        const(str(stmt.url)),
-                        const(str(stmt.default_value)),
+                        const(str(url)),
+                        const(str(default_value)),
                         var(success_tmp),
                         var(failure_tmp),
+                        var(progress_tmp),
+                        var(token_tmp),
+                        const(int(retries)),
+                        const(int(timeout_ms)),
                     ],
                     arg_types=[
                         "Landroid/app/Activity;",
@@ -5804,82 +5892,191 @@ class _PythonicContext:
                         "Ljava/lang/String;",
                         "Ljava/lang/Runnable;",
                         "Ljava/lang/Runnable;",
+                        "Ljava/lang/Runnable;",
+                        "I",
+                        "I",
+                        "I",
                     ],
                 ),
             ),
             assign(
                 result_tmp,
                 call(
-                    "startAsync",
-                    args=[var(worker_tmp)],
+                    "startAsyncWithToken",
+                    args=[var(token_tmp), var(worker_tmp)],
                     return_type="I",
-                    arg_types=["Ljava/lang/Runnable;"],
+                    arg_types=["I", "Ljava/lang/Runnable;"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),
             ),
-        ]
+        ], var(result_tmp)
 
-    def _compile_http_async_cancel_call(self, *, tmp_prefix: str):
+    def _compile_http_get_route_async_stmt(self, stmt):
+        out, _ = self._compile_http_get_route_async_call(
+            url=stmt.url,
+            success_target_id=stmt.success_target_id,
+            failure_target_id=stmt.failure_target_id,
+            default_value=stmt.default_value,
+            progress_target_id=getattr(stmt, "progress_target_id", ""),
+            retries=int(getattr(stmt, "retries", 0)),
+            timeout_ms=int(getattr(stmt, "timeout_ms", 8000)),
+            tmp_prefix="http_get_route_async_ignored",
+        )
+        return out
+
+    def _compile_http_async_token_value(self, *, token_expr, owner: str, tmp_prefix: str):
+        if token_expr is None:
+            token_tmp = self._next_tmp(tmp_prefix)
+            return [
+                assign(
+                    token_tmp,
+                    call(
+                        "getCurrentAsyncToken",
+                        args=[],
+                        return_type="I",
+                        arg_types=[],
+                        invoke_kind="static",
+                        owner=owner,
+                    ),
+                )
+            ], var(token_tmp)
+        return self._compile_int_expr(token_expr)
+
+    def _compile_http_async_cancel_call(self, *, token_expr, tmp_prefix: str):
         binding = self._require_helper_capability(
             api_name="http_async_cancel",
             capability_name="Networking",
             require_helper_method=False,
         )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_cancel",
+        )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
             assign(
                 result_tmp,
                 call(
                     "cancelAsync",
-                    args=[],
+                    args=[token_value],
                     return_type="I",
-                    arg_types=[],
+                    arg_types=["I"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),
             ),
         ], var(result_tmp)
 
-    def _compile_http_async_progress_call(self, *, tmp_prefix: str):
+    def _compile_http_async_progress_call(self, *, token_expr, tmp_prefix: str):
         binding = self._require_helper_capability(
             api_name="http_async_progress",
             capability_name="Networking",
             require_helper_method=False,
         )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_progress",
+        )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
             assign(
                 result_tmp,
                 call(
                     "getAsyncProgress",
-                    args=[],
+                    args=[token_value],
                     return_type="I",
-                    arg_types=[],
+                    arg_types=["I"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),
             ),
         ], var(result_tmp)
 
-    def _compile_http_async_error_call(self, *, tmp_prefix: str):
+    def _compile_http_async_error_call(self, *, token_expr, tmp_prefix: str):
         binding = self._require_helper_capability(
             api_name="http_async_error",
             capability_name="Networking",
             require_helper_method=False,
         )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_error",
+        )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
             assign(
                 result_tmp,
                 call(
                     "getAsyncError",
-                    args=[],
+                    args=[token_value],
                     return_type="I",
-                    arg_types=[],
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_status_call(self, *, token_expr, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_status",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_status",
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncStatus",
+                    args=[token_value],
+                    return_type="I",
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_body_call(self, *, token_expr, fallback: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_body",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_body",
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncBody",
+                    args=[token_value, const(str(fallback))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=["I", "Ljava/lang/String;"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),
@@ -5888,19 +6085,37 @@ class _PythonicContext:
 
     def _compile_http_async_cancel_stmt(self, stmt):
         out, _ = self._compile_http_async_cancel_call(
+            token_expr=getattr(stmt, "token", None),
             tmp_prefix="http_async_cancel_ignored",
         )
         return out
 
     def _compile_http_async_progress_stmt(self, stmt):
         out, _ = self._compile_http_async_progress_call(
+            token_expr=getattr(stmt, "token", None),
             tmp_prefix="http_async_progress_ignored",
         )
         return out
 
     def _compile_http_async_error_stmt(self, stmt):
         out, _ = self._compile_http_async_error_call(
+            token_expr=getattr(stmt, "token", None),
             tmp_prefix="http_async_error_ignored",
+        )
+        return out
+
+    def _compile_http_async_status_stmt(self, stmt):
+        out, _ = self._compile_http_async_status_call(
+            token_expr=getattr(stmt, "token", None),
+            tmp_prefix="http_async_status_ignored",
+        )
+        return out
+
+    def _compile_http_async_body_stmt(self, stmt):
+        out, _ = self._compile_http_async_body_call(
+            token_expr=getattr(stmt, "token", None),
+            fallback=getattr(stmt, "fallback", ""),
+            tmp_prefix="http_async_body_ignored",
         )
         return out
 

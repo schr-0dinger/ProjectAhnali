@@ -1,31 +1,42 @@
-# Track C Wave 3 Async Route (Initial Slice)
+# Track C Wave 3 Async Route
 
-Status: Started  
+Status: Completed  
 Date: 2026-02-17
 
-Wave 3 begins with a non-blocking networking route primitive:
-- `http_get_route_async(url, "success_btn", "failure_btn", fallback)`
-- `http_async_cancel()`
-- `http_async_progress()`
-- `http_async_error()`
+Wave 3 delivers tokened non-blocking route dispatch with deterministic cancellation/progress/payload surfaces:
+- `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_btn, retries, timeout_ms)`
+- `http_async_cancel(token)`
+- `http_async_progress(token)`
+- `http_async_error(token)`
+- `http_async_status(token)`
+- `http_async_body(token, fallback)`
 
 ## Contract
 
 - Valid only inside `@on_click(...)` handlers.
 - Requires `Caps.Networking`.
-- Dispatches route evaluation in a background thread.
-- Posts success/failure callback handlers to UI thread (`Activity.runOnUiThread`).
-- Uses existing deterministic networking helpers (`httpGetStatus`, `httpGet`, `httpGetError`) inside async worker.
-- Cancellation/progress/error are deterministic global async surfaces for current worker lifecycle.
+- Route dispatch allocates a token and runs in a background worker thread.
+- Success/failure/progress callbacks are posted on UI thread via `Activity.runOnUiThread(...)`.
+- Async state is token-scoped and deterministic (`cancel/progress/error/status/body`).
+- Worker supports deterministic retry count (`retries`) and timeout control (`timeout_ms`, clamped to default when non-positive).
 
-## Generated helper classes
+## Generated helper/runtime surfaces
 
 - `Lcom/ahnali/preview/AhnaliHttpRouteAsyncWorker;` (`Runnable` worker)
 - `Lcom/ahnali/preview/AhnaliUiRunnable_<target_id>;` (`Runnable` click callback proxy)
-- `Lcom/ahnali/runtime/HttpHelper;->startAsync(Ljava/lang/Runnable;)I` (thread dispatch helper)
-- `Lcom/ahnali/runtime/HttpHelper;->cancelAsync()I`
-- `Lcom/ahnali/runtime/HttpHelper;->getAsyncProgress()I`
-- `Lcom/ahnali/runtime/HttpHelper;->getAsyncError()I`
+- `Lcom/ahnali/runtime/HttpHelper;->nextAsyncToken()I`
+- `Lcom/ahnali/runtime/HttpHelper;->getCurrentAsyncToken()I`
+- `Lcom/ahnali/runtime/HttpHelper;->startAsync(Ljava/lang/Runnable;)I`
+- `Lcom/ahnali/runtime/HttpHelper;->startAsyncWithToken(ILjava/lang/Runnable;)I`
+- `Lcom/ahnali/runtime/HttpHelper;->cancelAsync(I)I`
+- `Lcom/ahnali/runtime/HttpHelper;->getAsyncProgress(I)I`
+- `Lcom/ahnali/runtime/HttpHelper;->getAsyncError(I)I`
+- `Lcom/ahnali/runtime/HttpHelper;->getAsyncStatus(I)I`
+- `Lcom/ahnali/runtime/HttpHelper;->getAsyncBody(ILjava/lang/String;)Ljava/lang/String;`
+- Timeout-aware fetch methods used by worker:
+  - `httpGetWithTimeout(...)`
+  - `httpGetStatusWithTimeout(...)`
+  - `httpGetErrorWithTimeout(...)`
 
 ## Deterministic async error codes
 
@@ -35,15 +46,9 @@ Wave 3 begins with a non-blocking networking route primitive:
 - `3`: non-200 HTTP status
 - `4`: empty body
 - `7`: cancelled
+- `8`: stale/unknown token
 
 ## Conformance
 
 - `tests/test_track_c_wave3_async_route.py`
-
-## Next Steps
-
-1. Add per-request async token contract (token returned by async start; token-scoped cancel/progress/error).
-2. Add deterministic progress callback wiring for async route (`on_progress` target).
-3. Add deterministic completion payload handoff (`status/body/error`) into callback handlers.
-4. Add timeout/retry controls for async worker and map outcomes to explicit error codes.
-5. Close Wave 3 with one visible tokened async demo flow and extended conformance tests.
+- `tests/test_track_c_wave3_visible_flow.py`

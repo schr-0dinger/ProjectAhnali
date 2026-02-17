@@ -10,7 +10,10 @@ from .ast import (
     _ExprFormat,
     _ExprHttpGetError,
     _ExprHttpAsyncError,
+    _ExprHttpAsyncBody,
+    _ExprHttpAsyncStatus,
     _ExprHttpAsyncProgress,
+    _ExprHttpGetRouteAsync,
     _ExprHttpGetJsonField,
     _ExprHttpGetJsonFieldError,
     _ExprHttpGetRetry,
@@ -31,7 +34,9 @@ from .ast import (
     _StmtCheckConnectivity,
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
+    _StmtHttpAsyncBody,
     _StmtHttpAsyncError,
+    _StmtHttpAsyncStatus,
     _StmtHttpAsyncProgress,
     _StmtHttpGetJsonField,
     _StmtHttpGetJsonFieldError,
@@ -324,10 +329,10 @@ def _parse_stmt(stmt):
                 "HttpGetWithHandlersAsync",
             ):
                 args = [_parse_expr(a) for a in call.args]
-                if not (3 <= len(args) <= 4):
+                if not (3 <= len(args) <= 7):
                     raise RuntimeError(
-                        'http_get_route_async expects 3 or 4 string arguments. '
-                        'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback")'
+                        "http_get_route_async expects 3 to 7 arguments. "
+                        'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback", "progress_btn", retries, timeout_ms)'
                     )
                 for idx, label in ((0, "url"), (1, "success_target_id"), (2, "failure_target_id")):
                     if not isinstance(args[idx], _ExprConst) or not isinstance(args[idx].value, str):
@@ -335,24 +340,70 @@ def _parse_stmt(stmt):
                 default_expr = args[3] if len(args) > 3 else _ExprConst("")
                 if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
                     raise RuntimeError("http_get_route_async argument 'default_value' must be a constant string")
+                progress_expr = args[4] if len(args) > 4 else _ExprConst("")
+                if not isinstance(progress_expr, _ExprConst) or not isinstance(progress_expr.value, str):
+                    raise RuntimeError("http_get_route_async argument 'progress_target_id' must be a constant string")
+                retries_expr = args[5] if len(args) > 5 else _ExprConst(0)
+                if (
+                    not isinstance(retries_expr, _ExprConst)
+                    or not isinstance(retries_expr.value, int)
+                    or isinstance(retries_expr.value, bool)
+                ):
+                    raise RuntimeError("http_get_route_async argument 'retries' must be an integer constant")
+                timeout_expr = args[6] if len(args) > 6 else _ExprConst(8000)
+                if (
+                    not isinstance(timeout_expr, _ExprConst)
+                    or not isinstance(timeout_expr.value, int)
+                    or isinstance(timeout_expr.value, bool)
+                ):
+                    raise RuntimeError("http_get_route_async argument 'timeout_ms' must be an integer constant")
                 return _StmtHttpGetRouteAsync(
                     args[0].value,
                     args[1].value,
                     args[2].value,
                     default_expr.value,
+                    progress_expr.value,
+                    int(retries_expr.value),
+                    int(timeout_expr.value),
                 )
             if fn in ("http_async_cancel", "HttpAsyncCancel"):
-                if call.args:
-                    raise RuntimeError("http_async_cancel expects no arguments. Usage: http_async_cancel()")
-                return _StmtHttpAsyncCancel()
+                if len(call.args) > 1:
+                    raise RuntimeError(
+                        "http_async_cancel expects zero or one token argument. Usage: http_async_cancel() or http_async_cancel(token)"
+                    )
+                token_expr = _parse_expr(call.args[0]) if call.args else None
+                return _StmtHttpAsyncCancel(token_expr)
             if fn in ("http_async_progress", "HttpAsyncProgress"):
-                if call.args:
-                    raise RuntimeError("http_async_progress expects no arguments. Usage: http_async_progress()")
-                return _StmtHttpAsyncProgress()
+                if len(call.args) > 1:
+                    raise RuntimeError(
+                        "http_async_progress expects zero or one token argument. Usage: http_async_progress() or http_async_progress(token)"
+                    )
+                token_expr = _parse_expr(call.args[0]) if call.args else None
+                return _StmtHttpAsyncProgress(token_expr)
             if fn in ("http_async_error", "HttpAsyncError"):
-                if call.args:
-                    raise RuntimeError("http_async_error expects no arguments. Usage: http_async_error()")
-                return _StmtHttpAsyncError()
+                if len(call.args) > 1:
+                    raise RuntimeError(
+                        "http_async_error expects zero or one token argument. Usage: http_async_error() or http_async_error(token)"
+                    )
+                token_expr = _parse_expr(call.args[0]) if call.args else None
+                return _StmtHttpAsyncError(token_expr)
+            if fn in ("http_async_status", "HttpAsyncStatus"):
+                if len(call.args) > 1:
+                    raise RuntimeError(
+                        "http_async_status expects zero or one token argument. Usage: http_async_status() or http_async_status(token)"
+                    )
+                token_expr = _parse_expr(call.args[0]) if call.args else None
+                return _StmtHttpAsyncStatus(token_expr)
+            if fn in ("http_async_body", "HttpAsyncBody"):
+                if len(call.args) > 2:
+                    raise RuntimeError(
+                        'http_async_body expects up to 2 arguments. Usage: http_async_body(token, "fallback")'
+                    )
+                token_expr = _parse_expr(call.args[0]) if call.args else None
+                fallback_expr = _parse_expr(call.args[1]) if len(call.args) > 1 else _ExprConst("")
+                if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
+                    raise RuntimeError("http_async_body argument 'fallback' must be a constant string")
+                return _StmtHttpAsyncBody(token_expr, fallback_expr.value)
             if fn in (
                 "storage_put",
                 "StoragePut",
@@ -594,19 +645,92 @@ def _parse_expr(node):
                 args[1].value,
             )
         if node.func.id in (
+            "http_get_route_async",
+            "HttpGetRouteAsync",
+            "http_get_with_handlers_async",
+            "HttpGetWithHandlersAsync",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (3 <= len(args) <= 7):
+                raise RuntimeError(
+                    "http_get_route_async expects 3 to 7 arguments. "
+                    'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback", "progress_btn", retries, timeout_ms)'
+                )
+            for idx, label in ((0, "url"), (1, "success_target_id"), (2, "failure_target_id")):
+                if not isinstance(args[idx], _ExprConst) or not isinstance(args[idx].value, str):
+                    raise RuntimeError(f"http_get_route_async argument '{label}' must be a constant string")
+            default_expr = args[3] if len(args) > 3 else _ExprConst("")
+            if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                raise RuntimeError("http_get_route_async argument 'default_value' must be a constant string")
+            progress_expr = args[4] if len(args) > 4 else _ExprConst("")
+            if not isinstance(progress_expr, _ExprConst) or not isinstance(progress_expr.value, str):
+                raise RuntimeError("http_get_route_async argument 'progress_target_id' must be a constant string")
+            retries_expr = args[5] if len(args) > 5 else _ExprConst(0)
+            if (
+                not isinstance(retries_expr, _ExprConst)
+                or not isinstance(retries_expr.value, int)
+                or isinstance(retries_expr.value, bool)
+            ):
+                raise RuntimeError("http_get_route_async argument 'retries' must be an integer constant")
+            timeout_expr = args[6] if len(args) > 6 else _ExprConst(8000)
+            if (
+                not isinstance(timeout_expr, _ExprConst)
+                or not isinstance(timeout_expr.value, int)
+                or isinstance(timeout_expr.value, bool)
+            ):
+                raise RuntimeError("http_get_route_async argument 'timeout_ms' must be an integer constant")
+            return _ExprHttpGetRouteAsync(
+                args[0].value,
+                args[1].value,
+                args[2].value,
+                default_expr.value,
+                progress_expr.value,
+                int(retries_expr.value),
+                int(timeout_expr.value),
+            )
+        if node.func.id in (
             "http_async_progress",
             "HttpAsyncProgress",
         ):
-            if node.args:
-                raise RuntimeError("http_async_progress expects no arguments. Usage: http_async_progress()")
-            return _ExprHttpAsyncProgress()
+            if len(node.args) > 1:
+                raise RuntimeError(
+                    "http_async_progress expects zero or one token argument. Usage: http_async_progress() or http_async_progress(token)"
+                )
+            token_expr = _parse_expr(node.args[0]) if node.args else None
+            return _ExprHttpAsyncProgress(token_expr)
         if node.func.id in (
             "http_async_error",
             "HttpAsyncError",
         ):
-            if node.args:
-                raise RuntimeError("http_async_error expects no arguments. Usage: http_async_error()")
-            return _ExprHttpAsyncError()
+            if len(node.args) > 1:
+                raise RuntimeError(
+                    "http_async_error expects zero or one token argument. Usage: http_async_error() or http_async_error(token)"
+                )
+            token_expr = _parse_expr(node.args[0]) if node.args else None
+            return _ExprHttpAsyncError(token_expr)
+        if node.func.id in (
+            "http_async_status",
+            "HttpAsyncStatus",
+        ):
+            if len(node.args) > 1:
+                raise RuntimeError(
+                    "http_async_status expects zero or one token argument. Usage: http_async_status() or http_async_status(token)"
+                )
+            token_expr = _parse_expr(node.args[0]) if node.args else None
+            return _ExprHttpAsyncStatus(token_expr)
+        if node.func.id in (
+            "http_async_body",
+            "HttpAsyncBody",
+        ):
+            if len(node.args) > 2:
+                raise RuntimeError(
+                    'http_async_body expects up to 2 arguments. Usage: http_async_body(token, "fallback")'
+                )
+            token_expr = _parse_expr(node.args[0]) if node.args else None
+            fallback_expr = _parse_expr(node.args[1]) if len(node.args) > 1 else _ExprConst("")
+            if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
+                raise RuntimeError("http_async_body argument 'fallback' must be a constant string")
+            return _ExprHttpAsyncBody(token_expr, fallback_expr.value)
         if node.func.id in (
             "storage_get",
             "StorageGet",

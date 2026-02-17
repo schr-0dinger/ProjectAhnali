@@ -112,14 +112,45 @@ class _ExprHttpGetJsonFieldError:
         self.key = key
 
 
+class _ExprHttpGetRouteAsync:
+    def __init__(
+        self,
+        url,
+        success_target_id,
+        failure_target_id,
+        default_value="",
+        progress_target_id="",
+        retries=0,
+        timeout_ms=8000,
+    ):
+        self.url = url
+        self.success_target_id = success_target_id
+        self.failure_target_id = failure_target_id
+        self.default_value = default_value
+        self.progress_target_id = progress_target_id
+        self.retries = retries
+        self.timeout_ms = timeout_ms
+
+
 class _ExprHttpAsyncProgress:
-    def __init__(self):
-        pass
+    def __init__(self, token=None):
+        self.token = token
 
 
 class _ExprHttpAsyncError:
-    def __init__(self):
-        pass
+    def __init__(self, token=None):
+        self.token = token
+
+
+class _ExprHttpAsyncStatus:
+    def __init__(self, token=None):
+        self.token = token
+
+
+class _ExprHttpAsyncBody:
+    def __init__(self, token=None, fallback=""):
+        self.token = token
+        self.fallback = fallback
 
 
 class _StmtAssign:
@@ -220,11 +251,23 @@ class _StmtHttpGetRoute:
 
 
 class _StmtHttpGetRouteAsync:
-    def __init__(self, url, success_target_id, failure_target_id, default_value):
+    def __init__(
+        self,
+        url,
+        success_target_id,
+        failure_target_id,
+        default_value="",
+        progress_target_id="",
+        retries=0,
+        timeout_ms=8000,
+    ):
         self.url = url
         self.success_target_id = success_target_id
         self.failure_target_id = failure_target_id
         self.default_value = default_value
+        self.progress_target_id = progress_target_id
+        self.retries = retries
+        self.timeout_ms = timeout_ms
 
 
 class _StmtHttpGetRetry:
@@ -249,18 +292,29 @@ class _StmtHttpGetJsonFieldError:
 
 
 class _StmtHttpAsyncCancel:
-    def __init__(self):
-        pass
+    def __init__(self, token=None):
+        self.token = token
 
 
 class _StmtHttpAsyncProgress:
-    def __init__(self):
-        pass
+    def __init__(self, token=None):
+        self.token = token
 
 
 class _StmtHttpAsyncError:
-    def __init__(self):
-        pass
+    def __init__(self, token=None):
+        self.token = token
+
+
+class _StmtHttpAsyncStatus:
+    def __init__(self, token=None):
+        self.token = token
+
+
+class _StmtHttpAsyncBody:
+    def __init__(self, token=None, fallback=""):
+        self.token = token
+        self.fallback = fallback
 
 
 class _StmtNavigate:
@@ -362,8 +416,11 @@ def _coerce_expr(value):
             _ExprHttpGetRetry,
             _ExprHttpGetJsonField,
             _ExprHttpGetJsonFieldError,
+            _ExprHttpGetRouteAsync,
             _ExprHttpAsyncProgress,
             _ExprHttpAsyncError,
+            _ExprHttpAsyncStatus,
+            _ExprHttpAsyncBody,
             _ExprConst,
         ),
     ):
