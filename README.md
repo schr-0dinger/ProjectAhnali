@@ -183,7 +183,7 @@ Constraints:
 
 1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
 2) Track B complete: size benchmark enforced on PR/push; cold-start benchmark enforced on manual dispatch
-3) Track C Wave 1 complete: visible app flow integration landed (`tests/test_track_c_wave1_visible_flow.py`); proceed networking/storage Wave 2 primitives
+3) Track C Wave 2 complete: networking response/retry surface + handler routing landed (`tests/test_track_c_wave2_http_get.py`); proceed broader capability expansion
 4) Ongoing integration smoke expansion for each new capability area
 5) Optimization backlog execution (see `docs/Ahnali_Optimization_Backlog.md`)
 
@@ -226,7 +226,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17 with visible app flow integration; Wave 2 started with `http_get`)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/retry surface)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -242,6 +242,8 @@ Work items:
   - `http_get_status(...)` → `httpGetStatus(...)I`
   - `http_get_error(...)` → `httpGetError(...)I`
   - `http_get_route(url, "success_btn", "failure_btn", fallback)` for success/failure handler wiring
+- ✅ Add deterministic retry/backoff primitive:
+  - `http_get_retry(url, retries, backoff_ms, fallback)` → `httpGetRetry(...)Ljava/lang/String;`
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
@@ -250,6 +252,7 @@ Work items:
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
+- ✅ Wave 2 networking response/retry conformance is enforced by `tests/test_track_c_wave2_http_get.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
@@ -305,6 +308,16 @@ Networking response contract:
   - `2` transport/runtime exception
   - `3` non-200 status
   - `4` empty body
+- `http_get_retry(...)` performs deterministic retries:
+  - attempts = `max(0, retries) + 1`
+  - backoff = fixed `max(0, backoff_ms)` milliseconds between failed attempts
+  - success condition = `http_get_error(...) == 0`
+  - returns response body on first success, otherwise fallback
+
+Known limits (current networking surface):
+- Synchronous helper calls are executed on the click-handler path (no async/cancellation surface yet).
+- HTTP method is GET only; request headers/body customization is not exposed yet.
+- Retry policy is fixed-backoff without jitter.
 
 ### Track D: Optimization and Build Intelligence
 

@@ -13,6 +13,7 @@ from dsl.ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprStorageGet,
@@ -33,6 +34,7 @@ from dsl.ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpGetRetry,
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
     _StmtHttpGet,
@@ -2772,6 +2774,8 @@ class _PythonicContext:
             return self._compile_http_get_error_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRoute):
             return self._compile_http_get_route_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetRetry):
+            return self._compile_http_get_retry_stmt(stmt)
         if isinstance(stmt, _StmtStoragePut):
             return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtStorageGet):
@@ -4795,11 +4799,20 @@ class _PythonicContext:
                 url=stmt.value.url,
                 tmp_prefix="http_get_error_result",
             )
+        elif isinstance(stmt.value, _ExprHttpGetRetry):
+            prefix, result = self._compile_http_get_retry_call(
+                url=stmt.value.url,
+                retries=stmt.value.retries,
+                backoff_ms=stmt.value.backoff_ms,
+                default_value=stmt.value.default_value,
+                tmp_prefix="http_get_retry_result",
+            )
+            value_type = "Ljava/lang/String;"
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
-                "http_get_status(...), or http_get_error(...)."
+                "http_get_status(...), http_get_error(...), or http_get_retry(...)."
             )
 
         if name in self.state_spec.values:
@@ -5432,6 +5445,48 @@ class _PythonicContext:
             ),
         ], var(result_tmp)
 
+    def _compile_http_get_retry_call(
+        self,
+        *,
+        url: str,
+        retries: int,
+        backoff_ms: int,
+        default_value: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="http_get_retry",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "httpGetRetry",
+                    args=[
+                        var("ctx"),
+                        const(str(url)),
+                        const(int(retries)),
+                        const(int(backoff_ms)),
+                        const(str(default_value)),
+                    ],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "I",
+                        "I",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
     def _compile_http_get_stmt(self, stmt):
         out, _ = self._compile_http_get_call(
             url=stmt.url,
@@ -5451,6 +5506,16 @@ class _PythonicContext:
         out, _ = self._compile_http_get_error_call(
             url=stmt.url,
             tmp_prefix="http_get_error_ignored",
+        )
+        return out
+
+    def _compile_http_get_retry_stmt(self, stmt):
+        out, _ = self._compile_http_get_retry_call(
+            url=stmt.url,
+            retries=stmt.retries,
+            backoff_ms=stmt.backoff_ms,
+            default_value=stmt.default_value,
+            tmp_prefix="http_get_retry_ignored",
         )
         return out
 

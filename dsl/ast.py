@@ -86,6 +86,14 @@ class _ExprHttpGetError:
         self.url = url
 
 
+class _ExprHttpGetRetry:
+    def __init__(self, url, retries, backoff_ms, default_value):
+        self.url = url
+        self.retries = retries
+        self.backoff_ms = backoff_ms
+        self.default_value = default_value
+
+
 class _StmtAssign:
     def __init__(self, target, value):
         self.target = target
@@ -170,6 +178,14 @@ class _StmtHttpGetRoute:
         self.url = url
         self.success_target_id = success_target_id
         self.failure_target_id = failure_target_id
+        self.default_value = default_value
+
+
+class _StmtHttpGetRetry:
+    def __init__(self, url, retries, backoff_ms, default_value):
+        self.url = url
+        self.retries = retries
+        self.backoff_ms = backoff_ms
         self.default_value = default_value
 
 
@@ -268,6 +284,7 @@ def _coerce_expr(value):
             _ExprHttpGet,
             _ExprHttpGetStatus,
             _ExprHttpGetError,
+            _ExprHttpGetRetry,
             _ExprConst,
         ),
     ):

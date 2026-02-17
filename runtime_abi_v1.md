@@ -15,10 +15,10 @@ In scope:
 - `ProgramIR.support_classes` entry schema used by toolchain emission
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
-- Track C Wave 2 capability helper ABI: networking fetch helper
+- Track C Wave 2 capability helper ABI: networking fetch/response/retry helpers
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/retry helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -174,6 +174,7 @@ Deprecation policy:
     - `httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I`
     - `httpGetError(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;`
   - Return semantics:
     - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
     - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
@@ -183,6 +184,10 @@ Deprecation policy:
       - `2`: transport/runtime exception
       - `3`: non-200 HTTP status
       - `4`: empty body
+    - `httpGetRetry`: retries deterministic fetch attempts and returns response body on first success, else fallback.
+      - Success condition: `httpGetError(...) == 0`
+      - Retry policy: total attempts = `max(0, retries) + 1`
+      - Backoff policy: fixed sleep `max(0, backoff_ms)` between failed attempts (no jitter)
 
 ## 9) Conformance References
 

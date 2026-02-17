@@ -878,6 +878,14 @@ def http_get_error(url: str):
     return _ExprHttpGetError(str(url))
 
 
+def http_get_retry(url: str, retries: int, backoff_ms: int, default_value: str = ""):
+    return _ExprHttpGetRetry(str(url), int(retries), int(backoff_ms), str(default_value))
+
+
+def fetch_url_retry(url: str, retries: int, backoff_ms: int, default_value: str = ""):
+    return http_get_retry(url, retries, backoff_ms, default_value)
+
+
 def http_get_route(
     url: str,
     success_target_id: str,

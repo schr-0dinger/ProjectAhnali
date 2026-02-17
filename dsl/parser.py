@@ -9,6 +9,7 @@ from .ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprStorageGet,
@@ -24,6 +25,7 @@ from .ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpGetRetry,
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
     _StmtHttpGet,
@@ -203,6 +205,41 @@ def _parse_stmt(stmt):
                     raise RuntimeError("http_get_error argument 'url' must be a constant string")
                 return _StmtHttpGetError(args[0].value)
             if fn in (
+                "http_get_retry",
+                "HttpGetRetry",
+                "fetch_url_retry",
+                "FetchUrlRetry",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (3 <= len(args) <= 4):
+                    raise RuntimeError(
+                        'http_get_retry expects 3 or 4 arguments. '
+                        'Usage: http_get_retry("https://...", retries, backoff_ms, "fallback")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("http_get_retry argument 'url' must be a constant string")
+                if (
+                    not isinstance(args[1], _ExprConst)
+                    or not isinstance(args[1].value, int)
+                    or isinstance(args[1].value, bool)
+                ):
+                    raise RuntimeError("http_get_retry argument 'retries' must be an integer constant")
+                if (
+                    not isinstance(args[2], _ExprConst)
+                    or not isinstance(args[2].value, int)
+                    or isinstance(args[2].value, bool)
+                ):
+                    raise RuntimeError("http_get_retry argument 'backoff_ms' must be an integer constant")
+                default_expr = args[3] if len(args) > 3 else _ExprConst("")
+                if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                    raise RuntimeError("http_get_retry argument 'default_value' must be a constant string")
+                return _StmtHttpGetRetry(
+                    args[0].value,
+                    int(args[1].value),
+                    int(args[2].value),
+                    default_expr.value,
+                )
+            if fn in (
                 "http_get_route",
                 "HttpGetRoute",
                 "http_get_with_handlers",
@@ -367,6 +404,41 @@ def _parse_expr(node):
             if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                 raise RuntimeError("http_get_error argument 'url' must be a constant string")
             return _ExprHttpGetError(args[0].value)
+        if node.func.id in (
+            "http_get_retry",
+            "HttpGetRetry",
+            "fetch_url_retry",
+            "FetchUrlRetry",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (3 <= len(args) <= 4):
+                raise RuntimeError(
+                    'http_get_retry expects 3 or 4 arguments. '
+                    'Usage: http_get_retry("https://...", retries, backoff_ms, "fallback")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("http_get_retry argument 'url' must be a constant string")
+            if (
+                not isinstance(args[1], _ExprConst)
+                or not isinstance(args[1].value, int)
+                or isinstance(args[1].value, bool)
+            ):
+                raise RuntimeError("http_get_retry argument 'retries' must be an integer constant")
+            if (
+                not isinstance(args[2], _ExprConst)
+                or not isinstance(args[2].value, int)
+                or isinstance(args[2].value, bool)
+            ):
+                raise RuntimeError("http_get_retry argument 'backoff_ms' must be an integer constant")
+            default_expr = args[3] if len(args) > 3 else _ExprConst("")
+            if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                raise RuntimeError("http_get_retry argument 'default_value' must be a constant string")
+            return _ExprHttpGetRetry(
+                args[0].value,
+                int(args[1].value),
+                int(args[2].value),
+                default_expr.value,
+            )
         if node.func.id in (
             "storage_get",
             "StorageGet",

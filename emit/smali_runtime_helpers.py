@@ -261,6 +261,44 @@ def _emit_http_get_error_method() -> list[str]:
     ]
 
 
+def _emit_http_get_retry_method() -> list[str]:
+    return [
+        ".method public static httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;",
+        "    .locals 7",
+        "    if-eqz p1, :ahnali_http_retry_fallback",
+        "    move v0, p2",
+        "    if-gez v0, :ahnali_http_retry_retries_ok",
+        "    const/4 v0, 0x0",
+        "    :ahnali_http_retry_retries_ok",
+        "    move v1, p3",
+        "    if-gez v1, :ahnali_http_retry_backoff_ok",
+        "    const/4 v1, 0x0",
+        "    :ahnali_http_retry_backoff_ok",
+        "    :ahnali_http_retry_loop",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/HttpHelper;->httpGetError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    move-result v2",
+        "    if-nez v2, :ahnali_http_retry_fail_attempt",
+        "    invoke-static {p0, p1, p4}, Lcom/ahnali/runtime/HttpHelper;->httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v3",
+        "    if-eqz v3, :ahnali_http_retry_fallback",
+        "    return-object v3",
+        "    :ahnali_http_retry_fail_attempt",
+        "    if-lez v0, :ahnali_http_retry_fallback",
+        "    if-lez v1, :ahnali_http_retry_after_sleep",
+        "    int-to-long v4, v1",
+        "    :ahnali_http_retry_sleep_try_start",
+        "    invoke-static {v4, v5}, Ljava/lang/Thread;->sleep(J)V",
+        "    :ahnali_http_retry_sleep_try_end",
+        "    .catch Ljava/lang/InterruptedException; {:ahnali_http_retry_sleep_try_start .. :ahnali_http_retry_sleep_try_end} :ahnali_http_retry_after_sleep",
+        "    :ahnali_http_retry_after_sleep",
+        "    add-int/lit8 v0, v0, -0x1",
+        "    goto :ahnali_http_retry_loop",
+        "    :ahnali_http_retry_fallback",
+        "    return-object p4",
+        ".end method",
+    ]
+
+
 def _emit_storage_put_string_method() -> list[str]:
     return [
         ".method public static putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -386,6 +424,8 @@ def emit_capability_helper_smali(
         lines.extend(_emit_http_get_status_method())
         lines.append("")
         lines.extend(_emit_http_get_error_method())
+        lines.append("")
+        lines.extend(_emit_http_get_retry_method())
         return "\n".join(lines)
 
     if (
