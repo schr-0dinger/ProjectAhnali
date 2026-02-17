@@ -249,6 +249,8 @@ Work items:
   - `http_get_json_field_error(url, key)` → `httpGetJsonFieldError(...)I`
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
+- ✅ Add Wave 2 visible capability integration flow (`tests/test_track_c_wave2_visible_flow.py`)
+- ✅ Document visible Wave 2 app flow (`docs/TrackC_Wave2_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - Add permission/capability diagnostics for new surfaces.
@@ -256,6 +258,7 @@ Work items:
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
 - ✅ Wave 2 networking response/retry conformance is enforced by `tests/test_track_c_wave2_http_get.py`.
+- ✅ Wave 2 visible capability integration flow conformance is enforced by `tests/test_track_c_wave2_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
