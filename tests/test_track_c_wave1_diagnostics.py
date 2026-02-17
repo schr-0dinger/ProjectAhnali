@@ -9,6 +9,8 @@ from dsl.app import (
     check_connectivity,
     on_click,
     open_url,
+    storage_clear,
+    storage_exists,
     storage_get,
     storage_put,
     storage_remove,
@@ -96,6 +98,26 @@ def test_track_c_wave1_parser_storage_get_rejects_non_string_default():
         _build_with_handler("bad_storage_get_default", _bad_storage_get_default_handler)
 
 
+def _bad_storage_exists_arity_handler():
+    value = storage_exists("k", "extra")
+    preview = value
+
+
+def test_track_c_wave1_parser_storage_exists_rejects_wrong_arity():
+    with pytest.raises(RuntimeError, match="storage_exists expects exactly 1 string argument"):
+        _build_with_handler("bad_storage_exists_arity", _bad_storage_exists_arity_handler)
+
+
+def _bad_storage_exists_key_handler():
+    value = storage_exists(9)
+    preview = value
+
+
+def test_track_c_wave1_parser_storage_exists_rejects_non_string_key():
+    with pytest.raises(RuntimeError, match="storage_exists argument 'key' must be a constant string"):
+        _build_with_handler("bad_storage_exists_key", _bad_storage_exists_key_handler)
+
+
 def _bad_storage_remove_arity_handler():
     storage_remove("k", "extra")
 
@@ -112,3 +134,12 @@ def _bad_storage_remove_key_handler():
 def test_track_c_wave1_parser_storage_remove_rejects_non_string_key():
     with pytest.raises(RuntimeError, match="storage_remove argument 'key' must be a constant string"):
         _build_with_handler("bad_storage_remove_key", _bad_storage_remove_key_handler)
+
+
+def _bad_storage_clear_arity_handler():
+    storage_clear("unexpected")
+
+
+def test_track_c_wave1_parser_storage_clear_rejects_wrong_arity():
+    with pytest.raises(RuntimeError, match="storage_clear expects no arguments"):
+        _build_with_handler("bad_storage_clear_arity", _bad_storage_clear_arity_handler)

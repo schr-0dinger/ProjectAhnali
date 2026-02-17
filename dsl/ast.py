@@ -70,6 +70,11 @@ class _ExprStorageGet:
         self.default_value = default_value
 
 
+class _ExprStorageExists:
+    def __init__(self, key):
+        self.key = key
+
+
 class _ExprHttpGet:
     def __init__(self, url, default_value):
         self.url = url
@@ -155,6 +160,16 @@ class _StmtStorageGet:
 class _StmtStorageRemove:
     def __init__(self, key):
         self.key = key
+
+
+class _StmtStorageExists:
+    def __init__(self, key):
+        self.key = key
+
+
+class _StmtStorageClear:
+    def __init__(self):
+        pass
 
 
 class _StmtHttpGet:
@@ -281,6 +296,7 @@ def _coerce_expr(value):
             _ExprUnary,
             _ExprFormat,
             _ExprStorageGet,
+            _ExprStorageExists,
             _ExprHttpGet,
             _ExprHttpGetStatus,
             _ExprHttpGetError,

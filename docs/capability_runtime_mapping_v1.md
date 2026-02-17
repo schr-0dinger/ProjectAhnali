@@ -12,7 +12,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Aliases are accepted compatibility inputs and resolve to canonical names.
 - Permissions are deterministic and ordered.
 - Runtime helper integration mode is capability-specific (`permission_only` or `helper_call`).
-- Track C Wave 1 introduced initial helper-call bindings for URL launcher, connectivity checks, and storage put/get/remove.
+- Track C Wave 1 introduced initial helper-call bindings for URL launcher, connectivity checks, and storage put/get/remove/exists/clear.
 - Track C Wave 2 adds networking fetch/response/retry helper-call bindings (`http_get`, `http_get_status`, `http_get_error`, `http_get_retry`).
 
 ## Mapping Table (v1)
@@ -25,7 +25,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `Video` | `Video` | `android.permission.CAMERA`, `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
 | `WebView` | `WebView` | `android.permission.INTERNET` | n/a | n/a | `permission_only` |
 | `Sensors` | `Sensors` | `android.permission.BODY_SENSORS` | n/a | n/a | `permission_only` |
-| `Storage` | `Storage` | `android.permission.READ_EXTERNAL_STORAGE`, `android.permission.WRITE_EXTERNAL_STORAGE` | `Lcom/ahnali/runtime/StorageHelper;` | `putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`, `remove(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
+| `Storage` | `Storage` | `android.permission.READ_EXTERNAL_STORAGE`, `android.permission.WRITE_EXTERNAL_STORAGE` | `Lcom/ahnali/runtime/StorageHelper;` | `putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`, `remove(Landroid/app/Activity;Ljava/lang/String;)I`, `exists(Landroid/app/Activity;Ljava/lang/String;)I`, `clear(Landroid/app/Activity;)I` | `helper_call` |
 | `FilePicker` | `FilePicker`, `File Picker` | `android.permission.READ_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |
 | `Connectivity` | `Connectivity` | `android.permission.ACCESS_NETWORK_STATE`, `android.permission.INTERNET` | `Lcom/ahnali/runtime/ConnectivityHelper;` | `isConnected(Landroid/app/Activity;)I` | `helper_call` |
 | `Networking` | `Networking`, `Network` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/HttpHelper;` | `httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`, `httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I`, `httpGetError(Landroid/app/Activity;Ljava/lang/String;)I`, `httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;` | `helper_call` |

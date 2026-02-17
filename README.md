@@ -235,7 +235,7 @@ Work items:
 - ✅ Add initial helper-call capability primitives:
   - `URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`
   - `Connectivity` → `Lcom/ahnali/runtime/ConnectivityHelper;->isConnected(...)I`
-  - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I`
+  - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I` + `exists(...)I` + `clear(...)I`
 - ✅ Start Wave 2 networking primitive:
   - `Networking` → `Lcom/ahnali/runtime/HttpHelper;->httpGet(...)Ljava/lang/String;` via `http_get(...)`
 - ✅ Add networking response surface:
@@ -247,7 +247,7 @@ Work items:
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
-- Add capability-scoped storage primitives.
+- ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - Add permission/capability diagnostics for new surfaces.
 
 Exit criteria:
@@ -313,6 +313,10 @@ Networking response contract:
   - backoff = fixed `max(0, backoff_ms)` milliseconds between failed attempts
   - success condition = `http_get_error(...) == 0`
   - returns response body on first success, otherwise fallback
+
+Storage introspection contract:
+- `storage_exists("key")` returns `1` when key exists, else `0`.
+- `storage_clear()` clears all app storage keys for this helper namespace and returns `1` on success, else `0`.
 
 Known limits (current networking surface):
 - Synchronous helper calls are executed on the click-handler path (no async/cancellation surface yet).

@@ -17,6 +17,7 @@ from dsl.ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprStorageGet,
+    _ExprStorageExists,
     _ExprSymbol,
     _ExprUnary,
     _StmtAssign,
@@ -38,6 +39,8 @@ from dsl.ast import (
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
     _StmtHttpGet,
+    _StmtStorageClear,
+    _StmtStorageExists,
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
@@ -2780,8 +2783,12 @@ class _PythonicContext:
             return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtStorageGet):
             return self._compile_storage_get_stmt(stmt)
+        if isinstance(stmt, _StmtStorageExists):
+            return self._compile_storage_exists_stmt(stmt)
         if isinstance(stmt, _StmtStorageRemove):
             return self._compile_storage_remove_stmt(stmt)
+        if isinstance(stmt, _StmtStorageClear):
+            return self._compile_storage_clear_stmt(stmt)
         if isinstance(stmt, _StmtNavigate):
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
@@ -4782,6 +4789,11 @@ class _PythonicContext:
                 tmp_prefix="storage_get_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprStorageExists):
+            prefix, result = self._compile_storage_exists_call(
+                key=stmt.value.key,
+                tmp_prefix="storage_exists_result",
+            )
         elif isinstance(stmt.value, _ExprHttpGet):
             prefix, result = self._compile_http_get_call(
                 url=stmt.value.url,
@@ -4812,7 +4824,7 @@ class _PythonicContext:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
-                "http_get_status(...), http_get_error(...), or http_get_retry(...)."
+                "storage_exists(...), http_get_status(...), http_get_error(...), or http_get_retry(...)."
             )
 
         if name in self.state_spec.values:
@@ -5638,6 +5650,38 @@ class _PythonicContext:
         )
         return out
 
+    def _compile_storage_exists_call(self, *, key: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="storage_exists",
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "exists",
+                    args=[var("ctx"), const(str(key))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_storage_exists_stmt(self, stmt):
+        out, _ = self._compile_storage_exists_call(
+            key=stmt.key,
+            tmp_prefix="storage_exists_ignored",
+        )
+        return out
+
     def _compile_storage_remove_stmt(self, stmt):
         binding = self._require_helper_capability(
             api_name="storage_remove",
@@ -5656,6 +5700,30 @@ class _PythonicContext:
                     arg_types=[
                         "Landroid/app/Activity;",
                         "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_storage_clear_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="storage_clear",
+            capability_name="Storage",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp("storage_clear_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "clear",
+                    args=[var("ctx")],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
                     ],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,

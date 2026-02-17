@@ -163,10 +163,14 @@ Deprecation policy:
     - `putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
     - `getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `remove(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `exists(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `clear(Landroid/app/Activity;)I`
   - Return semantics:
     - `putString`: `1` on successful `SharedPreferences` write; `0` on null context/key or caught exception.
     - `getString`: stored value when present; fallback argument on null context/key, missing value, or caught exception.
     - `remove`: `1` on successful `SharedPreferences` remove/apply; `0` on null context/key or caught exception.
+    - `exists`: `1` when key exists in `SharedPreferences`; `0` on missing key, null context/key, or caught exception.
+    - `clear`: `1` on successful `SharedPreferences` clear/apply; `0` on null context or caught exception.
 - Track C Wave 2 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`

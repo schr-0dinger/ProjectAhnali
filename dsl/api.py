@@ -925,12 +925,24 @@ def storage_get(key: str, default_value: str = ""):
     return _ExprStorageGet(str(key), str(default_value))
 
 
+def storage_exists(key: str):
+    return _ExprStorageExists(str(key))
+
+
 def get_storage(key: str, default_value: str = ""):
     return storage_get(key, default_value)
 
 
 def load_storage(key: str, default_value: str = ""):
     return storage_get(key, default_value)
+
+
+def has_storage(key: str):
+    return storage_exists(key)
+
+
+def exists_storage(key: str):
+    return storage_exists(key)
 
 
 def storage_remove(key: str):
@@ -943,6 +955,14 @@ def remove_storage(key: str):
 
 def delete_storage(key: str):
     return storage_remove(key)
+
+
+def storage_clear():
+    return _StmtStorageClear()
+
+
+def clear_storage():
+    return storage_clear()
 
 
 def style(**kwargs):

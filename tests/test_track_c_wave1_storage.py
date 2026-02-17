@@ -7,6 +7,8 @@ from dsl.app import (
     app_config,
     button,
     on_click,
+    storage_clear,
+    storage_exists,
     storage_get,
     storage_put,
     storage_remove,
@@ -29,6 +31,17 @@ def _load_btn_handler():
 @on_click("remove_btn")
 def _remove_btn_handler():
     storage_remove("greeting")
+
+
+@on_click("exists_btn")
+def _exists_btn_handler():
+    exists = storage_exists("greeting")
+    label.text = exists
+
+
+@on_click("clear_btn")
+def _clear_btn_handler():
+    storage_clear()
 
 
 def test_track_c_wave1_storage_put_lowers_to_runtime_helper_call():
@@ -89,6 +102,46 @@ def test_track_c_wave1_storage_remove_lowers_to_runtime_helper_call():
     ) in merged
 
 
+def test_track_c_wave1_storage_exists_lowers_to_runtime_helper_call_and_symbol_set_text():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Storage]),
+            ui(
+                text("Init", id="label"),
+                button("Exists", id="exists_btn"),
+            ),
+            _exists_btn_handler,
+        )
+    ).build()
+
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert (
+        "Lcom/ahnali/runtime/StorageHelper;->exists("
+        "Landroid/app/Activity;Ljava/lang/String;)I"
+    ) in merged
+    assert "Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V" in merged
+
+
+def test_track_c_wave1_storage_clear_lowers_to_runtime_helper_call():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Storage]),
+            ui(button("Clear", id="clear_btn")),
+            _clear_btn_handler,
+        )
+    ).build()
+
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert (
+        "Lcom/ahnali/runtime/StorageHelper;->clear("
+        "Landroid/app/Activity;)I"
+    ) in merged
+
+
 def test_track_c_wave1_storage_put_requires_storage_capability():
     prog = app(
         activity(
@@ -142,6 +195,41 @@ def test_track_c_wave1_storage_remove_requires_storage_capability():
         assert "Fix: add app_config(uses=[Caps.Storage]) to activity(...)." in str(exc)
 
 
+def test_track_c_wave1_storage_exists_requires_storage_capability():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Init", id="label"),
+                button("Exists", id="exists_btn"),
+            ),
+            _exists_btn_handler,
+        )
+    )
+    try:
+        prog.build()
+        raise AssertionError("Expected build() to fail when Storage capability is missing")
+    except RuntimeError as exc:
+        assert "[CapabilityError] storage_exists requires Caps.Storage." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Storage]) to activity(...)." in str(exc)
+
+
+def test_track_c_wave1_storage_clear_requires_storage_capability():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(button("Clear", id="clear_btn")),
+            _clear_btn_handler,
+        )
+    )
+    try:
+        prog.build()
+        raise AssertionError("Expected build() to fail when Storage capability is missing")
+    except RuntimeError as exc:
+        assert "[CapabilityError] storage_clear requires Caps.Storage." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Storage]) to activity(...)." in str(exc)
+
+
 def test_track_c_wave1_toolchain_emits_storage_helper_class(tmp_path):
     frontend = app(
         activity(
@@ -173,8 +261,24 @@ def test_track_c_wave1_toolchain_emits_storage_helper_class(tmp_path):
         ".method public static remove("
         "Landroid/app/Activity;Ljava/lang/String;)I"
     ) in helper_smali
+    assert (
+        ".method public static exists("
+        "Landroid/app/Activity;Ljava/lang/String;)I"
+    ) in helper_smali
+    assert (
+        ".method public static clear("
+        "Landroid/app/Activity;)I"
+    ) in helper_smali
     assert "Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;" in helper_smali
+    assert (
+        "Landroid/content/SharedPreferences;->contains("
+        "Ljava/lang/String;)Z"
+    ) in helper_smali
     assert (
         "Landroid/content/SharedPreferences$Editor;->remove("
         "Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;"
+    ) in helper_smali
+    assert (
+        "Landroid/content/SharedPreferences$Editor;->clear()"
+        "Landroid/content/SharedPreferences$Editor;"
     ) in helper_smali

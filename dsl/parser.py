@@ -13,6 +13,7 @@ from .ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprStorageGet,
+    _ExprStorageExists,
     _ExprSymbol,
     _ExprUnary,
     _StmtAssign,
@@ -29,6 +30,8 @@ from .ast import (
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
     _StmtHttpGet,
+    _StmtStorageClear,
+    _StmtStorageExists,
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
@@ -297,6 +300,20 @@ def _parse_stmt(stmt):
                     raise RuntimeError("storage_get argument 'default_value' must be a constant string")
                 return _StmtStorageGet(args[0].value, default_expr.value)
             if fn in (
+                "storage_exists",
+                "StorageExists",
+                "has_storage",
+                "HasStorage",
+                "exists_storage",
+                "ExistsStorage",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError('storage_exists expects exactly 1 string argument. Usage: storage_exists("key")')
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("storage_exists argument 'key' must be a constant string")
+                return _StmtStorageExists(args[0].value)
+            if fn in (
                 "storage_remove",
                 "StorageRemove",
                 "remove_storage",
@@ -310,6 +327,15 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("storage_remove argument 'key' must be a constant string")
                 return _StmtStorageRemove(args[0].value)
+            if fn in (
+                "storage_clear",
+                "StorageClear",
+                "clear_storage",
+                "ClearStorage",
+            ):
+                if call.args:
+                    raise RuntimeError("storage_clear expects no arguments. Usage: storage_clear()")
+                return _StmtStorageClear()
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
                 from .ast import _StmtRequestPermissions
@@ -456,6 +482,20 @@ def _parse_expr(node):
             if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
                 raise RuntimeError("storage_get argument 'default_value' must be a constant string")
             return _ExprStorageGet(args[0].value, default_expr.value)
+        if node.func.id in (
+            "storage_exists",
+            "StorageExists",
+            "has_storage",
+            "HasStorage",
+            "exists_storage",
+            "ExistsStorage",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError('storage_exists expects exactly 1 string argument. Usage: storage_exists("key")')
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("storage_exists argument 'key' must be a constant string")
+            return _ExprStorageExists(args[0].value)
         if node.func.id in ("ushr", "unsigned_rshift"):
             if len(node.args) != 2:
                 raise RuntimeError("ushr expects exactly two arguments")
