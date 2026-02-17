@@ -1,10 +1,12 @@
 from dsl.api import (
+    Frame,
     activity,
     app,
     app_config,
     card,
     column,
     container,
+    frame,
     horizontal_scroll_view,
     list_view,
     row,
@@ -18,6 +20,7 @@ from dsl.api import (
 __all__ = [
     "app",
     "activity",
+    "Frame",
     "app_config",
     "state",
     "ui",
@@ -26,6 +29,7 @@ __all__ = [
     "column",
     "row",
     "container",
+    "frame",
     "card",
     "scroll_view",
     "horizontal_scroll_view",

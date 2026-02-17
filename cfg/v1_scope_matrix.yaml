@@ -99,20 +99,6 @@
       "tests_required": []
     },
     {
-      "api_symbol": "TBD::8.1:framelayout",
-      "docs_required": [],
-      "id": "8.1:framelayout",
-      "label": "FrameLayout",
-      "lowering_target": "TBD",
-      "marker": "\u274c",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:369",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
       "api_symbol": "TBD::8.1:gridview",
       "docs_required": [],
       "id": "8.1:gridview",
@@ -137,20 +123,6 @@
       "runtime_helper": "none",
       "section": "8.1",
       "source_ref": "Masterplan_All_In_One.md:368",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.1:layout-gravity",
-      "docs_required": [],
-      "id": "8.1:layout-gravity",
-      "label": "layout_gravity",
-      "lowering_target": "TBD",
-      "marker": "\u274c",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:393",
       "status": "planned",
       "tests_required": []
     },
@@ -277,20 +249,6 @@
       "runtime_helper": "none",
       "section": "8.1",
       "source_ref": "Masterplan_All_In_One.md:373",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.1:z-index-elevation-layering",
-      "docs_required": [],
-      "id": "8.1:z-index-elevation-layering",
-      "label": "z-index (elevation layering)",
-      "lowering_target": "TBD",
-      "marker": "\u26a0\ufe0f",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:398",
       "status": "planned",
       "tests_required": []
     },

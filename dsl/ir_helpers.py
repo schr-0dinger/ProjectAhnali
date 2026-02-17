@@ -444,6 +444,18 @@ def relative_layout(name, ctx):
     ]
 
 
+def frame_layout(name, ctx):
+    return [
+        assign(
+            name,
+            new(
+                "Landroid/widget/FrameLayout;",
+                args=[ctx],
+            ),
+        )
+    ]
+
+
 def constraint_layout(name, ctx):
     return [
         assign(

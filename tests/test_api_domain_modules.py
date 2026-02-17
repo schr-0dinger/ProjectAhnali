@@ -5,6 +5,8 @@ from dsl.api_domains import capabilities, hybrid, interaction, motion, state, st
 def test_api_domain_modules_expose_legacy_compatible_symbols():
     assert structure.app is legacy_api.app
     assert structure.activity is legacy_api.activity
+    assert structure.Frame is legacy_api.Frame
+    assert structure.frame is legacy_api.frame
     assert style.theme is legacy_api.theme
     assert interaction.on_click is legacy_api.on_click
     assert state.storage_put is legacy_api.storage_put

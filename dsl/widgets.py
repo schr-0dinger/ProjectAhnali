@@ -127,6 +127,7 @@ class _UIText:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         weight=None,
         relative=None,
         constraints=None,
@@ -168,6 +169,7 @@ class _UIText:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         on_click=None,
@@ -186,6 +188,7 @@ class _UIText:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.weight = weight
         self.relative = relative
         self.constraints = constraints
@@ -227,6 +230,7 @@ class _UIText:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.on_click = on_click
@@ -251,6 +255,7 @@ class _UIButton:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         weight=None,
         relative=None,
         constraints=None,
@@ -292,6 +297,7 @@ class _UIButton:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         on_click=None,
@@ -311,6 +317,7 @@ class _UIButton:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.weight = weight
         self.relative = relative
         self.constraints = constraints
@@ -352,6 +359,7 @@ class _UIButton:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.on_click = on_click
@@ -374,6 +382,7 @@ class _UIView:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         weight=None,
         relative=None,
         constraints=None,
@@ -404,6 +413,7 @@ class _UIView:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         on_click=None,
@@ -421,6 +431,7 @@ class _UIView:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.weight = weight
         self.relative = relative
         self.constraints = constraints
@@ -451,6 +462,7 @@ class _UIView:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.on_click = on_click
@@ -473,6 +485,7 @@ class _UIRow:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         align=None,
         arrangement=None,
         weight_sum=None,
@@ -500,6 +513,7 @@ class _UIRow:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -512,6 +526,7 @@ class _UIRow:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.align = align
         self.arrangement = arrangement
         self.weight_sum = weight_sum
@@ -539,6 +554,7 @@ class _UIRow:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -555,6 +571,7 @@ class _UIColumn:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         align=None,
         arrangement=None,
         weight_sum=None,
@@ -582,6 +599,7 @@ class _UIColumn:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -594,6 +612,7 @@ class _UIColumn:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.align = align
         self.arrangement = arrangement
         self.weight_sum = weight_sum
@@ -621,6 +640,7 @@ class _UIColumn:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -637,6 +657,7 @@ class _UIRelative:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         background=None,
         radius=None,
         content_description=None,
@@ -659,6 +680,7 @@ class _UIRelative:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -671,6 +693,7 @@ class _UIRelative:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.background = background
         self.radius = radius
         self.content_description = _resolve_content_description(content_description, accessibility_label)
@@ -693,6 +716,7 @@ class _UIRelative:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
@@ -709,6 +733,7 @@ class _UIConstraint:
         padding=None,
         margin=None,
         gravity=None,
+        layout_gravity=None,
         background=None,
         radius=None,
         content_description=None,
@@ -731,6 +756,7 @@ class _UIConstraint:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        z_index=None,
         clip_to_outline=None,
         clip_children=None,
         style=None,
@@ -743,6 +769,7 @@ class _UIConstraint:
         self.padding = padding
         self.margin = margin
         self.gravity = gravity
+        self.layout_gravity = layout_gravity
         self.background = background
         self.radius = radius
         self.content_description = _resolve_content_description(content_description, accessibility_label)
@@ -765,9 +792,17 @@ class _UIConstraint:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.z_index = z_index
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
         self.style = style
+
+
+class _UIFrame(_UIView):
+    def __init__(self, *items, id="frame", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.items = items
 
 
 class _UIScrollView(_UIView):
@@ -1400,6 +1435,10 @@ class Constraint(_UIConstraint):
     pass
 
 
+class Frame(_UIFrame):
+    pass
+
+
 class ScrollView(_UIScrollView):
     pass
 
@@ -1466,6 +1505,7 @@ def text(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     weight=None,
     relative=None,
     constraints=None,
@@ -1507,6 +1547,7 @@ def text(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     on_click=None,
@@ -1526,6 +1567,7 @@ def text(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         weight=weight,
         relative=relative,
         constraints=constraints,
@@ -1567,6 +1609,7 @@ def text(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         on_click=on_click,
@@ -1590,6 +1633,7 @@ def button(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     weight=None,
     relative=None,
     constraints=None,
@@ -1631,6 +1675,7 @@ def button(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     on_click=None,
@@ -1651,6 +1696,7 @@ def button(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         weight=weight,
         relative=relative,
         constraints=constraints,
@@ -1692,6 +1738,7 @@ def button(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         on_click=on_click,
@@ -1713,6 +1760,7 @@ def view(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     weight=None,
     relative=None,
     constraints=None,
@@ -1743,6 +1791,7 @@ def view(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     on_click=None,
@@ -1761,6 +1810,7 @@ def view(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         weight=weight,
         relative=relative,
         constraints=constraints,
@@ -1791,6 +1841,7 @@ def view(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         on_click=on_click,
@@ -1812,6 +1863,7 @@ def row(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     align=None,
     arrangement=None,
     weight_sum=None,
@@ -1839,6 +1891,7 @@ def row(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1852,6 +1905,7 @@ def row(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         align=align,
         arrangement=arrangement,
         weight_sum=weight_sum,
@@ -1879,6 +1933,7 @@ def row(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1894,6 +1949,7 @@ def column(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     align=None,
     arrangement=None,
     weight_sum=None,
@@ -1921,6 +1977,7 @@ def column(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -1934,6 +1991,7 @@ def column(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         align=align,
         arrangement=arrangement,
         weight_sum=weight_sum,
@@ -1961,6 +2019,7 @@ def column(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -1976,6 +2035,7 @@ def relative(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     background=None,
     radius=None,
     content_description=None,
@@ -1998,6 +2058,7 @@ def relative(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -2011,6 +2072,7 @@ def relative(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         background=background,
         radius=radius,
         content_description=content_description,
@@ -2033,6 +2095,7 @@ def relative(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
         style=style,
@@ -2048,6 +2111,7 @@ def constraint(
     padding=None,
     margin=None,
     gravity=None,
+    layout_gravity=None,
     background=None,
     radius=None,
     content_description=None,
@@ -2070,6 +2134,7 @@ def constraint(
     scale_y=None,
     translation_x=None,
     translation_y=None,
+    z_index=None,
     clip_to_outline=None,
     clip_children=None,
     style=None,
@@ -2083,6 +2148,7 @@ def constraint(
         padding=padding,
         margin=margin,
         gravity=gravity,
+        layout_gravity=layout_gravity,
         background=background,
         radius=radius,
         content_description=content_description,
@@ -2105,8 +2171,113 @@ def constraint(
         scale_y=scale_y,
         translation_x=translation_x,
         translation_y=translation_y,
+        z_index=z_index,
         clip_to_outline=clip_to_outline,
         clip_children=clip_children,
+        style=style,
+    )
+
+
+def frame(
+    *items,
+    id="frame",
+    layout=None,
+    width=None,
+    height=None,
+    padding=None,
+    margin=None,
+    gravity=None,
+    layout_gravity=None,
+    weight=None,
+    relative=None,
+    constraints=None,
+    background=None,
+    radius=None,
+    tint=None,
+    thumb_tint=None,
+    track_tint=None,
+    progress_tint=None,
+    button_tint=None,
+    content_description=None,
+    important_for_accessibility=None,
+    accessibility_label=None,
+    elevation=None,
+    pressed_elevation=None,
+    text_shadow_color=None,
+    text_shadow_radius=None,
+    text_shadow_dx=None,
+    text_shadow_dy=None,
+    opacity=None,
+    border_width=None,
+    border_color=None,
+    border_radius=None,
+    ripple_color=None,
+    blur_radius=None,
+    rotation=None,
+    scale_x=None,
+    scale_y=None,
+    translation_x=None,
+    translation_y=None,
+    z_index=None,
+    clip_to_outline=None,
+    clip_children=None,
+    on_click=None,
+    on_change=None,
+    on_text_change=None,
+    on_item_selected=None,
+    on_menu_item_selected=None,
+    on_focus_change=None,
+    style=None,
+):
+    return _UIFrame(
+        *items,
+        id=id,
+        layout=layout,
+        width=width,
+        height=height,
+        padding=padding,
+        margin=margin,
+        gravity=gravity,
+        layout_gravity=layout_gravity,
+        weight=weight,
+        relative=relative,
+        constraints=constraints,
+        background=background,
+        radius=radius,
+        tint=tint,
+        thumb_tint=thumb_tint,
+        track_tint=track_tint,
+        progress_tint=progress_tint,
+        button_tint=button_tint,
+        content_description=content_description,
+        important_for_accessibility=important_for_accessibility,
+        accessibility_label=accessibility_label,
+        elevation=elevation,
+        pressed_elevation=pressed_elevation,
+        text_shadow_color=text_shadow_color,
+        text_shadow_radius=text_shadow_radius,
+        text_shadow_dx=text_shadow_dx,
+        text_shadow_dy=text_shadow_dy,
+        opacity=opacity,
+        border_width=border_width,
+        border_color=border_color,
+        border_radius=border_radius,
+        ripple_color=ripple_color,
+        blur_radius=blur_radius,
+        rotation=rotation,
+        scale_x=scale_x,
+        scale_y=scale_y,
+        translation_x=translation_x,
+        translation_y=translation_y,
+        z_index=z_index,
+        clip_to_outline=clip_to_outline,
+        clip_children=clip_children,
+        on_click=on_click,
+        on_change=on_change,
+        on_text_change=on_text_change,
+        on_item_selected=on_item_selected,
+        on_menu_item_selected=on_menu_item_selected,
+        on_focus_change=on_focus_change,
         style=style,
     )
 

@@ -63,7 +63,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-17)
 
-- ✅ Test suite reality: `397 passed` (`PYTHONPATH=. pytest -q -rs`)
+- ✅ Test suite reality: `401 passed` (`PYTHONPATH=. pytest -q -rs`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -366,7 +366,7 @@ Core structural primitives:
 - ✅ Constraint
 - ⚠️ ScrollView
 - ⚠️ HorizontalScrollView
-- ❌ FrameLayout
+- ✅ FrameLayout
 - ⚠️ ListView
 - ❌ GridView
 - ⚠️ RecyclerView (static adapter model)
@@ -390,12 +390,12 @@ Structural modifiers:
 - ✅ margin
 - ✅ padding
 - ✅ gravity
-- ❌ layout_gravity
+- ✅ layout_gravity
 - ✅ constraints
 - ✅ relative rules
 - ✅ alignment
 - ✅ orientation
-- ⚠️ z-index (elevation layering)
+- ✅ z-index (deterministic ordering + translationZ layering)
 
 ### 8.2 Style APIs (Visual and Appearance)
 

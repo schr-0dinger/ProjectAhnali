@@ -86,6 +86,7 @@ from dsl.ir_helpers import (
     const,
     constraint_layout,
     field_set,
+    frame_layout,
     if_,
     layout_params,
     linear_layout,
@@ -133,6 +134,7 @@ from dsl.widgets import (
     _UIDropdownButton,
     _UIFlatButton,
     _UIFloatingActionButton,
+    _UIFrame,
     _UIHorizontalScrollView,
     _UIIcon,
     _UIIconButton,
@@ -220,6 +222,8 @@ class _PythonicContext:
             return "Landroid/widget/RelativeLayout;"
         if kind == "constraint":
             return "Landroidx/constraintlayout/widget/ConstraintLayout;"
+        if kind == "frame":
+            return "Landroid/widget/FrameLayout;"
         if kind == "scroll_view":
             return "Landroid/widget/ScrollView;"
         if kind == "horizontal_scroll_view":
@@ -266,6 +270,7 @@ class _PythonicContext:
             "column",
             "relative",
             "constraint",
+            "frame",
             "scroll_view",
             "horizontal_scroll_view",
             "appbar",
@@ -2106,7 +2111,7 @@ class _PythonicContext:
 
     def _build_ui_items(self, parent_id, items):
         body = []
-        for item in items:
+        for item in self._ordered_items_by_z_index(items):
             if self.registry is not None:
                 handled = self.registry.render_ui(self, item, parent_id)
                 if handled is not None:
@@ -2114,6 +2119,22 @@ class _PythonicContext:
                     continue
             body.extend(self._render_ui_core(item, parent_id))
         return body
+
+    def _item_z_index(self, item):
+        style = getattr(item, "style", None)
+        raw = getattr(item, "z_index", None)
+        if raw is None and style is not None:
+            raw = getattr(style, "z_index", None)
+        if raw is None:
+            return 0.0
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            raise RuntimeError(f"z_index on '{getattr(item, 'id', '?')}' must be numeric.")
+        return float(raw)
+
+    def _ordered_items_by_z_index(self, items):
+        indexed = list(enumerate(items))
+        indexed.sort(key=lambda pair: (self._item_z_index(pair[1]), pair[0]))
+        return [item for _, item in indexed]
 
     def _render_ui_core(self, item, parent_id):
         body = []
@@ -2663,6 +2684,13 @@ class _PythonicContext:
         elif isinstance(item, _UIConstraint):
             item.id = self._register_view(item.id, "constraint")
             body.extend(constraint_layout(item.id, var("ctx")))
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UIFrame):
+            item.id = self._register_view(item.id, "frame")
+            body.extend(frame_layout(item.id, var("ctx")))
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
@@ -3382,7 +3410,7 @@ class _PythonicContext:
             return theme.container.merged(theme.row)
         if isinstance(item, _UIColumn) and not isinstance(item, (_UIContainer, _UICard)):
             return theme.container.merged(theme.column)
-        if isinstance(item, (_UIContainer, _UICard, _UIRelative, _UIConstraint, _UIScreen)):
+        if isinstance(item, (_UIContainer, _UICard, _UIRelative, _UIConstraint, _UIFrame, _UIScreen)):
             return theme.container
         if isinstance(item, _UIText):
             return theme.text
@@ -3440,6 +3468,11 @@ class _PythonicContext:
 
         padding_value = item.padding if item.padding is not None else style.padding
         gravity_value = item.gravity if item.gravity is not None else style.gravity
+        layout_gravity_value = (
+            getattr(item, "layout_gravity", None)
+            if getattr(item, "layout_gravity", None) is not None
+            else getattr(style, "layout_gravity", None)
+        )
         align_value = getattr(item, "align", None) if getattr(item, "align", None) is not None else getattr(style, "align", None)
         arrangement_value = (
             getattr(item, "arrangement", None)
@@ -3489,6 +3522,11 @@ class _PythonicContext:
             getattr(item, "translation_y", None)
             if getattr(item, "translation_y", None) is not None
             else getattr(style, "translation_y", None)
+        )
+        z_index_value = (
+            getattr(item, "z_index", None)
+            if getattr(item, "z_index", None) is not None
+            else getattr(style, "z_index", None)
         )
         clip_to_outline_value = (
             getattr(item, "clip_to_outline", None)
@@ -3590,6 +3628,7 @@ class _PythonicContext:
                     f"weight on '{item.id}' in vertical container should use height=dp(0) for proper weight."
                 )
         gravity_value = self._normalize_gravity(gravity_value)
+        layout_gravity_value = self._normalize_gravity(layout_gravity_value)
 
         if padding_value is not None:
             out.extend(
@@ -3659,6 +3698,7 @@ class _PythonicContext:
                 "column",
                 "relative",
                 "constraint",
+                "frame",
                 "container",
                 "card",
                 "radio_group",
@@ -3892,6 +3932,20 @@ class _PythonicContext:
                 )
             )
 
+        if z_index_value is not None:
+            z_setup, z_expr = self._float_const_expr(z_index_value, prefix=f"{item.id}_z")
+            out.extend(z_setup)
+            out.append(
+                call_stmt(
+                    "setTranslationZ",
+                    args=[var(item.id), z_expr],
+                    return_type=None,
+                    arg_types=["F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/view/View;",
+                )
+            )
+
         if elevation_value is not None:
             out.extend(
                 self._emit_elevation_setter(
@@ -3958,7 +4012,14 @@ class _PythonicContext:
                 )
             )
 
-        if layout_value or margin_value or weight_value is not None or relative_value is not None or constraints_value is not None:
+        if (
+            layout_value
+            or margin_value
+            or weight_value is not None
+            or layout_gravity_value is not None
+            or relative_value is not None
+            or constraints_value is not None
+        ):
             if getattr(item, "floating", False) and relative_value is None:
                 relative_value = [("align_parent_bottom", "parent"), ("align_parent_end", "parent")]
             if layout_value is None:
@@ -3970,12 +4031,16 @@ class _PythonicContext:
                 parent_lp = "RelativeLayout"
             elif parent_kind == "constraint":
                 parent_lp = "ConstraintLayout"
+            elif parent_kind == "frame":
+                parent_lp = "FrameLayout"
             else:
                 parent_lp = "LinearLayout"
             if parent_lp == "RelativeLayout":
                 lp_desc = "Landroid/widget/RelativeLayout$LayoutParams;"
             elif parent_lp == "ConstraintLayout":
                 lp_desc = "Landroidx/constraintlayout/widget/ConstraintLayout$LayoutParams;"
+            elif parent_lp == "FrameLayout":
+                lp_desc = "Landroid/widget/FrameLayout$LayoutParams;"
             else:
                 lp_desc = "Landroid/widget/LinearLayout$LayoutParams;"
             w_setup, w_expr = self._layout_size_expr(width, prefix=f"{item.id}_w")
@@ -4002,6 +4067,21 @@ class _PythonicContext:
                         view_id=item.id,
                         attr_name="margin",
                         raw_value=(var(lp_name), margin_value),
+                    )
+                )
+            if layout_gravity_value is not None and parent_lp in {"LinearLayout", "FrameLayout"}:
+                lp_owner = (
+                    "Landroid/widget/FrameLayout$LayoutParams;"
+                    if parent_lp == "FrameLayout"
+                    else "Landroid/widget/LinearLayout$LayoutParams;"
+                )
+                out.append(
+                    field_set(
+                        var(lp_name),
+                        lp_owner,
+                        "gravity",
+                        "I",
+                        const(layout_gravity_value),
                     )
                 )
             if parent_lp == "RelativeLayout" and relative_value is not None:
@@ -4804,6 +4884,10 @@ class _PythonicContext:
     def _normalize_gravity(self, value):
         if value is None:
             return None
+        if isinstance(value, bool):
+            raise RuntimeError(
+                f"Invalid gravity value {value!r}. Expected int or one of center/start/end/top/bottom variants."
+            )
         if isinstance(value, int):
             return value
         if isinstance(value, str):
