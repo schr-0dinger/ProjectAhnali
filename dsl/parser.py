@@ -9,6 +9,8 @@ from .ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpGetJsonField,
+    _ExprHttpGetJsonFieldError,
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
@@ -26,6 +28,8 @@ from .ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpGetJsonField,
+    _StmtHttpGetJsonFieldError,
     _StmtHttpGetRetry,
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
@@ -241,6 +245,47 @@ def _parse_stmt(stmt):
                     int(args[1].value),
                     int(args[2].value),
                     default_expr.value,
+                )
+            if fn in (
+                "http_get_json_field",
+                "HttpGetJsonField",
+                "fetch_json_field",
+                "FetchJsonField",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 3:
+                    raise RuntimeError(
+                        'http_get_json_field expects exactly 3 string arguments. '
+                        'Usage: http_get_json_field("https://...", "key", "fallback")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("http_get_json_field argument 'url' must be a constant string")
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("http_get_json_field argument 'key' must be a constant string")
+                if not isinstance(args[2], _ExprConst) or not isinstance(args[2].value, str):
+                    raise RuntimeError("http_get_json_field argument 'fallback' must be a constant string")
+                return _StmtHttpGetJsonField(
+                    args[0].value,
+                    args[1].value,
+                    args[2].value,
+                )
+            if fn in (
+                "http_get_json_field_error",
+                "HttpGetJsonFieldError",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'http_get_json_field_error expects exactly 2 string arguments. '
+                        'Usage: http_get_json_field_error("https://...", "key")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("http_get_json_field_error argument 'url' must be a constant string")
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("http_get_json_field_error argument 'key' must be a constant string")
+                return _StmtHttpGetJsonFieldError(
+                    args[0].value,
+                    args[1].value,
                 )
             if fn in (
                 "http_get_route",
@@ -464,6 +509,47 @@ def _parse_expr(node):
                 int(args[1].value),
                 int(args[2].value),
                 default_expr.value,
+            )
+        if node.func.id in (
+            "http_get_json_field",
+            "HttpGetJsonField",
+            "fetch_json_field",
+            "FetchJsonField",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 3:
+                raise RuntimeError(
+                    'http_get_json_field expects exactly 3 string arguments. '
+                    'Usage: http_get_json_field("https://...", "key", "fallback")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("http_get_json_field argument 'url' must be a constant string")
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("http_get_json_field argument 'key' must be a constant string")
+            if not isinstance(args[2], _ExprConst) or not isinstance(args[2].value, str):
+                raise RuntimeError("http_get_json_field argument 'fallback' must be a constant string")
+            return _ExprHttpGetJsonField(
+                args[0].value,
+                args[1].value,
+                args[2].value,
+            )
+        if node.func.id in (
+            "http_get_json_field_error",
+            "HttpGetJsonFieldError",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 2:
+                raise RuntimeError(
+                    'http_get_json_field_error expects exactly 2 string arguments. '
+                    'Usage: http_get_json_field_error("https://...", "key")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("http_get_json_field_error argument 'url' must be a constant string")
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("http_get_json_field_error argument 'key' must be a constant string")
+            return _ExprHttpGetJsonFieldError(
+                args[0].value,
+                args[1].value,
             )
         if node.func.id in (
             "storage_get",

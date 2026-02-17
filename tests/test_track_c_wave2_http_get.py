@@ -2,6 +2,7 @@ import pytest
 
 from alpha_pipeline import alpha_pipeline
 from apk.toolchain import emit_build_dir_from_program
+from emit.smali_runtime_helpers import emit_capability_helper_smali
 from dsl.app import (
     Caps,
     activity,
@@ -10,6 +11,8 @@ from dsl.app import (
     button,
     http_get,
     http_get_error,
+    http_get_json_field,
+    http_get_json_field_error,
     http_get_retry,
     http_get_route,
     http_get_status,
@@ -39,6 +42,26 @@ def _retry_btn_handler():
 @on_click("retry_stmt_btn")
 def _retry_stmt_btn_handler():
     http_get_retry("https://example.com", 1, 0, "offline")
+
+
+@on_click("json_btn")
+def _json_btn_handler():
+    value = http_get_json_field("https://example.com/data.json", "title", "offline")
+    label.text = value
+
+
+@on_click("json_stmt_btn")
+def _json_stmt_btn_handler():
+    http_get_json_field("https://example.com/data.json", "title", "offline")
+
+
+@on_click("json_err_btn")
+def _json_err_btn_handler():
+    code = http_get_json_field_error("https://example.com/data.json", "title")
+    if code == 0:
+        label.text = "JSON OK"
+    else:
+        label.text = "JSON error"
 
 
 @on_click("probe_btn")
@@ -205,6 +228,65 @@ def test_track_c_wave2_http_get_retry_statement_lowers_to_runtime_helper_call():
     ) in merged
 
 
+def test_track_c_wave2_http_get_json_field_lowers_to_runtime_helper_call_and_symbol_set_text():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Networking]),
+            ui(
+                text("Init", id="label"),
+                button("JSON", id="json_btn"),
+            ),
+            _json_btn_handler,
+        )
+    ).build()
+
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert (
+        "Lcom/ahnali/runtime/HttpHelper;->httpGetJsonField("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+    ) in merged
+    assert "Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V" in merged
+
+
+def test_track_c_wave2_http_get_json_field_error_lowers_to_runtime_helper_call():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Networking]),
+            ui(
+                text("Init", id="label"),
+                button("JSON Err", id="json_err_btn"),
+            ),
+            _json_err_btn_handler,
+        )
+    ).build()
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert (
+        "Lcom/ahnali/runtime/HttpHelper;->httpGetJsonFieldError("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+    ) in merged
+
+
+def test_track_c_wave2_http_get_json_field_statement_lowers_to_runtime_helper_call():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Networking]),
+            ui(button("JSON", id="json_stmt_btn")),
+            _json_stmt_btn_handler,
+        )
+    ).build()
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert (
+        "Lcom/ahnali/runtime/HttpHelper;->httpGetJsonField("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+    ) in merged
+
+
 def test_track_c_wave2_http_get_requires_networking_capability():
     prog = app(
         activity(
@@ -234,6 +316,41 @@ def test_track_c_wave2_http_get_retry_requires_networking_capability():
         raise AssertionError("Expected build() to fail when Networking capability is missing")
     except RuntimeError as exc:
         assert "[CapabilityError] http_get_retry requires Caps.Networking." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Networking]) to activity(...)." in str(exc)
+
+
+def test_track_c_wave2_http_get_json_field_requires_networking_capability():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(button("JSON", id="json_stmt_btn")),
+            _json_stmt_btn_handler,
+        )
+    )
+    try:
+        prog.build()
+        raise AssertionError("Expected build() to fail when Networking capability is missing")
+    except RuntimeError as exc:
+        assert "[CapabilityError] http_get_json_field requires Caps.Networking." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Networking]) to activity(...)." in str(exc)
+
+
+def test_track_c_wave2_http_get_json_field_error_requires_networking_capability():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Init", id="label"),
+                button("JSON Err", id="json_err_btn"),
+            ),
+            _json_err_btn_handler,
+        )
+    )
+    try:
+        prog.build()
+        raise AssertionError("Expected build() to fail when Networking capability is missing")
+    except RuntimeError as exc:
+        assert "[CapabilityError] http_get_json_field_error requires Caps.Networking." in str(exc)
         assert "Fix: add app_config(uses=[Caps.Networking]) to activity(...)." in str(exc)
 
 
@@ -272,17 +389,51 @@ def test_track_c_wave2_toolchain_emits_http_helper_class(tmp_path):
         ".method public static httpGetRetry("
         "Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;"
     ) in helper_smali
+    assert (
+        ".method public static httpGetJsonFieldError("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+    ) in helper_smali
+    assert (
+        ".method public static httpGetJsonField("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+    ) in helper_smali
     assert "Ljava/net/URL;->openConnection()Ljava/net/URLConnection;" in helper_smali
     assert "Ljava/net/HttpURLConnection;->setRequestMethod(Ljava/lang/String;)V" in helper_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->httpGetError(Landroid/app/Activity;Ljava/lang/String;)I" in helper_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;" in helper_smali
+    assert "Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V" in helper_smali
+    assert "Lorg/json/JSONObject;->has(Ljava/lang/String;)Z" in helper_smali
+    assert "Lorg/json/JSONObject;->isNull(Ljava/lang/String;)Z" in helper_smali
+    assert "Lorg/json/JSONObject;->opt(Ljava/lang/String;)Ljava/lang/Object;" in helper_smali
     assert "Ljava/lang/Thread;->sleep(J)V" in helper_smali
     assert "return-object p2" in helper_smali
     assert "const/4 v0, -0x1" in helper_smali
     assert "const/4 v0, 0x0" in helper_smali
     assert "const/4 v0, 0x3" in helper_smali
     assert "const/4 v0, 0x4" in helper_smali
+    assert "const/4 v0, 0x5" in helper_smali
+    assert "const/4 v0, 0x6" in helper_smali
     assert "return-object p4" in helper_smali
+
+
+def test_track_c_wave2_http_get_json_field_error_maps_malformed_payload_code():
+    helper_smali = emit_capability_helper_smali(
+        class_desc="Lcom/ahnali/runtime/HttpHelper;",
+        helper_method="httpGet",
+        helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+    )
+    assert ":ahnali_http_json_error_malformed" in helper_smali
+    assert "const/4 v0, 0x5" in helper_smali
+
+
+def test_track_c_wave2_http_get_json_field_error_maps_missing_key_code():
+    helper_smali = emit_capability_helper_smali(
+        class_desc="Lcom/ahnali/runtime/HttpHelper;",
+        helper_method="httpGet",
+        helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+    )
+    assert ":ahnali_http_json_error_missing_key" in helper_smali
+    assert "const/4 v0, 0x6" in helper_smali
 
 
 def _build_with_bad_handler(btn_id: str, handler):
@@ -383,6 +534,60 @@ def test_track_c_wave2_parser_http_get_retry_rejects_non_string_default():
 
     with pytest.raises(RuntimeError, match="http_get_retry argument 'default_value' must be a constant string"):
         _build_with_bad_handler("bad_fetch_retry_default", _bad)
+
+
+def test_track_c_wave2_parser_http_get_json_field_rejects_wrong_arity():
+    def _bad():
+        value = http_get_json_field("https://example.com/data.json", "title")
+        preview = value
+
+    with pytest.raises(RuntimeError, match="http_get_json_field expects exactly 3 string arguments"):
+        _build_with_bad_handler("bad_fetch_json_arity", _bad)
+
+
+def test_track_c_wave2_parser_http_get_json_field_rejects_non_string_url():
+    def _bad():
+        value = http_get_json_field(7, "title", "fallback")
+        preview = value
+
+    with pytest.raises(RuntimeError, match="http_get_json_field argument 'url' must be a constant string"):
+        _build_with_bad_handler("bad_fetch_json_url", _bad)
+
+
+def test_track_c_wave2_parser_http_get_json_field_rejects_non_string_key():
+    def _bad():
+        value = http_get_json_field("https://example.com/data.json", 7, "fallback")
+        preview = value
+
+    with pytest.raises(RuntimeError, match="http_get_json_field argument 'key' must be a constant string"):
+        _build_with_bad_handler("bad_fetch_json_key", _bad)
+
+
+def test_track_c_wave2_parser_http_get_json_field_rejects_non_string_fallback():
+    def _bad():
+        value = http_get_json_field("https://example.com/data.json", "title", 7)
+        preview = value
+
+    with pytest.raises(RuntimeError, match="http_get_json_field argument 'fallback' must be a constant string"):
+        _build_with_bad_handler("bad_fetch_json_fallback", _bad)
+
+
+def test_track_c_wave2_parser_http_get_json_field_error_rejects_wrong_arity():
+    def _bad():
+        code = http_get_json_field_error("https://example.com/data.json")
+        preview = code
+
+    with pytest.raises(RuntimeError, match="http_get_json_field_error expects exactly 2 string arguments"):
+        _build_with_bad_handler("bad_fetch_json_err_arity", _bad)
+
+
+def test_track_c_wave2_parser_http_get_json_field_error_rejects_non_string_key():
+    def _bad():
+        code = http_get_json_field_error("https://example.com/data.json", 7)
+        preview = code
+
+    with pytest.raises(RuntimeError, match="http_get_json_field_error argument 'key' must be a constant string"):
+        _build_with_bad_handler("bad_fetch_json_err_key", _bad)
 
 
 def test_track_c_wave2_http_get_route_rejects_unknown_handler_target():

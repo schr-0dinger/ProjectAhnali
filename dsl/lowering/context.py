@@ -13,6 +13,8 @@ from dsl.ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpGetJsonField,
+    _ExprHttpGetJsonFieldError,
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
@@ -35,6 +37,8 @@ from dsl.ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpGetJsonField,
+    _StmtHttpGetJsonFieldError,
     _StmtHttpGetRetry,
     _StmtHttpGetRoute,
     _StmtHttpGetStatus,
@@ -2779,6 +2783,10 @@ class _PythonicContext:
             return self._compile_http_get_route_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRetry):
             return self._compile_http_get_retry_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetJsonField):
+            return self._compile_http_get_json_field_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetJsonFieldError):
+            return self._compile_http_get_json_field_error_stmt(stmt)
         if isinstance(stmt, _StmtStoragePut):
             return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtStorageGet):
@@ -4820,11 +4828,26 @@ class _PythonicContext:
                 tmp_prefix="http_get_retry_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprHttpGetJsonField):
+            prefix, result = self._compile_http_get_json_field_call(
+                url=stmt.value.url,
+                key=stmt.value.key,
+                fallback=stmt.value.fallback,
+                tmp_prefix="http_get_json_field_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprHttpGetJsonFieldError):
+            prefix, result = self._compile_http_get_json_field_error_call(
+                url=stmt.value.url,
+                key=stmt.value.key,
+                tmp_prefix="http_get_json_field_error_result",
+            )
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
-                "storage_exists(...), http_get_status(...), http_get_error(...), or http_get_retry(...)."
+                "storage_exists(...), http_get_status(...), http_get_error(...), "
+                "http_get_retry(...), http_get_json_field(...), or http_get_json_field_error(...)."
             )
 
         if name in self.state_spec.values:
@@ -5499,6 +5522,72 @@ class _PythonicContext:
             ),
         ], var(result_tmp)
 
+    def _compile_http_get_json_field_call(
+        self,
+        *,
+        url: str,
+        key: str,
+        fallback: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="http_get_json_field",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "httpGetJsonField",
+                    args=[var("ctx"), const(str(url)), const(str(key)), const(str(fallback))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_get_json_field_error_call(
+        self,
+        *,
+        url: str,
+        key: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="http_get_json_field_error",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "httpGetJsonFieldError",
+                    args=[var("ctx"), const(str(url)), const(str(key))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
     def _compile_http_get_stmt(self, stmt):
         out, _ = self._compile_http_get_call(
             url=stmt.url,
@@ -5528,6 +5617,23 @@ class _PythonicContext:
             backoff_ms=stmt.backoff_ms,
             default_value=stmt.default_value,
             tmp_prefix="http_get_retry_ignored",
+        )
+        return out
+
+    def _compile_http_get_json_field_stmt(self, stmt):
+        out, _ = self._compile_http_get_json_field_call(
+            url=stmt.url,
+            key=stmt.key,
+            fallback=stmt.fallback,
+            tmp_prefix="http_get_json_field_ignored",
+        )
+        return out
+
+    def _compile_http_get_json_field_error_stmt(self, stmt):
+        out, _ = self._compile_http_get_json_field_error_call(
+            url=stmt.url,
+            key=stmt.key,
+            tmp_prefix="http_get_json_field_error_ignored",
         )
         return out
 

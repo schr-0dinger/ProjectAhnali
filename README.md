@@ -244,6 +244,9 @@ Work items:
   - `http_get_route(url, "success_btn", "failure_btn", fallback)` for success/failure handler wiring
 - ✅ Add deterministic retry/backoff primitive:
   - `http_get_retry(url, retries, backoff_ms, fallback)` → `httpGetRetry(...)Ljava/lang/String;`
+- ✅ Add typed JSON field networking helpers:
+  - `http_get_json_field(url, key, fallback)` → `httpGetJsonField(...)Ljava/lang/String;`
+  - `http_get_json_field_error(url, key)` → `httpGetJsonFieldError(...)I`
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
@@ -313,6 +316,15 @@ Networking response contract:
   - backoff = fixed `max(0, backoff_ms)` milliseconds between failed attempts
   - success condition = `http_get_error(...) == 0`
   - returns response body on first success, otherwise fallback
+- `http_get_json_field(...)` returns extracted JSON field string, else fallback string.
+- `http_get_json_field_error(...)` returns deterministic extraction error code:
+  - `0` success
+  - `1` invalid input
+  - `2` transport/runtime exception
+  - `3` non-200 status
+  - `4` empty body
+  - `5` malformed payload
+  - `6` missing key (or null value)
 
 Storage introspection contract:
 - `storage_exists("key")` returns `1` when key exists, else `0`.

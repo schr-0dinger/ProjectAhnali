@@ -886,6 +886,18 @@ def fetch_url_retry(url: str, retries: int, backoff_ms: int, default_value: str 
     return http_get_retry(url, retries, backoff_ms, default_value)
 
 
+def http_get_json_field(url: str, key: str, fallback: str):
+    return _ExprHttpGetJsonField(str(url), str(key), str(fallback))
+
+
+def fetch_json_field(url: str, key: str, fallback: str):
+    return http_get_json_field(url, key, fallback)
+
+
+def http_get_json_field_error(url: str, key: str):
+    return _ExprHttpGetJsonFieldError(str(url), str(key))
+
+
 def http_get_route(
     url: str,
     success_target_id: str,

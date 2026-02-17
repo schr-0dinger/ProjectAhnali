@@ -99,6 +99,19 @@ class _ExprHttpGetRetry:
         self.default_value = default_value
 
 
+class _ExprHttpGetJsonField:
+    def __init__(self, url, key, fallback):
+        self.url = url
+        self.key = key
+        self.fallback = fallback
+
+
+class _ExprHttpGetJsonFieldError:
+    def __init__(self, url, key):
+        self.url = url
+        self.key = key
+
+
 class _StmtAssign:
     def __init__(self, target, value):
         self.target = target
@@ -204,6 +217,19 @@ class _StmtHttpGetRetry:
         self.default_value = default_value
 
 
+class _StmtHttpGetJsonField:
+    def __init__(self, url, key, fallback):
+        self.url = url
+        self.key = key
+        self.fallback = fallback
+
+
+class _StmtHttpGetJsonFieldError:
+    def __init__(self, url, key):
+        self.url = url
+        self.key = key
+
+
 class _StmtNavigate:
     def __init__(self, target):
         self.target = target
@@ -301,6 +327,8 @@ def _coerce_expr(value):
             _ExprHttpGetStatus,
             _ExprHttpGetError,
             _ExprHttpGetRetry,
+            _ExprHttpGetJsonField,
+            _ExprHttpGetJsonFieldError,
             _ExprConst,
         ),
     ):

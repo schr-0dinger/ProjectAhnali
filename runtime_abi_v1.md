@@ -179,6 +179,8 @@ Deprecation policy:
     - `httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I`
     - `httpGetError(Landroid/app/Activity;Ljava/lang/String;)I`
     - `httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;`
+    - `httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
   - Return semantics:
     - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
     - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
@@ -188,6 +190,18 @@ Deprecation policy:
       - `2`: transport/runtime exception
       - `3`: non-200 HTTP status
       - `4`: empty body
+    - `httpGetJsonField`: extracts a deterministic string field value from JSON response body.
+      - Returns extracted value when `httpGetJsonFieldError(...) == 0`
+      - Returns fallback argument for any non-zero error code
+      - Non-string JSON values are stringified via `Object.toString()`
+    - `httpGetJsonFieldError`: deterministic JSON extraction error code:
+      - `0`: success (HTTP success + parseable JSON + key present and non-null)
+      - `1`: invalid input (null URL or null key)
+      - `2`: transport/runtime exception
+      - `3`: non-200 HTTP status
+      - `4`: empty body
+      - `5`: malformed JSON payload
+      - `6`: missing key (or key value is JSON null)
     - `httpGetRetry`: retries deterministic fetch attempts and returns response body on first success, else fallback.
       - Success condition: `httpGetError(...) == 0`
       - Retry policy: total attempts = `max(0, retries) + 1`

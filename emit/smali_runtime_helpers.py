@@ -299,6 +299,86 @@ def _emit_http_get_retry_method() -> list[str]:
     ]
 
 
+def _emit_http_get_json_field_error_method() -> list[str]:
+    return [
+        ".method public static httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 5",
+        "    if-eqz p1, :ahnali_http_json_error_invalid",
+        "    if-eqz p2, :ahnali_http_json_error_invalid",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/HttpHelper;->httpGetError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_http_json_error_passthrough",
+        '    const-string v1, ""',
+        "    invoke-static {p0, p1, v1}, Lcom/ahnali/runtime/HttpHelper;->httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_http_json_error_empty_body",
+        "    :ahnali_http_json_error_try_start",
+        "    new-instance v3, Lorg/json/JSONObject;",
+        "    invoke-direct {v3, v2}, Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v3, p2}, Lorg/json/JSONObject;->has(Ljava/lang/String;)Z",
+        "    move-result v4",
+        "    if-eqz v4, :ahnali_http_json_error_missing_key",
+        "    invoke-virtual {v3, p2}, Lorg/json/JSONObject;->isNull(Ljava/lang/String;)Z",
+        "    move-result v4",
+        "    if-nez v4, :ahnali_http_json_error_missing_key",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_http_json_error_try_end",
+        "    .catch Lorg/json/JSONException; {:ahnali_http_json_error_try_start .. :ahnali_http_json_error_try_end} :ahnali_http_json_error_malformed",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_json_error_try_start .. :ahnali_http_json_error_try_end} :ahnali_http_json_error_exception",
+        "    :ahnali_http_json_error_missing_key",
+        "    const/4 v0, 0x6",
+        "    return v0",
+        "    :ahnali_http_json_error_empty_body",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        "    :ahnali_http_json_error_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_http_json_error_malformed",
+        "    const/4 v0, 0x5",
+        "    return v0",
+        "    :ahnali_http_json_error_exception",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        "    :ahnali_http_json_error_passthrough",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_get_json_field_method() -> list[str]:
+    return [
+        ".method public static httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    .locals 6",
+        "    if-eqz p1, :ahnali_http_json_field_fallback",
+        "    if-eqz p2, :ahnali_http_json_field_fallback",
+        "    invoke-static {p0, p1, p2}, Lcom/ahnali/runtime/HttpHelper;->httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_http_json_field_fallback",
+        '    const-string v1, ""',
+        "    invoke-static {p0, p1, v1}, Lcom/ahnali/runtime/HttpHelper;->httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_http_json_field_fallback",
+        "    :ahnali_http_json_field_try_start",
+        "    new-instance v3, Lorg/json/JSONObject;",
+        "    invoke-direct {v3, v2}, Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v3, p2}, Lorg/json/JSONObject;->opt(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v4",
+        "    if-eqz v4, :ahnali_http_json_field_fallback",
+        "    invoke-virtual {v4}, Ljava/lang/Object;->toString()Ljava/lang/String;",
+        "    move-result-object v5",
+        "    if-eqz v5, :ahnali_http_json_field_fallback",
+        "    return-object v5",
+        "    :ahnali_http_json_field_try_end",
+        "    .catch Lorg/json/JSONException; {:ahnali_http_json_field_try_start .. :ahnali_http_json_field_try_end} :ahnali_http_json_field_fallback",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_json_field_try_start .. :ahnali_http_json_field_try_end} :ahnali_http_json_field_fallback",
+        "    :ahnali_http_json_field_fallback",
+        "    return-object p3",
+        ".end method",
+    ]
+
+
 def _emit_storage_put_string_method() -> list[str]:
     return [
         ".method public static putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -477,6 +557,10 @@ def emit_capability_helper_smali(
         lines.extend(_emit_http_get_error_method())
         lines.append("")
         lines.extend(_emit_http_get_retry_method())
+        lines.append("")
+        lines.extend(_emit_http_get_json_field_error_method())
+        lines.append("")
+        lines.extend(_emit_http_get_json_field_method())
         return "\n".join(lines)
 
     if (
