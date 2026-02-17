@@ -32,6 +32,20 @@ def test_api_domain_modules_expose_legacy_compatible_symbols():
     assert style.theme is legacy_api.theme
     assert interaction.on_click is legacy_api.on_click
     assert interaction.on_slider_change is legacy_api.on_slider_change
+    assert interaction.on_long_click is legacy_api.on_long_click
+    assert interaction.on_touch is legacy_api.on_touch
+    assert interaction.on_double_tap is legacy_api.on_double_tap
+    assert interaction.on_swipe is legacy_api.on_swipe
+    assert interaction.on_scroll is legacy_api.on_scroll
+    assert interaction.on_fling is legacy_api.on_fling
+    assert interaction.on_pinch is legacy_api.on_pinch
+    assert interaction.on_zoom is legacy_api.on_zoom
+    assert interaction.on_rotate_gesture is legacy_api.on_rotate_gesture
+    assert interaction.on_scale_gesture_detector is legacy_api.on_scale_gesture_detector
+    assert interaction.on_drag is legacy_api.on_drag
+    assert interaction.on_drop is legacy_api.on_drop
+    assert interaction.on_editor_action is legacy_api.on_editor_action
+    assert interaction.on_key is legacy_api.on_key
     assert interaction.pop_to_root is legacy_api.pop_to_root
     assert interaction.clear_stack is legacy_api.clear_stack
     assert state.storage_put is legacy_api.storage_put

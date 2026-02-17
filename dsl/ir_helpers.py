@@ -639,6 +639,126 @@ def on_focus_change_view(view, handler_name="onFocusChange", listener_var="liste
     ]
 
 
+def on_long_click_view(
+    view,
+    handler_name="onLongClick",
+    listener_var="listener",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliLongClickListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnLongClickListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/view/View;",
+        ),
+    ]
+
+
+def on_touch_view(
+    view,
+    handler_name="onTouch",
+    listener_var="listener",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliTouchListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnTouchListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/view/View;",
+        ),
+    ]
+
+
+def on_drag_view(
+    view,
+    handler_name="onDrag",
+    listener_var="listener",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliDragListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnDragListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/view/View;",
+        ),
+    ]
+
+
+def on_key_view(
+    view,
+    handler_name="onKey",
+    listener_var="listener",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliKeyListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnKeyListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/view/View;",
+        ),
+    ]
+
+
+def on_editor_action_view(
+    view,
+    handler_name="onEditorAction",
+    listener_var="listener",
+    listener_class_desc="Lcom/ahnali/preview/AhnaliEditorActionListener;",
+):
+    return [
+        assign(
+            listener_var,
+            new(
+                listener_class_desc,
+                args=[],
+            ),
+        ),
+        call_stmt(
+            "setOnEditorActionListener",
+            args=[view, var(listener_var)],
+            return_type=None,
+            invoke_kind="virtual",
+            owner="Landroid/widget/TextView;",
+        ),
+    ]
+
+
 def if_(cond, then, else_):
     return If(cond, then, else_)
 
@@ -680,6 +800,16 @@ def navigate(target):
 def back():
     from dsl.ast import _StmtBack
     return _StmtBack()
+
+
+def pop_to_root():
+    from dsl.ast import _StmtPopToRoot
+    return _StmtPopToRoot()
+
+
+def clear_stack():
+    from dsl.ast import _StmtClearStack
+    return _StmtClearStack()
 
 
 def replace(target):

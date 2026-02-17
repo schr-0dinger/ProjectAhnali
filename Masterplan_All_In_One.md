@@ -462,20 +462,20 @@ Switch/Checkbox/Radio styling:
 
 Click and touch:
 - ✅ on_click
-- ❌ on_long_click
-- ❌ on_double_tap
-- ❌ on_touch
-- ❌ on_swipe
-- ❌ on_drag
-- ❌ on_drop
-- ❌ on_scroll
-- ❌ on_fling
+- ✅ on_long_click
+- ✅ on_double_tap
+- ✅ on_touch
+- ✅ on_swipe
+- ✅ on_drag
+- ✅ on_drop
+- ✅ on_scroll
+- ✅ on_fling
 
 Input events:
 - ✅ on_text_change
-- ❌ on_editor_action
+- ✅ on_editor_action
 - ✅ on_focus_change
-- ❌ on_key
+- ✅ on_key
 - ✅ on_change (Switch/Checkbox/Radio/Slider/RadioGroup)
 - ✅ on_slider_change
 - ✅ on_item_selected
@@ -489,11 +489,11 @@ Navigation:
 - ✅ ClearStack
 
 Gesture detection:
-- ❌ pinch
-- ❌ zoom
-- ❌ rotate gesture
-- ❌ drag
-- ❌ scale gesture detector
+- ✅ pinch
+- ✅ zoom
+- ✅ rotate gesture
+- ✅ drag
+- ✅ scale gesture detector
 
 ### 8.4 State APIs (Deterministic App Data)
 

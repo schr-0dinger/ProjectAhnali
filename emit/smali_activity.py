@@ -748,6 +748,26 @@ def emit_event_listener_smali(
 
     if kind == "click":
         iface = "Landroid/view/View$OnClickListener;"
+    elif kind == "long_click":
+        iface = "Landroid/view/View$OnLongClickListener;"
+    elif kind in {
+        "touch",
+        "double_tap",
+        "swipe",
+        "scroll",
+        "fling",
+        "pinch",
+        "zoom",
+        "rotate_gesture",
+        "scale_gesture_detector",
+    }:
+        iface = "Landroid/view/View$OnTouchListener;"
+    elif kind in {"drag", "drop"}:
+        iface = "Landroid/view/View$OnDragListener;"
+    elif kind == "editor_action":
+        iface = "Landroid/widget/TextView$OnEditorActionListener;"
+    elif kind == "key":
+        iface = "Landroid/view/View$OnKeyListener;"
     elif kind == "change":
         iface = "Landroid/widget/CompoundButton$OnCheckedChangeListener;"
     elif kind == "slider_change":
@@ -780,6 +800,59 @@ def emit_event_listener_smali(
         lines.append("    .locals 0")
         lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/view/View;)V")
         lines.append("    return-void")
+        lines.append(".end method")
+    elif kind == "long_click":
+        lines.append(".method public onLongClick(Landroid/view/View;)Z")
+        lines.append("    .locals 1")
+        lines.append(f"    invoke-static {{p1}}, {target_desc}->{target_method}(Landroid/view/View;)V")
+        lines.append("    const/4 v0, 0x1")
+        lines.append("    return v0")
+        lines.append(".end method")
+    elif kind in {
+        "touch",
+        "double_tap",
+        "swipe",
+        "scroll",
+        "fling",
+        "pinch",
+        "zoom",
+        "rotate_gesture",
+        "scale_gesture_detector",
+    }:
+        lines.append(".method public onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z")
+        lines.append("    .locals 1")
+        lines.append(
+            f"    invoke-static {{p1, p2}}, {target_desc}->{target_method}(Landroid/view/View;Landroid/view/MotionEvent;)V"
+        )
+        lines.append("    const/4 v0, 0x1")
+        lines.append("    return v0")
+        lines.append(".end method")
+    elif kind in {"drag", "drop"}:
+        lines.append(".method public onDrag(Landroid/view/View;Landroid/view/DragEvent;)Z")
+        lines.append("    .locals 1")
+        lines.append(
+            f"    invoke-static {{p1, p2}}, {target_desc}->{target_method}(Landroid/view/View;Landroid/view/DragEvent;)V"
+        )
+        lines.append("    const/4 v0, 0x1")
+        lines.append("    return v0")
+        lines.append(".end method")
+    elif kind == "editor_action":
+        lines.append(".method public onEditorAction(Landroid/widget/TextView;ILandroid/view/KeyEvent;)Z")
+        lines.append("    .locals 1")
+        lines.append(
+            f"    invoke-static {{p1, p2, p3}}, {target_desc}->{target_method}(Landroid/widget/TextView;ILandroid/view/KeyEvent;)V"
+        )
+        lines.append("    const/4 v0, 0x1")
+        lines.append("    return v0")
+        lines.append(".end method")
+    elif kind == "key":
+        lines.append(".method public onKey(Landroid/view/View;ILandroid/view/KeyEvent;)Z")
+        lines.append("    .locals 1")
+        lines.append(
+            f"    invoke-static {{p1, p2, p3}}, {target_desc}->{target_method}(Landroid/view/View;ILandroid/view/KeyEvent;)V"
+        )
+        lines.append("    const/4 v0, 0x1")
+        lines.append("    return v0")
         lines.append(".end method")
     elif kind == "change":
         lines.append(".method public onCheckedChanged(Landroid/widget/CompoundButton;Z)V")

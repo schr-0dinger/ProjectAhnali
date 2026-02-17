@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `441 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `459 passed` (`PYTHONPATH=. pytest -q -rs`)
 
 ## DSL Surface (Current)
 
@@ -194,6 +194,7 @@ Constraints:
 11) Program 2 tranche E implemented: `RecyclerView` + `NavigationBar` + `NavigationRail` + `DrawerLayout` + `FragmentContainer` + `percent` coverage (`tests/test_program2_structure_gap_closure.py`, `tests/test_phase_integration_smoke.py`)
 12) Program 3 style gap closure implemented: `hint_color`/`highlight_color`/`text_tint`, radial+sweep gradients, image style channels (`scaleType`, `crop`, `centerInside`, `adjustViewBounds`, image tint/alpha/matrix), and `secondary_progress_tint` with validation coverage (`tests/test_program3_style_completion.py`)
 13) Program 4 tranche A implemented: dedicated `on_slider_change` alias parity plus navigation operators `PopToRoot`/`ClearStack` with parser/lowering conformance (`tests/test_event_surface_listeners.py`, `tests/test_program4_navigation_ops.py`)
+14) Program 4 completed for section 8.3: long-click/touch/gesture aliases, drag/drop, editor-action/key events, deterministic conflict grouping, and support-class ABI/test coverage (`tests/test_program4_interaction_listeners.py`, `tests/test_runtime_abi_v1.py`)
 
 ## Completion Roadmap (Current)
 

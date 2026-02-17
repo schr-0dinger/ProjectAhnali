@@ -34,11 +34,25 @@ Out of scope:
 Stable helper class descriptor patterns:
 - Wrapper activity: `Lcom/ahnali/preview/MainActivity;` (default; configurable)
 - Click listener: `Lcom/ahnali/preview/AhnaliClickListener_<target_id>;`
+- Long-click listener: `Lcom/ahnali/preview/AhnaliLongClickListener_<target_id>;`
 - Toggle/radio/switch change listener: `Lcom/ahnali/preview/AhnaliChangeListener_<target_id>;`
+- Touch listener: `Lcom/ahnali/preview/AhnaliTouchListener_<target_id>;`
+- Double-tap listener: `Lcom/ahnali/preview/AhnaliDoubleTapListener_<target_id>;`
+- Swipe listener: `Lcom/ahnali/preview/AhnaliSwipeListener_<target_id>;`
+- Scroll listener: `Lcom/ahnali/preview/AhnaliScrollListener_<target_id>;`
+- Fling listener: `Lcom/ahnali/preview/AhnaliFlingListener_<target_id>;`
+- Pinch listener: `Lcom/ahnali/preview/AhnaliPinchListener_<target_id>;`
+- Zoom listener: `Lcom/ahnali/preview/AhnaliZoomListener_<target_id>;`
+- Rotate gesture listener: `Lcom/ahnali/preview/AhnaliRotateGestureListener_<target_id>;`
+- Scale gesture listener: `Lcom/ahnali/preview/AhnaliScaleGestureListener_<target_id>;`
+- Drag listener: `Lcom/ahnali/preview/AhnaliDragListener_<target_id>;`
+- Drop listener: `Lcom/ahnali/preview/AhnaliDropListener_<target_id>;`
 - Text change listener: `Lcom/ahnali/preview/AhnaliTextChangeListener_<target_id>;`
 - Item selected listener: `Lcom/ahnali/preview/AhnaliItemSelectedListener_<target_id>;`
 - Focus change listener: `Lcom/ahnali/preview/AhnaliFocusChangeListener_<target_id>;`
 - Popup menu item selected listener: `Lcom/ahnali/preview/AhnaliMenuItemListener_<target_id>;`
+- Editor action listener: `Lcom/ahnali/preview/AhnaliEditorActionListener_<target_id>;`
+- Key listener: `Lcom/ahnali/preview/AhnaliKeyListener_<target_id>;`
 - Auto popup click listener: `Lcom/ahnali/preview/AhnaliClickListener_<popup_id>_popup;`
 - Static list adapter: `Lcom/ahnali/preview/AhnaliListAdapter_<view_id>;`
 
@@ -75,6 +89,18 @@ Stable listener-kind mapping:
 | Kind | Interface | Required callback methods | Target static method signature |
 |---|---|---|---|
 | `click` | `Landroid/view/View$OnClickListener;` | `onClick(Landroid/view/View;)V` | `<target_method>(Landroid/view/View;)V` |
+| `long_click` | `Landroid/view/View$OnLongClickListener;` | `onLongClick(Landroid/view/View;)Z` | `<target_method>(Landroid/view/View;)V` and listener returns constant `true` |
+| `touch` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `double_tap` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `swipe` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `scroll` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `fling` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `pinch` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `zoom` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `rotate_gesture` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `scale_gesture_detector` | `Landroid/view/View$OnTouchListener;` | `onTouch(Landroid/view/View;Landroid/view/MotionEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/MotionEvent;)V` and listener returns constant `true` |
+| `drag` | `Landroid/view/View$OnDragListener;` | `onDrag(Landroid/view/View;Landroid/view/DragEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/DragEvent;)V` and listener returns constant `true` |
+| `drop` | `Landroid/view/View$OnDragListener;` | `onDrag(Landroid/view/View;Landroid/view/DragEvent;)Z` | `<target_method>(Landroid/view/View;Landroid/view/DragEvent;)V` and listener returns constant `true` |
 | `change` | `Landroid/widget/CompoundButton$OnCheckedChangeListener;` | `onCheckedChanged(Landroid/widget/CompoundButton;Z)V` | `<target_method>(Landroid/widget/CompoundButton;Z)V` |
 | `slider_change` | `Landroid/widget/SeekBar$OnSeekBarChangeListener;` | `onProgressChanged(Landroid/widget/SeekBar;IZ)V`, `onStartTrackingTouch(Landroid/widget/SeekBar;)V`, `onStopTrackingTouch(Landroid/widget/SeekBar;)V` | `<target_method>(Landroid/widget/SeekBar;IZ)V` |
 | `radiogroup_change` | `Landroid/widget/RadioGroup$OnCheckedChangeListener;` | `onCheckedChanged(Landroid/widget/RadioGroup;I)V` | `<target_method>(Landroid/widget/RadioGroup;I)V` |
@@ -82,6 +108,8 @@ Stable listener-kind mapping:
 | `item_selected` | `Landroid/widget/AdapterView$OnItemSelectedListener;` | `onItemSelected(Landroid/widget/AdapterView;Landroid/view/View;IJ)V`, `onNothingSelected(Landroid/widget/AdapterView;)V` | `<target_method>(Landroid/widget/AdapterView;Landroid/view/View;IJ)V` |
 | `focus_change` | `Landroid/view/View$OnFocusChangeListener;` | `onFocusChange(Landroid/view/View;Z)V` | `<target_method>(Landroid/view/View;Z)V` |
 | `menu_item_selected` | `Landroid/widget/PopupMenu$OnMenuItemClickListener;` | `onMenuItemClick(Landroid/view/MenuItem;)Z` | `<target_method>(Landroid/view/MenuItem;)V` and listener returns constant `true` |
+| `editor_action` | `Landroid/widget/TextView$OnEditorActionListener;` | `onEditorAction(Landroid/widget/TextView;ILandroid/view/KeyEvent;)Z` | `<target_method>(Landroid/widget/TextView;ILandroid/view/KeyEvent;)V` and listener returns constant `true` |
+| `key` | `Landroid/view/View$OnKeyListener;` | `onKey(Landroid/view/View;ILandroid/view/KeyEvent;)Z` | `<target_method>(Landroid/view/View;ILandroid/view/KeyEvent;)V` and listener returns constant `true` |
 
 Handler owner contract:
 - In pythonic DSL lowering, target handler owner is typically `LTestHandlers;`.
@@ -115,7 +143,7 @@ Where:
 - `target_method`: static method name on `target_desc`  
   For `list_adapter`, this is the decimal/string form of layout resource id.
 - `target_desc`: class descriptor containing static callback method
-- `kind`: one of `click`, `change`, `slider_change`, `radiogroup_change`, `text_change`, `item_selected`, `focus_change`, `menu_item_selected`, `list_adapter`, `ui_runnable_click`, `http_route_async_worker`
+- `kind`: one of `click`, `long_click`, `touch`, `double_tap`, `swipe`, `scroll`, `fling`, `pinch`, `zoom`, `rotate_gesture`, `scale_gesture_detector`, `drag`, `drop`, `editor_action`, `key`, `change`, `slider_change`, `radiogroup_change`, `text_change`, `item_selected`, `focus_change`, `menu_item_selected`, `list_adapter`, `ui_runnable_click`, `http_route_async_worker`
 
 Compatibility note:
 - Toolchain currently accepts legacy tuple lengths (2/3 entries), but 4-entry form is the stable ABI form for v1.

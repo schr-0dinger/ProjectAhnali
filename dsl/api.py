@@ -530,6 +530,62 @@ def on_slider_change(view_id, stmts=None):
     return _make_event_spec("slider_change", view_id, stmts)
 
 
+def on_long_click(view_id, stmts=None):
+    return _make_event_spec("long_click", view_id, stmts)
+
+
+def on_touch(view_id, stmts=None):
+    return _make_event_spec("touch", view_id, stmts)
+
+
+def on_double_tap(view_id, stmts=None):
+    return _make_event_spec("double_tap", view_id, stmts)
+
+
+def on_swipe(view_id, stmts=None):
+    return _make_event_spec("swipe", view_id, stmts)
+
+
+def on_scroll(view_id, stmts=None):
+    return _make_event_spec("scroll", view_id, stmts)
+
+
+def on_fling(view_id, stmts=None):
+    return _make_event_spec("fling", view_id, stmts)
+
+
+def on_pinch(view_id, stmts=None):
+    return _make_event_spec("pinch", view_id, stmts)
+
+
+def on_zoom(view_id, stmts=None):
+    return _make_event_spec("zoom", view_id, stmts)
+
+
+def on_rotate_gesture(view_id, stmts=None):
+    return _make_event_spec("rotate_gesture", view_id, stmts)
+
+
+def on_scale_gesture_detector(view_id, stmts=None):
+    return _make_event_spec("scale_gesture_detector", view_id, stmts)
+
+
+def on_drag(view_id, stmts=None):
+    return _make_event_spec("drag", view_id, stmts)
+
+
+def on_drop(view_id, stmts=None):
+    return _make_event_spec("drop", view_id, stmts)
+
+
+def on_editor_action(view_id, stmts=None):
+    return _make_event_spec("editor_action", view_id, stmts)
+
+
+def on_key(view_id, stmts=None):
+    return _make_event_spec("key", view_id, stmts)
+
+
 def on_text_change(view_id, stmts=None):
     return _make_event_spec("text_change", view_id, stmts)
 
@@ -550,6 +606,20 @@ _INLINE_EVENT_ATTRS = (
     ("on_click", "click"),
     ("on_change", "change"),
     ("on_slider_change", "slider_change"),
+    ("on_long_click", "long_click"),
+    ("on_touch", "touch"),
+    ("on_double_tap", "double_tap"),
+    ("on_swipe", "swipe"),
+    ("on_scroll", "scroll"),
+    ("on_fling", "fling"),
+    ("on_pinch", "pinch"),
+    ("on_zoom", "zoom"),
+    ("on_rotate_gesture", "rotate_gesture"),
+    ("on_scale_gesture_detector", "scale_gesture_detector"),
+    ("on_drag", "drag"),
+    ("on_drop", "drop"),
+    ("on_editor_action", "editor_action"),
+    ("on_key", "key"),
     ("on_text_change", "text_change"),
     ("on_item_selected", "item_selected"),
     ("on_menu_item_selected", "menu_item_selected"),
@@ -621,6 +691,21 @@ def _merge_event_specs(explicit_specs, inline_specs):
         # Keep slider alias deterministic with on_change collision semantics.
         if kind == "slider_change":
             return "change"
+        # Gesture aliases share one OnTouch listener slot per target.
+        if kind in {
+            "double_tap",
+            "swipe",
+            "scroll",
+            "fling",
+            "pinch",
+            "zoom",
+            "rotate_gesture",
+            "scale_gesture_detector",
+        }:
+            return "touch"
+        # Drag/drop share one OnDrag listener slot per target.
+        if kind == "drop":
+            return "drag"
         return kind
     for origin, specs in (("explicit", explicit_specs or []), ("inline", inline_specs or [])):
         for spec in specs:

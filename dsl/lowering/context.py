@@ -97,10 +97,15 @@ from dsl.ir_helpers import (
     new_array,
     on_change_view,
     on_click_view,
+    on_drag_view,
+    on_editor_action_view,
     on_focus_change_view,
     on_item_selected_view,
+    on_key_view,
+    on_long_click_view,
     on_radio_group_change_view,
     on_slider_change_view,
+    on_touch_view,
     on_text_change_view,
     program,
     primitive_cast,
@@ -1704,6 +1709,155 @@ class _PythonicContext:
                         handler_name,
                         ["view"],
                         ["Landroid/view/View;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "long_click":
+                handler_name = f"onLongClick_{target_id}"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliLongClickListener_{target_id};"
+                tmp_view = f"_long_{target_id}"
+                body.append(assign(tmp_view, static_get(view_field, view_desc)))
+                body.extend(
+                    on_long_click_view(
+                        var(tmp_view),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "long_click"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["view"],
+                        ["Landroid/view/View;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind in {
+                "touch",
+                "double_tap",
+                "swipe",
+                "scroll",
+                "fling",
+                "pinch",
+                "zoom",
+                "rotate_gesture",
+                "scale_gesture_detector",
+            }:
+                handler_map = {
+                    "touch": "onTouch",
+                    "double_tap": "onDoubleTap",
+                    "swipe": "onSwipe",
+                    "scroll": "onScroll",
+                    "fling": "onFling",
+                    "pinch": "onPinch",
+                    "zoom": "onZoom",
+                    "rotate_gesture": "onRotateGesture",
+                    "scale_gesture_detector": "onScaleGestureDetector",
+                }
+                listener_map = {
+                    "touch": "AhnaliTouchListener",
+                    "double_tap": "AhnaliDoubleTapListener",
+                    "swipe": "AhnaliSwipeListener",
+                    "scroll": "AhnaliScrollListener",
+                    "fling": "AhnaliFlingListener",
+                    "pinch": "AhnaliPinchListener",
+                    "zoom": "AhnaliZoomListener",
+                    "rotate_gesture": "AhnaliRotateGestureListener",
+                    "scale_gesture_detector": "AhnaliScaleGestureListener",
+                }
+                handler_name = f"{handler_map[event_kind]}_{target_id}"
+                listener_desc = f"Lcom/ahnali/preview/{listener_map[event_kind]}_{target_id};"
+                tmp_view = f"_touch_{target_id}"
+                body.append(assign(tmp_view, static_get(view_field, view_desc)))
+                body.extend(
+                    on_touch_view(
+                        var(tmp_view),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, event_kind))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["view", "motion_event"],
+                        ["Landroid/view/View;", "Landroid/view/MotionEvent;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind in {"drag", "drop"}:
+                handler_name = f"{'onDrop' if event_kind == 'drop' else 'onDrag'}_{target_id}"
+                listener_desc = (
+                    f"Lcom/ahnali/preview/"
+                    f"{'AhnaliDropListener' if event_kind == 'drop' else 'AhnaliDragListener'}_{target_id};"
+                )
+                tmp_view = f"_drag_{target_id}"
+                body.append(assign(tmp_view, static_get(view_field, view_desc)))
+                body.extend(
+                    on_drag_view(
+                        var(tmp_view),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, event_kind))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["view", "drag_event"],
+                        ["Landroid/view/View;", "Landroid/view/DragEvent;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "editor_action":
+                if view_kind != "text_field":
+                    raise RuntimeError(
+                        f"on_editor_action target '{target_id}' must be text_field (kind={view_kind})."
+                    )
+                handler_name = f"onEditorAction_{target_id}"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliEditorActionListener_{target_id};"
+                tmp_view = f"_editor_{target_id}"
+                body.append(assign(tmp_view, static_get(view_field, view_desc)))
+                body.extend(
+                    on_editor_action_view(
+                        var(tmp_view),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "editor_action"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["text_view", "action_id", "key_event"],
+                        ["Landroid/widget/TextView;", "I", "Landroid/view/KeyEvent;"],
+                        compiled_stmts,
+                    )
+                )
+                method_class_map[handler_name] = handler_owner_desc
+            elif event_kind == "key":
+                handler_name = f"onKey_{target_id}"
+                listener_desc = f"Lcom/ahnali/preview/AhnaliKeyListener_{target_id};"
+                tmp_view = f"_key_{target_id}"
+                body.append(assign(tmp_view, static_get(view_field, view_desc)))
+                body.extend(
+                    on_key_view(
+                        var(tmp_view),
+                        handler_name=handler_name,
+                        listener_class_desc=listener_desc,
+                    )
+                )
+                support_classes.append((listener_desc, handler_name, handler_owner_desc, "key"))
+                handler_methods.append(
+                    (
+                        handler_name,
+                        ["view", "key_code", "key_event"],
+                        ["Landroid/view/View;", "I", "Landroid/view/KeyEvent;"],
                         compiled_stmts,
                     )
                 )
