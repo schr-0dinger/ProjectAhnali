@@ -13,6 +13,7 @@ In scope:
 - Event listener helper classes (`Ahnali*Listener_*`)
 - Static ListView adapter helper class (`AhnaliListAdapter_*`)
 - `ProgramIR.support_classes` entry schema used by toolchain emission
+- Frozen helper class/method signature snapshot (`cfg/runtime_abi_snapshot_v1.json`)
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
 - Track C Wave 2 capability helper ABI: networking fetch/response/routing/retry/typed-JSON helpers
@@ -275,14 +276,21 @@ Deprecation policy:
 
 Current behavior is enforced by tests including:
 - `tests/test_runtime_abi_v1.py`
+- `tests/test_runtime_abi_snapshot.py`
 - `tests/test_capabilities.py`
 - `tests/test_track_c_wave2_http_get.py`
 - `tests/test_track_c_wave2_visible_flow.py`
 - `tests/test_track_c_wave3_async_route.py`
 - `tests/test_track_c_wave3_visible_flow.py`
 - `tests/test_track_c_wave4_async_networking.py`
+- `tests/test_http_helper_device_integration.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`
 - `tests/test_omega_toolchain_scaffold.py`
 - `tests/test_list_view_static.py`
+
+ABI drift guard tooling:
+- Snapshot generator/check: `tools/runtime_abi_snapshot.py`
+- Frozen snapshot: `cfg/runtime_abi_snapshot_v1.json`
+- CI gate: `.github/workflows/ci.yml` step `Check runtime ABI snapshot`

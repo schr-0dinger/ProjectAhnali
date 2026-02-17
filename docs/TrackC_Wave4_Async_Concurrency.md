@@ -46,3 +46,6 @@ This wave extends async networking with concurrent token surfaces, request-optio
 ## Conformance
 
 - `tests/test_track_c_wave4_async_networking.py`
+- `tests/test_http_helper_device_integration.py` (device/emulator required):
+  - verifies real `HttpHelper` transport execution for request options (header application + POST body transport)
+  - verifies concurrent token cancellation race outcomes through async thread execution and deterministic error surfaces

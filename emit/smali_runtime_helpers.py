@@ -543,7 +543,7 @@ def _emit_http_apply_request_body_method() -> list[str]:
 def _emit_http_request_with_timeout_method() -> list[str]:
     return [
         ".method public static httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
-        "    .locals 10",
+        "    .locals 9",
         "    if-eqz p1, :ahnali_http_req_fallback",
         "    move v2, p6",
         "    if-gtz v2, :ahnali_http_req_timeout_ready",
@@ -636,7 +636,7 @@ def _emit_http_request_status_with_timeout_method() -> list[str]:
 def _emit_http_request_error_with_timeout_method() -> list[str]:
     return [
         ".method public static httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
-        "    .locals 10",
+        "    .locals 9",
         "    if-eqz p1, :ahnali_http_req_error_invalid",
         "    move v2, p5",
         "    if-gtz v2, :ahnali_http_req_error_timeout_ready",

@@ -1,0 +1,187 @@
+{
+  "abi_version": "1.0.0",
+  "classes": [
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliChangeListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onCheckedChanged(Landroid/widget/CompoundButton;Z)V"
+      ],
+      "source": "listener_kind:change"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliClickListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onClick(Landroid/view/View;)V"
+      ],
+      "source": "listener_kind:click"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliFocusChangeListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onFocusChange(Landroid/view/View;Z)V"
+      ],
+      "source": "listener_kind:focus_change"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliHttpRouteAsyncWorker_contract;",
+      "methods": [
+        "<init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;Ljava/lang/Runnable;III)V",
+        "run()V"
+      ],
+      "source": "listener_kind:http_route_async_worker"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliItemSelectedListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onItemSelected(Landroid/widget/AdapterView;Landroid/view/View;IJ)V",
+        "onNothingSelected(Landroid/widget/AdapterView;)V"
+      ],
+      "source": "listener_kind:item_selected"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliListAdapter_contract;",
+      "methods": [
+        "<init>(Landroid/content/Context;[Ljava/lang/String;)V",
+        "getCount()I",
+        "getItem(I)Ljava/lang/Object;",
+        "getItemId(I)J",
+        "getView(ILandroid/view/View;Landroid/view/ViewGroup;)Landroid/view/View;"
+      ],
+      "source": "listener_kind:list_adapter"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliMenuItemListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onMenuItemClick(Landroid/view/MenuItem;)Z"
+      ],
+      "source": "listener_kind:menu_item_selected"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliRadioGroupChangeListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onCheckedChanged(Landroid/widget/RadioGroup;I)V"
+      ],
+      "source": "listener_kind:radiogroup_change"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliSliderChangeListener_contract;",
+      "methods": [
+        "<init>()V",
+        "onProgressChanged(Landroid/widget/SeekBar;IZ)V",
+        "onStartTrackingTouch(Landroid/widget/SeekBar;)V",
+        "onStopTrackingTouch(Landroid/widget/SeekBar;)V"
+      ],
+      "source": "listener_kind:slider_change"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliTextChangeListener_contract;",
+      "methods": [
+        "<init>()V",
+        "afterTextChanged(Landroid/text/Editable;)V",
+        "beforeTextChanged(Ljava/lang/CharSequence;III)V",
+        "onTextChanged(Ljava/lang/CharSequence;III)V"
+      ],
+      "source": "listener_kind:text_change"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/AhnaliUiRunnable_contract;",
+      "methods": [
+        "<init>(Landroid/view/View;)V",
+        "run()V"
+      ],
+      "source": "listener_kind:ui_runnable_click"
+    },
+    {
+      "class_desc": "Lcom/ahnali/preview/MainActivity;",
+      "methods": [
+        "<init>()V",
+        "onBackPressed()V",
+        "onCreate(Landroid/os/Bundle;)V"
+      ],
+      "source": "wrapper"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/ConnectivityHelper;",
+      "methods": [
+        "<init>()V",
+        "isConnected(Landroid/app/Activity;)I"
+      ],
+      "source": "capability:Connectivity"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/HttpHelper;",
+      "methods": [
+        "<init>()V",
+        "applyRequestBody(Ljava/net/HttpURLConnection;Ljava/lang/String;Ljava/lang/String;)V",
+        "applyRequestHeaders(Ljava/net/HttpURLConnection;Ljava/lang/String;)V",
+        "cancelAsync()I",
+        "cancelAsync(I)I",
+        "ensureAsyncStores()V",
+        "getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
+        "getAsyncError()I",
+        "getAsyncError(I)I",
+        "getAsyncJsonArrayLength(II)I",
+        "getAsyncJsonArrayLengthError(I)I",
+        "getAsyncJsonField(ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "getAsyncJsonFieldError(ILjava/lang/String;)I",
+        "getAsyncProgress()I",
+        "getAsyncProgress(I)I",
+        "getAsyncStatus(I)I",
+        "getCurrentAsyncToken()I",
+        "httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "httpGetError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;",
+        "httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
+        "httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
+        "httpRequestStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
+        "httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
+        "initAsyncToken(I)V",
+        "nextAsyncToken()I",
+        "resolveRequestMethod(Ljava/lang/String;)Ljava/lang/String;",
+        "setAsyncBody(ILjava/lang/String;)V",
+        "setAsyncError(I)V",
+        "setAsyncError(II)V",
+        "setAsyncProgress(I)V",
+        "setAsyncProgress(II)V",
+        "setAsyncStatus(II)V",
+        "shouldCancel()I",
+        "shouldCancel(I)I",
+        "startAsync(Ljava/lang/Runnable;)I",
+        "startAsyncWithToken(ILjava/lang/Runnable;)I"
+      ],
+      "source": "capability:Networking"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/StorageHelper;",
+      "methods": [
+        "<init>()V",
+        "clear(Landroid/app/Activity;)I",
+        "exists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "remove(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "source": "capability:Storage"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/UrlLauncherHelper;",
+      "methods": [
+        "<init>()V",
+        "openUrl(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "source": "capability:URLLauncher"
+    }
+  ],
+  "snapshot_schema": "runtime_abi_v1_helper_signatures"
+}

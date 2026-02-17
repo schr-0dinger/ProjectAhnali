@@ -181,7 +181,7 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
+1) Track A complete: runtime ABI + capability mapping + frozen signature snapshot (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`, `cfg/runtime_abi_snapshot_v1.json`)
 2) Track B enforcing: size benchmark strict on PR/push; cold-start benchmark strict on manual dispatch
 3) Track C Wave 2 complete: networking response/retry/routing/typed-JSON + visible capability flow coverage (`tests/test_track_c_wave2_http_get.py`, `tests/test_track_c_wave2_visible_flow.py`)
 4) Track C Wave 4 core slice complete: multi-request tokened async runtime state + request-option route wiring + typed async JSON adapters (`tests/test_track_c_wave4_async_networking.py`)
@@ -201,10 +201,12 @@ Work items:
 - ✅ Define runtime helper class/interface contracts and versioning rules (`runtime_abi_v1.md`).
 - ✅ Add ABI compatibility tests (compile-time and runtime smoke for helper and mapping contracts).
 - ✅ Document capability-to-runtime mapping in docs (`docs/capability_runtime_mapping_v1.md`).
+- ✅ Freeze helper class/method ABI surface in generated snapshot (`cfg/runtime_abi_snapshot_v1.json`) with check tool (`tools/runtime_abi_snapshot.py`) and CI gate (`.github/workflows/ci.yml`).
 
 Exit criteria:
 - ✅ ABI contract frozen for v1.
 - ✅ New capabilities can be added without breaking existing apps (guarded by ABI tests).
+- ✅ ABI signature drift fails fast in CI via snapshot check.
 
 ### Track B: Benchmark Automation
 
@@ -226,7 +228,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -283,6 +285,8 @@ Work items:
 - ✅ Add Wave 3 visible tokened async capability flow (`tests/test_track_c_wave3_visible_flow.py`)
 - ✅ Document Wave 3 visible tokened flow (`docs/TrackC_Wave3_Visible_Flow.md`)
 - ✅ Document Wave 4 async concurrency/request-options contract (`docs/TrackC_Wave4_Async_Concurrency.md`)
+- ✅ Add Wave 5 visible integration flow combining networking + storage + connectivity with deterministic fallback UI routing (`tests/test_track_c_wave5_visible_flow.py`)
+- ✅ Document Wave 5 visible flow (`docs/TrackC_Wave5_Visible_Flow.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - Continue adding capability-scoped primitives beyond networking/storage.
 
@@ -293,6 +297,8 @@ Exit criteria:
 - ✅ Wave 3 async route dispatch conformance is enforced by `tests/test_track_c_wave3_async_route.py`.
 - ✅ Wave 3 visible tokened async flow conformance is enforced by `tests/test_track_c_wave3_visible_flow.py`.
 - ✅ Wave 4 async concurrency/request-options/typed-adapter/transport/race conformance is enforced by `tests/test_track_c_wave4_async_networking.py`.
+- ✅ Wave 4 device integration conformance is enforced by `tests/test_http_helper_device_integration.py` (requires `adb` device in `device` state).
+- ✅ Wave 5 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave5_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`

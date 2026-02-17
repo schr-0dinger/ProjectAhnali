@@ -245,10 +245,12 @@ Implemented:
 - ✅ Runtime helper ABI v1 contract document (`runtime_abi_v1.md`)
 - ✅ Capability-to-runtime mapping contract (`docs/capability_runtime_mapping_v1.md`)
 - ✅ Capability/runtime ABI guard tests (`tests/test_runtime_abi_v1.py`, `tests/test_capabilities.py`)
+- ✅ Frozen ABI signature snapshot + CI drift gate (`cfg/runtime_abi_snapshot_v1.json`, `tools/runtime_abi_snapshot.py`, `.github/workflows/ci.yml`)
 - ✅ Track C Wave 1 closed: `URLLauncher` + `Connectivity` + `Storage` helper-call bindings + emitted runtime helper classes (`Lcom/ahnali/runtime/UrlLauncherHelper;`, `Lcom/ahnali/runtime/ConnectivityHelper;`, `Lcom/ahnali/runtime/StorageHelper;` with put/get/remove/exists/clear primitives) + integrated visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Track C Wave 2 completed: `Networking` helper-call binding via `Lcom/ahnali/runtime/HttpHelper;` with response/routing/retry/typed-JSON surface `httpGet(...)`, `httpGetStatus(...)`, `httpGetError(...)`, `httpGetRetry(...)`, `httpGetJsonField(...)`, `httpGetJsonFieldError(...)` + DSL `http_get(...)`, `http_get_status(...)`, `http_get_error(...)`, `http_get_retry(...)`, `http_get_route(...)`, `http_get_json_field(...)`, `http_get_json_field_error(...)` + conformance tests (`tests/test_track_c_wave2_http_get.py`) + visible integration flow coverage (`tests/test_track_c_wave2_visible_flow.py`)
 - ✅ Track C Wave 3 completed: tokened async route dispatch (`http_get_route_async(..., progress_target_id, retries, timeout_ms)`) + token-scoped cancellation/progress/error/status/body primitives (`http_async_cancel(token)`, `http_async_progress(token)`, `http_async_error(token)`, `http_async_status(token)`, `http_async_body(token, fallback)`) with background worker + UI-thread success/failure/progress callback runnable support classes + timeout/retry controls + conformance tests (`tests/test_track_c_wave3_async_route.py`, `tests/test_track_c_wave3_visible_flow.py`)
-- ✅ Track C Wave 4 completed: multi-request token-indexed async runtime state + async request-option route wiring (`method/headers/body`) + typed async JSON adapters (`http_async_json_field`, `http_async_json_field_error`, `http_async_json_array_length`) + hardened request-option transport semantics (header parsing/application + explicit POST body transport) + concurrent token cancellation/race stress coverage (`tests/test_track_c_wave4_async_networking.py`)
+- ✅ Track C Wave 4 completed: multi-request token-indexed async runtime state + async request-option route wiring (`method/headers/body`) + typed async JSON adapters (`http_async_json_field`, `http_async_json_field_error`, `http_async_json_array_length`) + hardened request-option transport semantics (header parsing/application + explicit POST body transport) + concurrent token cancellation/race stress coverage (`tests/test_track_c_wave4_async_networking.py`) + real device/emulator HttpHelper integration execution coverage (`tests/test_http_helper_device_integration.py`)
+- ✅ Track C Wave 5 visible integration completed: end-to-end flow combining storage + async networking + connectivity check with deterministic fallback UI/cache routing (`tests/test_track_c_wave5_visible_flow.py`, `docs/TrackC_Wave5_Visible_Flow.md`)
 
 Pending:
 - ⚠️ Broaden capability modules beyond current network/storage helpers.
@@ -1736,7 +1738,7 @@ never as core behavior.
 - ✅ State storage
 - ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
 - ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
-- ✅ Wave 1 and Wave 2 visible capability integration flow compile coverage
+- ✅ Wave 1/Wave 2/Wave 3/Wave 5 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests

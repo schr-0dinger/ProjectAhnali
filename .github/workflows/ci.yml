@@ -24,6 +24,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
 
+      - name: Check runtime ABI snapshot
+        run: PYTHONPATH=. python tools/runtime_abi_snapshot.py --check --out cfg/runtime_abi_snapshot_v1.json
+
       - name: Run test suite
         run: PYTHONPATH=. pytest -q -rs
 
