@@ -549,6 +549,9 @@ def emit_http_route_async_worker_smali(class_desc: str):
     lines.append(".field private final mCtx:Landroid/app/Activity;")
     lines.append(".field private final mUrl:Ljava/lang/String;")
     lines.append(".field private final mFallback:Ljava/lang/String;")
+    lines.append(".field private final mMethod:Ljava/lang/String;")
+    lines.append(".field private final mHeaders:Ljava/lang/String;")
+    lines.append(".field private final mBody:Ljava/lang/String;")
     lines.append(".field private final mOnSuccess:Ljava/lang/Runnable;")
     lines.append(".field private final mOnFailure:Ljava/lang/Runnable;")
     lines.append(".field private final mOnProgress:Ljava/lang/Runnable;")
@@ -557,19 +560,22 @@ def emit_http_route_async_worker_smali(class_desc: str):
     lines.append(".field private final mTimeoutMs:I")
     lines.append("")
     lines.append(
-        ".method public constructor <init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;Ljava/lang/Runnable;III)V"
+        ".method public constructor <init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;Ljava/lang/Runnable;III)V"
     )
     lines.append("    .locals 0")
     lines.append("    invoke-direct {p0}, Ljava/lang/Object;-><init>()V")
     lines.append(f"    iput-object p1, p0, {class_desc}->mCtx:Landroid/app/Activity;")
     lines.append(f"    iput-object p2, p0, {class_desc}->mUrl:Ljava/lang/String;")
     lines.append(f"    iput-object p3, p0, {class_desc}->mFallback:Ljava/lang/String;")
-    lines.append(f"    iput-object p4, p0, {class_desc}->mOnSuccess:Ljava/lang/Runnable;")
-    lines.append(f"    iput-object p5, p0, {class_desc}->mOnFailure:Ljava/lang/Runnable;")
-    lines.append(f"    iput-object p6, p0, {class_desc}->mOnProgress:Ljava/lang/Runnable;")
-    lines.append(f"    iput p7, p0, {class_desc}->mToken:I")
-    lines.append(f"    iput p8, p0, {class_desc}->mRetries:I")
-    lines.append(f"    iput p9, p0, {class_desc}->mTimeoutMs:I")
+    lines.append(f"    iput-object p4, p0, {class_desc}->mMethod:Ljava/lang/String;")
+    lines.append(f"    iput-object p5, p0, {class_desc}->mHeaders:Ljava/lang/String;")
+    lines.append(f"    iput-object p6, p0, {class_desc}->mBody:Ljava/lang/String;")
+    lines.append(f"    iput-object p7, p0, {class_desc}->mOnSuccess:Ljava/lang/Runnable;")
+    lines.append(f"    iput-object p8, p0, {class_desc}->mOnFailure:Ljava/lang/Runnable;")
+    lines.append(f"    iput-object p9, p0, {class_desc}->mOnProgress:Ljava/lang/Runnable;")
+    lines.append(f"    iput p10, p0, {class_desc}->mToken:I")
+    lines.append(f"    iput p11, p0, {class_desc}->mRetries:I")
+    lines.append(f"    iput p12, p0, {class_desc}->mTimeoutMs:I")
     lines.append("    return-void")
     lines.append(".end method")
     lines.append("")
@@ -611,17 +617,20 @@ def emit_http_route_async_worker_smali(class_desc: str):
     lines.append("    const/4 v7, 0x7")
     lines.append("    goto :ahnali_async_fail_finalize")
     lines.append("    :ahnali_async_attempt_call")
-    lines.append(f"    iget v10, p0, {class_desc}->mTimeoutMs:I")
+    lines.append(f"    iget-object v10, p0, {class_desc}->mMethod:Ljava/lang/String;")
+    lines.append(f"    iget-object v3, p0, {class_desc}->mHeaders:Ljava/lang/String;")
+    lines.append(f"    iget-object v2, p0, {class_desc}->mBody:Ljava/lang/String;")
+    lines.append(f"    iget v7, p0, {class_desc}->mTimeoutMs:I")
     lines.append(
-        "    invoke-static {v0, v4, v10}, Lcom/ahnali/runtime/HttpHelper;->httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I"
+        "    invoke-static {v0, v4, v10, v3, v2, v7}, Lcom/ahnali/runtime/HttpHelper;->httpRequestStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I"
     )
     lines.append("    move-result v8")
     lines.append(
-        "    invoke-static {v0, v4, v9, v10}, Lcom/ahnali/runtime/HttpHelper;->httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;"
+        "    invoke-static {v0, v4, v10, v3, v2, v9, v7}, Lcom/ahnali/runtime/HttpHelper;->httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;"
     )
     lines.append("    move-result-object v9")
     lines.append(
-        "    invoke-static {v0, v4, v10}, Lcom/ahnali/runtime/HttpHelper;->httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I"
+        "    invoke-static {v0, v4, v10, v3, v2, v7}, Lcom/ahnali/runtime/HttpHelper;->httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I"
     )
     lines.append("    move-result v7")
     lines.append("    invoke-static {v1}, Lcom/ahnali/runtime/HttpHelper;->shouldCancel(I)I")

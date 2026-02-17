@@ -194,12 +194,15 @@ def test_runtime_abi_http_route_async_worker_contract_shape():
     assert ".field private final mRetries:I" in smali
     assert ".field private final mTimeoutMs:I" in smali
     assert (
-        ".method public constructor <init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;Ljava/lang/Runnable;III)V"
+        ".method public constructor <init>(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Runnable;Ljava/lang/Runnable;Ljava/lang/Runnable;III)V"
         in smali
     )
     assert ".method public run()V" in smali
     assert "Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V" in smali
-    assert "Lcom/ahnali/runtime/HttpHelper;->httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I" in smali
+    assert (
+        "Lcom/ahnali/runtime/HttpHelper;->httpRequestStatusWithTimeout("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I"
+    ) in smali
 
 
 @on_click("inc")

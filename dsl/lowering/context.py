@@ -14,6 +14,9 @@ from dsl.ast import (
     _ExprFormat,
     _ExprHttpGetError,
     _ExprHttpAsyncBody,
+    _ExprHttpAsyncJsonArrayLength,
+    _ExprHttpAsyncJsonField,
+    _ExprHttpAsyncJsonFieldError,
     _ExprHttpAsyncError,
     _ExprHttpAsyncStatus,
     _ExprHttpAsyncProgress,
@@ -43,6 +46,9 @@ from dsl.ast import (
     _StmtCheckConnectivity,
     _StmtHttpGetError,
     _StmtHttpAsyncBody,
+    _StmtHttpAsyncJsonArrayLength,
+    _StmtHttpAsyncJsonField,
+    _StmtHttpAsyncJsonFieldError,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncError,
     _StmtHttpAsyncStatus,
@@ -2804,6 +2810,12 @@ class _PythonicContext:
             return self._compile_http_async_status_stmt(stmt)
         if isinstance(stmt, _StmtHttpAsyncBody):
             return self._compile_http_async_body_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncJsonField):
+            return self._compile_http_async_json_field_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncJsonFieldError):
+            return self._compile_http_async_json_field_error_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncJsonArrayLength):
+            return self._compile_http_async_json_array_length_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRetry):
             return self._compile_http_get_retry_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetJsonField):
@@ -4874,6 +4886,9 @@ class _PythonicContext:
                 progress_target_id=stmt.value.progress_target_id,
                 retries=stmt.value.retries,
                 timeout_ms=stmt.value.timeout_ms,
+                method=stmt.value.method,
+                headers=stmt.value.headers,
+                body=stmt.value.body,
                 tmp_prefix="http_get_route_async_result",
             )
         elif isinstance(stmt.value, _ExprHttpAsyncProgress):
@@ -4898,6 +4913,26 @@ class _PythonicContext:
                 tmp_prefix="http_async_body_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprHttpAsyncJsonField):
+            prefix, result = self._compile_http_async_json_field_call(
+                token_expr=stmt.value.token,
+                key=stmt.value.key,
+                fallback=stmt.value.fallback,
+                tmp_prefix="http_async_json_field_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprHttpAsyncJsonFieldError):
+            prefix, result = self._compile_http_async_json_field_error_call(
+                token_expr=stmt.value.token,
+                key=stmt.value.key,
+                tmp_prefix="http_async_json_field_error_result",
+            )
+        elif isinstance(stmt.value, _ExprHttpAsyncJsonArrayLength):
+            prefix, result = self._compile_http_async_json_array_length_call(
+                token_expr=stmt.value.token,
+                fallback=stmt.value.fallback,
+                tmp_prefix="http_async_json_array_length_result",
+            )
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
@@ -4905,7 +4940,8 @@ class _PythonicContext:
                 "storage_exists(...), http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
                 "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
-                "http_async_status(...), or http_async_body(...)."
+                "http_async_status(...), http_async_body(...), http_async_json_field(...), "
+                "http_async_json_field_error(...), or http_async_json_array_length(...)."
             )
 
         if name in self.state_spec.values:
@@ -5764,6 +5800,9 @@ class _PythonicContext:
         progress_target_id: str,
         retries: int,
         timeout_ms: int,
+        method: str,
+        headers: str,
+        body: str,
         tmp_prefix: str,
     ):
         if getattr(self, "_current_event_kind", None) != "click":
@@ -5879,6 +5918,9 @@ class _PythonicContext:
                         var("ctx"),
                         const(str(url)),
                         const(str(default_value)),
+                        const(str(method)),
+                        const(str(headers)),
+                        const(str(body)),
                         var(success_tmp),
                         var(failure_tmp),
                         var(progress_tmp),
@@ -5888,6 +5930,9 @@ class _PythonicContext:
                     ],
                     arg_types=[
                         "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
                         "Ljava/lang/String;",
                         "Ljava/lang/String;",
                         "Ljava/lang/Runnable;",
@@ -5921,6 +5966,9 @@ class _PythonicContext:
             progress_target_id=getattr(stmt, "progress_target_id", ""),
             retries=int(getattr(stmt, "retries", 0)),
             timeout_ms=int(getattr(stmt, "timeout_ms", 8000)),
+            method=str(getattr(stmt, "method", "GET")),
+            headers=str(getattr(stmt, "headers", "")),
+            body=str(getattr(stmt, "body", "")),
             tmp_prefix="http_get_route_async_ignored",
         )
         return out
@@ -6083,6 +6131,90 @@ class _PythonicContext:
             ),
         ], var(result_tmp)
 
+    def _compile_http_async_json_field_call(self, *, token_expr, key: str, fallback: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_json_field",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_json_field",
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncJsonField",
+                    args=[token_value, const(str(key)), const(str(fallback))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=["I", "Ljava/lang/String;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_json_field_error_call(self, *, token_expr, key: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_json_field_error",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_json_field_error",
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncJsonFieldError",
+                    args=[token_value, const(str(key))],
+                    return_type="I",
+                    arg_types=["I", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_json_array_length_call(self, *, token_expr, fallback: int, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_json_array_length",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        token_prefix, token_value = self._compile_http_async_token_value(
+            token_expr=token_expr,
+            owner=binding.helper_class_desc,
+            tmp_prefix="http_async_token_json_array_length",
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            *token_prefix,
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncJsonArrayLength",
+                    args=[token_value, const(int(fallback))],
+                    return_type="I",
+                    arg_types=["I", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
     def _compile_http_async_cancel_stmt(self, stmt):
         out, _ = self._compile_http_async_cancel_call(
             token_expr=getattr(stmt, "token", None),
@@ -6116,6 +6248,31 @@ class _PythonicContext:
             token_expr=getattr(stmt, "token", None),
             fallback=getattr(stmt, "fallback", ""),
             tmp_prefix="http_async_body_ignored",
+        )
+        return out
+
+    def _compile_http_async_json_field_stmt(self, stmt):
+        out, _ = self._compile_http_async_json_field_call(
+            token_expr=getattr(stmt, "token", None),
+            key=getattr(stmt, "key", ""),
+            fallback=getattr(stmt, "fallback", ""),
+            tmp_prefix="http_async_json_field_ignored",
+        )
+        return out
+
+    def _compile_http_async_json_field_error_stmt(self, stmt):
+        out, _ = self._compile_http_async_json_field_error_call(
+            token_expr=getattr(stmt, "token", None),
+            key=getattr(stmt, "key", ""),
+            tmp_prefix="http_async_json_field_error_ignored",
+        )
+        return out
+
+    def _compile_http_async_json_array_length_stmt(self, stmt):
+        out, _ = self._compile_http_async_json_array_length_call(
+            token_expr=getattr(stmt, "token", None),
+            fallback=int(getattr(stmt, "fallback", 0)),
+            tmp_prefix="http_async_json_array_length_ignored",
         )
         return out
 

@@ -929,6 +929,9 @@ def http_get_route_async(
     progress_target_id: str = "",
     retries: int = 0,
     timeout_ms: int = 8000,
+    method: str = "GET",
+    headers: str = "",
+    body: str = "",
 ):
     return _StmtHttpGetRouteAsync(
         str(url),
@@ -938,6 +941,9 @@ def http_get_route_async(
         str(progress_target_id),
         int(retries),
         int(timeout_ms),
+        str(method),
+        str(headers),
+        str(body),
     )
 
 
@@ -949,6 +955,9 @@ def http_get_with_handlers_async(
     progress_target_id: str = "",
     retries: int = 0,
     timeout_ms: int = 8000,
+    method: str = "GET",
+    headers: str = "",
+    body: str = "",
 ):
     return http_get_route_async(
         url,
@@ -958,6 +967,9 @@ def http_get_with_handlers_async(
         progress_target_id,
         retries,
         timeout_ms,
+        method,
+        headers,
+        body,
     )
 
 
@@ -979,6 +991,18 @@ def http_async_status(token=None):
 
 def http_async_body(token=None, fallback: str = ""):
     return _ExprHttpAsyncBody(token, str(fallback))
+
+
+def http_async_json_field(token, key: str, fallback: str):
+    return _ExprHttpAsyncJsonField(token, str(key), str(fallback))
+
+
+def http_async_json_field_error(token, key: str):
+    return _ExprHttpAsyncJsonFieldError(token, str(key))
+
+
+def http_async_json_array_length(token, fallback: int = 0):
+    return _ExprHttpAsyncJsonArrayLength(token, int(fallback))
 
 
 def storage_put(key: str, value: str):

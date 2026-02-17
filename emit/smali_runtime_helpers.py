@@ -424,6 +424,140 @@ def _emit_http_get_json_field_method() -> list[str]:
     ]
 
 
+def _emit_http_request_with_timeout_method() -> list[str]:
+    return [
+        ".method public static httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
+        "    .locals 2",
+        "    if-eqz p2, :ahnali_http_req_get",
+        '    const-string v0, "GET"',
+        "    invoke-virtual {p2, v0}, Ljava/lang/String;->equalsIgnoreCase(Ljava/lang/String;)Z",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_http_req_get",
+        '    const-string v0, "POST"',
+        "    invoke-virtual {p2, v0}, Ljava/lang/String;->equalsIgnoreCase(Ljava/lang/String;)Z",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_http_req_get",
+        "    return-object p5",
+        "    :ahnali_http_req_get",
+        "    invoke-static {p0, p1, p5, p6}, Lcom/ahnali/runtime/HttpHelper;->httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
+        "    move-result-object v0",
+        "    return-object v0",
+        ".end method",
+    ]
+
+
+def _emit_http_request_status_with_timeout_method() -> list[str]:
+    return [
+        ".method public static httpRequestStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
+        "    .locals 2",
+        "    if-eqz p2, :ahnali_http_req_status_get",
+        '    const-string v0, "GET"',
+        "    invoke-virtual {p2, v0}, Ljava/lang/String;->equalsIgnoreCase(Ljava/lang/String;)Z",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_http_req_status_get",
+        '    const-string v0, "POST"',
+        "    invoke-virtual {p2, v0}, Ljava/lang/String;->equalsIgnoreCase(Ljava/lang/String;)Z",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_http_req_status_get",
+        "    const/4 v0, -0x1",
+        "    return v0",
+        "    :ahnali_http_req_status_get",
+        "    invoke-static {p0, p1, p5}, Lcom/ahnali/runtime/HttpHelper;->httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "    move-result v0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_request_error_with_timeout_method() -> list[str]:
+    return [
+        ".method public static httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
+        "    .locals 2",
+        "    if-eqz p2, :ahnali_http_req_error_get",
+        '    const-string v0, "GET"',
+        "    invoke-virtual {p2, v0}, Ljava/lang/String;->equalsIgnoreCase(Ljava/lang/String;)Z",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_http_req_error_get",
+        '    const-string v0, "POST"',
+        "    invoke-virtual {p2, v0}, Ljava/lang/String;->equalsIgnoreCase(Ljava/lang/String;)Z",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_http_req_error_get",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_http_req_error_get",
+        "    invoke-static {p0, p1, p5}, Lcom/ahnali/runtime/HttpHelper;->httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "    move-result v0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_ensure_async_store_method() -> list[str]:
+    return [
+        ".method private static ensureAsyncStores()V",
+        "    .locals 1",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    if-nez v0, :ahnali_async_store_progress",
+        "    new-instance v0, Landroid/util/SparseIntArray;",
+        "    invoke-direct {v0}, Landroid/util/SparseIntArray;-><init>()V",
+        "    sput-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    :ahnali_async_store_progress",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgressByToken:Landroid/util/SparseIntArray;",
+        "    if-nez v0, :ahnali_async_store_error",
+        "    new-instance v0, Landroid/util/SparseIntArray;",
+        "    invoke-direct {v0}, Landroid/util/SparseIntArray;-><init>()V",
+        "    sput-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgressByToken:Landroid/util/SparseIntArray;",
+        "    :ahnali_async_store_error",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncErrorByToken:Landroid/util/SparseIntArray;",
+        "    if-nez v0, :ahnali_async_store_status",
+        "    new-instance v0, Landroid/util/SparseIntArray;",
+        "    invoke-direct {v0}, Landroid/util/SparseIntArray;-><init>()V",
+        "    sput-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncErrorByToken:Landroid/util/SparseIntArray;",
+        "    :ahnali_async_store_status",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatusByToken:Landroid/util/SparseIntArray;",
+        "    if-nez v0, :ahnali_async_store_body",
+        "    new-instance v0, Landroid/util/SparseIntArray;",
+        "    invoke-direct {v0}, Landroid/util/SparseIntArray;-><init>()V",
+        "    sput-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatusByToken:Landroid/util/SparseIntArray;",
+        "    :ahnali_async_store_body",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncBodyByToken:Ljava/util/HashMap;",
+        "    if-nez v0, :ahnali_async_store_done",
+        "    new-instance v0, Ljava/util/HashMap;",
+        "    invoke-direct {v0}, Ljava/util/HashMap;-><init>()V",
+        "    sput-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncBodyByToken:Ljava/util/HashMap;",
+        "    :ahnali_async_store_done",
+        "    return-void",
+        ".end method",
+    ]
+
+
+def _emit_http_init_async_token_method() -> list[str]:
+    return [
+        ".method private static initAsyncToken(I)V",
+        "    .locals 3",
+        "    if-lez p0, :ahnali_async_init_return",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, 0x0",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->put(II)V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgressByToken:Landroid/util/SparseIntArray;",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->put(II)V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncErrorByToken:Landroid/util/SparseIntArray;",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->put(II)V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatusByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->put(II)V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncBodyByToken:Ljava/util/HashMap;",
+        "    invoke-static {p0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v1",
+        "    const/4 v2, 0x0",
+        "    invoke-virtual {v0, v1, v2}, Ljava/util/HashMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        "    :ahnali_async_init_return",
+        "    return-void",
+        ".end method",
+    ]
+
+
 def _emit_http_get_current_async_token_method() -> list[str]:
     return [
         ".method public static getCurrentAsyncToken()I",
@@ -438,6 +572,7 @@ def _emit_http_next_async_token_method() -> list[str]:
     return [
         ".method public static nextAsyncToken()I",
         "    .locals 2",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
         "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncNextToken:I",
         "    add-int/lit8 v0, v0, 0x1",
         "    if-gtz v0, :ahnali_http_async_token_store",
@@ -445,14 +580,7 @@ def _emit_http_next_async_token_method() -> list[str]:
         "    :ahnali_http_async_token_store",
         "    sput v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncNextToken:I",
         "    sput v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    const/4 v1, 0x0",
-        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancel:I",
-        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgress:I",
-        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncError:I",
-        "    const/4 v1, -0x1",
-        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatus:I",
-        "    const/4 v1, 0x0",
-        "    sput-object v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncBody:Ljava/lang/String;",
+        "    invoke-static {v0}, Lcom/ahnali/runtime/HttpHelper;->initAsyncToken(I)V",
         "    return v0",
         ".end method",
     ]
@@ -478,11 +606,11 @@ def _emit_http_start_async_method() -> list[str]:
 def _emit_http_start_async_with_token_method() -> list[str]:
     return [
         ".method public static startAsyncWithToken(ILjava/lang/Runnable;)I",
-        "    .locals 3",
+        "    .locals 2",
         "    if-lez p0, :ahnali_http_async_fail",
         "    if-eqz p1, :ahnali_http_async_fail",
-        "    sget v2, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v2, :ahnali_http_async_fail",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    invoke-static {p0}, Lcom/ahnali/runtime/HttpHelper;->initAsyncToken(I)V",
         "    :ahnali_http_async_try_start",
         "    new-instance v0, Ljava/lang/Thread;",
         "    invoke-direct {v0, p1}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V",
@@ -500,13 +628,17 @@ def _emit_http_start_async_with_token_method() -> list[str]:
 def _emit_http_cancel_async_method() -> list[str]:
     return [
         ".method public static cancelAsync(I)I",
-        "    .locals 1",
+        "    .locals 3",
         "    if-lez p0, :ahnali_http_cancel_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_cancel_fail",
-        "    const/4 v0, 0x1",
-        "    sput v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancel:I",
-        "    return v0",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_cancel_fail",
+        "    const/4 v1, 0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->put(II)V",
+        "    return v1",
         "    :ahnali_http_cancel_fail",
         "    const/4 v0, 0x0",
         "    return v0",
@@ -526,11 +658,13 @@ def _emit_http_cancel_async_method() -> list[str]:
 def _emit_http_should_cancel_method() -> list[str]:
     return [
         ".method public static shouldCancel(I)I",
-        "    .locals 1",
+        "    .locals 2",
         "    if-lez p0, :ahnali_http_should_cancel_true",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_should_cancel_true",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancel:I",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, 0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v0",
         "    return v0",
         "    :ahnali_http_should_cancel_true",
         "    const/4 v0, 0x1",
@@ -551,10 +685,14 @@ def _emit_http_should_cancel_method() -> list[str]:
 def _emit_http_set_async_progress_method() -> list[str]:
     return [
         ".method public static setAsyncProgress(II)V",
-        "    .locals 3",
+        "    .locals 5",
         "    if-lez p0, :ahnali_http_progress_return",
-        "    sget v2, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v2, :ahnali_http_progress_return",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v2, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v3, -0x1",
+        "    invoke-virtual {v2, p0, v3}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v4",
+        "    if-eq v4, v3, :ahnali_http_progress_return",
         "    move v0, p1",
         "    if-gez v0, :ahnali_http_progress_non_negative",
         "    const/4 v0, 0x0",
@@ -563,7 +701,8 @@ def _emit_http_set_async_progress_method() -> list[str]:
         "    if-le v0, v1, :ahnali_http_progress_store",
         "    move v0, v1",
         "    :ahnali_http_progress_store",
-        "    sput v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgress:I",
+        "    sget-object v2, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgressByToken:Landroid/util/SparseIntArray;",
+        "    invoke-virtual {v2, p0, v0}, Landroid/util/SparseIntArray;->put(II)V",
         "    :ahnali_http_progress_return",
         "    return-void",
         ".end method",
@@ -581,11 +720,18 @@ def _emit_http_set_async_progress_method() -> list[str]:
 def _emit_http_get_async_progress_method() -> list[str]:
     return [
         ".method public static getAsyncProgress(I)I",
-        "    .locals 1",
+        "    .locals 4",
         "    if-lez p0, :ahnali_http_progress_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_progress_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgress:I",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_progress_fail",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgressByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, 0x0",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v0",
         "    return v0",
         "    :ahnali_http_progress_fail",
         "    const/4 v0, 0x0",
@@ -606,11 +752,16 @@ def _emit_http_get_async_progress_method() -> list[str]:
 def _emit_http_set_async_error_method() -> list[str]:
     return [
         ".method public static setAsyncError(II)V",
-        "    .locals 1",
+        "    .locals 4",
         "    if-lez p0, :ahnali_http_error_return",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_error_return",
-        "    sput p1, Lcom/ahnali/runtime/HttpHelper;->sAsyncError:I",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_error_return",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncErrorByToken:Landroid/util/SparseIntArray;",
+        "    invoke-virtual {v0, p0, p1}, Landroid/util/SparseIntArray;->put(II)V",
         "    :ahnali_http_error_return",
         "    return-void",
         ".end method",
@@ -628,11 +779,18 @@ def _emit_http_set_async_error_method() -> list[str]:
 def _emit_http_get_async_error_method() -> list[str]:
     return [
         ".method public static getAsyncError(I)I",
-        "    .locals 1",
+        "    .locals 4",
         "    if-lez p0, :ahnali_http_error_token_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_error_token_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncError:I",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_error_token_fail",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncErrorByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, 0x0",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v0",
         "    return v0",
         "    :ahnali_http_error_token_fail",
         "    const/16 v0, 0x8",
@@ -653,11 +811,16 @@ def _emit_http_get_async_error_method() -> list[str]:
 def _emit_http_set_async_status_method() -> list[str]:
     return [
         ".method public static setAsyncStatus(II)V",
-        "    .locals 1",
+        "    .locals 4",
         "    if-lez p0, :ahnali_http_status_return",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_status_return",
-        "    sput p1, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatus:I",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_status_return",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatusByToken:Landroid/util/SparseIntArray;",
+        "    invoke-virtual {v0, p0, p1}, Landroid/util/SparseIntArray;->put(II)V",
         "    :ahnali_http_status_return",
         "    return-void",
         ".end method",
@@ -667,11 +830,18 @@ def _emit_http_set_async_status_method() -> list[str]:
 def _emit_http_get_async_status_method() -> list[str]:
     return [
         ".method public static getAsyncStatus(I)I",
-        "    .locals 1",
+        "    .locals 4",
         "    if-lez p0, :ahnali_http_status_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_status_fail",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatus:I",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_status_fail",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncStatusByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v0",
         "    return v0",
         "    :ahnali_http_status_fail",
         "    const/4 v0, -0x1",
@@ -683,11 +853,18 @@ def _emit_http_get_async_status_method() -> list[str]:
 def _emit_http_set_async_body_method() -> list[str]:
     return [
         ".method public static setAsyncBody(ILjava/lang/String;)V",
-        "    .locals 1",
+        "    .locals 4",
         "    if-lez p0, :ahnali_http_body_return",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_body_return",
-        "    sput-object p1, Lcom/ahnali/runtime/HttpHelper;->sAsyncBody:Ljava/lang/String;",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_body_return",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncBodyByToken:Ljava/util/HashMap;",
+        "    invoke-static {p0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v1",
+        "    invoke-virtual {v0, v1, p1}, Ljava/util/HashMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
         "    :ahnali_http_body_return",
         "    return-void",
         ".end method",
@@ -697,15 +874,166 @@ def _emit_http_set_async_body_method() -> list[str]:
 def _emit_http_get_async_body_method() -> list[str]:
     return [
         ".method public static getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
-        "    .locals 1",
+        "    .locals 5",
         "    if-lez p0, :ahnali_http_body_fallback",
-        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncToken:I",
-        "    if-ne p0, v0, :ahnali_http_body_fallback",
-        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncBody:Ljava/lang/String;",
-        "    if-eqz v0, :ahnali_http_body_fallback",
-        "    return-object v0",
+        "    invoke-static {}, Lcom/ahnali/runtime/HttpHelper;->ensureAsyncStores()V",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancelByToken:Landroid/util/SparseIntArray;",
+        "    const/4 v1, -0x1",
+        "    invoke-virtual {v0, p0, v1}, Landroid/util/SparseIntArray;->get(II)I",
+        "    move-result v2",
+        "    if-eq v2, v1, :ahnali_http_body_fallback",
+        "    sget-object v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncBodyByToken:Ljava/util/HashMap;",
+        "    invoke-static {p0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v1",
+        "    invoke-virtual {v0, v1}, Ljava/util/HashMap;->get(Ljava/lang/Object;)Ljava/lang/Object;",
+        "    move-result-object v3",
+        "    if-eqz v3, :ahnali_http_body_fallback",
+        "    check-cast v3, Ljava/lang/String;",
+        "    return-object v3",
         "    :ahnali_http_body_fallback",
         "    return-object p1",
+        ".end method",
+    ]
+
+
+def _emit_http_get_async_json_field_error_method() -> list[str]:
+    return [
+        ".method public static getAsyncJsonFieldError(ILjava/lang/String;)I",
+        "    .locals 6",
+        "    if-eqz p1, :ahnali_http_async_json_error_invalid",
+        "    invoke-static {p0}, Lcom/ahnali/runtime/HttpHelper;->getAsyncError(I)I",
+        "    move-result v0",
+        "    if-eqz v0, :ahnali_http_async_json_error_body",
+        "    return v0",
+        "    :ahnali_http_async_json_error_body",
+        '    const-string v1, ""',
+        "    invoke-static {p0, v1}, Lcom/ahnali/runtime/HttpHelper;->getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_http_async_json_error_empty",
+        "    invoke-virtual {v2}, Ljava/lang/String;->length()I",
+        "    move-result v3",
+        "    if-lez v3, :ahnali_http_async_json_error_empty",
+        "    :ahnali_http_async_json_error_try_start",
+        "    new-instance v4, Lorg/json/JSONObject;",
+        "    invoke-direct {v4, v2}, Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v4, p1}, Lorg/json/JSONObject;->has(Ljava/lang/String;)Z",
+        "    move-result v5",
+        "    if-eqz v5, :ahnali_http_async_json_error_missing_key",
+        "    invoke-virtual {v4, p1}, Lorg/json/JSONObject;->isNull(Ljava/lang/String;)Z",
+        "    move-result v5",
+        "    if-nez v5, :ahnali_http_async_json_error_missing_key",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_http_async_json_error_try_end",
+        "    .catch Lorg/json/JSONException; {:ahnali_http_async_json_error_try_start .. :ahnali_http_async_json_error_try_end} :ahnali_http_async_json_error_malformed",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_async_json_error_try_start .. :ahnali_http_async_json_error_try_end} :ahnali_http_async_json_error_exception",
+        "    :ahnali_http_async_json_error_missing_key",
+        "    const/4 v0, 0x6",
+        "    return v0",
+        "    :ahnali_http_async_json_error_empty",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        "    :ahnali_http_async_json_error_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_http_async_json_error_malformed",
+        "    const/4 v0, 0x5",
+        "    return v0",
+        "    :ahnali_http_async_json_error_exception",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_get_async_json_field_method() -> list[str]:
+    return [
+        ".method public static getAsyncJsonField(ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    .locals 6",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/HttpHelper;->getAsyncJsonFieldError(ILjava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_http_async_json_field_fallback",
+        '    const-string v1, ""',
+        "    invoke-static {p0, v1}, Lcom/ahnali/runtime/HttpHelper;->getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_http_async_json_field_fallback",
+        "    :ahnali_http_async_json_field_try_start",
+        "    new-instance v3, Lorg/json/JSONObject;",
+        "    invoke-direct {v3, v2}, Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v3, p1}, Lorg/json/JSONObject;->opt(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v4",
+        "    if-eqz v4, :ahnali_http_async_json_field_fallback",
+        "    invoke-virtual {v4}, Ljava/lang/Object;->toString()Ljava/lang/String;",
+        "    move-result-object v5",
+        "    if-eqz v5, :ahnali_http_async_json_field_fallback",
+        "    return-object v5",
+        "    :ahnali_http_async_json_field_try_end",
+        "    .catch Lorg/json/JSONException; {:ahnali_http_async_json_field_try_start .. :ahnali_http_async_json_field_try_end} :ahnali_http_async_json_field_fallback",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_async_json_field_try_start .. :ahnali_http_async_json_field_try_end} :ahnali_http_async_json_field_fallback",
+        "    :ahnali_http_async_json_field_fallback",
+        "    return-object p2",
+        ".end method",
+    ]
+
+
+def _emit_http_get_async_json_array_length_error_method() -> list[str]:
+    return [
+        ".method public static getAsyncJsonArrayLengthError(I)I",
+        "    .locals 5",
+        "    invoke-static {p0}, Lcom/ahnali/runtime/HttpHelper;->getAsyncError(I)I",
+        "    move-result v0",
+        "    if-eqz v0, :ahnali_http_async_json_arr_error_body",
+        "    return v0",
+        "    :ahnali_http_async_json_arr_error_body",
+        '    const-string v1, ""',
+        "    invoke-static {p0, v1}, Lcom/ahnali/runtime/HttpHelper;->getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_http_async_json_arr_error_empty",
+        "    invoke-virtual {v2}, Ljava/lang/String;->length()I",
+        "    move-result v3",
+        "    if-lez v3, :ahnali_http_async_json_arr_error_empty",
+        "    :ahnali_http_async_json_arr_error_try_start",
+        "    new-instance v4, Lorg/json/JSONArray;",
+        "    invoke-direct {v4, v2}, Lorg/json/JSONArray;-><init>(Ljava/lang/String;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_http_async_json_arr_error_try_end",
+        "    .catch Lorg/json/JSONException; {:ahnali_http_async_json_arr_error_try_start .. :ahnali_http_async_json_arr_error_try_end} :ahnali_http_async_json_arr_error_malformed",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_async_json_arr_error_try_start .. :ahnali_http_async_json_arr_error_try_end} :ahnali_http_async_json_arr_error_exception",
+        "    :ahnali_http_async_json_arr_error_empty",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        "    :ahnali_http_async_json_arr_error_malformed",
+        "    const/4 v0, 0x5",
+        "    return v0",
+        "    :ahnali_http_async_json_arr_error_exception",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_get_async_json_array_length_method() -> list[str]:
+    return [
+        ".method public static getAsyncJsonArrayLength(II)I",
+        "    .locals 4",
+        "    invoke-static {p0}, Lcom/ahnali/runtime/HttpHelper;->getAsyncJsonArrayLengthError(I)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_http_async_json_arr_fallback",
+        '    const-string v1, "[]"',
+        "    invoke-static {p0, v1}, Lcom/ahnali/runtime/HttpHelper;->getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    :ahnali_http_async_json_arr_try_start",
+        "    new-instance v3, Lorg/json/JSONArray;",
+        "    invoke-direct {v3, v2}, Lorg/json/JSONArray;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v3}, Lorg/json/JSONArray;->length()I",
+        "    move-result v0",
+        "    return v0",
+        "    :ahnali_http_async_json_arr_try_end",
+        "    .catch Lorg/json/JSONException; {:ahnali_http_async_json_arr_try_start .. :ahnali_http_async_json_arr_try_end} :ahnali_http_async_json_arr_fallback",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_async_json_arr_try_start .. :ahnali_http_async_json_arr_try_end} :ahnali_http_async_json_arr_fallback",
+        "    :ahnali_http_async_json_arr_fallback",
+        "    return p1",
         ".end method",
     ]
 
@@ -883,11 +1211,11 @@ def emit_capability_helper_smali(
     ):
         lines.insert(3, ".field private static sAsyncNextToken:I")
         lines.insert(4, ".field private static sAsyncToken:I")
-        lines.insert(5, ".field private static sAsyncCancel:I")
-        lines.insert(6, ".field private static sAsyncProgress:I")
-        lines.insert(7, ".field private static sAsyncError:I")
-        lines.insert(8, ".field private static sAsyncStatus:I")
-        lines.insert(9, ".field private static sAsyncBody:Ljava/lang/String;")
+        lines.insert(5, ".field private static sAsyncCancelByToken:Landroid/util/SparseIntArray;")
+        lines.insert(6, ".field private static sAsyncProgressByToken:Landroid/util/SparseIntArray;")
+        lines.insert(7, ".field private static sAsyncErrorByToken:Landroid/util/SparseIntArray;")
+        lines.insert(8, ".field private static sAsyncStatusByToken:Landroid/util/SparseIntArray;")
+        lines.insert(9, ".field private static sAsyncBodyByToken:Ljava/util/HashMap;")
         lines.insert(10, "")
         lines.extend(_emit_http_get_method())
         lines.append("")
@@ -901,11 +1229,21 @@ def emit_capability_helper_smali(
         lines.append("")
         lines.extend(_emit_http_get_error_with_timeout_method())
         lines.append("")
+        lines.extend(_emit_http_request_with_timeout_method())
+        lines.append("")
+        lines.extend(_emit_http_request_status_with_timeout_method())
+        lines.append("")
+        lines.extend(_emit_http_request_error_with_timeout_method())
+        lines.append("")
         lines.extend(_emit_http_get_retry_method())
         lines.append("")
         lines.extend(_emit_http_get_json_field_error_method())
         lines.append("")
         lines.extend(_emit_http_get_json_field_method())
+        lines.append("")
+        lines.extend(_emit_http_ensure_async_store_method())
+        lines.append("")
+        lines.extend(_emit_http_init_async_token_method())
         lines.append("")
         lines.extend(_emit_http_get_current_async_token_method())
         lines.append("")
@@ -934,6 +1272,14 @@ def emit_capability_helper_smali(
         lines.extend(_emit_http_set_async_body_method())
         lines.append("")
         lines.extend(_emit_http_get_async_body_method())
+        lines.append("")
+        lines.extend(_emit_http_get_async_json_field_error_method())
+        lines.append("")
+        lines.extend(_emit_http_get_async_json_field_method())
+        lines.append("")
+        lines.extend(_emit_http_get_async_json_array_length_error_method())
+        lines.append("")
+        lines.extend(_emit_http_get_async_json_array_length_method())
         return "\n".join(lines)
 
     if (

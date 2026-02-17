@@ -11,6 +11,9 @@ from .ast import (
     _ExprHttpGetError,
     _ExprHttpAsyncError,
     _ExprHttpAsyncBody,
+    _ExprHttpAsyncJsonArrayLength,
+    _ExprHttpAsyncJsonField,
+    _ExprHttpAsyncJsonFieldError,
     _ExprHttpAsyncStatus,
     _ExprHttpAsyncProgress,
     _ExprHttpGetRouteAsync,
@@ -35,6 +38,9 @@ from .ast import (
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncBody,
+    _StmtHttpAsyncJsonArrayLength,
+    _StmtHttpAsyncJsonField,
+    _StmtHttpAsyncJsonFieldError,
     _StmtHttpAsyncError,
     _StmtHttpAsyncStatus,
     _StmtHttpAsyncProgress,
@@ -329,10 +335,10 @@ def _parse_stmt(stmt):
                 "HttpGetWithHandlersAsync",
             ):
                 args = [_parse_expr(a) for a in call.args]
-                if not (3 <= len(args) <= 7):
+                if not (3 <= len(args) <= 10):
                     raise RuntimeError(
-                        "http_get_route_async expects 3 to 7 arguments. "
-                        'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback", "progress_btn", retries, timeout_ms)'
+                        "http_get_route_async expects 3 to 10 arguments. "
+                        'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback", "progress_btn", retries, timeout_ms, "GET", "headers", "body")'
                     )
                 for idx, label in ((0, "url"), (1, "success_target_id"), (2, "failure_target_id")):
                     if not isinstance(args[idx], _ExprConst) or not isinstance(args[idx].value, str):
@@ -357,6 +363,15 @@ def _parse_stmt(stmt):
                     or isinstance(timeout_expr.value, bool)
                 ):
                     raise RuntimeError("http_get_route_async argument 'timeout_ms' must be an integer constant")
+                method_expr = args[7] if len(args) > 7 else _ExprConst("GET")
+                if not isinstance(method_expr, _ExprConst) or not isinstance(method_expr.value, str):
+                    raise RuntimeError("http_get_route_async argument 'method' must be a constant string")
+                headers_expr = args[8] if len(args) > 8 else _ExprConst("")
+                if not isinstance(headers_expr, _ExprConst) or not isinstance(headers_expr.value, str):
+                    raise RuntimeError("http_get_route_async argument 'headers' must be a constant string")
+                body_expr = args[9] if len(args) > 9 else _ExprConst("")
+                if not isinstance(body_expr, _ExprConst) or not isinstance(body_expr.value, str):
+                    raise RuntimeError("http_get_route_async argument 'body' must be a constant string")
                 return _StmtHttpGetRouteAsync(
                     args[0].value,
                     args[1].value,
@@ -365,6 +380,9 @@ def _parse_stmt(stmt):
                     progress_expr.value,
                     int(retries_expr.value),
                     int(timeout_expr.value),
+                    method_expr.value,
+                    headers_expr.value,
+                    body_expr.value,
                 )
             if fn in ("http_async_cancel", "HttpAsyncCancel"):
                 if len(call.args) > 1:
@@ -404,6 +422,40 @@ def _parse_stmt(stmt):
                 if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
                     raise RuntimeError("http_async_body argument 'fallback' must be a constant string")
                 return _StmtHttpAsyncBody(token_expr, fallback_expr.value)
+            if fn in ("http_async_json_field", "HttpAsyncJsonField"):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 3:
+                    raise RuntimeError(
+                        'http_async_json_field expects exactly 3 arguments. Usage: http_async_json_field(token, "key", "fallback")'
+                    )
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("http_async_json_field argument 'key' must be a constant string")
+                if not isinstance(args[2], _ExprConst) or not isinstance(args[2].value, str):
+                    raise RuntimeError("http_async_json_field argument 'fallback' must be a constant string")
+                return _StmtHttpAsyncJsonField(args[0], args[1].value, args[2].value)
+            if fn in ("http_async_json_field_error", "HttpAsyncJsonFieldError"):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'http_async_json_field_error expects exactly 2 arguments. Usage: http_async_json_field_error(token, "key")'
+                    )
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("http_async_json_field_error argument 'key' must be a constant string")
+                return _StmtHttpAsyncJsonFieldError(args[0], args[1].value)
+            if fn in ("http_async_json_array_length", "HttpAsyncJsonArrayLength"):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError(
+                        "http_async_json_array_length expects 1 or 2 arguments. Usage: http_async_json_array_length(token, fallback)"
+                    )
+                fallback_expr = args[1] if len(args) > 1 else _ExprConst(0)
+                if (
+                    not isinstance(fallback_expr, _ExprConst)
+                    or not isinstance(fallback_expr.value, int)
+                    or isinstance(fallback_expr.value, bool)
+                ):
+                    raise RuntimeError("http_async_json_array_length argument 'fallback' must be an integer constant")
+                return _StmtHttpAsyncJsonArrayLength(args[0], int(fallback_expr.value))
             if fn in (
                 "storage_put",
                 "StoragePut",
@@ -651,10 +703,10 @@ def _parse_expr(node):
             "HttpGetWithHandlersAsync",
         ):
             args = [_parse_expr(a) for a in node.args]
-            if not (3 <= len(args) <= 7):
+            if not (3 <= len(args) <= 10):
                 raise RuntimeError(
-                    "http_get_route_async expects 3 to 7 arguments. "
-                    'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback", "progress_btn", retries, timeout_ms)'
+                    "http_get_route_async expects 3 to 10 arguments. "
+                    'Usage: http_get_route_async("https://...", "success_btn", "failure_btn", "fallback", "progress_btn", retries, timeout_ms, "GET", "headers", "body")'
                 )
             for idx, label in ((0, "url"), (1, "success_target_id"), (2, "failure_target_id")):
                 if not isinstance(args[idx], _ExprConst) or not isinstance(args[idx].value, str):
@@ -679,6 +731,15 @@ def _parse_expr(node):
                 or isinstance(timeout_expr.value, bool)
             ):
                 raise RuntimeError("http_get_route_async argument 'timeout_ms' must be an integer constant")
+            method_expr = args[7] if len(args) > 7 else _ExprConst("GET")
+            if not isinstance(method_expr, _ExprConst) or not isinstance(method_expr.value, str):
+                raise RuntimeError("http_get_route_async argument 'method' must be a constant string")
+            headers_expr = args[8] if len(args) > 8 else _ExprConst("")
+            if not isinstance(headers_expr, _ExprConst) or not isinstance(headers_expr.value, str):
+                raise RuntimeError("http_get_route_async argument 'headers' must be a constant string")
+            body_expr = args[9] if len(args) > 9 else _ExprConst("")
+            if not isinstance(body_expr, _ExprConst) or not isinstance(body_expr.value, str):
+                raise RuntimeError("http_get_route_async argument 'body' must be a constant string")
             return _ExprHttpGetRouteAsync(
                 args[0].value,
                 args[1].value,
@@ -687,6 +748,9 @@ def _parse_expr(node):
                 progress_expr.value,
                 int(retries_expr.value),
                 int(timeout_expr.value),
+                method_expr.value,
+                headers_expr.value,
+                body_expr.value,
             )
         if node.func.id in (
             "http_async_progress",
@@ -731,6 +795,49 @@ def _parse_expr(node):
             if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
                 raise RuntimeError("http_async_body argument 'fallback' must be a constant string")
             return _ExprHttpAsyncBody(token_expr, fallback_expr.value)
+        if node.func.id in (
+            "http_async_json_field",
+            "HttpAsyncJsonField",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 3:
+                raise RuntimeError(
+                    'http_async_json_field expects exactly 3 arguments. Usage: http_async_json_field(token, "key", "fallback")'
+                )
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("http_async_json_field argument 'key' must be a constant string")
+            if not isinstance(args[2], _ExprConst) or not isinstance(args[2].value, str):
+                raise RuntimeError("http_async_json_field argument 'fallback' must be a constant string")
+            return _ExprHttpAsyncJsonField(args[0], args[1].value, args[2].value)
+        if node.func.id in (
+            "http_async_json_field_error",
+            "HttpAsyncJsonFieldError",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 2:
+                raise RuntimeError(
+                    'http_async_json_field_error expects exactly 2 arguments. Usage: http_async_json_field_error(token, "key")'
+                )
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("http_async_json_field_error argument 'key' must be a constant string")
+            return _ExprHttpAsyncJsonFieldError(args[0], args[1].value)
+        if node.func.id in (
+            "http_async_json_array_length",
+            "HttpAsyncJsonArrayLength",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError(
+                    "http_async_json_array_length expects 1 or 2 arguments. Usage: http_async_json_array_length(token, fallback)"
+                )
+            fallback_expr = args[1] if len(args) > 1 else _ExprConst(0)
+            if (
+                not isinstance(fallback_expr, _ExprConst)
+                or not isinstance(fallback_expr.value, int)
+                or isinstance(fallback_expr.value, bool)
+            ):
+                raise RuntimeError("http_async_json_array_length argument 'fallback' must be an integer constant")
+            return _ExprHttpAsyncJsonArrayLength(args[0], int(fallback_expr.value))
         if node.func.id in (
             "storage_get",
             "StorageGet",

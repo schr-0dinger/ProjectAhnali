@@ -230,7 +230,7 @@ def test_track_c_wave3_parser_http_get_route_async_rejects_wrong_arity():
     def _bad():
         http_get_route_async("https://example.com/health", "probe_ok_btn")
 
-    with pytest.raises(RuntimeError, match="http_get_route_async expects 3 to 7 arguments"):
+    with pytest.raises(RuntimeError, match="http_get_route_async expects 3 to 10 arguments"):
         app(
             activity(
                 "MainActivity",
@@ -481,8 +481,14 @@ def test_track_c_wave3_toolchain_emits_async_route_support_classes_and_http_help
     worker_smali = worker_path.read_text(encoding="utf-8")
     assert ".implements Ljava/lang/Runnable;" in worker_smali
     assert "Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V" in worker_smali
-    assert "Lcom/ahnali/runtime/HttpHelper;->httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I" in worker_smali
-    assert "Lcom/ahnali/runtime/HttpHelper;->httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I" in worker_smali
+    assert (
+        "Lcom/ahnali/runtime/HttpHelper;->httpRequestStatusWithTimeout("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I"
+    ) in worker_smali
+    assert (
+        "Lcom/ahnali/runtime/HttpHelper;->httpRequestErrorWithTimeout("
+        "Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I"
+    ) in worker_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncProgress(II)V" in worker_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncError(II)V" in worker_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncStatus(II)V" in worker_smali
@@ -523,13 +529,16 @@ def test_track_c_wave3_toolchain_emits_async_route_support_classes_and_http_help
     assert ".method public static httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;" in helper_smali
     assert ".method public static httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I" in helper_smali
     assert ".method public static httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I" in helper_smali
+    assert ".method public static httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;" in helper_smali
+    assert ".method public static httpRequestStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I" in helper_smali
+    assert ".method public static httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I" in helper_smali
     assert ".field private static sAsyncNextToken:I" in helper_smali
     assert ".field private static sAsyncToken:I" in helper_smali
-    assert ".field private static sAsyncCancel:I" in helper_smali
-    assert ".field private static sAsyncProgress:I" in helper_smali
-    assert ".field private static sAsyncError:I" in helper_smali
-    assert ".field private static sAsyncStatus:I" in helper_smali
-    assert ".field private static sAsyncBody:Ljava/lang/String;" in helper_smali
+    assert ".field private static sAsyncCancelByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncProgressByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncErrorByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncStatusByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncBodyByToken:Ljava/util/HashMap;" in helper_smali
     assert "Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V" in helper_smali
     assert "Ljava/lang/Thread;->start()V" in helper_smali
     assert "const/4 v7, 0x7" in worker_smali

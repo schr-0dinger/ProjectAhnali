@@ -52,3 +52,7 @@ Wave 3 delivers tokened non-blocking route dispatch with deterministic cancellat
 
 - `tests/test_track_c_wave3_async_route.py`
 - `tests/test_track_c_wave3_visible_flow.py`
+
+## Follow-up
+
+- Wave 4 async concurrency/request-options/typed-adapter extension is documented in `docs/TrackC_Wave4_Async_Concurrency.md`.

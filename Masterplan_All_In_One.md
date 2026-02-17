@@ -248,9 +248,10 @@ Implemented:
 - ✅ Track C Wave 1 closed: `URLLauncher` + `Connectivity` + `Storage` helper-call bindings + emitted runtime helper classes (`Lcom/ahnali/runtime/UrlLauncherHelper;`, `Lcom/ahnali/runtime/ConnectivityHelper;`, `Lcom/ahnali/runtime/StorageHelper;` with put/get/remove/exists/clear primitives) + integrated visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Track C Wave 2 completed: `Networking` helper-call binding via `Lcom/ahnali/runtime/HttpHelper;` with response/routing/retry/typed-JSON surface `httpGet(...)`, `httpGetStatus(...)`, `httpGetError(...)`, `httpGetRetry(...)`, `httpGetJsonField(...)`, `httpGetJsonFieldError(...)` + DSL `http_get(...)`, `http_get_status(...)`, `http_get_error(...)`, `http_get_retry(...)`, `http_get_route(...)`, `http_get_json_field(...)`, `http_get_json_field_error(...)` + conformance tests (`tests/test_track_c_wave2_http_get.py`) + visible integration flow coverage (`tests/test_track_c_wave2_visible_flow.py`)
 - ✅ Track C Wave 3 completed: tokened async route dispatch (`http_get_route_async(..., progress_target_id, retries, timeout_ms)`) + token-scoped cancellation/progress/error/status/body primitives (`http_async_cancel(token)`, `http_async_progress(token)`, `http_async_error(token)`, `http_async_status(token)`, `http_async_body(token, fallback)`) with background worker + UI-thread success/failure/progress callback runnable support classes + timeout/retry controls + conformance tests (`tests/test_track_c_wave3_async_route.py`, `tests/test_track_c_wave3_visible_flow.py`)
+- ✅ Track C Wave 4 core ABI slice completed: multi-request token-indexed async runtime state + async request-option route wiring (`method/headers/body`) + typed async JSON adapters (`http_async_json_field`, `http_async_json_field_error`, `http_async_json_array_length`) + conformance tests (`tests/test_track_c_wave4_async_networking.py`)
 
 Pending:
-- ⚠️ Track C Wave 4+: broaden capability modules beyond current network/storage helpers and add richer async networking surfaces (multi-request concurrency, request headers/body, typed response adapters).
+- ⚠️ Track C Wave 4+: strengthen transport option semantics (explicit header parsing/body transport controls), add multi-request race/cancellation stress coverage, and broaden capability modules beyond current network/storage helpers.
 
 ---
 

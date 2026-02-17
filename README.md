@@ -184,7 +184,7 @@ Constraints:
 1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
 2) Track B enforcing: size benchmark strict on PR/push; cold-start benchmark strict on manual dispatch
 3) Track C Wave 2 complete: networking response/retry/routing/typed-JSON + visible capability flow coverage (`tests/test_track_c_wave2_http_get.py`, `tests/test_track_c_wave2_visible_flow.py`)
-4) Track C Wave 3 complete: tokened async route + cancellation/progress/error/status/body + timeout/retry + visible flow coverage (`tests/test_track_c_wave3_async_route.py`, `tests/test_track_c_wave3_visible_flow.py`)
+4) Track C Wave 4 core slice complete: multi-request tokened async runtime state + request-option route wiring + typed async JSON adapters (`tests/test_track_c_wave4_async_networking.py`)
 5) Start Track D first tranche: deterministic optimization passes with test/benchmark gates (see `docs/Ahnali_Optimization_Backlog.md`)
 
 ## Completion Roadmap (Current)
@@ -226,7 +226,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 core ABI slice completed on 2026-02-17)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -261,6 +261,15 @@ Work items:
   - success/failure handlers can read deterministic token-scoped `status/body/error`
 - ✅ Add Wave 3 timeout/retry controls in async worker:
   - optional `retries` + `timeout_ms` arguments in `http_get_route_async(...)`
+- ✅ Add Wave 4 multi-request token runtime state:
+  - token-indexed async stores for cancellation/progress/error/status/body in `HttpHelper`
+- ✅ Add Wave 4 request-option wiring for async route:
+  - optional `method` + `headers` + `body` arguments in `http_get_route_async(...)`
+  - worker routes through `httpRequest*WithTimeout(...)` helper ABI
+- ✅ Add Wave 4 typed async JSON adapters:
+  - `http_async_json_field(token, key, fallback)`
+  - `http_async_json_field_error(token, key)`
+  - `http_async_json_array_length(token, fallback)`
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - ✅ Add Wave 2 visible capability integration flow (`tests/test_track_c_wave2_visible_flow.py`)
@@ -268,6 +277,7 @@ Work items:
 - ✅ Document Wave 3 async route contract (`docs/TrackC_Wave3_Async_Route.md`)
 - ✅ Add Wave 3 visible tokened async capability flow (`tests/test_track_c_wave3_visible_flow.py`)
 - ✅ Document Wave 3 visible tokened flow (`docs/TrackC_Wave3_Visible_Flow.md`)
+- ✅ Document Wave 4 async concurrency/request-options contract (`docs/TrackC_Wave4_Async_Concurrency.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - Continue adding capability-scoped primitives beyond networking/storage.
 
@@ -277,6 +287,7 @@ Exit criteria:
 - ✅ Wave 2 visible capability integration flow conformance is enforced by `tests/test_track_c_wave2_visible_flow.py`.
 - ✅ Wave 3 async route dispatch conformance is enforced by `tests/test_track_c_wave3_async_route.py`.
 - ✅ Wave 3 visible tokened async flow conformance is enforced by `tests/test_track_c_wave3_visible_flow.py`.
+- ✅ Wave 4 async concurrency/request-options/typed-adapter conformance is enforced by `tests/test_track_c_wave4_async_networking.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
@@ -346,7 +357,7 @@ Networking response contract:
   - `4` empty body
   - `5` malformed payload
   - `6` missing key (or null value)
-- `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id="", retries=0, timeout_ms=8000)` dispatches tokened network route checks in a background thread and posts success/failure/progress handlers to the UI thread.
+- `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id="", retries=0, timeout_ms=8000, method="GET", headers="", body="")` dispatches tokened network route checks in a background thread and posts success/failure/progress handlers to the UI thread.
 - `http_async_cancel(token)` requests token-scoped cancellation for async networking work.
 - `http_async_progress(token)` returns token-scoped deterministic progress (`0..100`).
 - `http_async_error(token)` returns token-scoped deterministic async error code:
@@ -359,14 +370,16 @@ Networking response contract:
   - `8` stale/unknown token
 - `http_async_status(token)` returns token-scoped completion status (`-1` on stale/unknown token).
 - `http_async_body(token, fallback)` returns token-scoped completion body, else deterministic fallback.
+- `http_async_json_field(token, key, fallback)` returns token-scoped JSON field string, else deterministic fallback.
+- `http_async_json_field_error(token, key)` returns deterministic token-scoped JSON field extraction error code (`0,1,2,3,4,5,6,7,8`).
+- `http_async_json_array_length(token, fallback)` returns token-scoped JSON array length, else deterministic fallback.
 
 Storage introspection contract:
 - `storage_exists("key")` returns `1` when key exists, else `0`.
 - `storage_clear()` clears all app storage keys for this helper namespace and returns `1` on success, else `0`.
 
 Known limits (current networking surface):
-- Async route currently uses single-active-token lifecycle (new route replaces prior active token).
-- HTTP method is GET only; request headers/body customization is not exposed yet.
+- Request-option helper path currently normalizes to deterministic GET/POST fetch semantics; advanced header/body transport controls are ABI-stable but intentionally constrained in v1.
 - Retry policy is fixed-backoff without jitter.
 
 ### Track D: Optimization and Build Intelligence

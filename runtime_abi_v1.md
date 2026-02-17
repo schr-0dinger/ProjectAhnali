@@ -16,10 +16,10 @@ In scope:
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
 - Track C Wave 2 capability helper ABI: networking fetch/response/routing/retry/typed-JSON helpers
-- Track C Wave 3 capability helper ABI: tokened async route dispatch + deterministic cancellation/progress/error/status/body helper methods + runnable support classes + timeout/retry controls
+- Track C Wave 3/4 capability helper ABI: tokened async route dispatch + deterministic cancellation/progress/error/status/body helper methods + runnable support classes + timeout/retry controls + request-option and typed async JSON adapter helpers
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON/tokened-async helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -182,6 +182,9 @@ Deprecation policy:
     - `httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;`
     - `httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I`
     - `httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I`
+    - `httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;`
+    - `httpRequestStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I`
+    - `httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I`
     - `httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
@@ -194,6 +197,10 @@ Deprecation policy:
     - `getAsyncError()I` and `getAsyncError(I)I`
     - `getAsyncStatus(I)I`
     - `getAsyncBody(ILjava/lang/String;)Ljava/lang/String;`
+    - `getAsyncJsonField(ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `getAsyncJsonFieldError(ILjava/lang/String;)I`
+    - `getAsyncJsonArrayLength(II)I`
+    - `getAsyncJsonArrayLengthError(I)I`
   - Return semantics:
     - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
     - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
@@ -219,16 +226,20 @@ Deprecation policy:
       - Success condition: `httpGetError(...) == 0`
       - Retry policy: total attempts = `max(0, retries) + 1`
       - Backoff policy: fixed sleep `max(0, backoff_ms)` between failed attempts (no jitter)
+    - `httpRequest*WithTimeout`:
+      - Request options accept method/header/body surfaces for async route worker ABI.
+      - Supported deterministic method set is `GET`/`POST` (case-insensitive); other methods return deterministic invalid-input surfaces.
+      - Header/body argument surfaces are ABI-stable request options for worker-call wiring.
     - `nextAsyncToken`: allocates and returns a positive token, resets token-scoped async state.
     - `startAsync`: allocates a token and starts a background thread for a provided `Runnable`.
       - Returns token (`>0`) when dispatch succeeds
       - Returns `0` for null runnable or caught exception during dispatch
     - `startAsyncWithToken`: starts background thread for provided token/runnable pair.
       - Returns same token on success
-      - Returns `0` for invalid token, token mismatch, null runnable, or caught exception
+      - Returns `0` for invalid token, null runnable, or caught exception
     - `cancelAsync(I)`: token-scoped cancellation request.
-      - Returns `1` when token matches current active token and cancellation is recorded; else `0`.
-    - `getAsyncProgress(I)`: token-scoped deterministic progress (`0..100`); returns `0` on token mismatch.
+      - Returns `1` when token exists and cancellation is recorded; else `0`.
+    - `getAsyncProgress(I)`: token-scoped deterministic progress (`0..100`); returns `0` on unknown token.
     - `getAsyncError(I)`: token-scoped deterministic async error code:
       - `0`: success
       - `1`: invalid input
@@ -237,11 +248,18 @@ Deprecation policy:
       - `4`: empty body
       - `7`: cancelled
       - `8`: stale/unknown token
-    - `getAsyncStatus(I)`: token-scoped HTTP status surface; returns `-1` on token mismatch.
-    - `getAsyncBody(I, fallback)`: token-scoped response-body surface; returns fallback when body missing or token mismatch.
+    - `getAsyncStatus(I)`: token-scoped HTTP status surface; returns `-1` on unknown token.
+    - `getAsyncBody(I, fallback)`: token-scoped response-body surface; returns fallback when body missing or unknown token.
+    - `getAsyncJsonFieldError(I, key)`: token-scoped deterministic JSON field extraction error surface:
+      - pass-through of async/networking error codes (`0,1,2,3,4,7,8`)
+      - `5`: malformed JSON payload
+      - `6`: missing key (or key value is JSON null)
+    - `getAsyncJsonField(I, key, fallback)`: token-scoped JSON field string extraction; returns fallback on any non-zero `getAsyncJsonFieldError`.
+    - `getAsyncJsonArrayLengthError(I)`: token-scoped deterministic JSON array parse error surface (`0,2,4,5` plus pass-through async codes).
+    - `getAsyncJsonArrayLength(I, fallback)`: token-scoped JSON array length extraction; returns fallback on parse/fetch errors.
   - Async route support classes:
     - `ui_runnable_click`: Runnable proxy that captures `View` and invokes static click handler on `target_desc`.
-    - `http_route_async_worker`: Runnable worker that evaluates timeout-aware fetch/status/error in background with deterministic retry, checks token-scoped cancellation, stores token-scoped completion payload (`status/body/error`), and posts success/failure/progress runnable callbacks via `Activity.runOnUiThread(...)`.
+    - `http_route_async_worker`: Runnable worker that evaluates timeout-aware request/status/error in background with deterministic retry, checks token-scoped cancellation, stores token-scoped completion payload (`status/body/error`), and posts success/failure/progress runnable callbacks via `Activity.runOnUiThread(...)`.
 
 ## 9) Conformance References
 
@@ -252,6 +270,7 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave2_visible_flow.py`
 - `tests/test_track_c_wave3_async_route.py`
 - `tests/test_track_c_wave3_visible_flow.py`
+- `tests/test_track_c_wave4_async_networking.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`
