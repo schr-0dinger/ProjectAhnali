@@ -15,9 +15,10 @@ In scope:
 - `ProgramIR.support_classes` entry schema used by toolchain emission
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
+- Track C Wave 2 capability helper ABI: networking fetch helper
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -166,12 +167,18 @@ Deprecation policy:
     - `putString`: `1` on successful `SharedPreferences` write; `0` on null context/key or caught exception.
     - `getString`: stored value when present; fallback argument on null context/key, missing value, or caught exception.
     - `remove`: `1` on successful `SharedPreferences` remove/apply; `0` on null context/key or caught exception.
+- Track C Wave 2 helper-call binding:
+  - Capability: `Networking`
+  - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
+  - Helper method/sig: `httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+  - Return semantics: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
 
 ## 9) Conformance References
 
 Current behavior is enforced by tests including:
 - `tests/test_runtime_abi_v1.py`
 - `tests/test_capabilities.py`
+- `tests/test_track_c_wave2_http_get.py`
 - `tests/test_support_click_listener.py`
 - `tests/test_event_surface_listeners.py`
 - `tests/test_navigation_stack.py`

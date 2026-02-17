@@ -213,6 +213,14 @@ register_default_capability(
     helper_sig="(Landroid/app/Activity;)I",
 )
 register_default_capability(
+    "Networking",
+    ["android.permission.INTERNET"],
+    aliases=["Network"],
+    helper_class_desc="Lcom/ahnali/runtime/HttpHelper;",
+    helper_method="httpGet",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+)
+register_default_capability(
     "URLLauncher",
     ["android.permission.INTERNET"],
     aliases=["URL launcher"],
@@ -244,6 +252,7 @@ class _Caps:
     Storage = "Storage"
     FilePicker = "FilePicker"
     Connectivity = "Connectivity"
+    Networking = "Networking"
     URLLauncher = "URLLauncher"
     Permissions = "Permissions"
     Maps = "Maps"

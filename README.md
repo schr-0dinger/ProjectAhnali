@@ -226,7 +226,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17 with visible app flow integration; Wave 2 capability expansion pending)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17 with visible app flow integration; Wave 2 started with `http_get`)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -236,6 +236,8 @@ Work items:
   - `URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`
   - `Connectivity` → `Lcom/ahnali/runtime/ConnectivityHelper;->isConnected(...)I`
   - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I`
+- ✅ Start Wave 2 networking primitive:
+  - `Networking` → `Lcom/ahnali/runtime/HttpHelper;->httpGet(...)Ljava/lang/String;` via `http_get(...)`
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
@@ -275,6 +277,16 @@ app(
     activity(
         "MainActivity",
         app_config(uses=[Caps.Storage]),
+        ...
+    )
+)
+```
+- Networking (`http_get`):
+```python
+app(
+    activity(
+        "MainActivity",
+        app_config(uses=[Caps.Networking]),
         ...
     )
 )

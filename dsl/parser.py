@@ -8,6 +8,7 @@ from .ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprHttpGet,
     _ExprStorageGet,
     _ExprSymbol,
     _ExprUnary,
@@ -20,6 +21,7 @@ from .ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtHttpGet,
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
@@ -161,6 +163,21 @@ def _parse_stmt(stmt):
                     raise RuntimeError("check_connectivity expects no arguments. Usage: check_connectivity()")
                 return _StmtCheckConnectivity()
             if fn in (
+                "http_get",
+                "HttpGet",
+                "fetch_url",
+                "FetchUrl",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError('http_get expects 1 or 2 string arguments. Usage: http_get("https://...", "fallback")')
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("http_get argument 'url' must be a constant string")
+                default_expr = args[1] if len(args) > 1 else _ExprConst("")
+                if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                    raise RuntimeError("http_get argument 'default_value' must be a constant string")
+                return _StmtHttpGet(args[0].value, default_expr.value)
+            if fn in (
                 "storage_put",
                 "StoragePut",
                 "set_storage",
@@ -266,6 +283,21 @@ def _parse_expr(node):
         rhs = _parse_expr(node.right)
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id in (
+            "http_get",
+            "HttpGet",
+            "fetch_url",
+            "FetchUrl",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError('http_get expects 1 or 2 string arguments. Usage: http_get("https://...", "fallback")')
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("http_get argument 'url' must be a constant string")
+            default_expr = args[1] if len(args) > 1 else _ExprConst("")
+            if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                raise RuntimeError("http_get argument 'default_value' must be a constant string")
+            return _ExprHttpGet(args[0].value, default_expr.value)
         if node.func.id in (
             "storage_get",
             "StorageGet",

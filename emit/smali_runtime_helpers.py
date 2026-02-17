@@ -122,6 +122,55 @@ def _emit_connectivity_is_connected_method() -> list[str]:
     ]
 
 
+def _emit_http_get_method() -> list[str]:
+    return [
+        ".method public static httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    .locals 8",
+        "    if-eqz p1, :ahnali_http_get_fallback",
+        "    :ahnali_http_get_try_start",
+        "    new-instance v0, Ljava/net/URL;",
+        "    invoke-direct {v0, p1}, Ljava/net/URL;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v0}, Ljava/net/URL;->openConnection()Ljava/net/URLConnection;",
+        "    move-result-object v1",
+        "    check-cast v1, Ljava/net/HttpURLConnection;",
+        "    if-eqz v1, :ahnali_http_get_fallback",
+        '    const-string v2, "GET"',
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setRequestMethod(Ljava/lang/String;)V",
+        "    const/16 v2, 0x1f40",
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setConnectTimeout(I)V",
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setReadTimeout(I)V",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->getResponseCode()I",
+        "    move-result v3",
+        "    const/16 v4, 0xc8",
+        "    if-ne v3, v4, :ahnali_http_get_disconnect_fallback",
+        "    new-instance v5, Ljava/util/Scanner;",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->getInputStream()Ljava/io/InputStream;",
+        "    move-result-object v6",
+        "    invoke-direct {v5, v6}, Ljava/util/Scanner;-><init>(Ljava/io/InputStream;)V",
+        '    const-string v6, "\\\\A"',
+        "    invoke-virtual {v5, v6}, Ljava/util/Scanner;->useDelimiter(Ljava/lang/String;)Ljava/util/Scanner;",
+        "    move-result-object v5",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->hasNext()Z",
+        "    move-result v6",
+        "    if-eqz v6, :ahnali_http_get_empty_body",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->next()Ljava/lang/String;",
+        "    move-result-object v7",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->close()V",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->disconnect()V",
+        "    if-eqz v7, :ahnali_http_get_fallback",
+        "    return-object v7",
+        "    :ahnali_http_get_empty_body",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->close()V",
+        "    :ahnali_http_get_disconnect_fallback",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->disconnect()V",
+        "    :ahnali_http_get_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_get_try_start .. :ahnali_http_get_try_end} :ahnali_http_get_fallback",
+        "    :ahnali_http_get_fallback",
+        "    return-object p2",
+        ".end method",
+    ]
+
+
 def _emit_storage_put_string_method() -> list[str]:
     return [
         ".method public static putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -235,6 +284,14 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;)I"
     ):
         lines.extend(_emit_connectivity_is_connected_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/HttpHelper;"
+        and helper_method == "httpGet"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+    ):
+        lines.extend(_emit_http_get_method())
         return "\n".join(lines)
 
     if (

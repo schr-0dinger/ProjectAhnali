@@ -225,6 +225,7 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
         "Location",
         "Maps",
         "Microphone",
+        "Networking",
         "Permissions",
         "Sensors",
         "Storage",
@@ -235,8 +236,10 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
 
 
 def test_runtime_abi_capability_mapping_alias_resolution_contract():
-    bindings = resolve_runtime_bindings(["File Picker", "URL launcher", "FilePicker", "URLLauncher"])
-    assert [binding.capability for binding in bindings] == ["FilePicker", "URLLauncher"]
+    bindings = resolve_runtime_bindings(
+        ["File Picker", "Network", "URL launcher", "FilePicker", "Networking", "URLLauncher"]
+    )
+    assert [binding.capability for binding in bindings] == ["FilePicker", "Networking", "URLLauncher"]
 
 
 def test_runtime_abi_url_launcher_helper_binding_contract():
@@ -264,3 +267,12 @@ def test_runtime_abi_storage_helper_binding_contract():
     assert binding.helper_class_desc == "Lcom/ahnali/runtime/StorageHelper;"
     assert binding.helper_method == "putString"
     assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+
+
+def test_runtime_abi_networking_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["Networking"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/HttpHelper;"
+    assert binding.helper_method == "httpGet"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"

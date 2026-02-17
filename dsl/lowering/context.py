@@ -12,6 +12,7 @@ from dsl.ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprHttpGet,
     _ExprStorageGet,
     _ExprSymbol,
     _ExprUnary,
@@ -29,6 +30,7 @@ from dsl.ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtHttpGet,
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
@@ -2747,6 +2749,8 @@ class _PythonicContext:
             return self._compile_open_url_stmt(stmt)
         if isinstance(stmt, _StmtCheckConnectivity):
             return self._compile_check_connectivity_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGet):
+            return self._compile_http_get_stmt(stmt)
         if isinstance(stmt, _StmtStoragePut):
             return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtStorageGet):
@@ -4753,10 +4757,17 @@ class _PythonicContext:
                 tmp_prefix="storage_get_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprHttpGet):
+            prefix, result = self._compile_http_get_call(
+                url=stmt.value.url,
+                default_value=stmt.value.default_value,
+                tmp_prefix="http_get_result",
+            )
+            value_type = "Ljava/lang/String;"
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
-                "Expected int const/symbol/arithmetic expression or storage_get(...)."
+                "Expected int const/symbol/arithmetic expression, storage_get(...), or http_get(...)."
             )
 
         if name in self.state_spec.values:
@@ -5312,6 +5323,40 @@ class _PythonicContext:
                 ),
             ),
         ]
+
+    def _compile_http_get_call(self, *, url: str, default_value: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_get",
+            capability_name="Networking",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(url)), const(str(default_value))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_get_stmt(self, stmt):
+        out, _ = self._compile_http_get_call(
+            url=stmt.url,
+            default_value=stmt.default_value,
+            tmp_prefix="http_get_ignored",
+        )
+        return out
 
     def _compile_storage_put_stmt(self, stmt):
         binding = self._require_helper_capability(

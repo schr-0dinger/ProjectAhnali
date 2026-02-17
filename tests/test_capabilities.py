@@ -38,6 +38,14 @@ def test_capability_runtime_mapping_v1_shape():
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/ConnectivityHelper;"
             assert binding.helper_method == "isConnected"
             assert binding.helper_sig == "(Landroid/app/Activity;)I"
+        elif cap_name == "Networking":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/HttpHelper;"
+            assert binding.helper_method == "httpGet"
+            assert (
+                binding.helper_sig
+                == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+            )
         elif cap_name == "Storage":
             assert binding.mode == "helper_call"
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/StorageHelper;"
@@ -55,13 +63,15 @@ def test_resolve_runtime_bindings_dedupes_aliases_and_ignores_raw_permissions():
         [
             "FilePicker",
             "File Picker",
+            "Network",
+            "Networking",
             "URL launcher",
             "URLLauncher",
             "android.permission.CAMERA",
             "CAMERA",
         ]
     )
-    assert [b.capability for b in bindings] == ["FilePicker", "URLLauncher"]
+    assert [b.capability for b in bindings] == ["FilePicker", "Networking", "URLLauncher"]
 
 
 def test_runtime_bindings_match_capability_permissions():

@@ -862,6 +862,14 @@ def is_connected():
     return check_connectivity()
 
 
+def http_get(url: str, default_value: str = ""):
+    return _ExprHttpGet(str(url), str(default_value))
+
+
+def fetch_url(url: str, default_value: str = ""):
+    return http_get(url, default_value)
+
+
 def storage_put(key: str, value: str):
     return _StmtStoragePut(str(key), str(value))
 
