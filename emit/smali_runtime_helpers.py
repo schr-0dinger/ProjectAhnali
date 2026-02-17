@@ -384,6 +384,10 @@ def _emit_http_start_async_method() -> list[str]:
         ".method public static startAsync(Ljava/lang/Runnable;)I",
         "    .locals 2",
         "    if-eqz p0, :ahnali_http_async_fail",
+        "    const/4 v1, 0x0",
+        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancel:I",
+        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgress:I",
+        "    sput v1, Lcom/ahnali/runtime/HttpHelper;->sAsyncError:I",
         "    :ahnali_http_async_try_start",
         "    new-instance v0, Ljava/lang/Thread;",
         "    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V",
@@ -394,6 +398,75 @@ def _emit_http_start_async_method() -> list[str]:
         "    .catch Ljava/lang/Exception; {:ahnali_http_async_try_start .. :ahnali_http_async_try_end} :ahnali_http_async_fail",
         "    :ahnali_http_async_fail",
         "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_cancel_async_method() -> list[str]:
+    return [
+        ".method public static cancelAsync()I",
+        "    .locals 1",
+        "    const/4 v0, 0x1",
+        "    sput v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancel:I",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_should_cancel_method() -> list[str]:
+    return [
+        ".method public static shouldCancel()I",
+        "    .locals 1",
+        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncCancel:I",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_set_async_progress_method() -> list[str]:
+    return [
+        ".method public static setAsyncProgress(I)V",
+        "    .locals 2",
+        "    move v0, p0",
+        "    if-gez v0, :ahnali_http_progress_non_negative",
+        "    const/4 v0, 0x0",
+        "    :ahnali_http_progress_non_negative",
+        "    const/16 v1, 0x64",
+        "    if-le v0, v1, :ahnali_http_progress_store",
+        "    move v0, v1",
+        "    :ahnali_http_progress_store",
+        "    sput v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgress:I",
+        "    return-void",
+        ".end method",
+    ]
+
+
+def _emit_http_get_async_progress_method() -> list[str]:
+    return [
+        ".method public static getAsyncProgress()I",
+        "    .locals 1",
+        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncProgress:I",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_set_async_error_method() -> list[str]:
+    return [
+        ".method public static setAsyncError(I)V",
+        "    .locals 0",
+        "    sput p0, Lcom/ahnali/runtime/HttpHelper;->sAsyncError:I",
+        "    return-void",
+        ".end method",
+    ]
+
+
+def _emit_http_get_async_error_method() -> list[str]:
+    return [
+        ".method public static getAsyncError()I",
+        "    .locals 1",
+        "    sget v0, Lcom/ahnali/runtime/HttpHelper;->sAsyncError:I",
         "    return v0",
         ".end method",
     ]
@@ -570,6 +643,10 @@ def emit_capability_helper_smali(
         and helper_method == "httpGet"
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
     ):
+        lines.insert(3, ".field private static sAsyncCancel:I")
+        lines.insert(4, ".field private static sAsyncProgress:I")
+        lines.insert(5, ".field private static sAsyncError:I")
+        lines.insert(6, "")
         lines.extend(_emit_http_get_method())
         lines.append("")
         lines.extend(_emit_http_get_status_method())
@@ -583,6 +660,18 @@ def emit_capability_helper_smali(
         lines.extend(_emit_http_get_json_field_method())
         lines.append("")
         lines.extend(_emit_http_start_async_method())
+        lines.append("")
+        lines.extend(_emit_http_cancel_async_method())
+        lines.append("")
+        lines.extend(_emit_http_should_cancel_method())
+        lines.append("")
+        lines.extend(_emit_http_set_async_progress_method())
+        lines.append("")
+        lines.extend(_emit_http_get_async_progress_method())
+        lines.append("")
+        lines.extend(_emit_http_set_async_error_method())
+        lines.append("")
+        lines.extend(_emit_http_get_async_error_method())
         return "\n".join(lines)
 
     if (

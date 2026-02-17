@@ -247,10 +247,16 @@ Implemented:
 - ✅ Capability/runtime ABI guard tests (`tests/test_runtime_abi_v1.py`, `tests/test_capabilities.py`)
 - ✅ Track C Wave 1 closed: `URLLauncher` + `Connectivity` + `Storage` helper-call bindings + emitted runtime helper classes (`Lcom/ahnali/runtime/UrlLauncherHelper;`, `Lcom/ahnali/runtime/ConnectivityHelper;`, `Lcom/ahnali/runtime/StorageHelper;` with put/get/remove/exists/clear primitives) + integrated visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Track C Wave 2 completed: `Networking` helper-call binding via `Lcom/ahnali/runtime/HttpHelper;` with response/routing/retry/typed-JSON surface `httpGet(...)`, `httpGetStatus(...)`, `httpGetError(...)`, `httpGetRetry(...)`, `httpGetJsonField(...)`, `httpGetJsonFieldError(...)` + DSL `http_get(...)`, `http_get_status(...)`, `http_get_error(...)`, `http_get_retry(...)`, `http_get_route(...)`, `http_get_json_field(...)`, `http_get_json_field_error(...)` + conformance tests (`tests/test_track_c_wave2_http_get.py`) + visible integration flow coverage (`tests/test_track_c_wave2_visible_flow.py`)
-- ✅ Track C Wave 3 started: async route dispatch primitive (`http_get_route_async(...)`) with background worker + UI-thread callback runnable support classes + conformance tests (`tests/test_track_c_wave3_async_route.py`)
+- ✅ Track C Wave 3 advanced: async route dispatch primitive (`http_get_route_async(...)`) + cancellation/progress/error primitives (`http_async_cancel()`, `http_async_progress()`, `http_async_error()`) with background worker + UI-thread callback runnable support classes + conformance tests (`tests/test_track_c_wave3_async_route.py`)
 
 Pending:
-- ⚠️ Remaining capability runtime helper-call implementations (Track C Wave 3+): expand async networking beyond route dispatch (cancellation/progress), and add additional capability modules beyond current network/storage helpers
+- ⚠️ Track C Wave 3 next execution order:
+  1. Define tokened async ABI v1 extension: `startAsync` token return and token-scoped cancel/progress/error getters.
+  2. Add DSL/lowering support for token-aware primitives and optional `on_progress` callback handler wiring.
+  3. Add async completion payload wiring (`status/body/error`) for success/failure handlers with deterministic fallback semantics.
+  4. Add timeout/retry controls for async workers, mapped to explicit deterministic error codes and tests.
+  5. Close Wave 3 with one visible end-to-end tokened async app flow and expand conformance coverage.
+- ⚠️ After Wave 3 closure: continue broader capability modules beyond current network/storage helpers.
 
 ---
 

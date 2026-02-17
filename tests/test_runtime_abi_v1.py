@@ -234,6 +234,8 @@ def test_runtime_abi_support_classes_canonical_tuple_schema():
         "focus_change",
         "menu_item_selected",
         "list_adapter",
+        "ui_runnable_click",
+        "http_route_async_worker",
     }
 
     kinds = {kind for _, _, _, kind in entries}

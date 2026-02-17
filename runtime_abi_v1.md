@@ -16,10 +16,10 @@ In scope:
 - Capability-to-runtime mapping contract for registered capabilities
 - Track C Wave 1 capability helper ABI: URL launcher + connectivity + storage helpers
 - Track C Wave 2 capability helper ABI: networking fetch/response/routing/retry/typed-JSON helpers
-- Track C Wave 3 capability helper ABI (initial slice): async route dispatch helper + runnable support classes
+- Track C Wave 3 capability helper ABI (initial slice): async route dispatch + deterministic cancellation/progress/error helper methods + runnable support classes
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON helpers (network/storage wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking fetch/response/routing/retry/typed-JSON/async-cancel-progress helpers (network/storage wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 
 ## 2) Descriptor and Naming Conventions
@@ -172,7 +172,7 @@ Deprecation policy:
     - `remove`: `1` on successful `SharedPreferences` remove/apply; `0` on null context/key or caught exception.
     - `exists`: `1` when key exists in `SharedPreferences`; `0` on missing key, null context/key, or caught exception.
     - `clear`: `1` on successful `SharedPreferences` clear/apply; `0` on null context or caught exception.
-- Track C Wave 2 helper-call binding:
+- Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
   - Helper methods/sigs:
@@ -183,6 +183,9 @@ Deprecation policy:
     - `httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
     - `httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
     - `startAsync(Ljava/lang/Runnable;)I`
+    - `cancelAsync()I`
+    - `getAsyncProgress()I`
+    - `getAsyncError()I`
   - Return semantics:
     - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
     - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
@@ -211,6 +214,16 @@ Deprecation policy:
     - `startAsync`: starts a background thread for a provided `Runnable`.
       - Returns `1` when thread dispatch succeeds
       - Returns `0` for null runnable or caught exception during dispatch
+    - `cancelAsync`: sets async cancel flag.
+      - Returns `1` after cancellation request is recorded
+    - `getAsyncProgress`: returns deterministic async progress state (`0..100`).
+    - `getAsyncError`: returns deterministic async error code:
+      - `0`: success
+      - `1`: invalid input
+      - `2`: transport/runtime exception
+      - `3`: non-200 HTTP status
+      - `4`: empty body
+      - `7`: cancelled
   - Async route support classes:
     - `ui_runnable_click`: Runnable proxy that captures `View` and invokes static click handler on `target_desc`.
     - `http_route_async_worker`: Runnable worker that evaluates `httpGetStatus/httpGet/httpGetError` in background and posts success/failure runnable callbacks via `Activity.runOnUiThread(...)`.

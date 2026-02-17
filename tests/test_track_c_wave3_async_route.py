@@ -8,6 +8,9 @@ from dsl.app import (
     app,
     app_config,
     button,
+    http_async_cancel,
+    http_async_error,
+    http_async_progress,
     http_get_route_async,
     on_click,
     text,
@@ -28,6 +31,24 @@ def _probe_ok_btn_handler():
 @on_click("probe_fail_btn")
 def _probe_fail_btn_handler():
     status_label.text = "Async route: fallback"
+
+
+@on_click("cancel_btn")
+def _cancel_btn_handler():
+    http_async_cancel()
+    status_label.text = "Cancel requested"
+
+
+@on_click("progress_btn")
+def _progress_btn_handler():
+    p = http_async_progress()
+    status_label.text = p
+
+
+@on_click("error_btn")
+def _error_btn_handler():
+    e = http_async_error()
+    status_label.text = e
 
 
 def test_track_c_wave3_async_route_lowers_to_async_helper_and_runnable_support_classes():
@@ -101,6 +122,47 @@ def test_track_c_wave3_async_route_requires_networking_capability():
         assert "Fix: add app_config(uses=[Caps.Networking]) to activity(...)." in str(exc)
 
 
+def test_track_c_wave3_async_cancel_progress_error_require_networking_capability():
+    prog_cancel = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("ready", id="status_label"),
+                button("Cancel", id="cancel_btn"),
+            ),
+            _cancel_btn_handler,
+        )
+    )
+    with pytest.raises(RuntimeError, match=r"\[CapabilityError\] http_async_cancel requires Caps\.Networking\."):
+        prog_cancel.build()
+
+    prog_progress = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("ready", id="status_label"),
+                button("Progress", id="progress_btn"),
+            ),
+            _progress_btn_handler,
+        )
+    )
+    with pytest.raises(RuntimeError, match=r"\[CapabilityError\] http_async_progress requires Caps\.Networking\."):
+        prog_progress.build()
+
+    prog_error = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("ready", id="status_label"),
+                button("Error", id="error_btn"),
+            ),
+            _error_btn_handler,
+        )
+    )
+    with pytest.raises(RuntimeError, match=r"\[CapabilityError\] http_async_error requires Caps\.Networking\."):
+        prog_error.build()
+
+
 def test_track_c_wave3_async_route_rejects_unknown_handler_target():
     @on_click("probe_btn_missing")
     def _probe_missing_handler():
@@ -170,6 +232,82 @@ def test_track_c_wave3_parser_http_get_route_async_rejects_non_string_url():
         ).build()
 
 
+def test_track_c_wave3_parser_http_async_cancel_progress_error_reject_args():
+    def _bad_cancel():
+        http_async_cancel(1)
+
+    with pytest.raises(RuntimeError, match="http_async_cancel expects no arguments"):
+        app(
+            activity(
+                "MainActivity",
+                app_config(uses=[Caps.Networking]),
+                ui(
+                    text("ready", id="status_label"),
+                    button("Cancel", id="cancel_bad_btn"),
+                ),
+                on_click("cancel_bad_btn")(_bad_cancel),
+            )
+        ).build()
+
+    def _bad_progress():
+        p = http_async_progress(1)
+        status_label.text = p
+
+    with pytest.raises(RuntimeError, match="http_async_progress expects no arguments"):
+        app(
+            activity(
+                "MainActivity",
+                app_config(uses=[Caps.Networking]),
+                ui(
+                    text("ready", id="status_label"),
+                    button("Progress", id="progress_bad_btn"),
+                ),
+                on_click("progress_bad_btn")(_bad_progress),
+            )
+        ).build()
+
+    def _bad_error():
+        e = http_async_error(1)
+        status_label.text = e
+
+    with pytest.raises(RuntimeError, match="http_async_error expects no arguments"):
+        app(
+            activity(
+                "MainActivity",
+                app_config(uses=[Caps.Networking]),
+                ui(
+                    text("ready", id="status_label"),
+                    button("Error", id="error_bad_btn"),
+                ),
+                on_click("error_bad_btn")(_bad_error),
+            )
+        ).build()
+
+
+def test_track_c_wave3_async_cancel_progress_error_lower_to_runtime_helper_calls():
+    prog = app(
+        activity(
+            "MainActivity",
+            app_config(uses=[Caps.Networking]),
+            ui(
+                text("ready", id="status_label"),
+                button("Cancel", id="cancel_btn"),
+                button("Progress", id="progress_btn"),
+                button("Error", id="error_btn"),
+            ),
+            _cancel_btn_handler,
+            _progress_btn_handler,
+            _error_btn_handler,
+        )
+    ).build()
+    result = alpha_pipeline(prog)
+    merged = result["smali_class"] + "\n" + "\n".join(result.get("extra_smali_classes", {}).values())
+    assert "Lcom/ahnali/runtime/HttpHelper;->cancelAsync()I" in merged
+    assert "Lcom/ahnali/runtime/HttpHelper;->getAsyncProgress()I" in merged
+    assert "Lcom/ahnali/runtime/HttpHelper;->getAsyncError()I" in merged
+    assert "Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V" in merged
+
+
 def test_track_c_wave3_toolchain_emits_async_route_support_classes_and_http_helper_async_method(tmp_path):
     frontend = app(
         activity(
@@ -211,6 +349,9 @@ def test_track_c_wave3_toolchain_emits_async_route_support_classes_and_http_help
     assert "Landroid/app/Activity;->runOnUiThread(Ljava/lang/Runnable;)V" in worker_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I" in worker_smali
     assert "Lcom/ahnali/runtime/HttpHelper;->httpGetError(Landroid/app/Activity;Ljava/lang/String;)I" in worker_smali
+    assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncProgress(I)V" in worker_smali
+    assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncError(I)V" in worker_smali
+    assert "Lcom/ahnali/runtime/HttpHelper;->shouldCancel()I" in worker_smali
 
     success_smali = success_runnable.read_text(encoding="utf-8")
     assert ".implements Ljava/lang/Runnable;" in success_smali
@@ -222,5 +363,15 @@ def test_track_c_wave3_toolchain_emits_async_route_support_classes_and_http_help
 
     helper_smali = helper_path.read_text(encoding="utf-8")
     assert ".method public static startAsync(Ljava/lang/Runnable;)I" in helper_smali
+    assert ".method public static cancelAsync()I" in helper_smali
+    assert ".method public static shouldCancel()I" in helper_smali
+    assert ".method public static setAsyncProgress(I)V" in helper_smali
+    assert ".method public static getAsyncProgress()I" in helper_smali
+    assert ".method public static setAsyncError(I)V" in helper_smali
+    assert ".method public static getAsyncError()I" in helper_smali
+    assert ".field private static sAsyncCancel:I" in helper_smali
+    assert ".field private static sAsyncProgress:I" in helper_smali
+    assert ".field private static sAsyncError:I" in helper_smali
     assert "Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V" in helper_smali
     assert "Ljava/lang/Thread;->start()V" in helper_smali
+    assert "const/4 v5, 0x7" in worker_smali

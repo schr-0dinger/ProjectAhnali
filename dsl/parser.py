@@ -9,6 +9,8 @@ from .ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpAsyncError,
+    _ExprHttpAsyncProgress,
     _ExprHttpGetJsonField,
     _ExprHttpGetJsonFieldError,
     _ExprHttpGetRetry,
@@ -28,6 +30,9 @@ from .ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpAsyncCancel,
+    _StmtHttpAsyncError,
+    _StmtHttpAsyncProgress,
     _StmtHttpGetJsonField,
     _StmtHttpGetJsonFieldError,
     _StmtHttpGetRouteAsync,
@@ -336,6 +341,18 @@ def _parse_stmt(stmt):
                     args[2].value,
                     default_expr.value,
                 )
+            if fn in ("http_async_cancel", "HttpAsyncCancel"):
+                if call.args:
+                    raise RuntimeError("http_async_cancel expects no arguments. Usage: http_async_cancel()")
+                return _StmtHttpAsyncCancel()
+            if fn in ("http_async_progress", "HttpAsyncProgress"):
+                if call.args:
+                    raise RuntimeError("http_async_progress expects no arguments. Usage: http_async_progress()")
+                return _StmtHttpAsyncProgress()
+            if fn in ("http_async_error", "HttpAsyncError"):
+                if call.args:
+                    raise RuntimeError("http_async_error expects no arguments. Usage: http_async_error()")
+                return _StmtHttpAsyncError()
             if fn in (
                 "storage_put",
                 "StoragePut",
@@ -576,6 +593,20 @@ def _parse_expr(node):
                 args[0].value,
                 args[1].value,
             )
+        if node.func.id in (
+            "http_async_progress",
+            "HttpAsyncProgress",
+        ):
+            if node.args:
+                raise RuntimeError("http_async_progress expects no arguments. Usage: http_async_progress()")
+            return _ExprHttpAsyncProgress()
+        if node.func.id in (
+            "http_async_error",
+            "HttpAsyncError",
+        ):
+            if node.args:
+                raise RuntimeError("http_async_error expects no arguments. Usage: http_async_error()")
+            return _ExprHttpAsyncError()
         if node.func.id in (
             "storage_get",
             "StorageGet",

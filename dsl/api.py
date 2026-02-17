@@ -944,6 +944,18 @@ def http_get_with_handlers_async(
     return http_get_route_async(url, success_target_id, failure_target_id, default_value)
 
 
+def http_async_cancel():
+    return _StmtHttpAsyncCancel()
+
+
+def http_async_progress():
+    return _ExprHttpAsyncProgress()
+
+
+def http_async_error():
+    return _ExprHttpAsyncError()
+
+
 def storage_put(key: str, value: str):
     return _StmtStoragePut(str(key), str(value))
 

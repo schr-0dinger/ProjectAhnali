@@ -112,6 +112,16 @@ class _ExprHttpGetJsonFieldError:
         self.key = key
 
 
+class _ExprHttpAsyncProgress:
+    def __init__(self):
+        pass
+
+
+class _ExprHttpAsyncError:
+    def __init__(self):
+        pass
+
+
 class _StmtAssign:
     def __init__(self, target, value):
         self.target = target
@@ -238,6 +248,21 @@ class _StmtHttpGetJsonFieldError:
         self.key = key
 
 
+class _StmtHttpAsyncCancel:
+    def __init__(self):
+        pass
+
+
+class _StmtHttpAsyncProgress:
+    def __init__(self):
+        pass
+
+
+class _StmtHttpAsyncError:
+    def __init__(self):
+        pass
+
+
 class _StmtNavigate:
     def __init__(self, target):
         self.target = target
@@ -337,6 +362,8 @@ def _coerce_expr(value):
             _ExprHttpGetRetry,
             _ExprHttpGetJsonField,
             _ExprHttpGetJsonFieldError,
+            _ExprHttpAsyncProgress,
+            _ExprHttpAsyncError,
             _ExprConst,
         ),
     ):

@@ -13,6 +13,8 @@ from dsl.ast import (
     _ExprConst,
     _ExprFormat,
     _ExprHttpGetError,
+    _ExprHttpAsyncError,
+    _ExprHttpAsyncProgress,
     _ExprHttpGetJsonField,
     _ExprHttpGetJsonFieldError,
     _ExprHttpGetRetry,
@@ -37,6 +39,9 @@ from dsl.ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtHttpGetError,
+    _StmtHttpAsyncCancel,
+    _StmtHttpAsyncError,
+    _StmtHttpAsyncProgress,
     _StmtHttpGetJsonField,
     _StmtHttpGetJsonFieldError,
     _StmtHttpGetRouteAsync,
@@ -2784,6 +2789,12 @@ class _PythonicContext:
             return self._compile_http_get_route_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRouteAsync):
             return self._compile_http_get_route_async_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncCancel):
+            return self._compile_http_async_cancel_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncProgress):
+            return self._compile_http_async_progress_stmt(stmt)
+        if isinstance(stmt, _StmtHttpAsyncError):
+            return self._compile_http_async_error_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetRetry):
             return self._compile_http_get_retry_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetJsonField):
@@ -4845,12 +4856,21 @@ class _PythonicContext:
                 key=stmt.value.key,
                 tmp_prefix="http_get_json_field_error_result",
             )
+        elif isinstance(stmt.value, _ExprHttpAsyncProgress):
+            prefix, result = self._compile_http_async_progress_call(
+                tmp_prefix="http_async_progress_result",
+            )
+        elif isinstance(stmt.value, _ExprHttpAsyncError):
+            prefix, result = self._compile_http_async_error_call(
+                tmp_prefix="http_async_error_result",
+            )
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
                 "storage_exists(...), http_get_status(...), http_get_error(...), "
-                "http_get_retry(...), http_get_json_field(...), or http_get_json_field_error(...)."
+                "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
+                "http_async_progress(), or http_async_error()."
             )
 
         if name in self.state_spec.values:
@@ -5799,6 +5819,90 @@ class _PythonicContext:
                 ),
             ),
         ]
+
+    def _compile_http_async_cancel_call(self, *, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_cancel",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "cancelAsync",
+                    args=[],
+                    return_type="I",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_progress_call(self, *, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_progress",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncProgress",
+                    args=[],
+                    return_type="I",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_error_call(self, *, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_async_error",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getAsyncError",
+                    args=[],
+                    return_type="I",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_async_cancel_stmt(self, stmt):
+        out, _ = self._compile_http_async_cancel_call(
+            tmp_prefix="http_async_cancel_ignored",
+        )
+        return out
+
+    def _compile_http_async_progress_stmt(self, stmt):
+        out, _ = self._compile_http_async_progress_call(
+            tmp_prefix="http_async_progress_ignored",
+        )
+        return out
+
+    def _compile_http_async_error_stmt(self, stmt):
+        out, _ = self._compile_http_async_error_call(
+            tmp_prefix="http_async_error_ignored",
+        )
+        return out
 
     def _compile_storage_put_stmt(self, stmt):
         binding = self._require_helper_capability(
