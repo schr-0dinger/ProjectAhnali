@@ -33,6 +33,12 @@ jobs:
       - name: Check v1 scope matrix
         run: PYTHONPATH=. python tools/v1_scope_matrix.py --check --masterplan Masterplan_All_In_One.md --matrix cfg/v1_scope_matrix.yaml
 
+      - name: Check capability mapping contract
+        run: PYTHONPATH=. python tools/capability_mapping_contract.py --check --out cfg/capability_mapping_snapshot_v1.json --doc docs/capability_runtime_mapping_v1.md
+
+      - name: Check docs consistency
+        run: PYTHONPATH=. python tools/docs_consistency.py --masterplan Masterplan_All_In_One.md --readme README.md --runtime-abi runtime_abi_v1.md --capability-doc docs/capability_runtime_mapping_v1.md
+
       - name: Check Python library policy
         run: PYTHONPATH=. python tools/python_library_policy.py --policy cfg/python_library_policy.json
 

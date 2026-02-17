@@ -220,6 +220,16 @@ def _validate_done_links(entry: dict[str, Any], repo_root: Path) -> list[str]:
         if not isinstance(rel, str) or not rel:
             problems.append("tests_required entries must be non-empty strings")
             continue
+        if not rel.startswith("tests/"):
+            problems.append(
+                f"tests_required entry must be under tests/ so CI pytest discovery executes it: {rel}"
+            )
+        if not rel.endswith(".py"):
+            problems.append(f"tests_required entry must be a Python test module: {rel}")
+        if rel.startswith("tests/") and Path(rel).name and not Path(rel).name.startswith("test_"):
+            problems.append(
+                f"tests_required entry must follow pytest discovery naming (test_*.py): {rel}"
+            )
         if not (repo_root / rel).exists():
             problems.append(f"tests_required path not found: {rel}")
     for rel in docs if isinstance(docs, list) else []:

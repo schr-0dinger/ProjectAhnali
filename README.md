@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `494 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `507 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
 
 ## Python Library Policy (Enforced)
 
@@ -195,20 +195,21 @@ Constraints:
 
 ## Immediate Plan (Next)
 
-1) Track A complete: runtime ABI + capability mapping + frozen signature snapshot (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`, `cfg/runtime_abi_snapshot_v1.json`)
-2) Track B enforcing: size benchmark strict on PR/push; cold-start benchmark strict on manual dispatch
-3) Track C Wave 7 complete: permissions helper-call surface + visible deterministic flow (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave7_visible_flow.py`)
-4) Start Track C Wave 8 next capability slice (same end-to-end pattern: DSL + lowering + helper + tests + visible flow)
-5) Start Track D first tranche: deterministic optimization passes with test/benchmark gates (see `docs/Ahnali_Optimization_Backlog.md`)
-6) Program 0 launched for full-scope v1: machine-readable scope matrix + CI policy gate (`cfg/v1_scope_matrix.yaml`, `tools/v1_scope_matrix.py`, `.github/workflows/ci.yml`)
-7) Program 2 tranche A implemented: `FrameLayout` + `layout_gravity` + deterministic `z_index` ordering/layering (`tests/test_program2_structure_frame.py`)
-8) Program 2 tranche B implemented: first-class `GridView` deterministic static-adapter surface (`tests/test_grid_view_static.py`)
-9) Program 2 tranche C implemented: first-class `NestedScrollView` deterministic single-child container surface (`tests/test_scroll_controls.py`, `tests/test_phase_integration_smoke.py`)
-10) Program 1 complete and Program 2 tranche D implemented: `ViewPager` static page model + `TabLayout` + `BottomNavigationView` + `CoordinatorLayout` deterministic surfaces (`tests/test_program2_structure_remaining.py`, `tests/test_phase_integration_smoke.py`)
-11) Program 2 tranche E implemented: `RecyclerView` + `NavigationBar` + `NavigationRail` + `DrawerLayout` + `FragmentContainer` + `percent` coverage (`tests/test_program2_structure_gap_closure.py`, `tests/test_phase_integration_smoke.py`)
-12) Program 3 style gap closure implemented: `hint_color`/`highlight_color`/`text_tint`, radial+sweep gradients, image style channels (`scaleType`, `crop`, `centerInside`, `adjustViewBounds`, image tint/alpha/matrix), and `secondary_progress_tint` with validation coverage (`tests/test_program3_style_completion.py`)
-13) Program 4 tranche A implemented: dedicated `on_slider_change` alias parity plus navigation operators `PopToRoot`/`ClearStack` with parser/lowering conformance (`tests/test_event_surface_listeners.py`, `tests/test_program4_navigation_ops.py`)
-14) Program 4 completed for section 8.3: long-click/touch/gesture aliases, drag/drop, editor-action/key events, deterministic conflict grouping, and support-class ABI/test coverage (`tests/test_program4_interaction_listeners.py`, `tests/test_runtime_abi_v1.py`)
+1) Program 5 closure pass completed: state/lifecycle traceability locked (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
+2) Program 11-A gate hardening completed: strict blocking guardrails are active for scope matrix, capability mapping/docs drift, docs consistency, ABI snapshot, reactive snapshot, and dependency policy (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`).
+3) Program 6-A capability core tranche: runtime permission handling + next high-value capability slices.
+4) Program 6-B capability breadth tranche across section `8.5`.
+5) Program 7 motion completion (`8.6`).
+6) Program 8 advanced/system/security/debug completion (`8.7`-`8.10`).
+7) Program 12-A docs/API reference freeze and continuous reconciliation.
+8) Program 9 Milestone D (NDK/JNI bridge).
+9) Program 10 Milestone E (optional bounded Python plugin).
+10) Program 11-B + 12-B final release hardening and traceability report.
+
+Guardrail-first reactive unlock remains active during all tranches:
+- static-default behavior unchanged
+- reactive is explicit opt-in only
+- no implicit runtime diff/recomposition in static mode
 
 ## Completion Roadmap (Current)
 

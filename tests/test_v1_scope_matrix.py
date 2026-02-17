@@ -43,3 +43,21 @@ def test_v1_scope_matrix_enforces_guardrail_scope_flags(tmp_path):
     )
     assert not ok
     assert "scope_flags['reactive_opt_in'] must be True" in message
+
+
+def test_v1_scope_matrix_done_status_requires_pytest_discoverable_test_paths(tmp_path):
+    matrix = build_v1_scope_matrix(masterplan=Path("Masterplan_All_In_One.md"))
+    assert matrix["entries"]
+    matrix["entries"][0]["status"] = "done"
+    matrix["entries"][0]["tests_required"] = ["docs/not_a_test.md"]
+    matrix["entries"][0]["docs_required"] = ["README.md"]
+
+    p = tmp_path / "v1_scope_matrix.yaml"
+    p.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    ok, message = check_v1_scope_matrix(
+        masterplan=Path("Masterplan_All_In_One.md"),
+        matrix_path=p,
+    )
+    assert not ok
+    assert "tests_required entry must be under tests/" in message

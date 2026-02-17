@@ -1,0 +1,248 @@
+{
+  "abi_version": "1.0.0",
+  "entries": [
+    {
+      "capability": "Audio",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    {
+      "capability": "Camera",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    {
+      "capability": "Connectivity",
+      "emitted_class_desc": "Lcom/ahnali/runtime/ConnectivityHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "isConnected(Landroid/app/Activity;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/ConnectivityHelper;",
+      "helper_method": "isConnected",
+      "helper_sig": "(Landroid/app/Activity;)I",
+      "mode": "helper_call",
+      "permissions": [
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.INTERNET"
+      ]
+    },
+    {
+      "capability": "FilePicker",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ]
+    },
+    {
+      "capability": "Location",
+      "emitted_class_desc": "Lcom/ahnali/runtime/LocationHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "isLocationEnabled(Landroid/app/Activity;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/LocationHelper;",
+      "helper_method": "isLocationEnabled",
+      "helper_sig": "(Landroid/app/Activity;)I",
+      "mode": "helper_call",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
+    {
+      "capability": "Maps",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
+    {
+      "capability": "Microphone",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    {
+      "capability": "Networking",
+      "emitted_class_desc": "Lcom/ahnali/runtime/HttpHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "applyRequestBody(Ljava/net/HttpURLConnection;Ljava/lang/String;Ljava/lang/String;)V",
+        "applyRequestHeaders(Ljava/net/HttpURLConnection;Ljava/lang/String;)V",
+        "cancelAsync()I",
+        "cancelAsync(I)I",
+        "ensureAsyncStores()V",
+        "getAsyncBody(ILjava/lang/String;)Ljava/lang/String;",
+        "getAsyncError()I",
+        "getAsyncError(I)I",
+        "getAsyncJsonArrayLength(II)I",
+        "getAsyncJsonArrayLengthError(I)I",
+        "getAsyncJsonField(ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "getAsyncJsonFieldError(ILjava/lang/String;)I",
+        "getAsyncProgress()I",
+        "getAsyncProgress(I)I",
+        "getAsyncStatus(I)I",
+        "getCurrentAsyncToken()I",
+        "httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "httpGetError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "httpGetErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "httpGetJsonField(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "httpGetJsonFieldError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "httpGetRetry(Landroid/app/Activity;Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;",
+        "httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "httpGetStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "httpGetWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
+        "httpRequestErrorWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
+        "httpRequestStatusWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I",
+        "httpRequestWithTimeout(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;",
+        "initAsyncToken(I)V",
+        "nextAsyncToken()I",
+        "resolveRequestMethod(Ljava/lang/String;)Ljava/lang/String;",
+        "setAsyncBody(ILjava/lang/String;)V",
+        "setAsyncError(I)V",
+        "setAsyncError(II)V",
+        "setAsyncProgress(I)V",
+        "setAsyncProgress(II)V",
+        "setAsyncStatus(II)V",
+        "shouldCancel()I",
+        "shouldCancel(I)I",
+        "startAsync(Ljava/lang/Runnable;)I",
+        "startAsyncWithToken(ILjava/lang/Runnable;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/HttpHelper;",
+      "helper_method": "httpGet",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+      "mode": "helper_call",
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    },
+    {
+      "capability": "Permissions",
+      "emitted_class_desc": "Lcom/ahnali/runtime/PermissionHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "isGranted(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/PermissionHelper;",
+      "helper_method": "isGranted",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;)I",
+      "mode": "helper_call",
+      "permissions": []
+    },
+    {
+      "capability": "Sensors",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.BODY_SENSORS"
+      ]
+    },
+    {
+      "capability": "Storage",
+      "emitted_class_desc": "Lcom/ahnali/runtime/StorageHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "clear(Landroid/app/Activity;)I",
+        "dataStoreClear(Landroid/app/Activity;)I",
+        "dataStoreExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "dataStoreGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "dataStorePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "dataStoreRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "encryptedClear(Landroid/app/Activity;)I",
+        "encryptedExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "encryptedGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "encryptedPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "encryptedRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "exists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "fileClear(Landroid/app/Activity;)I",
+        "fileExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "fileReadString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "fileRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "fileWriteString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "getString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "remove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "roomClear(Landroid/app/Activity;)I",
+        "roomExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "roomGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "roomPutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "roomRemove(Landroid/app/Activity;Ljava/lang/String;)I",
+        "sqliteClear(Landroid/app/Activity;)I",
+        "sqliteExists(Landroid/app/Activity;Ljava/lang/String;)I",
+        "sqliteGetString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "sqlitePutString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "sqliteRemove(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/StorageHelper;",
+      "helper_method": "putString",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+      "mode": "helper_call",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    {
+      "capability": "URLLauncher",
+      "emitted_class_desc": "Lcom/ahnali/runtime/UrlLauncherHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "openUrl(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/UrlLauncherHelper;",
+      "helper_method": "openUrl",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;)I",
+      "mode": "helper_call",
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    },
+    {
+      "capability": "Video",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    {
+      "capability": "WebView",
+      "helper_class_desc": null,
+      "helper_method": null,
+      "helper_sig": null,
+      "mode": "permission_only",
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    }
+  ],
+  "snapshot_schema": "capability_runtime_mapping_v1"
+}

@@ -304,6 +304,8 @@ Integration and smoke:
 - ✅ CI smali jar launcher fallback for jars without `Main-Class` manifest (classpath main-class retry)
 - ✅ Cold-start gate uses committed benchmark baseline reference (`cfg/benchmark_baseline.json`)
 - ✅ v1 scope matrix gate for full-scope release tracking (`cfg/v1_scope_matrix.yaml`, `tools/v1_scope_matrix.py`, `.github/workflows/ci.yml`)
+- ✅ Capability mapping contract drift gate (`tools/capability_mapping_contract.py`, `cfg/capability_mapping_snapshot_v1.json`, `docs/capability_runtime_mapping_v1.md`, `.github/workflows/ci.yml`)
+- ✅ Docs consistency gate across plan/README/ABI/mapping references (`tools/docs_consistency.py`, `.github/workflows/ci.yml`)
 
 Policy note:
 - Cold-start PR-gate rollout remains intentionally deferred; manual gate is the enforced path for now.
@@ -826,16 +828,23 @@ Phase status:
 
 ## 16) Immediate Unified Execution Plan
 
-1. ✅ Finalize transitive AAR inference and error diagnostics.
-2. ✅ Execute Phase 4 core event surface expansion (`on_change`, text/item/menu/focus listeners).
-3. ✅ Execute Phase 5 input configuration fields + lowering.
-4. ✅ Complete Phase 6 accessibility surface (`important_for_accessibility`, alias coverage, tests).
-5. ✅ Execute Phase 7 elevation/shadow surface (`setElevation`, text shadow, pressed-elevation state animator).
-6. ⚠️ Begin Hybrid Phase 1 (NDK/JNI skeleton, capability-scoped entrypoints).
-7. ⚠️ Continue API modularization (`dsl/api.py` split into domain modules) while preserving compatibility.  
-   Started: domain scaffolding modules added under `dsl/api_domains/` with compatibility imports.
-8. ✅ Guardrail-first reactive unlock v0: explicit `app_config(mode="static"|"reactive")` boundary, compile-time static-mode rejection for reactive APIs, explicit reactive primitives (`observable`, `set_observable`, `observable_get`, `derived`, `listen`, `bind_text`), and CI-enforced reactive surface snapshot (`cfg/reactive_surface_snapshot_v1.json`).
-9. ✅ Enforce minimal Python dependency policy with wrapper-only third-party imports (`cfg/python_library_policy.json`, `tools/python_library_policy.py`, `.github/workflows/ci.yml`).
+This is the authoritative execution order for Program 5 and beyond.
+
+1. ✅ Program 5 closure pass: state/lifecycle traceability locked to tests/docs (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
+2. ✅ Program 11-A gate hardening before breadth: contract/CI guardrails are strict and blocking (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`, `tests/test_capability_mapping_contract.py`, `tests/test_docs_consistency.py`, `tests/test_capability_diagnostics_contract.py`).
+3. ⚠️ Program 6-A capability core tranche: runtime-permission end-to-end + next high-value capability slices under the existing ABI/test/doc pattern.
+4. ⚠️ Program 6-B capability breadth tranche: continue grouped `8.5` families with deterministic helper error contracts.
+5. ⚠️ Program 7 motion completion (`8.6`): finish missing animator/transition/transform surfaces with deterministic ordering/fallback.
+6. ⚠️ Program 8 advanced/system/security/debug completion (`8.7`-`8.10`) with explicit policy constraints and release-mode tests.
+7. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled.
+8. ⚠️ Program 9 Milestone D: deterministic NDK/JNI bridge implementation and conformance tests.
+9. ⚠️ Program 10 Milestone E: optional bounded Python plugin with allowlisted capability wrappers.
+10. ⚠️ Program 11-B + 12-B final release hardening: strict runtime integration coverage + final traceability report/release gates.
+
+Guardrail-first reactive unlock remains active throughout:
+- static-default mode unchanged
+- reactive surfaces remain explicit opt-in
+- no implicit runtime diff/recomposition in static mode
 
 ---
 
