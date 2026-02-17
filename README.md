@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `401 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `408 passed` (`PYTHONPATH=. pytest -q -rs`)
 
 ## DSL Surface (Current)
 
@@ -188,6 +188,8 @@ Constraints:
 5) Start Track D first tranche: deterministic optimization passes with test/benchmark gates (see `docs/Ahnali_Optimization_Backlog.md`)
 6) Program 0 launched for full-scope v1: machine-readable scope matrix + CI policy gate (`cfg/v1_scope_matrix.yaml`, `tools/v1_scope_matrix.py`, `.github/workflows/ci.yml`)
 7) Program 2 tranche A implemented: `FrameLayout` + `layout_gravity` + deterministic `z_index` ordering/layering (`tests/test_program2_structure_frame.py`)
+8) Program 2 tranche B implemented: first-class `GridView` deterministic static-adapter surface (`tests/test_grid_view_static.py`)
+9) Program 2 tranche C implemented: first-class `NestedScrollView` deterministic single-child container surface (`tests/test_scroll_controls.py`, `tests/test_phase_integration_smoke.py`)
 
 ## Completion Roadmap (Current)
 

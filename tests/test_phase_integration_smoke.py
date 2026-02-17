@@ -27,6 +27,7 @@ from dsl.app import (
     horizontal_scroll_view,
     icon,
     list_view,
+    nested_scroll_view,
     on_change,
     on_click,
     on_focus_change,
@@ -376,11 +377,13 @@ def test_phase11_integration_smoke(tmp_path):
         ui(
             scroll_view(text("Inside scroll", id="sv_text"), id="sv"),
             horizontal_scroll_view(text("Inside horizontal", id="hsv_text"), id="hsv"),
+            nested_scroll_view(text("Inside nested", id="nsv_text"), id="nsv"),
         ),
     )
 
     assert ".field public static view_sv:Landroid/widget/ScrollView;" in smali
     assert ".field public static view_hsv:Landroid/widget/HorizontalScrollView;" in smali
+    assert ".field public static view_nsv:Landroidx/core/widget/NestedScrollView;" in smali
 
 
 def test_phase12_integration_smoke(tmp_path):

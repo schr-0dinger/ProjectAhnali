@@ -99,48 +99,6 @@
       "tests_required": []
     },
     {
-      "api_symbol": "TBD::8.1:gridview",
-      "docs_required": [],
-      "id": "8.1:gridview",
-      "label": "GridView",
-      "lowering_target": "TBD",
-      "marker": "\u274c",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:371",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.1:horizontalscrollview",
-      "docs_required": [],
-      "id": "8.1:horizontalscrollview",
-      "label": "HorizontalScrollView",
-      "lowering_target": "TBD",
-      "marker": "\u26a0\ufe0f",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:368",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.1:listview",
-      "docs_required": [],
-      "id": "8.1:listview",
-      "label": "ListView",
-      "lowering_target": "TBD",
-      "marker": "\u26a0\ufe0f",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:370",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
       "api_symbol": "TBD::8.1:navigationbar",
       "docs_required": [],
       "id": "8.1:navigationbar",
@@ -169,20 +127,6 @@
       "tests_required": []
     },
     {
-      "api_symbol": "TBD::8.1:nestedscrollview",
-      "docs_required": [],
-      "id": "8.1:nestedscrollview",
-      "label": "NestedScrollView",
-      "lowering_target": "TBD",
-      "marker": "\u274c",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:382",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
       "api_symbol": "TBD::8.1:percent",
       "docs_required": [],
       "id": "8.1:percent",
@@ -207,20 +151,6 @@
       "runtime_helper": "none",
       "section": "8.1",
       "source_ref": "Masterplan_All_In_One.md:372",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.1:scrollview",
-      "docs_required": [],
-      "id": "8.1:scrollview",
-      "label": "ScrollView",
-      "lowering_target": "TBD",
-      "marker": "\u26a0\ufe0f",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.1",
-      "source_ref": "Masterplan_All_In_One.md:367",
       "status": "planned",
       "tests_required": []
     },

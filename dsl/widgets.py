@@ -821,6 +821,15 @@ class _UIHorizontalScrollView(_UIView):
         )
 
 
+class _UINestedScrollView(_UIView):
+    def __init__(self, *items, id="nested_scroll_view", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.items = tuple(
+            _require_single_direct_child("NestedScrollView", items)
+        )
+
+
 class _UIAppBar(_UIText):
     def __init__(self, text, *, id="appbar", inline=False, **kwargs):
         kwargs.setdefault("id", id)
@@ -1040,6 +1049,62 @@ class _UIListView(_UIView):
             )
         self.item_layout = item_layout
         self.item_layout_res = item_layout_res
+
+
+class _UIGridView(_UIView):
+    _ITEM_LAYOUTS = {
+        "simple_list_item_1": 0x1090003,  # android.R.layout.simple_list_item_1
+    }
+
+    def __init__(
+        self,
+        *,
+        id="grid_view",
+        items=None,
+        item_layout="simple_list_item_1",
+        num_columns=2,
+        **kwargs,
+    ):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+
+        if items is None:
+            items = []
+        if not isinstance(items, (list, tuple)):
+            raise RuntimeError("GridView items must be a list or tuple of static values.")
+
+        normalized_items = []
+        for value in items:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "GridView items must contain only static primitive values "
+                    "(str/int/float/bool)."
+                )
+            normalized_items.append(str(value))
+        self.items = tuple(normalized_items)
+
+        if isinstance(item_layout, str):
+            if item_layout not in self._ITEM_LAYOUTS:
+                allowed = ", ".join(sorted(self._ITEM_LAYOUTS.keys()))
+                raise RuntimeError(
+                    f"Unsupported GridView item_layout '{item_layout}'. "
+                    f"Allowed values: {allowed}."
+                )
+            item_layout_res = self._ITEM_LAYOUTS[item_layout]
+        elif isinstance(item_layout, int):
+            item_layout_res = int(item_layout)
+        else:
+            raise RuntimeError(
+                "GridView item_layout must be a layout name string or an int resource id."
+            )
+        self.item_layout = item_layout
+        self.item_layout_res = item_layout_res
+
+        if isinstance(num_columns, bool) or not isinstance(num_columns, int):
+            raise RuntimeError("GridView num_columns must be an integer.")
+        if num_columns <= 0:
+            raise RuntimeError("GridView num_columns must be >= 1.")
+        self.num_columns = int(num_columns)
 
 
 # TODO(material-pending): Add DSL primitives for pending Material components.
@@ -1367,6 +1432,10 @@ class ListView(_UIListView):
     pass
 
 
+class GridView(_UIGridView):
+    pass
+
+
 class Row(_UIRow):
     pass
 
@@ -1444,6 +1513,10 @@ class ScrollView(_UIScrollView):
 
 
 class HorizontalScrollView(_UIHorizontalScrollView):
+    pass
+
+
+class NestedScrollView(_UINestedScrollView):
     pass
 
 
@@ -2290,6 +2363,10 @@ def horizontal_scroll_view(*items, id="horizontal_scroll_view", **kwargs):
     return _UIHorizontalScrollView(*items, id=id, **kwargs)
 
 
+def nested_scroll_view(*items, id="nested_scroll_view", **kwargs):
+    return _UINestedScrollView(*items, id=id, **kwargs)
+
+
 def app_bar(title, *, id="appbar", **kwargs):
     return _UIAppBar(title, id=id, **kwargs)
 
@@ -2415,6 +2492,16 @@ def list_view(*, id="list_view", items=None, item_layout="simple_list_item_1", *
         id=id,
         items=items,
         item_layout=item_layout,
+        **kwargs,
+    )
+
+
+def grid_view(*, id="grid_view", items=None, item_layout="simple_list_item_1", num_columns=2, **kwargs):
+    return _UIGridView(
+        id=id,
+        items=items,
+        item_layout=item_layout,
+        num_columns=num_columns,
         **kwargs,
     )
 

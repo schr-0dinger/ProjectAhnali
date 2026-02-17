@@ -135,11 +135,13 @@ from dsl.widgets import (
     _UIFlatButton,
     _UIFloatingActionButton,
     _UIFrame,
+    _UIGridView,
     _UIHorizontalScrollView,
     _UIIcon,
     _UIIconButton,
     _UIImage,
     _UIListView,
+    _UINestedScrollView,
     _UIPopupMenuButton,
     _UIProgressBar,
     _UIRadio,
@@ -228,6 +230,8 @@ class _PythonicContext:
             return "Landroid/widget/ScrollView;"
         if kind == "horizontal_scroll_view":
             return "Landroid/widget/HorizontalScrollView;"
+        if kind == "nested_scroll_view":
+            return "Landroidx/core/widget/NestedScrollView;"
         if kind == "text_field":
             return "Landroid/widget/EditText;"
         if kind == "checkbox":
@@ -248,6 +252,8 @@ class _PythonicContext:
             return "Landroid/widget/ProgressBar;"
         if kind == "list_view":
             return "Landroid/widget/ListView;"
+        if kind == "grid_view":
+            return "Landroid/widget/GridView;"
         if kind == "radio_group":
             return "Landroid/widget/RadioGroup;"
         if kind == "container":
@@ -273,6 +279,7 @@ class _PythonicContext:
             "frame",
             "scroll_view",
             "horizontal_scroll_view",
+            "nested_scroll_view",
             "appbar",
             "fab",
             "raised_btn",
@@ -295,6 +302,7 @@ class _PythonicContext:
             "radio_group",
             "progress",
             "list_view",
+            "grid_view",
             "screen",
         }
         resolved_id = item_id
@@ -2528,6 +2536,79 @@ class _PythonicContext:
             body.extend(self._apply_view_layout(item, parent_id))
             body.append(add_view(var(parent_id), var(item.id)))
             body.extend(self._capture_view_static(item.id))
+        elif isinstance(item, _UIGridView):
+            item.id = self._register_view(item.id, "grid_view")
+            if item.layout is None:
+                item.layout = ("match_parent", "wrap")
+            item_layout_res = int(item.item_layout_res)
+            if item_layout_res != 0x1090003:
+                raise RuntimeError(
+                    f"GridView '{item.id}' item_layout={item_layout_res} is not yet supported by "
+                    "the deterministic adapter path; use simple_list_item_1."
+                )
+            adapter_name = f"adapter_{item.id}"
+            items_array_name = f"items_{item.id}"
+            adapter_class_desc = f"Lcom/ahnali/preview/AhnaliListAdapter_{item.id};"
+            body.extend(
+                [
+                    assign(item.id, new("Landroid/widget/GridView;", args=[var("ctx")])),
+                    call_stmt(
+                        "setNumColumns",
+                        args=[var(item.id), const(int(item.num_columns))],
+                        return_type=None,
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/GridView;",
+                    ),
+                    assign(
+                        items_array_name,
+                        new_array(const(len(item.items)), "Ljava/lang/String;"),
+                    ),
+                ]
+            )
+            for idx, val in enumerate(item.items):
+                item_key = self._add_string_resource(f"{item.id}_item", str(val))
+                item_load, item_expr = self._load_string_expr(
+                    item_key,
+                    ctx_expr=var("ctx"),
+                    prefix=f"{item.id}_item",
+                )
+                body.extend(item_load)
+                body.append(
+                    array_set(
+                        var(items_array_name),
+                        const(idx),
+                        "Ljava/lang/String;",
+                        item_expr,
+                    )
+                )
+            body.extend(
+                [
+                    assign(
+                        adapter_name,
+                        new(
+                            adapter_class_desc,
+                            args=[var("ctx"), var(items_array_name)],
+                            arg_types=["Landroid/content/Context;", "[Ljava/lang/String;"],
+                        ),
+                    ),
+                    call_stmt(
+                        "setAdapter",
+                        args=[var(item.id), var(adapter_name)],
+                        return_type=None,
+                        invoke_kind="virtual",
+                        owner="Landroid/widget/GridView;",
+                    ),
+                ]
+            )
+            self._queue_support_class(
+                adapter_class_desc,
+                str(item_layout_res),
+                "LTest;",
+                "list_adapter",
+            )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
         elif isinstance(item, _UIButtonBar):
             item.id = self._register_view(item.id, "row")
             self._container_orientation[item.id] = "horizontal"
@@ -2619,6 +2700,25 @@ class _PythonicContext:
                     assign(
                         item.id,
                         new("Landroid/widget/HorizontalScrollView;", args=[var("ctx")]),
+                    )
+                ]
+            )
+            body.extend(self._apply_view_layout(item, parent_id))
+            body.append(add_view(var(parent_id), var(item.id)))
+            body.extend(self._capture_view_static(item.id))
+            body.extend(self._build_ui_items(item.id, item.items))
+        elif isinstance(item, _UINestedScrollView):
+            if len(item.items) != 1:
+                raise RuntimeError(
+                    "NestedScrollView requires exactly one direct child; "
+                    f"got {len(item.items)}."
+                )
+            item.id = self._register_view(item.id, "nested_scroll_view")
+            body.extend(
+                [
+                    assign(
+                        item.id,
+                        new("Landroidx/core/widget/NestedScrollView;", args=[var("ctx")]),
                     )
                 ]
             )

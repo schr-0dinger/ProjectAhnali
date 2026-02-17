@@ -6,7 +6,11 @@ def test_api_domain_modules_expose_legacy_compatible_symbols():
     assert structure.app is legacy_api.app
     assert structure.activity is legacy_api.activity
     assert structure.Frame is legacy_api.Frame
+    assert structure.GridView is legacy_api.GridView
+    assert structure.NestedScrollView is legacy_api.NestedScrollView
     assert structure.frame is legacy_api.frame
+    assert structure.grid_view is legacy_api.grid_view
+    assert structure.nested_scroll_view is legacy_api.nested_scroll_view
     assert style.theme is legacy_api.theme
     assert interaction.on_click is legacy_api.on_click
     assert state.storage_put is legacy_api.storage_put
