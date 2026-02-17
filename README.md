@@ -183,7 +183,7 @@ Constraints:
 
 1) Track A complete: runtime ABI + capability mapping frozen (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`)
 2) Track B complete: size benchmark enforced on PR/push; cold-start benchmark enforced on manual dispatch
-3) Track C Wave 1 in progress: URL launcher + connectivity + storage helper-calls landed; continue networking/storage primitives
+3) Track C Wave 1 complete: visible app flow integration landed (`tests/test_track_c_wave1_visible_flow.py`); proceed networking/storage Wave 2 primitives
 4) Ongoing integration smoke expansion for each new capability area
 5) Optimization backlog execution (see `docs/Ahnali_Optimization_Backlog.md`)
 
@@ -226,7 +226,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 started with URL launcher + connectivity + storage helper-call ABI/runtime paths)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17 with visible app flow integration; Wave 2 capability expansion pending)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -236,6 +236,8 @@ Work items:
   - `URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`
   - `Connectivity` → `Lcom/ahnali/runtime/ConnectivityHelper;->isConnected(...)I`
   - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I`
+- ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
+- ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
 - Add capability-scoped storage primitives.
 - Add permission/capability diagnostics for new surfaces.
