@@ -231,6 +231,9 @@ register_default_capability(
 register_default_capability(
     "Permissions",
     [],
+    helper_class_desc="Lcom/ahnali/runtime/PermissionHelper;",
+    helper_method="isGranted",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;)I",
 )
 register_default_capability(
     "Maps",

@@ -882,6 +882,22 @@ def is_location_enabled():
     return location_enabled()
 
 
+def check_permission(permission: str):
+    return _StmtCheckPermission(str(permission))
+
+
+def permission_check(permission: str):
+    return check_permission(permission)
+
+
+def permission_granted(permission: str):
+    return _ExprPermissionGranted(str(permission))
+
+
+def has_permission(permission: str):
+    return permission_granted(permission)
+
+
 def http_get(url: str, default_value: str = ""):
     return _ExprHttpGet(str(url), str(default_value))
 

@@ -80,6 +80,11 @@ class _ExprLocationEnabled:
         pass
 
 
+class _ExprPermissionGranted:
+    def __init__(self, permission):
+        self.permission = permission
+
+
 class _ExprHttpGet:
     def __init__(self, url, default_value):
         self.url = url
@@ -232,6 +237,11 @@ class _StmtCheckConnectivity:
 class _StmtCheckLocation:
     def __init__(self):
         pass
+
+
+class _StmtCheckPermission:
+    def __init__(self, permission):
+        self.permission = permission
 
 
 class _StmtStoragePut:
@@ -471,6 +481,7 @@ def _coerce_expr(value):
             _ExprStorageGet,
             _ExprStorageExists,
             _ExprLocationEnabled,
+            _ExprPermissionGranted,
             _ExprHttpGet,
             _ExprHttpGetStatus,
             _ExprHttpGetError,

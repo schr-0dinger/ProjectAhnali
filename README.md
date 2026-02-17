@@ -6,7 +6,7 @@ phase-by-phase architecture-first build.
 
 Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, Ahnali ships a statically linked, capability-scoped support runtime: a small set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView, etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in user code are included in the final APK. As a result, Ahnali applications have deterministic behavior, minimal binary size, zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable DSL.
 
-Last updated: 2026-02-16
+Last updated: 2026-02-17
 
 ## Goals
 
@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `269 passed, 1 skipped` (`PYTHONPATH=. pytest -q -rs`; skipped test requires an `adb` device in `device` state)
+- Last suite run: `391 passed` (`PYTHONPATH=. pytest -q -rs`)
 
 ## DSL Surface (Current)
 
@@ -183,8 +183,8 @@ Constraints:
 
 1) Track A complete: runtime ABI + capability mapping + frozen signature snapshot (`runtime_abi_v1.md`, `docs/capability_runtime_mapping_v1.md`, `cfg/runtime_abi_snapshot_v1.json`)
 2) Track B enforcing: size benchmark strict on PR/push; cold-start benchmark strict on manual dispatch
-3) Track C Wave 2 complete: networking response/retry/routing/typed-JSON + visible capability flow coverage (`tests/test_track_c_wave2_http_get.py`, `tests/test_track_c_wave2_visible_flow.py`)
-4) Track C Wave 4 core slice complete: multi-request tokened async runtime state + request-option route wiring + typed async JSON adapters (`tests/test_track_c_wave4_async_networking.py`)
+3) Track C Wave 7 complete: permissions helper-call surface + visible deterministic flow (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave7_visible_flow.py`)
+4) Start Track C Wave 8 next capability slice (same end-to-end pattern: DSL + lowering + helper + tests + visible flow)
 5) Start Track D first tranche: deterministic optimization passes with test/benchmark gates (see `docs/Ahnali_Optimization_Backlog.md`)
 
 ## Completion Roadmap (Current)
@@ -228,7 +228,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -292,8 +292,13 @@ Work items:
   - DSL surfaces: `location_enabled()`, `is_location_enabled()`, `check_location()`
 - ✅ Add Wave 6 visible integration flow combining location + networking + storage with deterministic fallback routing (`tests/test_track_c_wave6_visible_flow.py`)
 - ✅ Document Wave 6 location contract + flow (`docs/TrackC_Wave6_Location.md`)
+- ✅ Add Wave 7 permissions capability helper-call primitive:
+  - `Permissions` → `Lcom/ahnali/runtime/PermissionHelper;->isGranted(...)I`
+  - DSL surfaces: `permission_granted()`, `has_permission()`, `check_permission()`, `permission_check()`
+- ✅ Add Wave 7 visible integration flow combining permissions + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave7_visible_flow.py`)
+- ✅ Document Wave 7 permissions contract + flow (`docs/TrackC_Wave7_Permissions.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
-- Continue adding capability-scoped primitives beyond networking/storage/location.
+- Continue adding capability-scoped primitives beyond networking/storage/location/permissions.
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
@@ -306,6 +311,8 @@ Exit criteria:
 - ✅ Wave 5 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave5_visible_flow.py`.
 - ✅ Wave 6 location capability conformance is enforced by `tests/test_track_c_wave6_location.py`.
 - ✅ Wave 6 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave6_visible_flow.py`.
+- ✅ Wave 7 permissions capability conformance is enforced by `tests/test_track_c_wave7_permissions.py`.
+- ✅ Wave 7 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave7_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
@@ -347,6 +354,16 @@ app(
     activity(
         "MainActivity",
         app_config(uses=[Caps.Networking]),
+        ...
+    )
+)
+```
+- Permissions (`check_permission` / `permission_granted`):
+```python
+app(
+    activity(
+        "MainActivity",
+        app_config(uses=[Caps.Permissions]),
         ...
     )
 )

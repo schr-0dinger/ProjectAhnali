@@ -30,6 +30,13 @@ def test_runtime_abi_snapshot_includes_http_helper_surface():
     assert "getAsyncBody(ILjava/lang/String;)Ljava/lang/String;" in http_methods
 
 
+def test_runtime_abi_snapshot_includes_permission_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    permission_methods = classes["Lcom/ahnali/runtime/PermissionHelper;"]
+    assert "isGranted(Landroid/app/Activity;Ljava/lang/String;)I" in permission_methods
+
+
 def test_runtime_abi_snapshot_check_detects_drift(tmp_path):
     baseline = build_runtime_abi_snapshot()
     snapshot_path = tmp_path / "runtime_abi_snapshot_v1.json"

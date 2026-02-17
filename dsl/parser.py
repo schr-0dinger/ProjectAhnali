@@ -23,6 +23,7 @@ from .ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprLocationEnabled,
+    _ExprPermissionGranted,
     _ExprStorageGet,
     _ExprStorageExists,
     _ExprSymbol,
@@ -37,6 +38,7 @@ from .ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtCheckLocation,
+    _StmtCheckPermission,
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncBody,
@@ -210,6 +212,20 @@ def _parse_stmt(stmt):
                 if call.args:
                     raise RuntimeError("check_location expects no arguments. Usage: check_location()")
                 return _StmtCheckLocation()
+            if fn in (
+                "check_permission",
+                "CheckPermission",
+                "permission_check",
+                "PermissionCheck",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        'check_permission expects exactly 1 string argument. Usage: check_permission("android.permission.CAMERA")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("check_permission argument 'permission' must be a constant string")
+                return _StmtCheckPermission(args[0].value)
             if fn in (
                 "http_get",
                 "HttpGet",
@@ -602,6 +618,20 @@ def _parse_expr(node):
         rhs = _parse_expr(node.right)
         return _ExprBinary(lhs, _binop_symbol(node.op), rhs)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id in (
+            "permission_granted",
+            "PermissionGranted",
+            "has_permission",
+            "HasPermission",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'permission_granted expects exactly 1 string argument. Usage: permission_granted("android.permission.CAMERA")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("permission_granted argument 'permission' must be a constant string")
+            return _ExprPermissionGranted(args[0].value)
         if node.func.id in (
             "location_enabled",
             "LocationEnabled",

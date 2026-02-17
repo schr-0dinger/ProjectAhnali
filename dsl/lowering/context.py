@@ -27,6 +27,7 @@ from dsl.ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprLocationEnabled,
+    _ExprPermissionGranted,
     _ExprStorageGet,
     _ExprStorageExists,
     _ExprSymbol,
@@ -46,6 +47,7 @@ from dsl.ast import (
     _StmtOpenUrl,
     _StmtCheckConnectivity,
     _StmtCheckLocation,
+    _StmtCheckPermission,
     _StmtHttpGetError,
     _StmtHttpAsyncBody,
     _StmtHttpAsyncJsonArrayLength,
@@ -2794,6 +2796,8 @@ class _PythonicContext:
             return self._compile_check_connectivity_stmt(stmt)
         if isinstance(stmt, _StmtCheckLocation):
             return self._compile_check_location_stmt(stmt)
+        if isinstance(stmt, _StmtCheckPermission):
+            return self._compile_check_permission_stmt(stmt)
         if isinstance(stmt, _StmtHttpGet):
             return self._compile_http_get_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetStatus):
@@ -4845,6 +4849,11 @@ class _PythonicContext:
             prefix, result = self._compile_location_enabled_call(
                 tmp_prefix="location_enabled_result",
             )
+        elif isinstance(stmt.value, _ExprPermissionGranted):
+            prefix, result = self._compile_permission_granted_call(
+                permission=stmt.value.permission,
+                tmp_prefix="permission_granted_result",
+            )
         elif isinstance(stmt.value, _ExprHttpGet):
             prefix, result = self._compile_http_get_call(
                 url=stmt.value.url,
@@ -4945,7 +4954,7 @@ class _PythonicContext:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
-                "storage_exists(...), location_enabled(...), http_get_status(...), http_get_error(...), "
+                "storage_exists(...), location_enabled(...), permission_granted(...), http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
                 "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
                 "http_async_status(...), http_async_body(...), http_async_json_field(...), "
@@ -4999,6 +5008,11 @@ class _PythonicContext:
         if isinstance(expr, _ExprLocationEnabled):
             return self._compile_location_enabled_call(
                 tmp_prefix="location_enabled_expr",
+            )
+        if isinstance(expr, _ExprPermissionGranted):
+            return self._compile_permission_granted_call(
+                permission=expr.permission,
+                tmp_prefix="permission_granted_expr",
             )
         if isinstance(expr, _ExprSymbol):
             if expr.name in self.state_spec.values:
@@ -5548,6 +5562,50 @@ class _PythonicContext:
                     args=[var("ctx")],
                     return_type="I",
                     arg_types=["Landroid/app/Activity;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_permission_granted_call(self, *, permission: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="permission_granted",
+            capability_name="Permissions",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(permission))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_check_permission_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="check_permission",
+            capability_name="Permissions",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp("permission_check_ignored")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(getattr(stmt, "permission", "")))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),

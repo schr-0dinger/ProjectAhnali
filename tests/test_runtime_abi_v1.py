@@ -325,6 +325,15 @@ def test_runtime_abi_location_helper_binding_contract():
     assert binding.helper_sig == "(Landroid/app/Activity;)I"
 
 
+def test_runtime_abi_permissions_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["Permissions"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/PermissionHelper;"
+    assert binding.helper_method == "isGranted"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+
+
 def test_runtime_abi_networking_helper_binding_contract():
     mapping = default_capability_runtime_mapping()
     binding = mapping["Networking"]

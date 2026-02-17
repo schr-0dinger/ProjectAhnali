@@ -153,6 +153,27 @@ def _emit_location_is_enabled_method() -> list[str]:
     ]
 
 
+def _emit_permission_is_granted_method() -> list[str]:
+    return [
+        ".method public static isGranted(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 3",
+        "    if-eqz p0, :ahnali_perm_fail",
+        "    if-eqz p1, :ahnali_perm_fail",
+        "    :ahnali_perm_try_start",
+        "    invoke-virtual {p0, p1}, Landroid/app/Activity;->checkCallingOrSelfPermission(Ljava/lang/String;)I",
+        "    move-result v1",
+        "    if-nez v1, :ahnali_perm_fail",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_perm_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_perm_try_start .. :ahnali_perm_try_end} :ahnali_perm_fail",
+        "    :ahnali_perm_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_http_get_method() -> list[str]:
     return [
         ".method public static httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
@@ -1449,6 +1470,14 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;)I"
     ):
         lines.extend(_emit_location_is_enabled_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/PermissionHelper;"
+        and helper_method == "isGranted"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+    ):
+        lines.extend(_emit_permission_is_granted_method())
         return "\n".join(lines)
 
     if (

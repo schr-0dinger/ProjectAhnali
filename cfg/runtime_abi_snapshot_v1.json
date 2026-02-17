@@ -171,6 +171,14 @@
       "source": "capability:Location"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/PermissionHelper;",
+      "methods": [
+        "<init>()V",
+        "isGranted(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "source": "capability:Permissions"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/StorageHelper;",
       "methods": [
         "<init>()V",

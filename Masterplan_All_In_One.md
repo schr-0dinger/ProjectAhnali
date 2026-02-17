@@ -252,6 +252,7 @@ Implemented:
 - ✅ Track C Wave 4 completed: multi-request token-indexed async runtime state + async request-option route wiring (`method/headers/body`) + typed async JSON adapters (`http_async_json_field`, `http_async_json_field_error`, `http_async_json_array_length`) + hardened request-option transport semantics (header parsing/application + explicit POST body transport) + concurrent token cancellation/race stress coverage (`tests/test_track_c_wave4_async_networking.py`) + real device/emulator HttpHelper integration execution coverage (`tests/test_http_helper_device_integration.py`)
 - ✅ Track C Wave 5 visible integration completed: end-to-end flow combining storage + async networking + connectivity check with deterministic fallback UI/cache routing (`tests/test_track_c_wave5_visible_flow.py`, `docs/TrackC_Wave5_Visible_Flow.md`)
 - ✅ Track C Wave 6 completed: `Location` helper-call capability (`Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(...)I`) + DSL (`location_enabled`, `check_location`) + visible integration flow combining location + networking + storage deterministic fallback routing (`tests/test_track_c_wave6_location.py`, `tests/test_track_c_wave6_visible_flow.py`, `docs/TrackC_Wave6_Location.md`)
+- ✅ Track C Wave 7 completed: `Permissions` helper-call capability (`Lcom/ahnali/runtime/PermissionHelper;->isGranted(...)I`) + DSL (`permission_granted`, `has_permission`, `check_permission`, `permission_check`) + visible integration flow combining permissions + storage + URL launcher deterministic fallback routing (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave7_visible_flow.py`, `docs/TrackC_Wave7_Permissions.md`)
 
 Pending:
 - ⚠️ Broaden capability modules beyond current network/storage/location helpers.
@@ -524,7 +525,7 @@ Lifecycle state:
 Permissions:
 - ✅ request_permission
 - ✅ request_permissions
-- ❌ check_permission
+- ✅ check_permission
 - ⚠️ runtime permission handling
 
 Audio:
@@ -559,16 +560,17 @@ Sensors:
 - ❌ step counter
 
 Location:
+- ✅ location_enabled/check_location helper surface (provider-enabled deterministic check)
 - ❌ FusedLocationProvider
 - ❌ GPS
 - ❌ geofencing
 
 Networking:
-- ❌ HTTP requests
+- ✅ HTTP requests (deterministic helper surface: sync/route/retry/async)
 - ❌ OkHttp
 - ❌ Retrofit
 - ❌ WebSockets
-- ❌ ConnectivityManager
+- ✅ ConnectivityManager (connected-state helper check)
 - ❌ DownloadManager
 
 Web:
@@ -599,7 +601,7 @@ Storage:
 - ❌ SAF (Storage Access Framework)
 
 Sharing and intents:
-- ❌ open URL
+- ✅ open URL
 - ❌ share text
 - ❌ share file
 - ❌ open external app
@@ -1739,7 +1741,7 @@ never as core behavior.
 - ✅ State storage
 - ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
 - ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
-- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6 visible capability integration flow compile coverage
+- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests
