@@ -9,6 +9,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from dsl.runtime.diagnostics import emit_cli_error, emit_cli_info
+
 SCHEMA_VERSION = "python_library_policy/1"
 DEFAULT_POLICY_PATH = "cfg/python_library_policy.json"
 
@@ -232,9 +234,12 @@ def main(argv: list[str] | None = None) -> int:
         policy_path=Path(args.policy),
     )
     if not ok:
-        print(message, file=sys.stderr)
+        emit_cli_error(message, code="PythonLibraryPolicyError")
         return 1
-    print(f"Python library policy check passed: {args.policy}")
+    emit_cli_info(
+        f"Python library policy check passed: {args.policy}",
+        code="PythonLibraryPolicyOK",
+    )
     return 0
 
 

@@ -1,7 +1,12 @@
 import asyncio
 
 from dsl.runtime.async_scope import LifecycleAsyncScope
-from dsl.runtime.diagnostics import DiagnosticMessage, DiagnosticReporter
+from dsl.runtime.diagnostics import (
+    DiagnosticMessage,
+    DiagnosticReporter,
+    emit_cli_error,
+    emit_cli_info,
+)
 from dsl.runtime.http_client import HttpRequestOptions, _compute_backoff_ms, parse_headers
 from dsl.runtime.models import AppModeConfig, RouteSpec, validate_app_mode_config, validate_route_spec
 
@@ -66,3 +71,20 @@ def test_lifecycle_async_scope_cancels_all_tasks():
         assert scope.active_count == 0
 
     asyncio.run(_runner())
+
+
+def test_cli_emit_helpers_route_to_stdout_and_stderr(capsys):
+    reporter = DiagnosticReporter(use_rich=False)
+    emit_cli_info("all good", code="InfoCode", reporter=reporter)
+    emit_cli_error("bad thing", code="ErrorCode", reporter=reporter)
+
+    captured = capsys.readouterr()
+    assert "[info] InfoCode: all good" in captured.out
+    assert "[error] ErrorCode: bad thing" in captured.err
+
+
+def test_cli_emit_error_prefixed_code_is_respected(capsys):
+    reporter = DiagnosticReporter(use_rich=False)
+    emit_cli_error("[ScopeMatrixCheckError] mismatch", code="FallbackCode", reporter=reporter)
+    captured = capsys.readouterr()
+    assert "[error] ScopeMatrixCheckError: mismatch" in captured.err

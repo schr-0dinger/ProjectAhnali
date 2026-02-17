@@ -35,6 +35,9 @@ External libraries must be imported only from explicit wrapper modules:
 
 No direct third-party imports are allowed in DSL lowering, parser, or static-mode compilation paths.
 
+CLI entry points are expected to emit diagnostics through `dsl.runtime.diagnostics`
+so Rich formatting is used automatically when installed.
+
 ## Determinism Constraints
 
 - Static mode remains default.

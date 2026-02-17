@@ -20,6 +20,7 @@ from apk.toolchain import (
     run_smali,
 )
 from dsl.app import assign, const
+from dsl.runtime.diagnostics import emit_cli_exception, emit_cli_info
 
 
 BENCHMARK_SCHEMA_VERSION = "1.0.0"
@@ -469,11 +470,20 @@ def main(argv: list[str] | None = None) -> int:
             cold_start_iterations=max(1, int(args.cold_start_iterations)),
         )
     except Exception as exc:
-        parser.exit(1, f"{exc}\n")
+        emit_cli_exception(
+            exc,
+            code="BenchmarkError",
+            hint="Use --print-report and inspect cfg/benchmark_thresholds.json / cfg/benchmark_baseline.json.",
+        )
         return 1
 
     if args.print_report:
         print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        emit_cli_info(
+            f"Benchmark completed successfully. Report: {report_file}",
+            code="BenchmarkOK",
+        )
     return 0
 
 

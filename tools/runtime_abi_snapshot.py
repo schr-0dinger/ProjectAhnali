@@ -5,10 +5,10 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
-import sys
 from pathlib import Path
 
 from dsl.capabilities import CAPABILITY_RUNTIME_ABI_VERSION, default_capability_runtime_mapping
+from dsl.runtime.diagnostics import emit_cli_error, emit_cli_info
 from emit.smali_activity import emit_activity_wrapper_smali, emit_event_listener_smali
 from emit.smali_runtime_helpers import emit_capability_helper_smali
 
@@ -183,14 +183,20 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         ok, message = _check_snapshot(out_path, snapshot)
         if not ok:
-            print(message, file=sys.stderr)
+            emit_cli_error(message, code="RuntimeABISnapshotError")
             return 1
-        print(f"Runtime ABI snapshot is up to date: {out_path}")
+        emit_cli_info(
+            f"Runtime ABI snapshot is up to date: {out_path}",
+            code="RuntimeABISnapshotOK",
+        )
         return 0
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(_snapshot_json(snapshot), encoding="utf-8")
-    print(f"Wrote runtime ABI snapshot: {out_path}")
+    emit_cli_info(
+        f"Wrote runtime ABI snapshot: {out_path}",
+        code="RuntimeABISnapshotWrite",
+    )
     return 0
 
 

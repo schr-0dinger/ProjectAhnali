@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `492 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `494 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
 
 ## Python Library Policy (Enforced)
 
@@ -76,6 +76,7 @@ Test status:
 - Required stdlib foundations: `dataclasses`, `asyncio`.
 - Disallowed heavy libs: reactive engines, full DI frameworks, web frameworks, large ORMs, symbolic math libs.
 - External libraries are wrapper-only and must not be imported directly in core parser/lowering static paths.
+- CLI diagnostics now use `dsl.runtime.diagnostics` automatically, with Rich formatting when available and deterministic plain-text fallback otherwise.
 - Policy files and gates:
   - `cfg/python_library_policy.json`
   - `tools/python_library_policy.py`

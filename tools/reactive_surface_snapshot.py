@@ -5,10 +5,10 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
-import sys
 from pathlib import Path
 
 from dsl.parser_dispatch import EXPR_FN_BY_DOMAIN, STATEMENT_FN_BY_DOMAIN
+from dsl.runtime.diagnostics import emit_cli_error, emit_cli_info
 
 
 REACTIVE_SURFACE_ABI_VERSION = "1.0.0"
@@ -115,14 +115,20 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         ok, message = _check_snapshot(out_path, snapshot)
         if not ok:
-            print(message, file=sys.stderr)
+            emit_cli_error(message, code="ReactiveSurfaceSnapshotError")
             return 1
-        print(f"Reactive surface snapshot is up to date: {out_path}")
+        emit_cli_info(
+            f"Reactive surface snapshot is up to date: {out_path}",
+            code="ReactiveSurfaceSnapshotOK",
+        )
         return 0
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(_snapshot_json(snapshot), encoding="utf-8")
-    print(f"Wrote reactive surface snapshot: {out_path}")
+    emit_cli_info(
+        f"Wrote reactive surface snapshot: {out_path}",
+        code="ReactiveSurfaceSnapshotWrite",
+    )
     return 0
 
 

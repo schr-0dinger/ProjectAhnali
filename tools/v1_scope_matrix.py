@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 from typing import Any
+
+from dsl.runtime.diagnostics import emit_cli_error, emit_cli_info
 
 SCHEMA_VERSION = "v1_scope_matrix/1"
 DEFAULT_MASTERPLAN = "Masterplan_All_In_One.md"
@@ -343,7 +344,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.sync and args.check:
-        print("Use either --sync or --check, not both.", file=sys.stderr)
+        emit_cli_error(
+            "Use either --sync or --check, not both.",
+            code="ScopeMatrixArgsError",
+        )
         return 2
 
     masterplan = Path(args.masterplan)
@@ -353,19 +357,29 @@ def main(argv: list[str] | None = None) -> int:
         snapshot = build_v1_scope_matrix(masterplan, existing_matrix=matrix)
         matrix.parent.mkdir(parents=True, exist_ok=True)
         matrix.write_text(_json_text(snapshot), encoding="utf-8")
-        print(f"Wrote v1 scope matrix: {matrix}")
+        emit_cli_info(
+            f"Wrote v1 scope matrix: {matrix}",
+            code="ScopeMatrixWrite",
+        )
         return 0
 
     if args.check:
         ok, message = check_v1_scope_matrix(masterplan, matrix)
         if not ok:
-            print(message, file=sys.stderr)
-            print(
-                f"Re-sync with: PYTHONPATH=. python tools/v1_scope_matrix.py --sync --masterplan {masterplan} --matrix {matrix}",
-                file=sys.stderr,
+            emit_cli_error(
+                message,
+                code="ScopeMatrixCheckError",
+                hint=(
+                    "Re-sync with: "
+                    f"PYTHONPATH=. python tools/v1_scope_matrix.py --sync "
+                    f"--masterplan {masterplan} --matrix {matrix}"
+                ),
             )
             return 1
-        print(f"v1 scope matrix is up to date and valid: {matrix}")
+        emit_cli_info(
+            f"v1 scope matrix is up to date and valid: {matrix}",
+            code="ScopeMatrixOK",
+        )
         return 0
 
     parser.print_help()
