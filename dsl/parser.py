@@ -144,10 +144,10 @@ def _parse_stmt(stmt):
                 return _StmtNavigate(target)
             if fn in ("open_url", "OpenUrl", "launch_url", "LaunchUrl", "url_launcher", "URLLauncher"):
                 args = [_parse_expr(a) for a in call.args]
-                if not args:
-                    raise RuntimeError("open_url requires a url string argument")
+                if len(args) != 1:
+                    raise RuntimeError('open_url expects exactly 1 string argument. Usage: open_url("https://...")')
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
-                    raise RuntimeError("open_url url must be a constant string")
+                    raise RuntimeError("open_url argument 'url' must be a constant string")
                 return _StmtOpenUrl(args[0].value)
             if fn in (
                 "check_connectivity",
@@ -158,7 +158,7 @@ def _parse_stmt(stmt):
                 "IsConnected",
             ):
                 if call.args:
-                    raise RuntimeError("check_connectivity takes no arguments")
+                    raise RuntimeError("check_connectivity expects no arguments. Usage: check_connectivity()")
                 return _StmtCheckConnectivity()
             if fn in (
                 "storage_put",
@@ -169,12 +169,12 @@ def _parse_stmt(stmt):
                 "SaveStorage",
             ):
                 args = [_parse_expr(a) for a in call.args]
-                if len(args) < 2:
-                    raise RuntimeError("storage_put requires key and value string arguments")
+                if len(args) != 2:
+                    raise RuntimeError('storage_put expects exactly 2 string arguments. Usage: storage_put("key", "value")')
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
-                    raise RuntimeError("storage_put key must be a constant string")
+                    raise RuntimeError("storage_put argument 'key' must be a constant string")
                 if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
-                    raise RuntimeError("storage_put value must be a constant string")
+                    raise RuntimeError("storage_put argument 'value' must be a constant string")
                 return _StmtStoragePut(args[0].value, args[1].value)
             if fn in (
                 "storage_get",
@@ -185,13 +185,13 @@ def _parse_stmt(stmt):
                 "LoadStorage",
             ):
                 args = [_parse_expr(a) for a in call.args]
-                if not args:
-                    raise RuntimeError("storage_get requires key string argument")
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError('storage_get expects 1 or 2 string arguments. Usage: storage_get("key", "default")')
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
-                    raise RuntimeError("storage_get key must be a constant string")
+                    raise RuntimeError("storage_get argument 'key' must be a constant string")
                 default_expr = args[1] if len(args) > 1 else _ExprConst("")
                 if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
-                    raise RuntimeError("storage_get default value must be a constant string")
+                    raise RuntimeError("storage_get argument 'default_value' must be a constant string")
                 return _StmtStorageGet(args[0].value, default_expr.value)
             if fn in (
                 "storage_remove",
@@ -202,10 +202,10 @@ def _parse_stmt(stmt):
                 "DeleteStorage",
             ):
                 args = [_parse_expr(a) for a in call.args]
-                if not args:
-                    raise RuntimeError("storage_remove requires key string argument")
+                if len(args) != 1:
+                    raise RuntimeError('storage_remove expects exactly 1 string argument. Usage: storage_remove("key")')
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
-                    raise RuntimeError("storage_remove key must be a constant string")
+                    raise RuntimeError("storage_remove argument 'key' must be a constant string")
                 return _StmtStorageRemove(args[0].value)
             if fn in ("request_permissions", "request_permission", "RequestPermissions", "RequestPermission"):
                 perms, request_code = _parse_permissions_call(call)
@@ -275,13 +275,13 @@ def _parse_expr(node):
             "LoadStorage",
         ):
             args = [_parse_expr(a) for a in node.args]
-            if not args:
-                raise RuntimeError("storage_get requires key string argument")
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError('storage_get expects 1 or 2 string arguments. Usage: storage_get("key", "default")')
             if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
-                raise RuntimeError("storage_get key must be a constant string")
+                raise RuntimeError("storage_get argument 'key' must be a constant string")
             default_expr = args[1] if len(args) > 1 else _ExprConst("")
             if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
-                raise RuntimeError("storage_get default value must be a constant string")
+                raise RuntimeError("storage_get argument 'default_value' must be a constant string")
             return _ExprStorageGet(args[0].value, default_expr.value)
         if node.func.id in ("ushr", "unsigned_rshift"):
             if len(node.args) != 2:

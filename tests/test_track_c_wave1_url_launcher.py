@@ -35,7 +35,8 @@ def test_track_c_wave1_open_url_requires_url_launcher_capability():
         prog.build()
         raise AssertionError("Expected build() to fail when URLLauncher capability is missing")
     except RuntimeError as exc:
-        assert "open_url requires URLLauncher capability" in str(exc)
+        assert "[CapabilityError] open_url requires Caps.URLLauncher." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.URLLauncher]) to activity(...)." in str(exc)
 
 
 def test_track_c_wave1_toolchain_emits_url_launcher_helper_class(tmp_path):

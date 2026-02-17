@@ -5235,19 +5235,46 @@ class _PythonicContext:
             )
         ]
 
-    def _compile_open_url_stmt(self, stmt):
-        binding = self.capability_runtime_bindings.get("URLLauncher")
+    @staticmethod
+    def _capability_fix_hint(capability_name: str) -> str:
+        return f"Fix: add app_config(uses=[Caps.{capability_name}]) to activity(...)."
+
+    def _require_helper_capability(
+        self,
+        *,
+        api_name: str,
+        capability_name: str,
+        require_helper_method: bool = True,
+    ):
+        binding = self.capability_runtime_bindings.get(capability_name)
         if binding is None:
             raise RuntimeError(
-                "open_url requires URLLauncher capability. "
-                "Declare app_config(uses=[Caps.URLLauncher]) first."
+                f"[CapabilityError] {api_name} requires Caps.{capability_name}. "
+                f"{self._capability_fix_hint(capability_name)}"
             )
         if binding.mode != "helper_call":
             raise RuntimeError(
-                "URLLauncher capability must be helper_call mode for open_url."
+                f"[CapabilityError] {api_name} requires Caps.{capability_name} in helper_call mode. "
+                f"Fix: set runtime mapping mode='helper_call' for Caps.{capability_name}."
             )
-        if not (binding.helper_class_desc and binding.helper_method):
-            raise RuntimeError("URLLauncher helper binding is missing helper metadata.")
+        if not binding.helper_class_desc:
+            raise RuntimeError(
+                f"[CapabilityError] {api_name} is missing helper_class_desc for Caps.{capability_name}. "
+                f"Fix: update runtime mapping metadata for Caps.{capability_name}."
+            )
+        if require_helper_method and not binding.helper_method:
+            raise RuntimeError(
+                f"[CapabilityError] {api_name} is missing helper_method for Caps.{capability_name}. "
+                f"Fix: update runtime mapping metadata for Caps.{capability_name}."
+            )
+        return binding
+
+    def _compile_open_url_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="open_url",
+            capability_name="URLLauncher",
+            require_helper_method=True,
+        )
         result_tmp = self._next_tmp("url_launch_result")
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
@@ -5265,18 +5292,11 @@ class _PythonicContext:
         ]
 
     def _compile_check_connectivity_stmt(self, stmt):
-        binding = self.capability_runtime_bindings.get("Connectivity")
-        if binding is None:
-            raise RuntimeError(
-                "check_connectivity requires Connectivity capability. "
-                "Declare app_config(uses=[Caps.Connectivity]) first."
-            )
-        if binding.mode != "helper_call":
-            raise RuntimeError(
-                "Connectivity capability must be helper_call mode for check_connectivity."
-            )
-        if not (binding.helper_class_desc and binding.helper_method):
-            raise RuntimeError("Connectivity helper binding is missing helper metadata.")
+        binding = self._require_helper_capability(
+            api_name="check_connectivity",
+            capability_name="Connectivity",
+            require_helper_method=True,
+        )
         result_tmp = self._next_tmp("connectivity_result")
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
@@ -5294,18 +5314,11 @@ class _PythonicContext:
         ]
 
     def _compile_storage_put_stmt(self, stmt):
-        binding = self.capability_runtime_bindings.get("Storage")
-        if binding is None:
-            raise RuntimeError(
-                "storage_put requires Storage capability. "
-                "Declare app_config(uses=[Caps.Storage]) first."
-            )
-        if binding.mode != "helper_call":
-            raise RuntimeError(
-                "Storage capability must be helper_call mode for storage_put."
-            )
-        if not (binding.helper_class_desc and binding.helper_method):
-            raise RuntimeError("Storage helper binding is missing helper metadata.")
+        binding = self._require_helper_capability(
+            api_name="storage_put",
+            capability_name="Storage",
+            require_helper_method=True,
+        )
         result_tmp = self._next_tmp("storage_put_result")
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
@@ -5327,18 +5340,11 @@ class _PythonicContext:
         ]
 
     def _compile_storage_get_call(self, *, key: str, default_value: str, tmp_prefix: str):
-        binding = self.capability_runtime_bindings.get("Storage")
-        if binding is None:
-            raise RuntimeError(
-                "storage_get requires Storage capability. "
-                "Declare app_config(uses=[Caps.Storage]) first."
-            )
-        if binding.mode != "helper_call":
-            raise RuntimeError(
-                "Storage capability must be helper_call mode for storage_get."
-            )
-        if not binding.helper_class_desc:
-            raise RuntimeError("Storage helper binding is missing helper class metadata.")
+        binding = self._require_helper_capability(
+            api_name="storage_get",
+            capability_name="Storage",
+            require_helper_method=False,
+        )
         result_tmp = self._next_tmp(tmp_prefix)
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
@@ -5368,18 +5374,11 @@ class _PythonicContext:
         return out
 
     def _compile_storage_remove_stmt(self, stmt):
-        binding = self.capability_runtime_bindings.get("Storage")
-        if binding is None:
-            raise RuntimeError(
-                "storage_remove requires Storage capability. "
-                "Declare app_config(uses=[Caps.Storage]) first."
-            )
-        if binding.mode != "helper_call":
-            raise RuntimeError(
-                "Storage capability must be helper_call mode for storage_remove."
-            )
-        if not binding.helper_class_desc:
-            raise RuntimeError("Storage helper binding is missing helper class metadata.")
+        binding = self._require_helper_capability(
+            api_name="storage_remove",
+            capability_name="Storage",
+            require_helper_method=False,
+        )
         result_tmp = self._next_tmp("storage_remove_result")
         return [
             assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),

@@ -101,7 +101,8 @@ def test_track_c_wave1_storage_put_requires_storage_capability():
         prog.build()
         raise AssertionError("Expected build() to fail when Storage capability is missing")
     except RuntimeError as exc:
-        assert "storage_put requires Storage capability" in str(exc)
+        assert "[CapabilityError] storage_put requires Caps.Storage." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Storage]) to activity(...)." in str(exc)
 
 
 @on_click("load_btn_no_caps")
@@ -121,7 +122,8 @@ def test_track_c_wave1_storage_get_requires_storage_capability():
         prog.build()
         raise AssertionError("Expected build() to fail when Storage capability is missing")
     except RuntimeError as exc:
-        assert "storage_get requires Storage capability" in str(exc)
+        assert "[CapabilityError] storage_get requires Caps.Storage." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Storage]) to activity(...)." in str(exc)
 
 
 def test_track_c_wave1_storage_remove_requires_storage_capability():
@@ -136,7 +138,8 @@ def test_track_c_wave1_storage_remove_requires_storage_capability():
         prog.build()
         raise AssertionError("Expected build() to fail when Storage capability is missing")
     except RuntimeError as exc:
-        assert "storage_remove requires Storage capability" in str(exc)
+        assert "[CapabilityError] storage_remove requires Caps.Storage." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Storage]) to activity(...)." in str(exc)
 
 
 def test_track_c_wave1_toolchain_emits_storage_helper_class(tmp_path):

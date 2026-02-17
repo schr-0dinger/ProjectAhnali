@@ -245,6 +245,41 @@ Work items:
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
 
+Capability diagnostics (standard format):
+- `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
+
+How to fix examples:
+- URL launcher:
+```python
+app(
+    activity(
+        "MainActivity",
+        app_config(uses=[Caps.URLLauncher]),
+        ...
+    )
+)
+```
+- Connectivity:
+```python
+app(
+    activity(
+        "MainActivity",
+        app_config(uses=[Caps.Connectivity]),
+        ...
+    )
+)
+```
+- Storage:
+```python
+app(
+    activity(
+        "MainActivity",
+        app_config(uses=[Caps.Storage]),
+        ...
+    )
+)
+```
+
 ### Track D: Optimization and Build Intelligence
 
 Objectives:

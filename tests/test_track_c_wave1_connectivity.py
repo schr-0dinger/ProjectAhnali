@@ -35,7 +35,8 @@ def test_track_c_wave1_check_connectivity_requires_connectivity_capability():
         prog.build()
         raise AssertionError("Expected build() to fail when Connectivity capability is missing")
     except RuntimeError as exc:
-        assert "check_connectivity requires Connectivity capability" in str(exc)
+        assert "[CapabilityError] check_connectivity requires Caps.Connectivity." in str(exc)
+        assert "Fix: add app_config(uses=[Caps.Connectivity]) to activity(...)." in str(exc)
 
 
 def test_track_c_wave1_toolchain_emits_connectivity_helper_class(tmp_path):
