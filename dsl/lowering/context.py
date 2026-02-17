@@ -28,6 +28,7 @@ from dsl.ast import (
     _ExprHttpGet,
     _ExprLocationEnabled,
     _ExprPermissionGranted,
+    _ExprReactiveGet,
     _ExprStateBackendGet,
     _ExprStateBackendExists,
     _ExprStorageGet,
@@ -73,6 +74,11 @@ from dsl.ast import (
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
+    _StmtReactiveObservable,
+    _StmtReactiveSet,
+    _StmtReactiveDerived,
+    _StmtReactiveListen,
+    _StmtReactiveBindText,
     _StmtStateBackendClear,
     _StmtStateBackendExists,
     _StmtStateBackendGet,
@@ -278,6 +284,7 @@ class _PythonicContext:
         min_sdk: int = 21,
         registry=None,
         runtime_bindings=None,
+        app_mode: str = "static",
     ):
         self.state_spec = state_spec
         self.ui_spec = ui_spec
@@ -285,6 +292,10 @@ class _PythonicContext:
         self.min_sdk = int(min_sdk)
         self.registry = registry
         self.capability_runtime_bindings = dict(runtime_bindings or {})
+        mode = str(app_mode).strip().lower()
+        if mode not in {"static", "reactive"}:
+            raise RuntimeError(f"Unsupported app mode {app_mode!r}; expected 'static' or 'reactive'")
+        self.app_mode = mode
         self.view_types = {}
         self.view_fields = {}
         self.root_id = "root"
@@ -310,6 +321,8 @@ class _PythonicContext:
         self._nav_stack_limit = 0
         self._popup_button_items = {}
         self._generated_support_classes = []
+        self._reactive_cells: dict[str, dict[str, str]] = {}
+        self._reactive_bindings: dict[str, set[str]] = {}
 
     def _view_desc(self, kind):
         if kind == "text":
@@ -1530,6 +1543,397 @@ class _PythonicContext:
             static_set(field_name, desc, var(item_id)),
         ]
 
+    @staticmethod
+    def _reactive_fix_hint() -> str:
+        return "Fix: set app_config(mode='reactive') in activity(...)."
+
+    def _require_reactive_mode(self, api_name: str):
+        if self.app_mode != "reactive":
+            raise RuntimeError(
+                f"[ReactiveModeError] {api_name} requires reactive mode. {self._reactive_fix_hint()}"
+            )
+
+    @staticmethod
+    def _normalize_reactive_name(raw: str, *, api_name: str, arg_name: str) -> str:
+        name = str(raw).strip()
+        if not name:
+            raise RuntimeError(f"[ReactiveError] {api_name} argument '{arg_name}' must be non-empty")
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+            raise RuntimeError(
+                f"[ReactiveError] {api_name} argument '{arg_name}' must match [A-Za-z_][A-Za-z0-9_]*, got {raw!r}"
+            )
+        return name
+
+    def _iter_stmts_recursive(self, stmts):
+        for stmt in stmts or []:
+            yield stmt
+            if isinstance(stmt, _StmtIf):
+                yield from self._iter_stmts_recursive(stmt.then)
+                yield from self._iter_stmts_recursive(stmt.else_)
+            elif isinstance(stmt, _StmtWhile):
+                yield from self._iter_stmts_recursive(stmt.body)
+
+    def _collect_reactive_contract(self, event_specs, lifecycle_specs):
+        self._reactive_cells = {}
+        self._reactive_bindings = {}
+        found_reactive_stmt = None
+
+        for spec in (event_specs or []):
+            for stmt in self._iter_stmts_recursive(getattr(spec, "stmts", None)):
+                if isinstance(
+                    stmt,
+                    (
+                        _StmtReactiveObservable,
+                        _StmtReactiveSet,
+                        _StmtReactiveDerived,
+                        _StmtReactiveListen,
+                        _StmtReactiveBindText,
+                    ),
+                ):
+                    found_reactive_stmt = found_reactive_stmt or type(stmt).__name__
+                if isinstance(stmt, _StmtReactiveObservable):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="observable",
+                        arg_name="name",
+                    )
+                    initial = str(getattr(stmt.initial, "value", ""))
+                    prev = self._reactive_cells.get(name)
+                    if prev is not None and prev["initial"] != initial:
+                        raise RuntimeError(
+                            f"[ReactiveError] observable '{name}' has conflicting initial values: "
+                            f"{prev['initial']!r} vs {initial!r}"
+                        )
+                    self._reactive_cells[name] = {"field": f"rx_{name}", "initial": initial}
+                elif isinstance(stmt, _StmtReactiveDerived):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="derived",
+                        arg_name="name",
+                    )
+                    self._reactive_cells.setdefault(name, {"field": f"rx_{name}", "initial": ""})
+                elif isinstance(stmt, _StmtReactiveListen):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="listen",
+                        arg_name="name",
+                    )
+                    self._reactive_bindings.setdefault(name, set()).add(str(stmt.target_id))
+                elif isinstance(stmt, _StmtReactiveBindText):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="bind_text",
+                        arg_name="name",
+                    )
+                    self._reactive_bindings.setdefault(name, set()).add(str(stmt.target_id))
+
+                if isinstance(stmt, _StmtAssign) and isinstance(getattr(stmt, "value", None), _ExprReactiveGet):
+                    found_reactive_stmt = found_reactive_stmt or type(stmt.value).__name__
+
+        for spec in (lifecycle_specs or []):
+            for stmt in self._iter_stmts_recursive(getattr(spec, "stmts", None)):
+                if isinstance(
+                    stmt,
+                    (
+                        _StmtReactiveObservable,
+                        _StmtReactiveSet,
+                        _StmtReactiveDerived,
+                        _StmtReactiveListen,
+                        _StmtReactiveBindText,
+                    ),
+                ):
+                    found_reactive_stmt = found_reactive_stmt or type(stmt).__name__
+                if isinstance(stmt, _StmtReactiveObservable):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="observable",
+                        arg_name="name",
+                    )
+                    initial = str(getattr(stmt.initial, "value", ""))
+                    prev = self._reactive_cells.get(name)
+                    if prev is not None and prev["initial"] != initial:
+                        raise RuntimeError(
+                            f"[ReactiveError] observable '{name}' has conflicting initial values: "
+                            f"{prev['initial']!r} vs {initial!r}"
+                        )
+                    self._reactive_cells[name] = {"field": f"rx_{name}", "initial": initial}
+                elif isinstance(stmt, _StmtReactiveDerived):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="derived",
+                        arg_name="name",
+                    )
+                    self._reactive_cells.setdefault(name, {"field": f"rx_{name}", "initial": ""})
+                elif isinstance(stmt, _StmtReactiveListen):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="listen",
+                        arg_name="name",
+                    )
+                    self._reactive_bindings.setdefault(name, set()).add(str(stmt.target_id))
+                elif isinstance(stmt, _StmtReactiveBindText):
+                    name = self._normalize_reactive_name(
+                        stmt.name,
+                        api_name="bind_text",
+                        arg_name="name",
+                    )
+                    self._reactive_bindings.setdefault(name, set()).add(str(stmt.target_id))
+
+                if isinstance(stmt, _StmtAssign) and isinstance(getattr(stmt, "value", None), _ExprReactiveGet):
+                    found_reactive_stmt = found_reactive_stmt or type(stmt.value).__name__
+
+        if found_reactive_stmt and self.app_mode != "reactive":
+            self._require_reactive_mode("reactive DSL surface")
+
+        for name in sorted(self._reactive_bindings.keys()):
+            if name not in self._reactive_cells:
+                raise RuntimeError(
+                    f"[ReactiveError] binding references unknown observable '{name}'. "
+                    f"Fix: declare observable(\"{name}\", \"...\") first."
+                )
+            for target_id in sorted(self._reactive_bindings[name]):
+                self._reactive_bind_target_desc(target_id, api_name="bind_text")
+
+    def _reactive_cell_field(self, name: str, *, api_name: str) -> str:
+        self._require_reactive_mode(api_name)
+        normalized = self._normalize_reactive_name(name, api_name=api_name, arg_name="name")
+        entry = self._reactive_cells.get(normalized)
+        if entry is None:
+            raise RuntimeError(
+                f"[ReactiveError] {api_name} references unknown observable '{normalized}'. "
+                f"Fix: declare observable(\"{normalized}\", \"...\") first."
+            )
+        return entry["field"]
+
+    def _reactive_bind_target_desc(self, target_id: str, *, api_name: str) -> str:
+        if target_id not in self.view_types:
+            known = ", ".join(sorted(self.view_types.keys()))
+            raise RuntimeError(
+                f"[ReactiveError] {api_name} target '{target_id}' not found in ui() ids. Known ids: [{known}]"
+            )
+        kind = self.view_types.get(target_id)
+        if kind not in {
+            "text",
+            "icon",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "switch",
+            "radio",
+        }:
+            raise RuntimeError(
+                f"[ReactiveError] {api_name} target '{target_id}' does not support text binding (kind={kind})."
+            )
+        return self._view_desc(kind)
+
+    def _compile_reactive_value_expr(self, expr, *, api_name: str, arg_name: str):
+        if isinstance(expr, _ExprConst):
+            if isinstance(expr.value, str):
+                return [], const(expr.value)
+            if isinstance(expr.value, int) and not isinstance(expr.value, bool):
+                tmp = self._next_tmp("rx_value")
+                return [
+                    assign(
+                        tmp,
+                        call(
+                            "valueOf",
+                            args=[const(int(expr.value))],
+                            return_type="Ljava/lang/String;",
+                            arg_types=["I"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/String;",
+                        ),
+                    )
+                ], var(tmp)
+            raise RuntimeError(
+                f"[ReactiveError] {api_name} argument '{arg_name}' must be string/int or symbol; "
+                f"got {expr.value!r} ({type(expr.value).__name__})"
+            )
+        if isinstance(expr, _ExprReactiveGet):
+            return self._compile_reactive_get_call(
+                name=expr.name,
+                fallback=expr.fallback,
+                tmp_prefix="rx_get_value",
+            )
+        if isinstance(expr, _ExprSymbol):
+            name = expr.name
+            if name in self._local_var_types:
+                local_type = self._local_var_types[name]
+                if local_type == "Ljava/lang/String;":
+                    return [], var(name)
+                if local_type == "I":
+                    tmp = self._next_tmp("rx_value")
+                    return [
+                        assign(
+                            tmp,
+                            call(
+                                "valueOf",
+                                args=[var(name)],
+                                return_type="Ljava/lang/String;",
+                                arg_types=["I"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/String;",
+                            ),
+                        )
+                    ], var(tmp)
+                raise RuntimeError(
+                    f"[ReactiveError] {api_name} argument '{arg_name}' references symbol '{name}' "
+                    f"with unsupported type {local_type}."
+                )
+            if name in self.state_spec.values:
+                s_tmp = self._next_tmp("rx_state")
+                v_tmp = self._next_tmp("rx_value")
+                return [
+                    assign(s_tmp, static_get(name, "I")),
+                    assign(
+                        v_tmp,
+                        call(
+                            "valueOf",
+                            args=[var(s_tmp)],
+                            return_type="Ljava/lang/String;",
+                            arg_types=["I"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/String;",
+                        ),
+                    ),
+                ], var(v_tmp)
+            if name in self._reactive_cells:
+                field = self._reactive_cell_field(name, api_name=api_name)
+                v_tmp = self._next_tmp("rx_value")
+                return [assign(v_tmp, static_get(field, "Ljava/lang/String;"))], var(v_tmp)
+            raise RuntimeError(
+                f"[ReactiveError] {api_name} argument '{arg_name}' references unknown symbol '{name}'."
+            )
+        raise RuntimeError(
+            f"[ReactiveError] {api_name} argument '{arg_name}' must be string/int or symbol."
+        )
+
+    def _compile_reactive_get_call(self, *, name: str, fallback: str, tmp_prefix: str):
+        del fallback  # reserved for future null fallback policy; fields are eagerly initialized in v0.
+        field = self._reactive_cell_field(name, api_name="observable_get")
+        tmp = self._next_tmp(tmp_prefix)
+        return [assign(tmp, static_get(field, "Ljava/lang/String;"))], var(tmp)
+
+    def _compile_reactive_apply_bindings(self, name: str, value_expr):
+        out = []
+        for target_id in sorted(self._reactive_bindings.get(name, set())):
+            view_desc = self._reactive_bind_target_desc(target_id, api_name="bind_text")
+            view_field = self.view_fields[target_id]
+            view_tmp = self._next_tmp(f"rx_view_{target_id}")
+            out.extend(
+                [
+                    assign(view_tmp, static_get(view_field, view_desc)),
+                    call_stmt(
+                        "setText",
+                        args=[var(view_tmp), value_expr],
+                        return_type=None,
+                        arg_types=["Ljava/lang/CharSequence;"],
+                        invoke_kind="virtual",
+                        owner=view_desc,
+                    ),
+                ]
+            )
+        return out
+
+    def _compile_reactive_observable_stmt(self, stmt):
+        field = self._reactive_cell_field(stmt.name, api_name="observable")
+        prefix, value_expr = self._compile_reactive_value_expr(
+            stmt.initial,
+            api_name="observable",
+            arg_name="initial",
+        )
+        return [
+            *prefix,
+            static_set(field, "Ljava/lang/String;", value_expr),
+            *self._compile_reactive_apply_bindings(str(stmt.name), value_expr),
+        ]
+
+    def _compile_reactive_set_stmt(self, stmt):
+        field = self._reactive_cell_field(stmt.name, api_name="set_observable")
+        prefix, value_expr = self._compile_reactive_value_expr(
+            stmt.value,
+            api_name="set_observable",
+            arg_name="value",
+        )
+        return [
+            *prefix,
+            static_set(field, "Ljava/lang/String;", value_expr),
+            *self._compile_reactive_apply_bindings(str(stmt.name), value_expr),
+        ]
+
+    def _compile_reactive_derived_stmt(self, stmt):
+        target_field = self._reactive_cell_field(stmt.name, api_name="derived")
+        source_field = self._reactive_cell_field(stmt.source, api_name="derived")
+
+        source_tmp = self._next_tmp("rx_source")
+        out = [
+            assign(source_tmp, static_get(source_field, "Ljava/lang/String;")),
+        ]
+        current = var(source_tmp)
+        if stmt.prefix:
+            pref_tmp = self._next_tmp("rx_prefixed")
+            out.append(
+                assign(
+                    pref_tmp,
+                    call(
+                        "concat",
+                        args=[const(str(stmt.prefix)), current],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["Ljava/lang/String;"],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/String;",
+                    ),
+                )
+            )
+            current = var(pref_tmp)
+        if stmt.suffix:
+            suff_tmp = self._next_tmp("rx_suffixed")
+            out.append(
+                assign(
+                    suff_tmp,
+                    call(
+                        "concat",
+                        args=[current, const(str(stmt.suffix))],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["Ljava/lang/String;"],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/String;",
+                    ),
+                )
+            )
+            current = var(suff_tmp)
+
+        out.append(static_set(target_field, "Ljava/lang/String;", current))
+        out.extend(self._compile_reactive_apply_bindings(str(stmt.name), current))
+        return out
+
+    def _compile_reactive_listen_stmt(self, stmt):
+        return self._compile_reactive_bind_stmt(
+            _StmtReactiveBindText(str(stmt.target_id), str(stmt.name)),
+            api_name="listen",
+        )
+
+    def _compile_reactive_bind_stmt(self, stmt, *, api_name: str = "bind_text"):
+        field = self._reactive_cell_field(stmt.name, api_name=api_name)
+        view_desc = self._reactive_bind_target_desc(str(stmt.target_id), api_name=api_name)
+        view_field = self.view_fields[str(stmt.target_id)]
+        value_tmp = self._next_tmp("rx_bind")
+        view_tmp = self._next_tmp("rx_bind_view")
+        return [
+            assign(value_tmp, static_get(field, "Ljava/lang/String;")),
+            assign(view_tmp, static_get(view_field, view_desc)),
+            call_stmt(
+                "setText",
+                args=[var(view_tmp), var(value_tmp)],
+                return_type=None,
+                arg_types=["Ljava/lang/CharSequence;"],
+                invoke_kind="virtual",
+                owner=view_desc,
+            ),
+        ]
+
     def build_program(self, event_specs, resources=None, lifecycle_specs=None):
         body = []
         fields = []
@@ -1675,6 +2079,13 @@ class _PythonicContext:
         for vid, field_name in self.view_fields.items():
             desc = self._view_desc(self.view_types[vid])
             fields.append(static_field(field_name, desc, access="public static"))
+
+        # Reactive contract collection (guardrail mode is enforced here).
+        self._collect_reactive_contract(event_specs, lifecycle_specs)
+        for cell_name in sorted(self._reactive_cells.keys()):
+            entry = self._reactive_cells[cell_name]
+            fields.append(static_field(entry["field"], "Ljava/lang/String;", access="public static"))
+            body.append(static_set(entry["field"], "Ljava/lang/String;", const(entry["initial"])))
 
         # Navigation stack fields (screen-only)
         if self._screens:
@@ -3843,6 +4254,16 @@ class _PythonicContext:
             return self._compile_storage_remove_stmt(stmt)
         if isinstance(stmt, _StmtStorageClear):
             return self._compile_storage_clear_stmt(stmt)
+        if isinstance(stmt, _StmtReactiveObservable):
+            return self._compile_reactive_observable_stmt(stmt)
+        if isinstance(stmt, _StmtReactiveSet):
+            return self._compile_reactive_set_stmt(stmt)
+        if isinstance(stmt, _StmtReactiveDerived):
+            return self._compile_reactive_derived_stmt(stmt)
+        if isinstance(stmt, _StmtReactiveListen):
+            return self._compile_reactive_listen_stmt(stmt)
+        if isinstance(stmt, _StmtReactiveBindText):
+            return self._compile_reactive_bind_stmt(stmt)
         if isinstance(stmt, _StmtStateBackendPut):
             return self._compile_state_backend_put_stmt(stmt)
         if isinstance(stmt, _StmtStateBackendGet):
@@ -6146,6 +6567,13 @@ class _PythonicContext:
         value_type = "I"
         if isinstance(stmt.value, (_ExprConst, _ExprSymbol, _ExprBinary)):
             prefix, result = self._compile_int_expr(stmt.value)
+        elif isinstance(stmt.value, _ExprReactiveGet):
+            prefix, result = self._compile_reactive_get_call(
+                name=stmt.value.name,
+                fallback=stmt.value.fallback,
+                tmp_prefix="reactive_get_result",
+            )
+            value_type = "Ljava/lang/String;"
         elif isinstance(stmt.value, _ExprStorageGet):
             prefix, result = self._compile_storage_get_call(
                 key=stmt.value.key,
@@ -6281,6 +6709,7 @@ class _PythonicContext:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
                 "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
+                "observable_get(...), "
                 "storage_exists(...), datastore_get(...), file_read(...), sqlite_get(...), room_get(...), "
                 "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "

@@ -70,6 +70,28 @@ STATEMENT_FN_BY_DOMAIN = {
         "RequestPermissions",
         "RequestPermission",
     },
+    "hybrid": {
+        "observable",
+        "Observable",
+        "reactive_observable",
+        "ReactiveObservable",
+        "set_observable",
+        "SetObservable",
+        "reactive_set",
+        "ReactiveSet",
+        "derived",
+        "Derived",
+        "reactive_derived",
+        "ReactiveDerived",
+        "listen",
+        "Listen",
+        "reactive_listen",
+        "ReactiveListen",
+        "bind_text",
+        "BindText",
+        "reactive_bind_text",
+        "ReactiveBindText",
+    },
 }
 
 EXPR_FN_BY_DOMAIN = {
@@ -88,5 +110,11 @@ EXPR_FN_BY_DOMAIN = {
         "CheckLocationEnabled",
         "location_check",
         "LocationCheck",
-    }
+    },
+    "hybrid": {
+        "observable_get",
+        "ObservableGet",
+        "reactive_get",
+        "ReactiveGet",
+    },
 }

@@ -1,0 +1,45 @@
+{
+  "schema_version": "python_library_policy/1",
+  "approved_external_roots": [
+    "rich",
+    "httpx",
+    "tenacity",
+    "pydantic"
+  ],
+  "test_only_external_roots": [
+    "pytest"
+  ],
+  "forbidden_external_roots": [
+    "rx",
+    "reactivex",
+    "injector",
+    "dependency_injector",
+    "fastapi",
+    "flask",
+    "django",
+    "sqlalchemy",
+    "peewee",
+    "tortoise",
+    "sympy"
+  ],
+  "wrapper_module_roots": {
+    "rich": [
+      "dsl.runtime.diagnostics"
+    ],
+    "httpx": [
+      "dsl.runtime.http_client"
+    ],
+    "tenacity": [
+      "dsl.runtime.http_client"
+    ],
+    "pydantic": [
+      "dsl.runtime.models"
+    ]
+  },
+  "allow_tests_direct_imports": false,
+  "static_mode_invariants": {
+    "static_default": true,
+    "reactive_opt_in": true,
+    "no_implicit_observers_in_static_mode": true
+  }
+}

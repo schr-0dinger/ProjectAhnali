@@ -1,0 +1,68 @@
+{
+  "abi_version": "1.0.0",
+  "ast_contract": {
+    "expression_nodes": [
+      "_ExprReactiveGet"
+    ],
+    "statement_nodes": [
+      "_StmtReactiveObservable",
+      "_StmtReactiveSet",
+      "_StmtReactiveDerived",
+      "_StmtReactiveListen",
+      "_StmtReactiveBindText"
+    ]
+  },
+  "dsl_symbols": {
+    "expressions": [
+      "observable_get"
+    ],
+    "statements": [
+      "observable",
+      "set_observable",
+      "derived",
+      "listen",
+      "bind_text"
+    ]
+  },
+  "mode_contract": {
+    "allowed": [
+      "static",
+      "reactive"
+    ],
+    "default": "static",
+    "no_implicit_diff": true,
+    "reactive_opt_in": true,
+    "static_default": true
+  },
+  "parser_dispatch": {
+    "expression_aliases": [
+      "ObservableGet",
+      "ReactiveGet",
+      "observable_get",
+      "reactive_get"
+    ],
+    "statement_aliases": [
+      "BindText",
+      "Derived",
+      "Listen",
+      "Observable",
+      "ReactiveBindText",
+      "ReactiveDerived",
+      "ReactiveListen",
+      "ReactiveObservable",
+      "ReactiveSet",
+      "SetObservable",
+      "bind_text",
+      "derived",
+      "listen",
+      "observable",
+      "reactive_bind_text",
+      "reactive_derived",
+      "reactive_listen",
+      "reactive_observable",
+      "reactive_set",
+      "set_observable"
+    ]
+  },
+  "snapshot_schema": "reactive_surface_v1"
+}

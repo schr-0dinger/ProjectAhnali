@@ -75,6 +75,12 @@ class _ExprStorageExists:
         self.key = key
 
 
+class _ExprReactiveGet:
+    def __init__(self, name, fallback=""):
+        self.name = name
+        self.fallback = fallback
+
+
 class _ExprStateBackendGet:
     def __init__(self, backend, key, default_value):
         self.backend = backend
@@ -282,6 +288,38 @@ class _StmtStorageExists:
 class _StmtStorageClear:
     def __init__(self):
         pass
+
+
+class _StmtReactiveObservable:
+    def __init__(self, name, initial):
+        self.name = name
+        self.initial = initial
+
+
+class _StmtReactiveSet:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+
+class _StmtReactiveDerived:
+    def __init__(self, name, source, prefix="", suffix=""):
+        self.name = name
+        self.source = source
+        self.prefix = prefix
+        self.suffix = suffix
+
+
+class _StmtReactiveListen:
+    def __init__(self, name, target_id):
+        self.name = name
+        self.target_id = target_id
+
+
+class _StmtReactiveBindText:
+    def __init__(self, target_id, name):
+        self.target_id = target_id
+        self.name = name
 
 
 class _StmtStateBackendPut:

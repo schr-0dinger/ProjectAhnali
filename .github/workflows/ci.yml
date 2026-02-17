@@ -27,8 +27,14 @@ jobs:
       - name: Check runtime ABI snapshot
         run: PYTHONPATH=. python tools/runtime_abi_snapshot.py --check --out cfg/runtime_abi_snapshot_v1.json
 
+      - name: Check reactive surface snapshot
+        run: PYTHONPATH=. python tools/reactive_surface_snapshot.py --check --out cfg/reactive_surface_snapshot_v1.json
+
       - name: Check v1 scope matrix
         run: PYTHONPATH=. python tools/v1_scope_matrix.py --check --masterplan Masterplan_All_In_One.md --matrix cfg/v1_scope_matrix.yaml
+
+      - name: Check Python library policy
+        run: PYTHONPATH=. python tools/python_library_policy.py --policy cfg/python_library_policy.json
 
       - name: Run test suite
         run: PYTHONPATH=. pytest -q -rs

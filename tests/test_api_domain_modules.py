@@ -64,4 +64,10 @@ def test_api_domain_modules_expose_legacy_compatible_symbols():
 
 
 def test_hybrid_domain_placeholder_is_stable():
-    assert hybrid.HYBRID_API_STATUS == "planned"
+    assert hybrid.HYBRID_API_STATUS == "guardrail_v0"
+    assert hybrid.observable is legacy_api.observable
+    assert hybrid.set_observable is legacy_api.set_observable
+    assert hybrid.observable_get is legacy_api.observable_get
+    assert hybrid.derived is legacy_api.derived
+    assert hybrid.listen is legacy_api.listen
+    assert hybrid.bind_text is legacy_api.bind_text

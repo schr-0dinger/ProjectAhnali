@@ -375,6 +375,7 @@ class AppConfig:
         verify_reproducible: bool = False,
         deps: list[str] | tuple[str, ...] | None = None,
         auto_deps: bool = False,
+        mode: str = "static",
     ):
         self.package = package
         self.min_sdk = min_sdk
@@ -395,6 +396,12 @@ class AppConfig:
         self.verify_reproducible = bool(verify_reproducible)
         self.deps = list(deps) if deps else []
         self.auto_deps = bool(auto_deps)
+        mode_norm = str(mode).strip().lower()
+        if mode_norm not in {"static", "reactive"}:
+            raise RuntimeError(
+                f"app_config mode must be 'static' or 'reactive', got {mode!r}"
+            )
+        self.mode = mode_norm
 
 
 class AppSpec:
@@ -465,6 +472,7 @@ def app_config(
     verify_reproducible: bool = False,
     deps: list[str] | tuple[str, ...] | None = None,
     auto_deps: bool = False,
+    mode: str = "static",
 ):
     return AppConfig(
         package=package,
@@ -486,6 +494,7 @@ def app_config(
         verify_reproducible=verify_reproducible,
         deps=deps,
         auto_deps=auto_deps,
+        mode=mode,
     )
 
 
@@ -1030,6 +1039,87 @@ def request_permission(permission, request_code=0):
     return request_permissions(permission, request_code=request_code)
 
 
+def _coerce_reactive_value(value, *, fn_name: str, arg_name: str, allow_symbol: bool = True):
+    if allow_symbol and isinstance(value, (_ExprSymbol, _ExprReactiveGet)):
+        return value
+    if isinstance(value, _ExprConst):
+        raw = value.value
+        if isinstance(raw, bool) or not isinstance(raw, (int, str)):
+            raise RuntimeError(
+                f"{fn_name} argument '{arg_name}' must be string/int or symbol; got {raw!r} ({type(raw).__name__})"
+            )
+        return value
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise RuntimeError(
+            f"{fn_name} argument '{arg_name}' must be string/int or symbol; got {value!r} ({type(value).__name__})"
+        )
+    return _ExprConst(value)
+
+
+def observable(name: str, initial=""):
+    return _StmtReactiveObservable(
+        str(name),
+        _coerce_reactive_value(
+            initial,
+            fn_name="observable",
+            arg_name="initial",
+            allow_symbol=False,
+        ),
+    )
+
+
+def reactive_observable(name: str, initial=""):
+    return observable(name, initial)
+
+
+def set_observable(name: str, value):
+    return _StmtReactiveSet(
+        str(name),
+        _coerce_reactive_value(value, fn_name="set_observable", arg_name="value"),
+    )
+
+
+def reactive_set(name: str, value):
+    return set_observable(name, value)
+
+
+def observable_get(name: str, fallback: str = ""):
+    return _ExprReactiveGet(str(name), str(fallback))
+
+
+def reactive_get(name: str, fallback: str = ""):
+    return observable_get(name, fallback)
+
+
+def derived(name: str, source: str, prefix: str = "", suffix: str = ""):
+    return _StmtReactiveDerived(
+        str(name),
+        str(source),
+        str(prefix),
+        str(suffix),
+    )
+
+
+def reactive_derived(name: str, source: str, prefix: str = "", suffix: str = ""):
+    return derived(name, source, prefix=prefix, suffix=suffix)
+
+
+def listen(name: str, target_id: str):
+    return _StmtReactiveListen(str(name), str(target_id))
+
+
+def reactive_listen(name: str, target_id: str):
+    return listen(name, target_id)
+
+
+def bind_text(target_id: str, name: str):
+    return _StmtReactiveBindText(str(target_id), str(name))
+
+
+def reactive_bind_text(target_id: str, name: str):
+    return bind_text(target_id, name)
+
+
 def open_url(url: str):
     return _StmtOpenUrl(str(url))
 
@@ -1542,6 +1632,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         min_sdk=app_cfg.min_sdk,
         registry=registry,
         runtime_bindings=runtime_binding_map,
+        app_mode=app_cfg.mode,
     )
     if has_screens and state_spec.values:
         ctx._lint_warnings.append(
@@ -1593,6 +1684,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         merged.append(perm)
     program.permissions = merged
     program.capability_runtime_bindings = runtime_bindings
+    program.app_mode = app_cfg.mode
     return program
 
 
@@ -1648,6 +1740,14 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
                 return False
         raise RuntimeError(f"{field_name} must be a boolean")
 
+    def _normalize_mode(value):
+        mode = str(value).strip().lower()
+        if mode not in {"static", "reactive"}:
+            raise RuntimeError(
+                f"app_config mode must be 'static' or 'reactive', got {value!r}"
+            )
+        return mode
+
     cfg = AppConfig()
     extra_uses = []
     extra_deps = []
@@ -1685,6 +1785,7 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
                 ("APP_OUTPUT_APK", "output_apk"),
                 ("APP_KEYSTORE_PATH", "keystore_path"),
                 ("APP_KEYSTORE_ALIAS", "keystore_alias"),
+                ("APP_MODE", "mode"),
             ):
                 if hasattr(mod, key):
                     value = getattr(mod, key)
@@ -1699,4 +1800,5 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
     cfg.uses = _merge_unique(cfg.uses, extra_uses)
     cfg.deps = _merge_unique(cfg.deps, extra_deps)
     cfg.auto_deps = _normalize_bool(cfg.auto_deps, field_name="auto_deps")
+    cfg.mode = _normalize_mode(cfg.mode)
     return cfg

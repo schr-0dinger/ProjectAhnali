@@ -25,6 +25,7 @@ from .ast import (
     _ExprHttpGet,
     _ExprLocationEnabled,
     _ExprPermissionGranted,
+    _ExprReactiveGet,
     _ExprStateBackendGet,
     _ExprStateBackendExists,
     _ExprStorageGet,
@@ -63,6 +64,11 @@ from .ast import (
     _StmtStorageGet,
     _StmtStorageRemove,
     _StmtStoragePut,
+    _StmtReactiveObservable,
+    _StmtReactiveSet,
+    _StmtReactiveDerived,
+    _StmtReactiveListen,
+    _StmtReactiveBindText,
     _StmtStateBackendClear,
     _StmtStateBackendExists,
     _StmtStateBackendGet,
@@ -170,6 +176,26 @@ def _const_string_arg(expr, *, fn_name: str, arg_name: str):
     if not isinstance(expr, _ExprConst) or not isinstance(expr.value, str):
         raise RuntimeError(f"{fn_name} argument '{arg_name}' must be a constant string")
     return expr.value
+
+
+def _const_reactive_value_arg(expr, *, fn_name: str, arg_name: str):
+    if isinstance(expr, _ExprConst):
+        if isinstance(expr.value, bool) or not isinstance(expr.value, (int, str)):
+            raise RuntimeError(f"{fn_name} argument '{arg_name}' must be a constant string/int or symbol")
+        return expr
+    if isinstance(expr, (_ExprSymbol, _ExprReactiveGet)):
+        return expr
+    raise RuntimeError(f"{fn_name} argument '{arg_name}' must be a constant string/int or symbol")
+
+
+def _const_string_kwarg(call: ast.Call, *, fn_name: str, kw: str, default: str = "") -> str:
+    for item in call.keywords or []:
+        if item.arg == kw:
+            parsed = _parse_expr(item.value)
+            if not isinstance(parsed, _ExprConst) or not isinstance(parsed.value, str):
+                raise RuntimeError(f"{fn_name} keyword '{kw}' must be a constant string")
+            return parsed.value
+    return default
 
 
 def _parse_state_backend_stmt_call(fn, call):
@@ -280,6 +306,75 @@ def _parse_stmt(stmt):
             parsed_state_backend = _parse_state_backend_stmt_call(fn, call)
             if parsed_state_backend is not None:
                 return parsed_state_backend
+            if fn in STATEMENT_FN_BY_DOMAIN["hybrid"].intersection(
+                {"observable", "Observable", "reactive_observable", "ReactiveObservable"}
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'observable expects exactly 2 arguments. Usage: observable("name", "initial")'
+                    )
+                name = _const_string_arg(args[0], fn_name="observable", arg_name="name")
+                initial = _const_reactive_value_arg(args[1], fn_name="observable", arg_name="initial")
+                if not isinstance(initial, _ExprConst):
+                    raise RuntimeError("observable argument 'initial' must be a constant string/int")
+                return _StmtReactiveObservable(name, initial)
+            if fn in STATEMENT_FN_BY_DOMAIN["hybrid"].intersection(
+                {"set_observable", "SetObservable", "reactive_set", "ReactiveSet"}
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'set_observable expects exactly 2 arguments. Usage: set_observable("name", value)'
+                    )
+                name = _const_string_arg(args[0], fn_name="set_observable", arg_name="name")
+                value = _const_reactive_value_arg(args[1], fn_name="set_observable", arg_name="value")
+                return _StmtReactiveSet(name, value)
+            if fn in STATEMENT_FN_BY_DOMAIN["hybrid"].intersection(
+                {"derived", "Derived", "reactive_derived", "ReactiveDerived"}
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (2 <= len(args) <= 4):
+                    raise RuntimeError(
+                        "derived expects 2 to 4 arguments. "
+                        'Usage: derived("target", "source", "prefix", "suffix")'
+                    )
+                name = _const_string_arg(args[0], fn_name="derived", arg_name="name")
+                source = _const_string_arg(args[1], fn_name="derived", arg_name="source")
+                for kw in call.keywords or []:
+                    if kw.arg not in {"prefix", "suffix"}:
+                        raise RuntimeError(
+                            f"derived does not support keyword '{kw.arg}'. Supported keywords: prefix, suffix"
+                        )
+                prefix = _const_string_kwarg(call, fn_name="derived", kw="prefix", default="")
+                suffix = _const_string_kwarg(call, fn_name="derived", kw="suffix", default="")
+                if len(args) > 2:
+                    prefix = _const_string_arg(args[2], fn_name="derived", arg_name="prefix")
+                if len(args) > 3:
+                    suffix = _const_string_arg(args[3], fn_name="derived", arg_name="suffix")
+                return _StmtReactiveDerived(name, source, prefix, suffix)
+            if fn in STATEMENT_FN_BY_DOMAIN["hybrid"].intersection(
+                {"listen", "Listen", "reactive_listen", "ReactiveListen"}
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'listen expects exactly 2 string arguments. Usage: listen("name", "target_id")'
+                    )
+                name = _const_string_arg(args[0], fn_name="listen", arg_name="name")
+                target_id = _const_string_arg(args[1], fn_name="listen", arg_name="target_id")
+                return _StmtReactiveListen(name, target_id)
+            if fn in STATEMENT_FN_BY_DOMAIN["hybrid"].intersection(
+                {"bind_text", "BindText", "reactive_bind_text", "ReactiveBindText"}
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'bind_text expects exactly 2 string arguments. Usage: bind_text("target_id", "name")'
+                    )
+                target_id = _const_string_arg(args[0], fn_name="bind_text", arg_name="target_id")
+                name = _const_string_arg(args[1], fn_name="bind_text", arg_name="name")
+                return _StmtReactiveBindText(target_id, name)
             if fn in ("toast", "Toast"):
                 args = [_parse_expr(a) for a in call.args]
                 if not args:
@@ -795,6 +890,22 @@ def _parse_expr(node):
         parsed_state_backend_expr = _parse_state_backend_expr_call(node.func.id, node)
         if parsed_state_backend_expr is not None:
             return parsed_state_backend_expr
+        if node.func.id in EXPR_FN_BY_DOMAIN["hybrid"].intersection(
+            {"observable_get", "ObservableGet", "reactive_get", "ReactiveGet"}
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError(
+                    'observable_get expects 1 or 2 string arguments. Usage: observable_get("name", "fallback")'
+                )
+            name = _const_string_arg(args[0], fn_name="observable_get", arg_name="name")
+            fallback_expr = args[1] if len(args) > 1 else _ExprConst("")
+            fallback = _const_string_arg(
+                fallback_expr,
+                fn_name="observable_get",
+                arg_name="fallback",
+            )
+            return _ExprReactiveGet(name, fallback)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {"permission_granted", "PermissionGranted", "has_permission", "HasPermission"}

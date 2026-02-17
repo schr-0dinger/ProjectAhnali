@@ -1760,7 +1760,7 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "Milestone-D",
-      "source_ref": "Masterplan_All_In_One.md:793",
+      "source_ref": "Masterplan_All_In_One.md:820",
       "status": "planned",
       "tests_required": []
     },
@@ -1774,11 +1774,16 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "Milestone-E",
-      "source_ref": "Masterplan_All_In_One.md:796",
+      "source_ref": "Masterplan_All_In_One.md:823",
       "status": "planned",
       "tests_required": []
     }
   ],
   "masterplan_path": "Masterplan_All_In_One.md",
-  "schema_version": "v1_scope_matrix/1"
+  "schema_version": "v1_scope_matrix/1",
+  "scope_flags": {
+    "no_implicit_diff": true,
+    "reactive_opt_in": true,
+    "static_default": true
+  }
 }

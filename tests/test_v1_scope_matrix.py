@@ -28,3 +28,18 @@ def test_v1_scope_matrix_done_status_requires_docs_and_tests(tmp_path):
     )
     assert not ok
     assert "status=done requires non-empty tests_required" in message
+
+
+def test_v1_scope_matrix_enforces_guardrail_scope_flags(tmp_path):
+    matrix = build_v1_scope_matrix(masterplan=Path("Masterplan_All_In_One.md"))
+    matrix["scope_flags"]["reactive_opt_in"] = False
+
+    p = tmp_path / "v1_scope_matrix.yaml"
+    p.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    ok, message = check_v1_scope_matrix(
+        masterplan=Path("Masterplan_All_In_One.md"),
+        matrix_path=p,
+    )
+    assert not ok
+    assert "scope_flags['reactive_opt_in'] must be True" in message

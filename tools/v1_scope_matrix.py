@@ -12,6 +12,11 @@ from typing import Any
 SCHEMA_VERSION = "v1_scope_matrix/1"
 DEFAULT_MASTERPLAN = "Masterplan_All_In_One.md"
 DEFAULT_MATRIX = "cfg/v1_scope_matrix.yaml"
+DEFAULT_SCOPE_FLAGS = {
+    "static_default": True,
+    "reactive_opt_in": True,
+    "no_implicit_diff": True,
+}
 
 _RE_SECTION = re.compile(r"^###\s+(8\.\d+)\s+")
 _RE_MARKER = re.compile(r"^\s*-\s*(⚠️|❌)\s*(.+?)\s*$")
@@ -166,9 +171,17 @@ def _merge_with_existing(expected_items: list[dict[str, Any]], existing: dict[st
         entries.append(base)
 
     entries.sort(key=lambda x: str(x["id"]))
+    scope_flags = dict(DEFAULT_SCOPE_FLAGS)
+    if isinstance(existing, dict) and isinstance(existing.get("scope_flags"), dict):
+        existing_flags = existing.get("scope_flags") or {}
+        for key in DEFAULT_SCOPE_FLAGS.keys():
+            raw = existing_flags.get(key, DEFAULT_SCOPE_FLAGS[key])
+            scope_flags[key] = bool(raw)
+
     return {
         "schema_version": SCHEMA_VERSION,
         "masterplan_path": DEFAULT_MASTERPLAN,
+        "scope_flags": scope_flags,
         "entries": entries,
     }
 
@@ -228,6 +241,20 @@ def check_v1_scope_matrix(masterplan: Path, matrix_path: Path) -> tuple[bool, st
     entries = matrix.get("entries")
     if not isinstance(entries, list):
         return False, f"{matrix_path} must contain a top-level 'entries' list"
+    scope_flags = matrix.get("scope_flags")
+    if not isinstance(scope_flags, dict):
+        return False, f"{matrix_path} must contain a top-level 'scope_flags' object"
+    for key, expected_value in DEFAULT_SCOPE_FLAGS.items():
+        if key not in scope_flags:
+            return False, f"{matrix_path} scope_flags is missing '{key}'"
+        raw = scope_flags.get(key)
+        if not isinstance(raw, bool):
+            return False, f"{matrix_path} scope_flags['{key}'] must be a boolean"
+        if raw is not expected_value:
+            return False, (
+                f"{matrix_path} scope_flags['{key}'] must be {expected_value} "
+                f"for guardrail-first policy"
+            )
 
     expected = build_v1_scope_matrix(masterplan, existing_matrix=None)
     expected_entries = expected["entries"]

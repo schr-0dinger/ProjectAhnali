@@ -22,10 +22,12 @@ In scope:
 - Track C Wave 7 capability helper ABI: permissions granted surface
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
+- Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
 
 Out of scope:
 - Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
+- Runtime UI diff/recomposition engines (reactive mode stays explicit-bind only)
 
 ## 2) Descriptor and Naming Conventions
 
@@ -384,3 +386,8 @@ ABI drift guard tooling:
 - Snapshot generator/check: `tools/runtime_abi_snapshot.py`
 - Frozen snapshot: `cfg/runtime_abi_snapshot_v1.json`
 - CI gate: `.github/workflows/ci.yml` step `Check runtime ABI snapshot`
+
+Reactive mode guardrail drift tooling:
+- Snapshot generator/check: `tools/reactive_surface_snapshot.py`
+- Frozen snapshot: `cfg/reactive_surface_snapshot_v1.json`
+- CI gate: `.github/workflows/ci.yml` step `Check reactive surface snapshot`

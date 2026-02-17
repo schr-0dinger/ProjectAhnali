@@ -26,3 +26,12 @@ def test_parser_dispatch_domains_include_navigation_aliases():
     assert "replace" in navigation
     assert "pop_to_root" in navigation
     assert "clear_stack" in navigation
+
+
+def test_parser_dispatch_domains_include_hybrid_aliases():
+    hybrid_stmt = STATEMENT_FN_BY_DOMAIN["hybrid"]
+    hybrid_expr = EXPR_FN_BY_DOMAIN["hybrid"]
+    assert "observable" in hybrid_stmt
+    assert "set_observable" in hybrid_stmt
+    assert "bind_text" in hybrid_stmt
+    assert "observable_get" in hybrid_expr

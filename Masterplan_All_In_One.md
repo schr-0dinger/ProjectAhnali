@@ -769,10 +769,37 @@ Phase status:
 
 ## 14) Locked Non-Goals (Unified)
 
-- No reactive hooks/runtime diffing
-- No runtime-generated widget trees
-- No reflection-based execution model
-- No core identity shift away from static AOT
+- Static-first deterministic AOT remains the default identity.
+- Reactive features are allowed only as explicit opt-in (`mode="reactive"`); static mode behavior is unchanged.
+- No implicit runtime UI tree diff/recomposition engine in static mode.
+- No runtime-generated widget trees.
+- No reflection-based execution model.
+
+### Static Mode Invariants (Guardrail-First)
+
+- `app_config(mode="static")` is the default for all apps.
+- Existing static programs remain backward compatible with no behavior change.
+- Reactive APIs fail at compile time in static mode with deterministic diagnostics.
+- Compile-time analyzability and deterministic lowering remain mandatory.
+
+### Reactive Mode Constraints (Guardrail-First)
+
+- Reactive mode is explicit opt-in only via `app_config(mode="reactive")`.
+- Reactive updates are explicit (`observable`, `set_observable`, `derived`, `listen`, `bind_text`).
+- No hidden observer graph or implicit runtime mutation layer is introduced.
+- ABI drift is guarded by snapshot checks (runtime helper ABI + reactive surface snapshot).
+
+### Python Dependency Policy (Guardrail-First)
+
+- Only minimal, purpose-justified external Python libraries are allowed:
+  - `rich` for structured diagnostics
+  - `httpx` for sync/async HTTP wrappers
+  - optional `tenacity` for explicit retry/backoff orchestration
+  - optional `pydantic` for strict model validation paths
+- Required stdlib foundations: `dataclasses`, `asyncio`.
+- Heavy dependency classes are non-goals for v1 static paths (reactive engines, full DI frameworks, web frameworks, large ORMs, symbolic math stacks).
+- All external libraries must stay behind explicit wrapper contracts; no direct imports in parser/lowering static compilation paths.
+- CI enforces policy via `cfg/python_library_policy.json` and `tools/python_library_policy.py`.
 
 ---
 
@@ -807,6 +834,8 @@ Phase status:
 6. ⚠️ Begin Hybrid Phase 1 (NDK/JNI skeleton, capability-scoped entrypoints).
 7. ⚠️ Continue API modularization (`dsl/api.py` split into domain modules) while preserving compatibility.  
    Started: domain scaffolding modules added under `dsl/api_domains/` with compatibility imports.
+8. ✅ Guardrail-first reactive unlock v0: explicit `app_config(mode="static"|"reactive")` boundary, compile-time static-mode rejection for reactive APIs, explicit reactive primitives (`observable`, `set_observable`, `observable_get`, `derived`, `listen`, `bind_text`), and CI-enforced reactive surface snapshot (`cfg/reactive_surface_snapshot_v1.json`).
+9. ✅ Enforce minimal Python dependency policy with wrapper-only third-party imports (`cfg/python_library_policy.json`, `tools/python_library_policy.py`, `.github/workflows/ci.yml`).
 
 ---
 

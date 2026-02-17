@@ -67,7 +67,20 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `459 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `492 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
+
+## Python Library Policy (Enforced)
+
+- Allowed external libs (purpose-justified): `rich`, `httpx`, optional `tenacity`, optional `pydantic`.
+- Test-only external lib: `pytest` (restricted to `tests/`).
+- Required stdlib foundations: `dataclasses`, `asyncio`.
+- Disallowed heavy libs: reactive engines, full DI frameworks, web frameworks, large ORMs, symbolic math libs.
+- External libraries are wrapper-only and must not be imported directly in core parser/lowering static paths.
+- Policy files and gates:
+  - `cfg/python_library_policy.json`
+  - `tools/python_library_policy.py`
+  - CI step `Check Python library policy` in `.github/workflows/ci.yml`
+  - Detailed policy: `docs/Python_Library_Policy.md`
 
 ## DSL Surface (Current)
 
@@ -377,6 +390,34 @@ app(
         "MainActivity",
         app_config(uses=[Caps.Permissions]),
         ...
+    )
+)
+```
+
+Reactive mode guardrails (v0):
+- Default mode is `static` (unchanged behavior for existing apps).
+- Reactive DSL is explicit opt-in only: `app_config(mode="reactive")`.
+- No implicit runtime UI diff/recomposition engine is used.
+- Reactive updates are explicit through `observable`, `set_observable`, `derived`, `listen`, and `bind_text`.
+
+Reactive mode diagnostics (standard format):
+- `[ReactiveModeError] <api_name> requires reactive mode. Fix: set app_config(mode='reactive') in activity(...).`
+
+Reactive mode quickstart:
+```python
+app(
+    activity(
+        "MainActivity",
+        app_config(mode="reactive"),
+        ui(
+            text("Status", id="status_label"),
+            button("Run", id="run_btn"),
+        ),
+        on_click("run_btn", [
+            observable("greeting", "hello"),
+            bind_text("status_label", "greeting"),
+            set_observable("greeting", "world"),
+        ]),
     )
 )
 ```
