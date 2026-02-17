@@ -411,47 +411,47 @@ Typography:
 - ✅ max_lines
 - ✅ ellipsize
 - ✅ all_caps
-- ❌ hint_color
-- ❌ highlight_color
-- ⚠️ text_shadow
+- ✅ hint_color
+- ✅ highlight_color
+- ✅ text_shadow
 
 Color and background:
 - ✅ background_color
 - ✅ gradient background
-- ❌ radial gradient
-- ❌ sweep gradient
+- ✅ radial gradient
+- ✅ sweep gradient
 - ✅ border_width
 - ✅ border_color
 - ✅ border_radius
 - ✅ per-corner radius
 - ✅ ripple_color
 - ✅ opacity
-- ⚠️ elevation
+- ✅ elevation
 - ✅ clip_to_outline
 - ✅ clip_children
 
 Stateful styling:
 - ✅ ColorState (default/pressed/disabled/selected/focused)
 - ✅ background tint
-- ❌ text tint
+- ✅ text tint
 - ✅ progress tint
 - ✅ thumb tint
 - ✅ track tint
 - ✅ button tint
 
 Image styling:
-- ❌ scaleType
-- ❌ crop
-- ❌ centerInside
-- ❌ adjustViewBounds
-- ❌ tint
-- ❌ image alpha
-- ❌ image matrix transform
+- ✅ scaleType
+- ✅ crop
+- ✅ centerInside
+- ✅ adjustViewBounds
+- ✅ tint
+- ✅ image alpha
+- ✅ image matrix transform
 
 Progress styling:
 - ✅ indeterminate tint
 - ✅ progress tint
-- ❌ secondary progress tint
+- ✅ secondary progress tint
 
 Switch/Checkbox/Radio styling:
 - ✅ button tint
@@ -477,7 +477,7 @@ Input events:
 - ✅ on_focus_change
 - ❌ on_key
 - ✅ on_change (Switch/Checkbox/Radio/Slider/RadioGroup)
-- ⚠️ on_slider_change (no dedicated alias; use `on_change`)
+- ✅ on_slider_change
 - ✅ on_item_selected
 - ✅ on_menu_item_selected
 
@@ -485,8 +485,8 @@ Navigation:
 - ✅ Navigate
 - ✅ Back
 - ✅ Replace
-- ❌ PopToRoot
-- ❌ ClearStack
+- ✅ PopToRoot
+- ✅ ClearStack
 
 Gesture detection:
 - ❌ pinch

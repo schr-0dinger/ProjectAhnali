@@ -161,6 +161,16 @@ def _parse_stmt(stmt):
                 if target is None:
                     raise RuntimeError("Navigate target must be a constant string")
                 return _StmtNavigate(target)
+            if fn in ("pop_to_root", "PopToRoot"):
+                if call.args:
+                    raise RuntimeError("PopToRoot takes no arguments")
+                from .ast import _StmtPopToRoot
+                return _StmtPopToRoot()
+            if fn in ("clear_stack", "ClearStack"):
+                if call.args:
+                    raise RuntimeError("ClearStack takes no arguments")
+                from .ast import _StmtClearStack
+                return _StmtClearStack()
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {"open_url", "OpenUrl", "launch_url", "LaunchUrl", "url_launcher", "URLLauncher"}

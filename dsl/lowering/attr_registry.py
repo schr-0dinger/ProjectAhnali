@@ -315,6 +315,64 @@ ATTR_METHODS = {
         ],
     ),
 
+    "hint_color": AttrMethod(
+        method="setHintTextColor",
+        owner="Landroid/widget/TextView;",
+        arg_types=["I"],
+        value_loader="color",
+        supported_kinds=[
+            "text_field",
+        ],
+    ),
+
+    "hint_color_state": AttrMethod(
+        method="setHintTextColor",
+        owner="Landroid/widget/TextView;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=[
+            "text_field",
+        ],
+    ),
+
+    "highlight_color": AttrMethod(
+        method="setHighlightColor",
+        owner="Landroid/widget/TextView;",
+        arg_types=["I"],
+        value_loader="color",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+            "icon",
+        ],
+    ),
+
+    "text_tint": AttrMethod(
+        method="setCompoundDrawableTintList",
+        owner="Landroid/widget/TextView;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=[
+            "text",
+            "button",
+            "raised_button",
+            "flat_button",
+            "text_field",
+            "checkbox",
+            "radio",
+            "switch",
+            "popup_button",
+            "icon",
+        ],
+    ),
+
     # ---- background ----
     "background_color": AttrMethod(
         method="setBackgroundColor",
@@ -388,6 +446,14 @@ ATTR_METHODS = {
         supported_kinds=None,
     ),
 
+    "image_tint": AttrMethod(
+        method="setImageTintList",
+        owner="Landroid/widget/ImageView;",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["image"],
+    ),
+
     "thumb_tint": AttrMethod(
         method="setThumbTintList",
         owner_resolver="thumb_tint_owner",
@@ -420,6 +486,14 @@ ATTR_METHODS = {
         supported_kinds=["slider", "progress_bar"],
     ),
 
+    "secondary_progress_tint": AttrMethod(
+        method="setSecondaryProgressTintList",
+        owner_resolver="progress_tint_owner",
+        arg_types=["Landroid/content/res/ColorStateList;"],
+        value_loader="color_state_list",
+        supported_kinds=["slider", "progress_bar"],
+    ),
+
     "indeterminate_tint": AttrMethod(
         method="setIndeterminateTintList",
         owner="Landroid/widget/ProgressBar;",
@@ -434,5 +508,37 @@ ATTR_METHODS = {
         arg_types=["Landroid/content/res/ColorStateList;"],
         value_loader="color_state_list",
         supported_kinds=["checkbox", "radio", "switch"],
+    ),
+
+    "image_scale_type": AttrMethod(
+        method="setScaleType",
+        owner="Landroid/widget/ImageView;",
+        arg_types=["Landroid/widget/ImageView$ScaleType;"],
+        value_loader="image_scale_type",
+        supported_kinds=["image"],
+    ),
+
+    "adjust_view_bounds": AttrMethod(
+        method="setAdjustViewBounds",
+        owner="Landroid/widget/ImageView;",
+        arg_types=["Z"],
+        value_loader="bool",
+        supported_kinds=["image"],
+    ),
+
+    "image_alpha": AttrMethod(
+        method="setImageAlpha",
+        owner="Landroid/widget/ImageView;",
+        arg_types=["I"],
+        value_loader="image_alpha",
+        supported_kinds=["image"],
+    ),
+
+    "image_matrix": AttrMethod(
+        method="setImageMatrix",
+        owner="Landroid/widget/ImageView;",
+        arg_types=["Landroid/graphics/Matrix;"],
+        value_loader="image_matrix",
+        supported_kinds=["image"],
     ),
 }

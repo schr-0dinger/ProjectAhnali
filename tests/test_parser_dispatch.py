@@ -17,3 +17,12 @@ def test_parser_dispatch_domains_include_motion_aliases():
     assert "animate" in motion
     assert "fade_in" in motion
     assert "animate_elevation" in motion
+
+
+def test_parser_dispatch_domains_include_navigation_aliases():
+    navigation = STATEMENT_FN_BY_DOMAIN["navigation"]
+    assert "navigate" in navigation
+    assert "back" in navigation
+    assert "replace" in navigation
+    assert "pop_to_root" in navigation
+    assert "clear_stack" in navigation

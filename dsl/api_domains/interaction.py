@@ -1,5 +1,6 @@
 from dsl.api import (
     back,
+    clear_stack,
     navigate,
     on_change,
     on_click,
@@ -7,7 +8,9 @@ from dsl.api import (
     on_focus_change,
     on_item_selected,
     on_menu_item_selected,
+    on_slider_change,
     on_text_change,
+    pop_to_root,
     replace,
     simple_dialog,
     snackbar,
@@ -18,6 +21,7 @@ __all__ = [
     "on_click",
     "on_click_map",
     "on_change",
+    "on_slider_change",
     "on_text_change",
     "on_item_selected",
     "on_menu_item_selected",
@@ -27,5 +31,7 @@ __all__ = [
     "simple_dialog",
     "navigate",
     "back",
+    "pop_to_root",
+    "clear_stack",
     "replace",
 ]

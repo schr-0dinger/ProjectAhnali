@@ -16,6 +16,7 @@ from dsl.app import (
     on_focus_change,
     on_item_selected,
     on_menu_item_selected,
+    on_slider_change,
     on_text_change,
     text,
     ui,
@@ -50,6 +51,11 @@ def _on_menu_item():
 @on_change("slider")
 def _on_slider_change():
     label.text = "sliding"
+
+
+@on_slider_change("slider_alias")
+def _on_slider_change_alias():
+    label.text = "alias sliding"
 
 
 @on_change("group")
@@ -102,6 +108,70 @@ def test_emit_change_listener_for_slider(tmp_path):
     assert "onProgressChanged(Landroid/widget/SeekBar;IZ)V" in listener_text
     assert "invoke-static {p1, p2, p3}, LTestHandlers;->onChange_slider(Landroid/widget/SeekBar;IZ)V" in listener_text
     assert "Landroid/widget/SeekBar;->setOnSeekBarChangeListener" in main_smali
+
+
+def test_emit_slider_change_alias_listener_for_slider(tmp_path):
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Label", id="label"),
+                Slider(id="slider_alias", min=0, max=100, value=20),
+            ),
+            _on_slider_change_alias,
+        )
+    ).build()
+
+    out_dir = emit_build_dir_from_program(prog, out_dir=tmp_path / "build", class_name="LTest;")
+    listener = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliChangeListener_slider_alias.smali"
+    main_smali = (out_dir / "smali" / "Test.smali").read_text(encoding="utf-8")
+    listener_text = listener.read_text(encoding="utf-8")
+    handlers = (out_dir / "smali" / "TestHandlers.smali").read_text(encoding="utf-8")
+
+    assert listener.exists()
+    assert "implements Landroid/widget/SeekBar$OnSeekBarChangeListener;" in listener_text
+    assert (
+        "invoke-static {p1, p2, p3}, "
+        "LTestHandlers;->onSliderChange_slider_alias(Landroid/widget/SeekBar;IZ)V"
+    ) in listener_text
+    assert "Landroid/widget/SeekBar;->setOnSeekBarChangeListener" in main_smali
+    assert ".method public static onSliderChange_slider_alias(Landroid/widget/SeekBar;IZ)V" in handlers
+    assert any(
+        entry[0] == "Lcom/ahnali/preview/AhnaliChangeListener_slider_alias;"
+        and entry[3] == "slider_change"
+        for entry in prog.support_classes
+    )
+
+
+def test_slider_change_alias_rejects_non_slider_target():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Label", id="label"),
+                Switch("Toggle", id="toggle_alias"),
+            ),
+            on_slider_change("toggle_alias", []),
+        )
+    )
+    with pytest.raises(RuntimeError, match="on_slider_change target 'toggle_alias' must be slider"):
+        prog.build()
+
+
+def test_slider_change_alias_conflicts_with_on_change_for_same_target():
+    prog = app(
+        activity(
+            "MainActivity",
+            ui(
+                text("Label", id="label"),
+                Slider(id="slider_dupe", min=0, max=100, value=40),
+            ),
+            on_change("slider_dupe", []),
+            on_slider_change("slider_dupe", []),
+        )
+    )
+    with pytest.raises(RuntimeError, match="Duplicate event binding"):
+        prog.build()
 
 
 def test_emit_change_listener_for_radio_group(tmp_path):

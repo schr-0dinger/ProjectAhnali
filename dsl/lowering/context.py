@@ -36,8 +36,10 @@ from dsl.ast import (
     _StmtExitApp,
     _StmtIf,
     _StmtBack,
+    _StmtClearStack,
     _StmtAnimate,
     _StmtAnimationGroup,
+    _StmtPopToRoot,
     _StmtReplace,
     _StmtRequestPermissions,
     _StmtSetText,
@@ -659,6 +661,31 @@ class _PythonicContext:
             )
         return mapping[key]
 
+    def _resolve_image_scale_type_field(self, raw_value):
+        if isinstance(raw_value, bool):
+            raise RuntimeError("scale_type must be a string, not bool.")
+        if not isinstance(raw_value, str):
+            raise RuntimeError(
+                "scale_type must be one of: matrix, fit_xy, fit_start, fit_center, fit_end, center, center_crop, center_inside."
+            )
+        key = raw_value.strip().lower()
+        mapping = {
+            "matrix": "MATRIX",
+            "fit_xy": "FIT_XY",
+            "fit_start": "FIT_START",
+            "fit_center": "FIT_CENTER",
+            "fit_end": "FIT_END",
+            "center": "CENTER",
+            "center_crop": "CENTER_CROP",
+            "center_inside": "CENTER_INSIDE",
+        }
+        if key not in mapping:
+            known = ", ".join(sorted(mapping.keys()))
+            raise RuntimeError(
+                f"Unsupported scale_type '{raw_value}'. Expected one of: {known}."
+            )
+        return mapping[key]
+
     def _resolve_typeface_style(self, font_weight, font_style):
         italic = False
         bold = False
@@ -716,6 +743,9 @@ class _PythonicContext:
             if meta and meta.supported_kinds is not None:
                 return set(meta.supported_kinds)
             return None
+
+        if field_name in {"scale_type", "crop", "center_inside", "adjust_view_bounds", "image_alpha", "image_matrix"}:
+            return {"image"}
 
         meta = ATTR_METHODS.get(field_name)
         if meta and meta.supported_kinds is not None:
@@ -1033,7 +1063,15 @@ class _PythonicContext:
 
         # ---- value resolution ----
         if meta.value_loader == "color":
-            key = self._add_color_resource(f"{view_id}_{attr_name}", raw_value)
+            if isinstance(raw_value, bool):
+                raise RuntimeError(f"{attr_name} must be a color value, not bool.")
+            if isinstance(raw_value, int):
+                color_value = int(raw_value)
+            else:
+                color_value = _parse_color(raw_value, self.theme_spec.palette)
+                if color_value is None:
+                    raise RuntimeError(f"{attr_name} must resolve to a color value.")
+            key = self._add_color_resource(f"{view_id}_{attr_name}", color_value)
             load, value_expr = self._load_color_expr(key, ctx_expr=var("ctx"))
             stmts.extend(load)
             args = [var(view_id), value_expr]
@@ -1142,6 +1180,61 @@ class _PythonicContext:
             if csl_expr is None:
                 return []
             args = [var(view_id), csl_expr]
+        elif meta.value_loader == "bool":
+            if not isinstance(raw_value, bool):
+                raise RuntimeError(f"{attr_name} must be a bool.")
+            args = [var(view_id), const(1 if raw_value else 0)]
+        elif meta.value_loader == "image_scale_type":
+            scale_var = self._next_tmp(f"{view_id}_{attr_name}")
+            field_name = self._resolve_image_scale_type_field(raw_value)
+            stmts.append(
+                assign(
+                    scale_var,
+                    static_get(
+                        field_name,
+                        "Landroid/widget/ImageView$ScaleType;",
+                        owner="Landroid/widget/ImageView$ScaleType;",
+                    ),
+                )
+            )
+            args = [var(view_id), var(scale_var)]
+        elif meta.value_loader == "image_alpha":
+            if isinstance(raw_value, bool):
+                raise RuntimeError("image_alpha must be an int in range [0, 255], not bool.")
+            if not isinstance(raw_value, int):
+                raise RuntimeError("image_alpha must be an int in range [0, 255].")
+            if raw_value < 0 or raw_value > 255:
+                raise RuntimeError(f"image_alpha {raw_value!r} is out of range. Expected [0, 255].")
+            args = [var(view_id), const(int(raw_value))]
+        elif meta.value_loader == "image_matrix":
+            if not isinstance(raw_value, (list, tuple)) or len(raw_value) != 9:
+                raise RuntimeError(
+                    "image_matrix must be a 9-number sequence (row-major 3x3 affine matrix)."
+                )
+            matrix_var = self._next_tmp(f"{view_id}_{attr_name}")
+            values_var = self._next_tmp(f"{view_id}_{attr_name}_values")
+            stmts.append(
+                assign(
+                    matrix_var,
+                    new("Landroid/graphics/Matrix;", args=[]),
+                )
+            )
+            stmts.append(assign(values_var, new_array(const(9), "F")))
+            for idx, entry in enumerate(raw_value):
+                setup, value_expr = self._float_const_expr(entry, prefix=f"{view_id}_{attr_name}_{idx}")
+                stmts.extend(setup)
+                stmts.append(array_set(var(values_var), const(idx), "F", value_expr))
+            stmts.append(
+                call_stmt(
+                    "setValues",
+                    args=[var(matrix_var), var(values_var)],
+                    return_type=None,
+                    arg_types=["[F"],
+                    invoke_kind="virtual",
+                    owner="Landroid/graphics/Matrix;",
+                )
+            )
+            args = [var(view_id), var(matrix_var)]
         elif meta.value_loader == "float":
             setup, value_expr = self._float_const_expr(raw_value, prefix=f"{view_id}_{attr_name}")
             stmts.extend(setup)
@@ -1615,13 +1708,20 @@ class _PythonicContext:
                     )
                 )
                 method_class_map[handler_name] = handler_owner_desc
-            elif event_kind == "change":
+            elif event_kind in {"change", "slider_change"}:
+                if event_kind == "slider_change" and view_kind != "slider":
+                    raise RuntimeError(
+                        f"on_slider_change target '{target_id}' must be slider (kind={view_kind})."
+                    )
                 if view_kind not in {"checkbox", "switch", "radio", "slider", "radio_group"}:
                     raise RuntimeError(
                         "on_change target "
                         f"'{target_id}' must be checkbox/switch/radio/slider/radio_group (kind={view_kind})."
                     )
-                handler_name = f"onChange_{target_id}"
+                if event_kind == "slider_change":
+                    handler_name = f"onSliderChange_{target_id}"
+                else:
+                    handler_name = f"onChange_{target_id}"
                 listener_desc = f"Lcom/ahnali/preview/AhnaliChangeListener_{target_id};"
                 if view_kind in {"checkbox", "switch", "radio"}:
                     tmp_btn = f"_chg_{target_id}"
@@ -3482,6 +3582,10 @@ class _PythonicContext:
             return self._compile_navigate_stmt(stmt)
         if isinstance(stmt, _StmtBack):
             return self._compile_back_stmt(stmt)
+        if isinstance(stmt, _StmtPopToRoot):
+            return self._compile_pop_to_root_stmt(stmt)
+        if isinstance(stmt, _StmtClearStack):
+            return self._compile_clear_stack_stmt(stmt)
         if isinstance(stmt, _StmtReplace):
             return self._compile_replace_stmt(stmt)
         if isinstance(stmt, _StmtRequestPermissions):
@@ -4173,11 +4277,37 @@ class _PythonicContext:
         all_caps_value = getattr(item, "all_caps", None) if getattr(item, "all_caps", None) is not None else getattr(style, "all_caps", None)
         max_lines_value = getattr(item, "max_lines", None) if getattr(item, "max_lines", None) is not None else getattr(style, "max_lines", None)
         ellipsize_value = getattr(item, "ellipsize", None) if getattr(item, "ellipsize", None) is not None else getattr(style, "ellipsize", None)
+        hint_color_value = getattr(item, "hint_color", None) if getattr(item, "hint_color", None) is not None else getattr(style, "hint_color", None)
+        highlight_color_value = (
+            getattr(item, "highlight_color", None)
+            if getattr(item, "highlight_color", None) is not None
+            else getattr(style, "highlight_color", None)
+        )
+        text_tint_value = getattr(item, "text_tint", None) if getattr(item, "text_tint", None) is not None else getattr(style, "text_tint", None)
         tint_value = getattr(item, "tint", None) if getattr(item, "tint", None) is not None else getattr(style, "tint", None)
         thumb_tint_value = getattr(item, "thumb_tint", None) if getattr(item, "thumb_tint", None) is not None else getattr(style, "thumb_tint", None)
         track_tint_value = getattr(item, "track_tint", None) if getattr(item, "track_tint", None) is not None else getattr(style, "track_tint", None)
         progress_tint_value = getattr(item, "progress_tint", None) if getattr(item, "progress_tint", None) is not None else getattr(style, "progress_tint", None)
+        secondary_progress_tint_value = (
+            getattr(item, "secondary_progress_tint", None)
+            if getattr(item, "secondary_progress_tint", None) is not None
+            else getattr(style, "secondary_progress_tint", None)
+        )
         button_tint_value = getattr(item, "button_tint", None) if getattr(item, "button_tint", None) is not None else getattr(style, "button_tint", None)
+        scale_type_value = getattr(item, "scale_type", None) if getattr(item, "scale_type", None) is not None else getattr(style, "scale_type", None)
+        crop_value = getattr(item, "crop", None) if getattr(item, "crop", None) is not None else getattr(style, "crop", None)
+        center_inside_value = (
+            getattr(item, "center_inside", None)
+            if getattr(item, "center_inside", None) is not None
+            else getattr(style, "center_inside", None)
+        )
+        adjust_view_bounds_value = (
+            getattr(item, "adjust_view_bounds", None)
+            if getattr(item, "adjust_view_bounds", None) is not None
+            else getattr(style, "adjust_view_bounds", None)
+        )
+        image_alpha_value = getattr(item, "image_alpha", None) if getattr(item, "image_alpha", None) is not None else getattr(style, "image_alpha", None)
+        image_matrix_value = getattr(item, "image_matrix", None) if getattr(item, "image_matrix", None) is not None else getattr(style, "image_matrix", None)
         opacity_value = getattr(item, "opacity", None) if getattr(item, "opacity", None) is not None else getattr(style, "opacity", None)
         elevation_value = getattr(item, "elevation", None) if getattr(item, "elevation", None) is not None else getattr(style, "elevation", None)
         pressed_elevation_value = (
@@ -4444,14 +4574,59 @@ class _PythonicContext:
                 )
             )
 
-        if tint_value is not None:
+        if hint_color_value is not None:
+            if isinstance(hint_color_value, ColorState):
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="hint_color_state",
+                        raw_value=hint_color_value,
+                    )
+                )
+            else:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="hint_color",
+                        raw_value=hint_color_value,
+                    )
+                )
+
+        if highlight_color_value is not None:
             out.extend(
                 self._emit_attr_call(
                     view_id=item.id,
-                    attr_name="tint",
-                    raw_value=tint_value,
+                    attr_name="highlight_color",
+                    raw_value=highlight_color_value,
                 )
             )
+
+        if text_tint_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="text_tint",
+                    raw_value=text_tint_value,
+                )
+            )
+
+        if tint_value is not None:
+            if self.view_types.get(item.id) == "image":
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="image_tint",
+                        raw_value=tint_value,
+                    )
+                )
+            else:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="tint",
+                        raw_value=tint_value,
+                    )
+                )
 
         if thumb_tint_value is not None:
             out.extend(
@@ -4497,6 +4672,15 @@ class _PythonicContext:
                     )
                 )
 
+        if secondary_progress_tint_value is not None:
+            out.extend(
+                self._emit_attr_call(
+                    view_id=item.id,
+                    attr_name="secondary_progress_tint",
+                    raw_value=secondary_progress_tint_value,
+                )
+            )
+
         if button_tint_value is not None:
             out.extend(
                 self._emit_attr_call(
@@ -4505,6 +4689,54 @@ class _PythonicContext:
                     raw_value=button_tint_value,
                 )
             )
+
+        if self.view_types.get(item.id) == "image":
+            crop_flag = self._coerce_bool_flag(crop_value, field_name="crop")
+            center_inside_flag = self._coerce_bool_flag(center_inside_value, field_name="center_inside")
+            if crop_flag and center_inside_flag:
+                raise RuntimeError(
+                    f"image '{item.id}' cannot set both crop=True and center_inside=True."
+                )
+            resolved_scale_type = scale_type_value
+            if resolved_scale_type is None:
+                if crop_flag:
+                    resolved_scale_type = "center_crop"
+                elif center_inside_flag:
+                    resolved_scale_type = "center_inside"
+                elif image_matrix_value is not None:
+                    resolved_scale_type = "matrix"
+            if resolved_scale_type is not None:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="image_scale_type",
+                        raw_value=resolved_scale_type,
+                    )
+                )
+            if adjust_view_bounds_value is not None:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="adjust_view_bounds",
+                        raw_value=adjust_view_bounds_value,
+                    )
+                )
+            if image_alpha_value is not None:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="image_alpha",
+                        raw_value=image_alpha_value,
+                    )
+                )
+            if image_matrix_value is not None:
+                out.extend(
+                    self._emit_attr_call(
+                        view_id=item.id,
+                        attr_name="image_matrix",
+                        raw_value=image_matrix_value,
+                    )
+                )
 
         if opacity_value is not None:
             out.extend(
@@ -4878,6 +5110,23 @@ class _PythonicContext:
             raise RuntimeError(f"Unsupported Gradient direction '{direction}'. Known: [{known}]")
         return mapping[key]
 
+    def _normalize_gradient_kind(self, kind):
+        if kind is None:
+            key = "linear"
+        elif isinstance(kind, str):
+            key = kind.strip().lower()
+        else:
+            raise RuntimeError("Gradient kind must be a string.")
+        mapping = {
+            "linear": "LINEAR_GRADIENT",
+            "radial": "RADIAL_GRADIENT",
+            "sweep": "SWEEP_GRADIENT",
+        }
+        if key not in mapping:
+            known = ", ".join(sorted(mapping.keys()))
+            raise RuntimeError(f"Unsupported Gradient kind '{kind}'. Known: [{known}]")
+        return key, mapping[key]
+
     def _normalize_corner_radii(self, value):
         if value is None:
             return None, None
@@ -5008,31 +5257,96 @@ class _PythonicContext:
                     f"expected a parseable color, got {gradient_value.end!r}."
                 )
             try:
-                orientation_field = self._normalize_gradient_direction(gradient_value.direction)
+                gradient_kind, gradient_type_field = self._normalize_gradient_kind(
+                    getattr(gradient_value, "kind", None)
+                )
             except RuntimeError as exc:
                 raise RuntimeError(
-                    f"Invalid gradient config on '{view_id}.background.direction': {exc}"
+                    f"Invalid gradient config on '{view_id}.background.kind': {exc}"
                 ) from None
-            orientation_var = self._next_tmp(f"{view_id}_grad_orientation")
-            colors_var = self._next_tmp(f"{view_id}_grad_colors")
+            if gradient_kind == "linear":
+                try:
+                    orientation_field = self._normalize_gradient_direction(gradient_value.direction)
+                except RuntimeError as exc:
+                    raise RuntimeError(
+                        f"Invalid gradient config on '{view_id}.background.direction': {exc}"
+                    ) from None
+            else:
+                orientation_field = None
+
+            gradient_type_var = self._next_tmp(f"{view_id}_grad_type")
             out.extend(
                 [
                     assign(
-                        orientation_var,
+                        gradient_type_var,
                         static_get(
-                            orientation_field,
-                            "Landroid/graphics/drawable/GradientDrawable$Orientation;",
-                            owner="Landroid/graphics/drawable/GradientDrawable$Orientation;",
+                            gradient_type_field,
+                            "I",
+                            owner="Landroid/graphics/drawable/GradientDrawable;",
                         ),
                     ),
                     call_stmt(
-                        "setOrientation",
-                        args=[var(shape_var), var(orientation_var)],
+                        "setGradientType",
+                        args=[var(shape_var), var(gradient_type_var)],
                         return_type=None,
-                        arg_types=["Landroid/graphics/drawable/GradientDrawable$Orientation;"],
+                        arg_types=["I"],
                         invoke_kind="virtual",
                         owner="Landroid/graphics/drawable/GradientDrawable;",
                     ),
+                ]
+            )
+
+            if gradient_kind == "linear":
+                orientation_var = self._next_tmp(f"{view_id}_grad_orientation")
+                out.extend(
+                    [
+                        assign(
+                            orientation_var,
+                            static_get(
+                                orientation_field,
+                                "Landroid/graphics/drawable/GradientDrawable$Orientation;",
+                                owner="Landroid/graphics/drawable/GradientDrawable$Orientation;",
+                            ),
+                        ),
+                        call_stmt(
+                            "setOrientation",
+                            args=[var(shape_var), var(orientation_var)],
+                            return_type=None,
+                            arg_types=["Landroid/graphics/drawable/GradientDrawable$Orientation;"],
+                            invoke_kind="virtual",
+                            owner="Landroid/graphics/drawable/GradientDrawable;",
+                        ),
+                    ]
+                )
+            elif gradient_kind == "radial":
+                radius_raw = getattr(gradient_value, "radius", None)
+                if radius_raw is None:
+                    raise RuntimeError(
+                        f"Invalid gradient config on '{view_id}.background.radius': radial gradients require radius."
+                    )
+                radius_value = self._normalize_dimension_value(
+                    radius_raw,
+                    field_name=f"{view_id}.background.radius",
+                )
+                radius_setup, radius_expr = self._dimension_float_expr(
+                    radius_value,
+                    field_name=f"{view_id}.background.radius",
+                    prefix=f"{view_id}_grad_radius",
+                )
+                out.extend(radius_setup)
+                out.append(
+                    call_stmt(
+                        "setGradientRadius",
+                        args=[var(shape_var), radius_expr],
+                        return_type=None,
+                        arg_types=["F"],
+                        invoke_kind="virtual",
+                        owner="Landroid/graphics/drawable/GradientDrawable;",
+                    )
+                )
+            colors_var = self._next_tmp(f"{view_id}_grad_colors")
+            out.extend(
+                [
                     assign(colors_var, new_array(const(2), "I")),
                     array_set(var(colors_var), const(0), "I", const(start_color)),
                     array_set(var(colors_var), const(1), "I", const(end_color)),
@@ -7341,6 +7655,49 @@ class _PythonicContext:
         then_block.append(static_set("nav_current", "I", var(prev_idx_var)))
 
         out.append(if_(compare(">", var(size_var), const(1)), then_block, []))
+        return out
+
+    def _compile_pop_to_root_stmt(self, stmt):
+        if not self._screens:
+            raise RuntimeError("PopToRoot used without any Screen definitions")
+        out = []
+        stack_var = self._next_tmp("nav_stack")
+        size_var = self._next_tmp("nav_size")
+        cur_var = self._next_tmp("nav_current")
+        root_idx_var = self._next_tmp("nav_root")
+
+        out.append(assign(stack_var, static_get("nav_stack", "[I")))
+        out.append(assign(size_var, static_get("nav_size", "I")))
+        out.append(assign(cur_var, static_get("nav_current", "I")))
+
+        then_block = [
+            assign(root_idx_var, array_get(var(stack_var), const(0), "I")),
+        ]
+        then_block.extend(self._nav_set_visibility_for_index(var(root_idx_var), 0))
+        then_block.extend(self._nav_emit_enter_transition_for_index(var(root_idx_var)))
+        then_block.append(
+            if_(
+                compare("!=", var(cur_var), var(root_idx_var)),
+                self._nav_set_visibility_for_index(var(cur_var), 8),
+                [],
+            )
+        )
+        then_block.append(static_set("nav_size", "I", const(1)))
+        then_block.append(static_set("nav_current", "I", var(root_idx_var)))
+
+        out.append(if_(compare(">", var(size_var), const(0)), then_block, []))
+        return out
+
+    def _compile_clear_stack_stmt(self, stmt):
+        if not self._screens:
+            raise RuntimeError("ClearStack used without any Screen definitions")
+        out = []
+        stack_var = self._next_tmp("nav_stack")
+        cur_var = self._next_tmp("nav_current")
+        out.append(assign(stack_var, static_get("nav_stack", "[I")))
+        out.append(assign(cur_var, static_get("nav_current", "I")))
+        out.append(array_set(var(stack_var), const(0), "I", var(cur_var)))
+        out.append(static_set("nav_size", "I", const(1)))
         return out
 
     def _compile_system_back_method(self):

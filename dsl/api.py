@@ -526,6 +526,10 @@ def on_change(view_id, stmts=None):
     return _make_event_spec("change", view_id, stmts)
 
 
+def on_slider_change(view_id, stmts=None):
+    return _make_event_spec("slider_change", view_id, stmts)
+
+
 def on_text_change(view_id, stmts=None):
     return _make_event_spec("text_change", view_id, stmts)
 
@@ -545,6 +549,7 @@ def on_focus_change(view_id, stmts=None):
 _INLINE_EVENT_ATTRS = (
     ("on_click", "click"),
     ("on_change", "change"),
+    ("on_slider_change", "slider_change"),
     ("on_text_change", "text_change"),
     ("on_item_selected", "item_selected"),
     ("on_menu_item_selected", "menu_item_selected"),
@@ -612,11 +617,16 @@ def _collect_inline_event_specs(items):
 def _merge_event_specs(explicit_specs, inline_specs):
     merged = []
     seen = {}
+    def _canonical_event_kind(kind):
+        # Keep slider alias deterministic with on_change collision semantics.
+        if kind == "slider_change":
+            return "change"
+        return kind
     for origin, specs in (("explicit", explicit_specs or []), ("inline", inline_specs or [])):
         for spec in specs:
             event_kind = getattr(spec, "event_kind", "click")
             target_id = getattr(spec, "target_id", getattr(spec, "button_id", None))
-            key = (event_kind, target_id)
+            key = (_canonical_event_kind(event_kind), target_id)
             if key in seen:
                 prev_origin = seen[key]
                 raise RuntimeError(
@@ -644,6 +654,24 @@ def Back():
 
 def back():
     return Back()
+
+
+def PopToRoot():
+    from .ast import _StmtPopToRoot
+    return _StmtPopToRoot()
+
+
+def pop_to_root():
+    return PopToRoot()
+
+
+def ClearStack():
+    from .ast import _StmtClearStack
+    return _StmtClearStack()
+
+
+def clear_stack():
+    return ClearStack()
 
 
 def Replace(target):

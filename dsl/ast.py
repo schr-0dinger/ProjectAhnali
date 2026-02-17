@@ -397,6 +397,16 @@ class _StmtBack:
         pass
 
 
+class _StmtPopToRoot:
+    def __init__(self):
+        pass
+
+
+class _StmtClearStack:
+    def __init__(self):
+        pass
+
+
 class _StmtReplace:
     def __init__(self, target):
         self.target = target

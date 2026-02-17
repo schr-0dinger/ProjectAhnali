@@ -50,8 +50,8 @@ def size(width, height):
     return (width, height)
 
 
-def gradient(start, end, direction="left_to_right"):
-    return Gradient(start=start, end=end, direction=direction)
+def gradient(start, end, direction="left_to_right", *, kind="linear", radius=None):
+    return Gradient(start=start, end=end, direction=direction, kind=kind, radius=radius)
 
 
 class _Unit:
@@ -95,10 +95,12 @@ class ColorState:
 
 
 class Gradient:
-    def __init__(self, start, end, direction="left_to_right"):
+    def __init__(self, start, end, direction="left_to_right", *, kind="linear", radius=None):
         self.start = start
         self.end = end
         self.direction = direction
+        self.kind = kind
+        self.radius = radius
 
 
 def _resolve_content_description(content_description, accessibility_label):
@@ -144,10 +146,14 @@ class _UIText:
         all_caps=None,
         max_lines=None,
         ellipsize=None,
+        hint_color=None,
+        highlight_color=None,
+        text_tint=None,
         tint=None,
         thumb_tint=None,
         track_tint=None,
         progress_tint=None,
+        secondary_progress_tint=None,
         button_tint=None,
         content_description=None,
         important_for_accessibility=None,
@@ -205,10 +211,14 @@ class _UIText:
         self.all_caps = all_caps
         self.max_lines = max_lines
         self.ellipsize = ellipsize
+        self.hint_color = hint_color
+        self.highlight_color = highlight_color
+        self.text_tint = text_tint
         self.tint = tint
         self.thumb_tint = thumb_tint
         self.track_tint = track_tint
         self.progress_tint = progress_tint
+        self.secondary_progress_tint = secondary_progress_tint
         self.button_tint = button_tint
         self.content_description = _resolve_content_description(content_description, accessibility_label)
         self.important_for_accessibility = important_for_accessibility
@@ -272,10 +282,14 @@ class _UIButton:
         all_caps=None,
         max_lines=None,
         ellipsize=None,
+        hint_color=None,
+        highlight_color=None,
+        text_tint=None,
         tint=None,
         thumb_tint=None,
         track_tint=None,
         progress_tint=None,
+        secondary_progress_tint=None,
         button_tint=None,
         content_description=None,
         important_for_accessibility=None,
@@ -334,10 +348,14 @@ class _UIButton:
         self.all_caps = all_caps
         self.max_lines = max_lines
         self.ellipsize = ellipsize
+        self.hint_color = hint_color
+        self.highlight_color = highlight_color
+        self.text_tint = text_tint
         self.tint = tint
         self.thumb_tint = thumb_tint
         self.track_tint = track_tint
         self.progress_tint = progress_tint
+        self.secondary_progress_tint = secondary_progress_tint
         self.button_tint = button_tint
         self.content_description = _resolve_content_description(content_description, accessibility_label)
         self.important_for_accessibility = important_for_accessibility
@@ -388,10 +406,14 @@ class _UIView:
         constraints=None,
         background=None,
         radius=None,
+        hint_color=None,
+        highlight_color=None,
+        text_tint=None,
         tint=None,
         thumb_tint=None,
         track_tint=None,
         progress_tint=None,
+        secondary_progress_tint=None,
         button_tint=None,
         content_description=None,
         important_for_accessibility=None,
@@ -437,10 +459,14 @@ class _UIView:
         self.constraints = constraints
         self.background = background
         self.radius = radius
+        self.hint_color = hint_color
+        self.highlight_color = highlight_color
+        self.text_tint = text_tint
         self.tint = tint
         self.thumb_tint = thumb_tint
         self.track_tint = track_tint
         self.progress_tint = progress_tint
+        self.secondary_progress_tint = secondary_progress_tint
         self.button_tint = button_tint
         self.content_description = _resolve_content_description(content_description, accessibility_label)
         self.important_for_accessibility = important_for_accessibility
@@ -1037,6 +1063,12 @@ class _UIImage(_UIView):
         *,
         id="image",
         src=None,
+        scale_type=None,
+        crop=None,
+        center_inside=None,
+        adjust_view_bounds=None,
+        image_alpha=None,
+        image_matrix=None,
         content_description=None,
         accessibility_label=None,
         **kwargs,
@@ -1048,6 +1080,12 @@ class _UIImage(_UIView):
             **kwargs,
         )
         self.src = src
+        self.scale_type = scale_type
+        self.crop = crop
+        self.center_inside = center_inside
+        self.adjust_view_bounds = adjust_view_bounds
+        self.image_alpha = image_alpha
+        self.image_matrix = image_matrix
 
 
 class _UIContainer(_UIColumn):
@@ -1356,10 +1394,14 @@ class Style:
         all_caps=None,
         max_lines=None,
         ellipsize=None,
+        hint_color=None,
+        highlight_color=None,
+        text_tint=None,
         tint=None,
         thumb_tint=None,
         track_tint=None,
         progress_tint=None,
+        secondary_progress_tint=None,
         button_tint=None,
         elevation=None,
         pressed_elevation=None,
@@ -1378,6 +1420,12 @@ class Style:
         scale_y=None,
         translation_x=None,
         translation_y=None,
+        scale_type=None,
+        crop=None,
+        center_inside=None,
+        adjust_view_bounds=None,
+        image_alpha=None,
+        image_matrix=None,
         clip_to_outline=None,
         clip_children=None,
     ):
@@ -1406,10 +1454,14 @@ class Style:
         self.all_caps = all_caps
         self.max_lines = max_lines
         self.ellipsize = ellipsize
+        self.hint_color = hint_color
+        self.highlight_color = highlight_color
+        self.text_tint = text_tint
         self.tint = tint
         self.thumb_tint = thumb_tint
         self.track_tint = track_tint
         self.progress_tint = progress_tint
+        self.secondary_progress_tint = secondary_progress_tint
         self.button_tint = button_tint
         self.elevation = elevation
         self.pressed_elevation = pressed_elevation
@@ -1428,6 +1480,12 @@ class Style:
         self.scale_y = scale_y
         self.translation_x = translation_x
         self.translation_y = translation_y
+        self.scale_type = scale_type
+        self.crop = crop
+        self.center_inside = center_inside
+        self.adjust_view_bounds = adjust_view_bounds
+        self.image_alpha = image_alpha
+        self.image_matrix = image_matrix
         self.clip_to_outline = clip_to_outline
         self.clip_children = clip_children
 
@@ -1460,10 +1518,20 @@ class Style:
             all_caps=override.all_caps if override.all_caps is not None else self.all_caps,
             max_lines=override.max_lines if override.max_lines is not None else self.max_lines,
             ellipsize=override.ellipsize if override.ellipsize is not None else self.ellipsize,
+            hint_color=override.hint_color if override.hint_color is not None else self.hint_color,
+            highlight_color=(
+                override.highlight_color if override.highlight_color is not None else self.highlight_color
+            ),
+            text_tint=override.text_tint if override.text_tint is not None else self.text_tint,
             tint=override.tint if override.tint is not None else self.tint,
             thumb_tint=override.thumb_tint if override.thumb_tint is not None else self.thumb_tint,
             track_tint=override.track_tint if override.track_tint is not None else self.track_tint,
             progress_tint=override.progress_tint if override.progress_tint is not None else self.progress_tint,
+            secondary_progress_tint=(
+                override.secondary_progress_tint
+                if override.secondary_progress_tint is not None
+                else self.secondary_progress_tint
+            ),
             button_tint=override.button_tint if override.button_tint is not None else self.button_tint,
             elevation=override.elevation if override.elevation is not None else self.elevation,
             pressed_elevation=(
@@ -1498,6 +1566,18 @@ class Style:
             scale_y=override.scale_y if override.scale_y is not None else self.scale_y,
             translation_x=override.translation_x if override.translation_x is not None else self.translation_x,
             translation_y=override.translation_y if override.translation_y is not None else self.translation_y,
+            scale_type=override.scale_type if override.scale_type is not None else self.scale_type,
+            crop=override.crop if override.crop is not None else self.crop,
+            center_inside=(
+                override.center_inside if override.center_inside is not None else self.center_inside
+            ),
+            adjust_view_bounds=(
+                override.adjust_view_bounds
+                if override.adjust_view_bounds is not None
+                else self.adjust_view_bounds
+            ),
+            image_alpha=override.image_alpha if override.image_alpha is not None else self.image_alpha,
+            image_matrix=override.image_matrix if override.image_matrix is not None else self.image_matrix,
             clip_to_outline=(
                 override.clip_to_outline
                 if override.clip_to_outline is not None
@@ -1819,10 +1899,14 @@ def text(
     all_caps=None,
     max_lines=None,
     ellipsize=None,
+    hint_color=None,
+    highlight_color=None,
+    text_tint=None,
     tint=None,
     thumb_tint=None,
     track_tint=None,
     progress_tint=None,
+    secondary_progress_tint=None,
     button_tint=None,
     content_description=None,
     important_for_accessibility=None,
@@ -1881,10 +1965,14 @@ def text(
         all_caps=all_caps,
         max_lines=max_lines,
         ellipsize=ellipsize,
+        hint_color=hint_color,
+        highlight_color=highlight_color,
+        text_tint=text_tint,
         tint=tint,
         thumb_tint=thumb_tint,
         track_tint=track_tint,
         progress_tint=progress_tint,
+        secondary_progress_tint=secondary_progress_tint,
         button_tint=button_tint,
         content_description=content_description,
         important_for_accessibility=important_for_accessibility,
@@ -1947,10 +2035,14 @@ def button(
     all_caps=None,
     max_lines=None,
     ellipsize=None,
+    hint_color=None,
+    highlight_color=None,
+    text_tint=None,
     tint=None,
     thumb_tint=None,
     track_tint=None,
     progress_tint=None,
+    secondary_progress_tint=None,
     button_tint=None,
     content_description=None,
     important_for_accessibility=None,
@@ -2010,10 +2102,14 @@ def button(
         all_caps=all_caps,
         max_lines=max_lines,
         ellipsize=ellipsize,
+        hint_color=hint_color,
+        highlight_color=highlight_color,
+        text_tint=text_tint,
         tint=tint,
         thumb_tint=thumb_tint,
         track_tint=track_tint,
         progress_tint=progress_tint,
+        secondary_progress_tint=secondary_progress_tint,
         button_tint=button_tint,
         content_description=content_description,
         important_for_accessibility=important_for_accessibility,
@@ -2063,10 +2159,14 @@ def view(
     constraints=None,
     background=None,
     radius=None,
+    hint_color=None,
+    highlight_color=None,
+    text_tint=None,
     tint=None,
     thumb_tint=None,
     track_tint=None,
     progress_tint=None,
+    secondary_progress_tint=None,
     button_tint=None,
     content_description=None,
     important_for_accessibility=None,
@@ -2113,10 +2213,14 @@ def view(
         constraints=constraints,
         background=background,
         radius=radius,
+        hint_color=hint_color,
+        highlight_color=highlight_color,
+        text_tint=text_tint,
         tint=tint,
         thumb_tint=thumb_tint,
         track_tint=track_tint,
         progress_tint=progress_tint,
+        secondary_progress_tint=secondary_progress_tint,
         button_tint=button_tint,
         content_description=content_description,
         important_for_accessibility=important_for_accessibility,
@@ -2697,6 +2801,12 @@ def image(
     *,
     id="image",
     src=None,
+    scale_type=None,
+    crop=None,
+    center_inside=None,
+    adjust_view_bounds=None,
+    image_alpha=None,
+    image_matrix=None,
     content_description=None,
     important_for_accessibility=None,
     accessibility_label=None,
@@ -2705,6 +2815,12 @@ def image(
     return _UIImage(
         id=id,
         src=src,
+        scale_type=scale_type,
+        crop=crop,
+        center_inside=center_inside,
+        adjust_view_bounds=adjust_view_bounds,
+        image_alpha=image_alpha,
+        image_matrix=image_matrix,
         content_description=content_description,
         important_for_accessibility=important_for_accessibility,
         accessibility_label=accessibility_label,
