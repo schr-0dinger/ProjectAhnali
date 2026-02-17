@@ -14,7 +14,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Runtime helper integration mode is capability-specific (`permission_only` or `helper_call`).
 - Track C Wave 1 introduced initial helper-call bindings for URL launcher, connectivity checks, and storage put/get/remove/exists/clear.
 - Track C Wave 2 adds networking fetch/response/retry/typed-JSON helper-call bindings (`http_get`, `http_get_status`, `http_get_error`, `http_get_retry`, `http_get_json_field`, `http_get_json_field_error`).
-- Track C Wave 3/4 adds tokened async route dispatch (`http_get_route_async`) with deterministic cancellation/progress/error/status/body surfaces (`http_async_cancel`, `http_async_progress`, `http_async_error`, `http_async_status`, `http_async_body`), progress callback wiring, timeout/retry controls, request-option wiring (method/headers/body), and typed async JSON adapters.
+- Track C Wave 3/4 adds tokened async route dispatch (`http_get_route_async`) with deterministic cancellation/progress/error/status/body surfaces (`http_async_cancel`, `http_async_progress`, `http_async_error`, `http_async_status`, `http_async_body`), progress callback wiring, timeout/retry controls, request-option wiring (method/headers/body), hardened request-option transport semantics (header parsing/application + explicit POST body transport), typed async JSON adapters, and concurrent cancellation/race stress coverage.
 
 ## Mapping Table (v1)
 

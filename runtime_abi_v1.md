@@ -228,8 +228,18 @@ Deprecation policy:
       - Backoff policy: fixed sleep `max(0, backoff_ms)` between failed attempts (no jitter)
     - `httpRequest*WithTimeout`:
       - Request options accept method/header/body surfaces for async route worker ABI.
-      - Supported deterministic method set is `GET`/`POST` (case-insensitive); other methods return deterministic invalid-input surfaces.
-      - Header/body argument surfaces are ABI-stable request options for worker-call wiring.
+      - Method semantics:
+        - null/empty method defaults to `GET`
+        - supported deterministic method set is `GET`/`POST` (case-insensitive)
+        - any other method returns deterministic invalid-input surfaces (`fallback` for body call, `-1` for status, `1` for error)
+      - Header semantics:
+        - newline-delimited header entries are parsed as `Key: Value`
+        - malformed/empty entries are ignored deterministically
+        - parsed entries are applied via `HttpURLConnection.setRequestProperty(...)`
+      - Body semantics:
+        - body is explicitly transported only for `POST`
+        - body bytes are encoded UTF-8 and written through `HttpURLConnection` output stream with fixed-length streaming mode
+        - non-POST methods do not emit request body bytes
     - `nextAsyncToken`: allocates and returns a positive token, resets token-scoped async state.
     - `startAsync`: allocates a token and starts a background thread for a provided `Runnable`.
       - Returns token (`>0`) when dispatch succeeds

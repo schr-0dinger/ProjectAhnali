@@ -226,7 +226,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 core ABI slice completed on 2026-02-17)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -270,6 +270,11 @@ Work items:
   - `http_async_json_field(token, key, fallback)`
   - `http_async_json_field_error(token, key)`
   - `http_async_json_array_length(token, fallback)`
+- ✅ Harden Wave 4 request-option transport semantics:
+  - deterministic method normalization (`GET` default; `GET`/`POST` accepted; others invalid)
+  - newline-delimited header parsing/application (`Key: Value`; malformed lines ignored)
+  - explicit POST UTF-8 body transport path (`setDoOutput`, fixed-length streaming, output-stream write)
+- ✅ Add Wave 4 concurrent cancellation/race stress coverage for tokened async surfaces.
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - ✅ Add Wave 2 visible capability integration flow (`tests/test_track_c_wave2_visible_flow.py`)
@@ -287,7 +292,7 @@ Exit criteria:
 - ✅ Wave 2 visible capability integration flow conformance is enforced by `tests/test_track_c_wave2_visible_flow.py`.
 - ✅ Wave 3 async route dispatch conformance is enforced by `tests/test_track_c_wave3_async_route.py`.
 - ✅ Wave 3 visible tokened async flow conformance is enforced by `tests/test_track_c_wave3_visible_flow.py`.
-- ✅ Wave 4 async concurrency/request-options/typed-adapter conformance is enforced by `tests/test_track_c_wave4_async_networking.py`.
+- ✅ Wave 4 async concurrency/request-options/typed-adapter/transport/race conformance is enforced by `tests/test_track_c_wave4_async_networking.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
@@ -358,6 +363,10 @@ Networking response contract:
   - `5` malformed payload
   - `6` missing key (or null value)
 - `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id="", retries=0, timeout_ms=8000, method="GET", headers="", body="")` dispatches tokened network route checks in a background thread and posts success/failure/progress handlers to the UI thread.
+  - request option transport semantics:
+    - `method`: null/empty defaults to `GET`; `GET`/`POST` are accepted (case-insensitive); others map to deterministic invalid-input surfaces.
+    - `headers`: newline-delimited `Key: Value` entries are parsed and applied via request properties; malformed lines are ignored deterministically.
+    - `body`: only applied for `POST`, encoded as UTF-8 bytes and written through output stream.
 - `http_async_cancel(token)` requests token-scoped cancellation for async networking work.
 - `http_async_progress(token)` returns token-scoped deterministic progress (`0..100`).
 - `http_async_error(token)` returns token-scoped deterministic async error code:
@@ -379,7 +388,6 @@ Storage introspection contract:
 - `storage_clear()` clears all app storage keys for this helper namespace and returns `1` on success, else `0`.
 
 Known limits (current networking surface):
-- Request-option helper path currently normalizes to deterministic GET/POST fetch semantics; advanced header/body transport controls are ABI-stable but intentionally constrained in v1.
 - Retry policy is fixed-backoff without jitter.
 
 ### Track D: Optimization and Build Intelligence

@@ -1,6 +1,6 @@
 # Track C Wave 4 Async Concurrency + Request Options
 
-Status: Completed (core ABI slice)  
+Status: Completed (core ABI slice + transport/race hardening)  
 Date: 2026-02-17
 
 This wave extends async networking with concurrent token surfaces, request-option wiring, and typed async JSON adapters.
@@ -11,10 +11,17 @@ This wave extends async networking with concurrent token surfaces, request-optio
 - Async request-option worker wiring:
   - method, headers, body arguments flow through `http_get_route_async(...)` into worker helper calls.
   - timeout/retry remain deterministic.
+- Request-option transport hardening:
+  - deterministic method normalization (`GET` default; `GET`/`POST` accepted)
+  - newline-delimited header parsing/application (`Key: Value`; malformed entries ignored)
+  - explicit POST UTF-8 body transport through `HttpURLConnection` output stream
 - Typed async response adapters:
   - `http_async_json_field(token, key, fallback)`
   - `http_async_json_field_error(token, key)`
   - `http_async_json_array_length(token, fallback)`
+- Concurrent cancellation/race stress coverage:
+  - repeated token cancellation checkpoints in async worker path
+  - token-store stress assertions for token-scoped get/put guard behavior
 
 ## ABI Additions
 

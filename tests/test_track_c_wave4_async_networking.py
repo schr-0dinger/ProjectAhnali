@@ -144,6 +144,75 @@ def test_track_c_wave4_toolchain_emits_multitoken_state_and_json_adapter_methods
     ) in worker_smali
 
 
+def test_track_c_wave4_transport_options_emit_header_parser_and_post_body_writer(tmp_path):
+    frontend = _build_wave4_frontend()
+    out_dir = emit_build_dir_from_program(
+        frontend,
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+        emit_wrapper=True,
+        wrapper_class_desc="Lcom/ahnali/preview/MainActivity;",
+    )
+
+    helper_path = out_dir / "smali" / "com" / "ahnali" / "runtime" / "HttpHelper.smali"
+    assert helper_path.exists()
+    helper_smali = helper_path.read_text(encoding="utf-8")
+
+    assert ".method private static resolveRequestMethod(Ljava/lang/String;)Ljava/lang/String;" in helper_smali
+    assert ".method private static applyRequestHeaders(Ljava/net/HttpURLConnection;Ljava/lang/String;)V" in helper_smali
+    assert ".method private static applyRequestBody(Ljava/net/HttpURLConnection;Ljava/lang/String;Ljava/lang/String;)V" in helper_smali
+
+    assert "Ljava/lang/String;->split(Ljava/lang/String;)[Ljava/lang/String;" in helper_smali
+    assert "Ljava/lang/String;->indexOf(I)I" in helper_smali
+    assert "Ljava/net/HttpURLConnection;->setRequestProperty(Ljava/lang/String;Ljava/lang/String;)V" in helper_smali
+
+    assert "Ljava/net/HttpURLConnection;->setDoOutput(Z)V" in helper_smali
+    assert "Ljava/net/HttpURLConnection;->setFixedLengthStreamingMode(I)V" in helper_smali
+    assert "Ljava/net/HttpURLConnection;->getOutputStream()Ljava/io/OutputStream;" in helper_smali
+    assert "Ljava/io/OutputStream;->write([B)V" in helper_smali
+    assert "Ljava/lang/String;->getBytes(Ljava/lang/String;)[B" in helper_smali
+
+    assert helper_smali.count(
+        "Lcom/ahnali/runtime/HttpHelper;->applyRequestHeaders(Ljava/net/HttpURLConnection;Ljava/lang/String;)V"
+    ) >= 3
+    assert helper_smali.count(
+        "Lcom/ahnali/runtime/HttpHelper;->applyRequestBody(Ljava/net/HttpURLConnection;Ljava/lang/String;Ljava/lang/String;)V"
+    ) >= 3
+
+
+def test_track_c_wave4_concurrent_cancel_race_stress_emission(tmp_path):
+    frontend = _build_wave4_frontend()
+    out_dir = emit_build_dir_from_program(
+        frontend,
+        out_dir=tmp_path / "build",
+        class_name="LTest;",
+        emit_wrapper=True,
+        wrapper_class_desc="Lcom/ahnali/preview/MainActivity;",
+    )
+
+    helper_path = out_dir / "smali" / "com" / "ahnali" / "runtime" / "HttpHelper.smali"
+    worker_path = out_dir / "smali" / "com" / "ahnali" / "preview" / "AhnaliHttpRouteAsyncWorker.smali"
+    assert helper_path.exists()
+    assert worker_path.exists()
+
+    helper_smali = helper_path.read_text(encoding="utf-8")
+    worker_smali = worker_path.read_text(encoding="utf-8")
+
+    assert worker_smali.count("Lcom/ahnali/runtime/HttpHelper;->shouldCancel(I)I") >= 3
+    assert worker_smali.count("const/4 v7, 0x7") >= 2
+    assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncError(II)V" in worker_smali
+    assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncStatus(II)V" in worker_smali
+    assert "Lcom/ahnali/runtime/HttpHelper;->setAsyncBody(ILjava/lang/String;)V" in worker_smali
+
+    assert ".field private static sAsyncCancelByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncProgressByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncErrorByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert ".field private static sAsyncStatusByToken:Landroid/util/SparseIntArray;" in helper_smali
+    assert helper_smali.count("Landroid/util/SparseIntArray;->get(II)I") >= 8
+    assert helper_smali.count("Landroid/util/SparseIntArray;->put(II)V") >= 8
+    assert "const/16 v0, 0x8" in helper_smali
+
+
 def test_track_c_wave4_parser_rejects_invalid_route_option_types():
     def _bad_method():
         http_get_route_async("https://example.com", "ok_btn", "fail_btn", "offline", "", 1, 2000, 7)
