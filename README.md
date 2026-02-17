@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `408 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `428 passed` (`PYTHONPATH=. pytest -q -rs`)
 
 ## DSL Surface (Current)
 
@@ -190,6 +190,8 @@ Constraints:
 7) Program 2 tranche A implemented: `FrameLayout` + `layout_gravity` + deterministic `z_index` ordering/layering (`tests/test_program2_structure_frame.py`)
 8) Program 2 tranche B implemented: first-class `GridView` deterministic static-adapter surface (`tests/test_grid_view_static.py`)
 9) Program 2 tranche C implemented: first-class `NestedScrollView` deterministic single-child container surface (`tests/test_scroll_controls.py`, `tests/test_phase_integration_smoke.py`)
+10) Program 1 complete and Program 2 tranche D implemented: `ViewPager` static page model + `TabLayout` + `BottomNavigationView` + `CoordinatorLayout` deterministic surfaces (`tests/test_program2_structure_remaining.py`, `tests/test_phase_integration_smoke.py`)
+11) Program 2 tranche E implemented: `RecyclerView` + `NavigationBar` + `NavigationRail` + `DrawerLayout` + `FragmentContainer` + `percent` coverage (`tests/test_program2_structure_gap_closure.py`, `tests/test_phase_integration_smoke.py`)
 
 ## Completion Roadmap (Current)
 

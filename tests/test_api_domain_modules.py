@@ -8,9 +8,27 @@ def test_api_domain_modules_expose_legacy_compatible_symbols():
     assert structure.Frame is legacy_api.Frame
     assert structure.GridView is legacy_api.GridView
     assert structure.NestedScrollView is legacy_api.NestedScrollView
+    assert structure.ViewPager is legacy_api.ViewPager
+    assert structure.TabLayout is legacy_api.TabLayout
+    assert structure.BottomNavigationView is legacy_api.BottomNavigationView
+    assert structure.CoordinatorLayout is legacy_api.CoordinatorLayout
+    assert structure.RecyclerView is legacy_api.RecyclerView
+    assert structure.NavigationBar is legacy_api.NavigationBar
+    assert structure.NavigationRail is legacy_api.NavigationRail
+    assert structure.DrawerLayout is legacy_api.DrawerLayout
+    assert structure.FragmentContainer is legacy_api.FragmentContainer
     assert structure.frame is legacy_api.frame
     assert structure.grid_view is legacy_api.grid_view
     assert structure.nested_scroll_view is legacy_api.nested_scroll_view
+    assert structure.view_pager is legacy_api.view_pager
+    assert structure.tab_layout is legacy_api.tab_layout
+    assert structure.bottom_navigation_view is legacy_api.bottom_navigation_view
+    assert structure.coordinator_layout is legacy_api.coordinator_layout
+    assert structure.recycler_view is legacy_api.recycler_view
+    assert structure.navigation_bar is legacy_api.navigation_bar
+    assert structure.navigation_rail is legacy_api.navigation_rail
+    assert structure.drawer_layout is legacy_api.drawer_layout
+    assert structure.fragment_container is legacy_api.fragment_container
     assert style.theme is legacy_api.theme
     assert interaction.on_click is legacy_api.on_click
     assert state.storage_put is legacy_api.storage_put

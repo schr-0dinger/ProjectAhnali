@@ -4,6 +4,8 @@ from apk.toolchain import emit_build_dir_from_program
 from dsl.app import (
     AppBar,
     Checkbox,
+    CoordinatorLayout,
+    DrawerLayout,
     DropdownButton,
     Navigate,
     PopupMenuButton,
@@ -17,16 +19,21 @@ from dsl.app import (
     animate_elevation,
     app,
     app_config,
+    bottom_navigation_view,
     button,
     card,
     color_state,
     container,
     dp,
+    drawer_layout,
     fade_in,
+    fragment_container,
     gradient,
     horizontal_scroll_view,
     icon,
     list_view,
+    navigation_bar,
+    navigation_rail,
     nested_scroll_view,
     on_change,
     on_click,
@@ -38,16 +45,19 @@ from dsl.app import (
     progress_bar,
     radio,
     radio_group,
+    recycler_view,
     scale,
     scroll_view,
     sequence,
     sp,
     style,
+    tab_layout,
     text,
     theme,
     translate,
     ui,
     view,
+    view_pager,
 )
 
 
@@ -437,3 +447,78 @@ def test_phase13_integration_smoke(tmp_path):
     assert any("bordered.border_width" in warning for warning in prog.lint_warnings)
     assert any("state_bg.background" in warning for warning in prog.lint_warnings)
     assert any("blur_radius is ignored" in warning for warning in prog.lint_warnings)
+
+
+def test_phase14_integration_smoke(tmp_path):
+    _, _, smali = _emit_smali(
+        tmp_path,
+        "phase14",
+        ui(
+            CoordinatorLayout(
+                text("Pinned", id="coord_text"),
+                id="coord",
+            ),
+            view_pager(
+                text("P1", id="vp_1"),
+                text("P2", id="vp_2"),
+                id="pager",
+                initial_page=0,
+            ),
+            tab_layout(
+                id="tabs",
+                tabs=["Home", "Profile"],
+                selected_index=0,
+            ),
+            bottom_navigation_view(
+                id="bottom_nav",
+                items=["Home", "Settings"],
+                selected_index=1,
+            ),
+        ),
+    )
+
+    assert (
+        ".field public static view_coord:Landroidx/coordinatorlayout/widget/CoordinatorLayout;"
+        in smali
+    )
+    assert ".field public static view_pager:Landroidx/viewpager/widget/ViewPager;" in smali
+    assert ".field public static view_tabs:Lcom/google/android/material/tabs/TabLayout;" in smali
+    assert (
+        ".field public static view_bottom_nav:Lcom/google/android/material/bottomnavigation/BottomNavigationView;"
+        in smali
+    )
+
+
+def test_phase15_integration_smoke(tmp_path):
+    _, _, smali = _emit_smali(
+        tmp_path,
+        "phase15",
+        ui(
+            recycler_view(id="rv", items=["One", "Two"]),
+            navigation_bar(id="nav_bar", items=["Home", "Profile"], selected_index=0),
+            navigation_rail(id="nav_rail", items=["Inbox", "Archive"], selected_index=1),
+            drawer_layout(
+                text("content", id="drawer_content"),
+                text("menu", id="drawer_menu"),
+                id="drawer_shell",
+            ),
+            fragment_container(id="frag_host"),
+            DrawerLayout(
+                text("content2", id="drawer_content2"),
+                text("menu2", id="drawer_menu2"),
+                id="drawer_class_shell",
+            ),
+        ),
+    )
+
+    assert ".field public static view_rv:Landroidx/recyclerview/widget/RecyclerView;" in smali
+    assert (
+        ".field public static view_nav_bar:Lcom/google/android/material/bottomnavigation/BottomNavigationView;"
+        in smali
+    )
+    assert (
+        ".field public static view_nav_rail:Lcom/google/android/material/navigationrail/NavigationRailView;"
+        in smali
+    )
+    assert ".field public static view_drawer_shell:Landroidx/drawerlayout/widget/DrawerLayout;" in smali
+    assert ".field public static view_frag_host:Landroidx/fragment/app/FragmentContainerView;" in smali

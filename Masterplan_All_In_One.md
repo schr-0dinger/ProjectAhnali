@@ -63,7 +63,7 @@ Hybrid rollout status:
 
 ## 3) Code Reality Snapshot (As of 2026-02-17)
 
-- ✅ Test suite reality: `408 passed` (`PYTHONPATH=. pytest -q -rs`)
+- ✅ Test suite reality: `428 passed` (`PYTHONPATH=. pytest -q -rs`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -369,23 +369,23 @@ Core structural primitives:
 - ✅ FrameLayout
 - ✅ ListView (deterministic static adapter path)
 - ✅ GridView (deterministic static adapter path)
-- ⚠️ RecyclerView (static adapter model)
-- ❌ ViewPager (static page model)
-- ❌ TabLayout
-- ⚠️ NavigationBar
-- ⚠️ NavigationRail
-- ⚠️ DrawerLayout
-- ❌ BottomNavigationView
+- ✅ RecyclerView (deterministic static model)
+- ✅ ViewPager (deterministic static page model)
+- ✅ TabLayout (deterministic static tabs model)
+- ✅ NavigationBar (deterministic static items model)
+- ✅ NavigationRail (deterministic static items model)
+- ✅ DrawerLayout (deterministic two-child model)
+- ✅ BottomNavigationView (deterministic static items model)
 - ✅ Toolbar
 - ✅ AppBar
-- ❌ CoordinatorLayout
+- ✅ CoordinatorLayout (deterministic container path)
 - ✅ NestedScrollView (single-child deterministic container path)
-- ❌ Fragment container (if later supported)
+- ✅ Fragment container (deterministic static host path)
 
 Structural modifiers:
 - ✅ width/height
 - ✅ match/wrap/fill
-- ⚠️ percent
+- ✅ percent
 - ✅ weight
 - ✅ margin
 - ✅ padding

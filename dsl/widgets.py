@@ -830,6 +830,89 @@ class _UINestedScrollView(_UIView):
         )
 
 
+class _UIViewPager(_UIView):
+    def __init__(self, *items, id="view_pager", initial_page=0, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if len(items) == 0:
+            raise RuntimeError("ViewPager requires at least one page child.")
+        if isinstance(initial_page, bool) or not isinstance(initial_page, int):
+            raise RuntimeError("ViewPager initial_page must be an integer.")
+        if initial_page < 0 or initial_page >= len(items):
+            raise RuntimeError(
+                f"ViewPager initial_page {initial_page} is out of range for {len(items)} pages."
+            )
+        self.items = tuple(items)
+        self.initial_page = int(initial_page)
+
+
+class _UITabLayout(_UIView):
+    def __init__(self, *, id="tab_layout", tabs=None, selected_index=0, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if tabs is None:
+            tabs = []
+        if not isinstance(tabs, (list, tuple)):
+            raise RuntimeError("TabLayout tabs must be a list or tuple of static labels.")
+        if len(tabs) == 0:
+            raise RuntimeError("TabLayout tabs must contain at least one label.")
+        normalized_tabs = []
+        for value in tabs:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "TabLayout tabs must contain only static primitive labels "
+                    "(str/int/float/bool)."
+                )
+            normalized_tabs.append(str(value))
+        if isinstance(selected_index, bool) or not isinstance(selected_index, int):
+            raise RuntimeError("TabLayout selected_index must be an integer.")
+        if selected_index < 0 or selected_index >= len(normalized_tabs):
+            raise RuntimeError(
+                f"TabLayout selected_index {selected_index} is out of range for "
+                f"{len(normalized_tabs)} tabs."
+            )
+        self.tabs = tuple(normalized_tabs)
+        self.selected_index = int(selected_index)
+
+
+class _UIBottomNavigationView(_UIView):
+    def __init__(self, *, id="bottom_navigation_view", items=None, selected_index=0, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if items is None:
+            items = []
+        if not isinstance(items, (list, tuple)):
+            raise RuntimeError(
+                "BottomNavigationView items must be a list or tuple of static labels."
+            )
+        if len(items) == 0:
+            raise RuntimeError("BottomNavigationView items must contain at least one label.")
+        normalized_items = []
+        for value in items:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "BottomNavigationView items must contain only static primitive labels "
+                    "(str/int/float/bool)."
+                )
+            normalized_items.append(str(value))
+        if isinstance(selected_index, bool) or not isinstance(selected_index, int):
+            raise RuntimeError("BottomNavigationView selected_index must be an integer.")
+        if selected_index < 0 or selected_index >= len(normalized_items):
+            raise RuntimeError(
+                f"BottomNavigationView selected_index {selected_index} is out of range for "
+                f"{len(normalized_items)} items."
+            )
+        self.items = tuple(normalized_items)
+        self.selected_index = int(selected_index)
+
+
+class _UICoordinatorLayout(_UIView):
+    def __init__(self, *items, id="coordinator_layout", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        self.items = tuple(items)
+
+
 class _UIAppBar(_UIText):
     def __init__(self, text, *, id="appbar", inline=False, **kwargs):
         kwargs.setdefault("id", id)
@@ -1105,6 +1188,111 @@ class _UIGridView(_UIView):
         if num_columns <= 0:
             raise RuntimeError("GridView num_columns must be >= 1.")
         self.num_columns = int(num_columns)
+
+
+class _UIRecyclerView(_UIView):
+    def __init__(
+        self,
+        *,
+        id="recycler_view",
+        items=None,
+        **kwargs,
+    ):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+
+        if items is None:
+            items = []
+        if not isinstance(items, (list, tuple)):
+            raise RuntimeError("RecyclerView items must be a list or tuple of static values.")
+
+        normalized_items = []
+        for value in items:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "RecyclerView items must contain only static primitive values "
+                    "(str/int/float/bool)."
+                )
+            normalized_items.append(str(value))
+        self.items = tuple(normalized_items)
+
+
+class _UINavigationBar(_UIView):
+    def __init__(self, *, id="navigation_bar", items=None, selected_index=0, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if items is None:
+            items = []
+        if not isinstance(items, (list, tuple)):
+            raise RuntimeError("NavigationBar items must be a list or tuple of static labels.")
+        if len(items) == 0:
+            raise RuntimeError("NavigationBar items must contain at least one label.")
+        normalized_items = []
+        for value in items:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "NavigationBar items must contain only static primitive labels "
+                    "(str/int/float/bool)."
+                )
+            normalized_items.append(str(value))
+        if isinstance(selected_index, bool) or not isinstance(selected_index, int):
+            raise RuntimeError("NavigationBar selected_index must be an integer.")
+        if selected_index < 0 or selected_index >= len(normalized_items):
+            raise RuntimeError(
+                f"NavigationBar selected_index {selected_index} is out of range for "
+                f"{len(normalized_items)} items."
+            )
+        self.items = tuple(normalized_items)
+        self.selected_index = int(selected_index)
+
+
+class _UINavigationRail(_UIView):
+    def __init__(self, *, id="navigation_rail", items=None, selected_index=0, **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if items is None:
+            items = []
+        if not isinstance(items, (list, tuple)):
+            raise RuntimeError("NavigationRail items must be a list or tuple of static labels.")
+        if len(items) == 0:
+            raise RuntimeError("NavigationRail items must contain at least one label.")
+        normalized_items = []
+        for value in items:
+            if not isinstance(value, (str, int, float, bool)):
+                raise RuntimeError(
+                    "NavigationRail items must contain only static primitive labels "
+                    "(str/int/float/bool)."
+                )
+            normalized_items.append(str(value))
+        if isinstance(selected_index, bool) or not isinstance(selected_index, int):
+            raise RuntimeError("NavigationRail selected_index must be an integer.")
+        if selected_index < 0 or selected_index >= len(normalized_items):
+            raise RuntimeError(
+                f"NavigationRail selected_index {selected_index} is out of range for "
+                f"{len(normalized_items)} items."
+            )
+        self.items = tuple(normalized_items)
+        self.selected_index = int(selected_index)
+
+
+class _UIDrawerLayout(_UIView):
+    def __init__(self, *items, id="drawer_layout", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if len(items) != 2:
+            raise RuntimeError(
+                f"DrawerLayout requires exactly two direct children (content, drawer); got {len(items)}."
+            )
+        self.items = tuple(items)
+
+
+class _UIFragmentContainer(_UIView):
+    def __init__(self, *items, id="fragment_container", **kwargs):
+        kwargs.setdefault("id", id)
+        super().__init__(**kwargs)
+        if items:
+            raise RuntimeError("FragmentContainer does not accept direct children in deterministic v1.")
+        self.items = ()
 
 
 # TODO(material-pending): Add DSL primitives for pending Material components.
@@ -1436,6 +1624,10 @@ class GridView(_UIGridView):
     pass
 
 
+class RecyclerView(_UIRecyclerView):
+    pass
+
+
 class Row(_UIRow):
     pass
 
@@ -1517,6 +1709,38 @@ class HorizontalScrollView(_UIHorizontalScrollView):
 
 
 class NestedScrollView(_UINestedScrollView):
+    pass
+
+
+class ViewPager(_UIViewPager):
+    pass
+
+
+class TabLayout(_UITabLayout):
+    pass
+
+
+class BottomNavigationView(_UIBottomNavigationView):
+    pass
+
+
+class CoordinatorLayout(_UICoordinatorLayout):
+    pass
+
+
+class NavigationBar(_UINavigationBar):
+    pass
+
+
+class NavigationRail(_UINavigationRail):
+    pass
+
+
+class DrawerLayout(_UIDrawerLayout):
+    pass
+
+
+class FragmentContainer(_UIFragmentContainer):
     pass
 
 
@@ -2367,6 +2591,27 @@ def nested_scroll_view(*items, id="nested_scroll_view", **kwargs):
     return _UINestedScrollView(*items, id=id, **kwargs)
 
 
+def view_pager(*items, id="view_pager", initial_page=0, **kwargs):
+    return _UIViewPager(*items, id=id, initial_page=initial_page, **kwargs)
+
+
+def tab_layout(*, id="tab_layout", tabs=None, selected_index=0, **kwargs):
+    return _UITabLayout(id=id, tabs=tabs, selected_index=selected_index, **kwargs)
+
+
+def bottom_navigation_view(*, id="bottom_navigation_view", items=None, selected_index=0, **kwargs):
+    return _UIBottomNavigationView(
+        id=id,
+        items=items,
+        selected_index=selected_index,
+        **kwargs,
+    )
+
+
+def coordinator_layout(*items, id="coordinator_layout", **kwargs):
+    return _UICoordinatorLayout(*items, id=id, **kwargs)
+
+
 def app_bar(title, *, id="appbar", **kwargs):
     return _UIAppBar(title, id=id, **kwargs)
 
@@ -2504,6 +2749,40 @@ def grid_view(*, id="grid_view", items=None, item_layout="simple_list_item_1", n
         num_columns=num_columns,
         **kwargs,
     )
+
+
+def recycler_view(*, id="recycler_view", items=None, **kwargs):
+    return _UIRecyclerView(
+        id=id,
+        items=items,
+        **kwargs,
+    )
+
+
+def navigation_bar(*, id="navigation_bar", items=None, selected_index=0, **kwargs):
+    return _UINavigationBar(
+        id=id,
+        items=items,
+        selected_index=selected_index,
+        **kwargs,
+    )
+
+
+def navigation_rail(*, id="navigation_rail", items=None, selected_index=0, **kwargs):
+    return _UINavigationRail(
+        id=id,
+        items=items,
+        selected_index=selected_index,
+        **kwargs,
+    )
+
+
+def drawer_layout(*items, id="drawer_layout", **kwargs):
+    return _UIDrawerLayout(*items, id=id, **kwargs)
+
+
+def fragment_container(*items, id="fragment_container", **kwargs):
+    return _UIFragmentContainer(*items, id=id, **kwargs)
 
 
 def simple_dialog(title, message):
