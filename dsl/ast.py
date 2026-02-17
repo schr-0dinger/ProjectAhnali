@@ -76,6 +76,16 @@ class _ExprHttpGet:
         self.default_value = default_value
 
 
+class _ExprHttpGetStatus:
+    def __init__(self, url):
+        self.url = url
+
+
+class _ExprHttpGetError:
+    def __init__(self, url):
+        self.url = url
+
+
 class _StmtAssign:
     def __init__(self, target, value):
         self.target = target
@@ -142,6 +152,24 @@ class _StmtStorageRemove:
 class _StmtHttpGet:
     def __init__(self, url, default_value):
         self.url = url
+        self.default_value = default_value
+
+
+class _StmtHttpGetStatus:
+    def __init__(self, url):
+        self.url = url
+
+
+class _StmtHttpGetError:
+    def __init__(self, url):
+        self.url = url
+
+
+class _StmtHttpGetRoute:
+    def __init__(self, url, success_target_id, failure_target_id, default_value):
+        self.url = url
+        self.success_target_id = success_target_id
+        self.failure_target_id = failure_target_id
         self.default_value = default_value
 
 
@@ -238,6 +266,8 @@ def _coerce_expr(value):
             _ExprFormat,
             _ExprStorageGet,
             _ExprHttpGet,
+            _ExprHttpGetStatus,
+            _ExprHttpGetError,
             _ExprConst,
         ),
     ):

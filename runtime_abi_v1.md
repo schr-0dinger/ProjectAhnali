@@ -170,8 +170,19 @@ Deprecation policy:
 - Track C Wave 2 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
-  - Helper method/sig: `httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
-  - Return semantics: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
+  - Helper methods/sigs:
+    - `httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `httpGetError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `httpGet`: response body string on HTTP 200 with readable body; fallback argument on null URL, non-200 response, empty body, or caught exception.
+    - `httpGetStatus`: HTTP status code when available; `-1` on null URL or caught exception.
+    - `httpGetError`: deterministic error code:
+      - `0`: success (HTTP 200 with readable non-empty body)
+      - `1`: invalid input (null URL)
+      - `2`: transport/runtime exception
+      - `3`: non-200 HTTP status
+      - `4`: empty body
 
 ## 9) Conformance References
 

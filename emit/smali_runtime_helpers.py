@@ -171,6 +171,96 @@ def _emit_http_get_method() -> list[str]:
     ]
 
 
+def _emit_http_get_status_method() -> list[str]:
+    return [
+        ".method public static httpGetStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 5",
+        "    if-eqz p1, :ahnali_http_status_fail",
+        "    :ahnali_http_status_try_start",
+        "    new-instance v0, Ljava/net/URL;",
+        "    invoke-direct {v0, p1}, Ljava/net/URL;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v0}, Ljava/net/URL;->openConnection()Ljava/net/URLConnection;",
+        "    move-result-object v1",
+        "    check-cast v1, Ljava/net/HttpURLConnection;",
+        "    if-eqz v1, :ahnali_http_status_fail",
+        '    const-string v2, "GET"',
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setRequestMethod(Ljava/lang/String;)V",
+        "    const/16 v2, 0x1f40",
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setConnectTimeout(I)V",
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setReadTimeout(I)V",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->getResponseCode()I",
+        "    move-result v3",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->disconnect()V",
+        "    return v3",
+        "    :ahnali_http_status_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_status_try_start .. :ahnali_http_status_try_end} :ahnali_http_status_fail",
+        "    :ahnali_http_status_fail",
+        "    const/4 v0, -0x1",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_http_get_error_method() -> list[str]:
+    return [
+        ".method public static httpGetError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 8",
+        "    if-eqz p1, :ahnali_http_error_invalid",
+        "    :ahnali_http_error_try_start",
+        "    new-instance v0, Ljava/net/URL;",
+        "    invoke-direct {v0, p1}, Ljava/net/URL;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v0}, Ljava/net/URL;->openConnection()Ljava/net/URLConnection;",
+        "    move-result-object v1",
+        "    check-cast v1, Ljava/net/HttpURLConnection;",
+        "    if-eqz v1, :ahnali_http_error_exception",
+        '    const-string v2, "GET"',
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setRequestMethod(Ljava/lang/String;)V",
+        "    const/16 v2, 0x1f40",
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setConnectTimeout(I)V",
+        "    invoke-virtual {v1, v2}, Ljava/net/HttpURLConnection;->setReadTimeout(I)V",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->getResponseCode()I",
+        "    move-result v3",
+        "    const/16 v4, 0xc8",
+        "    if-ne v3, v4, :ahnali_http_error_status",
+        "    new-instance v5, Ljava/util/Scanner;",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->getInputStream()Ljava/io/InputStream;",
+        "    move-result-object v6",
+        "    invoke-direct {v5, v6}, Ljava/util/Scanner;-><init>(Ljava/io/InputStream;)V",
+        '    const-string v6, "\\\\A"',
+        "    invoke-virtual {v5, v6}, Ljava/util/Scanner;->useDelimiter(Ljava/lang/String;)Ljava/util/Scanner;",
+        "    move-result-object v5",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->hasNext()Z",
+        "    move-result v6",
+        "    if-eqz v6, :ahnali_http_error_empty",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->next()Ljava/lang/String;",
+        "    move-result-object v7",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->close()V",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->disconnect()V",
+        "    if-eqz v7, :ahnali_http_error_empty_return",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_http_error_empty",
+        "    invoke-virtual {v5}, Ljava/util/Scanner;->close()V",
+        "    :ahnali_http_error_empty_return",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->disconnect()V",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        "    :ahnali_http_error_status",
+        "    invoke-virtual {v1}, Ljava/net/HttpURLConnection;->disconnect()V",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_http_error_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_http_error_try_start .. :ahnali_http_error_try_end} :ahnali_http_error_exception",
+        "    :ahnali_http_error_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_http_error_exception",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_storage_put_string_method() -> list[str]:
     return [
         ".method public static putString(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -292,6 +382,10 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
     ):
         lines.extend(_emit_http_get_method())
+        lines.append("")
+        lines.extend(_emit_http_get_status_method())
+        lines.append("")
+        lines.extend(_emit_http_get_error_method())
         return "\n".join(lines)
 
     if (

@@ -8,6 +8,8 @@ from .ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprHttpGetError,
+    _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprStorageGet,
     _ExprSymbol,
@@ -21,6 +23,9 @@ from .ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtHttpGetError,
+    _StmtHttpGetRoute,
+    _StmtHttpGetStatus,
     _StmtHttpGet,
     _StmtStorageGet,
     _StmtStorageRemove,
@@ -178,6 +183,50 @@ def _parse_stmt(stmt):
                     raise RuntimeError("http_get argument 'default_value' must be a constant string")
                 return _StmtHttpGet(args[0].value, default_expr.value)
             if fn in (
+                "http_get_status",
+                "HttpGetStatus",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError('http_get_status expects exactly 1 string argument. Usage: http_get_status("https://...")')
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("http_get_status argument 'url' must be a constant string")
+                return _StmtHttpGetStatus(args[0].value)
+            if fn in (
+                "http_get_error",
+                "HttpGetError",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError('http_get_error expects exactly 1 string argument. Usage: http_get_error("https://...")')
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("http_get_error argument 'url' must be a constant string")
+                return _StmtHttpGetError(args[0].value)
+            if fn in (
+                "http_get_route",
+                "HttpGetRoute",
+                "http_get_with_handlers",
+                "HttpGetWithHandlers",
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (3 <= len(args) <= 4):
+                    raise RuntimeError(
+                        'http_get_route expects 3 or 4 string arguments. '
+                        'Usage: http_get_route("https://...", "success_btn", "failure_btn", "fallback")'
+                    )
+                for idx, label in ((0, "url"), (1, "success_target_id"), (2, "failure_target_id")):
+                    if not isinstance(args[idx], _ExprConst) or not isinstance(args[idx].value, str):
+                        raise RuntimeError(f"http_get_route argument '{label}' must be a constant string")
+                default_expr = args[3] if len(args) > 3 else _ExprConst("")
+                if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
+                    raise RuntimeError("http_get_route argument 'default_value' must be a constant string")
+                return _StmtHttpGetRoute(
+                    args[0].value,
+                    args[1].value,
+                    args[2].value,
+                    default_expr.value,
+                )
+            if fn in (
                 "storage_put",
                 "StoragePut",
                 "set_storage",
@@ -298,6 +347,26 @@ def _parse_expr(node):
             if not isinstance(default_expr, _ExprConst) or not isinstance(default_expr.value, str):
                 raise RuntimeError("http_get argument 'default_value' must be a constant string")
             return _ExprHttpGet(args[0].value, default_expr.value)
+        if node.func.id in (
+            "http_get_status",
+            "HttpGetStatus",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError('http_get_status expects exactly 1 string argument. Usage: http_get_status("https://...")')
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("http_get_status argument 'url' must be a constant string")
+            return _ExprHttpGetStatus(args[0].value)
+        if node.func.id in (
+            "http_get_error",
+            "HttpGetError",
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError('http_get_error expects exactly 1 string argument. Usage: http_get_error("https://...")')
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("http_get_error argument 'url' must be a constant string")
+            return _ExprHttpGetError(args[0].value)
         if node.func.id in (
             "storage_get",
             "StorageGet",

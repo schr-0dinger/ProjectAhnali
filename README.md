@@ -238,6 +238,10 @@ Work items:
   - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I`
 - ✅ Start Wave 2 networking primitive:
   - `Networking` → `Lcom/ahnali/runtime/HttpHelper;->httpGet(...)Ljava/lang/String;` via `http_get(...)`
+- ✅ Add networking response surface:
+  - `http_get_status(...)` → `httpGetStatus(...)I`
+  - `http_get_error(...)` → `httpGetError(...)I`
+  - `http_get_route(url, "success_btn", "failure_btn", fallback)` for success/failure handler wiring
 - ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
 - ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
 - Add capability-scoped networking primitives.
@@ -291,6 +295,16 @@ app(
     )
 )
 ```
+
+Networking response contract:
+- `http_get(...)` returns response body, else fallback string.
+- `http_get_status(...)` returns HTTP status, else `-1`.
+- `http_get_error(...)` returns deterministic error code:
+  - `0` success
+  - `1` invalid input
+  - `2` transport/runtime exception
+  - `3` non-200 status
+  - `4` empty body
 
 ### Track D: Optimization and Build Intelligence
 

@@ -12,6 +12,8 @@ from dsl.ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprHttpGetError,
+    _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprStorageGet,
     _ExprSymbol,
@@ -30,6 +32,9 @@ from dsl.ast import (
     _StmtToast,
     _StmtOpenUrl,
     _StmtCheckConnectivity,
+    _StmtHttpGetError,
+    _StmtHttpGetRoute,
+    _StmtHttpGetStatus,
     _StmtHttpGet,
     _StmtStorageGet,
     _StmtStorageRemove,
@@ -1475,6 +1480,12 @@ class _PythonicContext:
         method_class_map = {}
         explicit_click_ids = set()
         popup_menu_listener_map = {}
+        self._click_event_targets = {
+            getattr(spec, "target_id", getattr(spec, "button_id", None))
+            for spec in (event_specs or [])
+            if getattr(spec, "event_kind", "click") == "click"
+            and getattr(spec, "target_id", getattr(spec, "button_id", None)) is not None
+        }
 
         for spec in event_specs or []:
             event_kind = getattr(spec, "event_kind", "click")
@@ -1490,7 +1501,11 @@ class _PythonicContext:
             view_kind = self.view_types.get(target_id)
             view_desc = self._view_desc(view_kind)
             view_field = self.view_fields[target_id]
-            compiled_stmts = self._compile_stmts(spec.stmts or [])
+            self._current_event_kind = event_kind
+            try:
+                compiled_stmts = self._compile_stmts(spec.stmts or [])
+            finally:
+                self._current_event_kind = None
 
             if event_kind == "click":
                 explicit_click_ids.add(target_id)
@@ -2751,6 +2766,12 @@ class _PythonicContext:
             return self._compile_check_connectivity_stmt(stmt)
         if isinstance(stmt, _StmtHttpGet):
             return self._compile_http_get_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetStatus):
+            return self._compile_http_get_status_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetError):
+            return self._compile_http_get_error_stmt(stmt)
+        if isinstance(stmt, _StmtHttpGetRoute):
+            return self._compile_http_get_route_stmt(stmt)
         if isinstance(stmt, _StmtStoragePut):
             return self._compile_storage_put_stmt(stmt)
         if isinstance(stmt, _StmtStorageGet):
@@ -4764,10 +4785,21 @@ class _PythonicContext:
                 tmp_prefix="http_get_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprHttpGetStatus):
+            prefix, result = self._compile_http_get_status_call(
+                url=stmt.value.url,
+                tmp_prefix="http_get_status_result",
+            )
+        elif isinstance(stmt.value, _ExprHttpGetError):
+            prefix, result = self._compile_http_get_error_call(
+                url=stmt.value.url,
+                tmp_prefix="http_get_error_result",
+            )
         else:
             raise RuntimeError(
                 f"Unsupported assignment expression for '{name}': {type(stmt.value).__name__}. "
-                "Expected int const/symbol/arithmetic expression, storage_get(...), or http_get(...)."
+                "Expected int const/symbol/arithmetic expression, storage_get(...), http_get(...), "
+                "http_get_status(...), or http_get_error(...)."
             )
 
         if name in self.state_spec.values:
@@ -5350,6 +5382,56 @@ class _PythonicContext:
             ),
         ], var(result_tmp)
 
+    def _compile_http_get_status_call(self, *, url: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_get_status",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "httpGetStatus",
+                    args=[var("ctx"), const(str(url))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_http_get_error_call(self, *, url: str, tmp_prefix: str):
+        binding = self._require_helper_capability(
+            api_name="http_get_error",
+            capability_name="Networking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "httpGetError",
+                    args=[var("ctx"), const(str(url))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
     def _compile_http_get_stmt(self, stmt):
         out, _ = self._compile_http_get_call(
             url=stmt.url,
@@ -5357,6 +5439,79 @@ class _PythonicContext:
             tmp_prefix="http_get_ignored",
         )
         return out
+
+    def _compile_http_get_status_stmt(self, stmt):
+        out, _ = self._compile_http_get_status_call(
+            url=stmt.url,
+            tmp_prefix="http_get_status_ignored",
+        )
+        return out
+
+    def _compile_http_get_error_stmt(self, stmt):
+        out, _ = self._compile_http_get_error_call(
+            url=stmt.url,
+            tmp_prefix="http_get_error_ignored",
+        )
+        return out
+
+    def _compile_http_get_route_stmt(self, stmt):
+        if getattr(self, "_current_event_kind", None) != "click":
+            raise RuntimeError(
+                "http_get_route is only supported inside @on_click handlers. "
+                "Fix: move http_get_route(...) into an @on_click(...) handler."
+            )
+        known_targets = getattr(self, "_click_event_targets", set())
+        for target_id, role in (
+            (stmt.success_target_id, "success_target_id"),
+            (stmt.failure_target_id, "failure_target_id"),
+        ):
+            if target_id not in known_targets:
+                raise RuntimeError(
+                    f"http_get_route argument '{role}' references unknown on_click target '{target_id}'. "
+                    f"Fix: add @on_click('{target_id}') handler in the same activity."
+                )
+        status_prefix, status_expr = self._compile_http_get_status_call(
+            url=stmt.url,
+            tmp_prefix="http_get_route_status",
+        )
+        body_prefix, _ = self._compile_http_get_call(
+            url=stmt.url,
+            default_value=stmt.default_value,
+            tmp_prefix="http_get_route_body",
+        )
+        error_prefix, _ = self._compile_http_get_error_call(
+            url=stmt.url,
+            tmp_prefix="http_get_route_error",
+        )
+        owner = getattr(self, "_handler_owner_desc", "LTestHandlers;")
+        return [
+            *status_prefix,
+            *body_prefix,
+            *error_prefix,
+            if_(
+                compare("==", status_expr, const(200)),
+                [
+                    call_stmt(
+                        f"onClick_{stmt.success_target_id}",
+                        args=[var("view")],
+                        return_type=None,
+                        arg_types=["Landroid/view/View;"],
+                        invoke_kind="static",
+                        owner=owner,
+                    )
+                ],
+                [
+                    call_stmt(
+                        f"onClick_{stmt.failure_target_id}",
+                        args=[var("view")],
+                        return_type=None,
+                        arg_types=["Landroid/view/View;"],
+                        invoke_kind="static",
+                        owner=owner,
+                    )
+                ],
+            ),
+        ]
 
     def _compile_storage_put_stmt(self, stmt):
         binding = self._require_helper_capability(
