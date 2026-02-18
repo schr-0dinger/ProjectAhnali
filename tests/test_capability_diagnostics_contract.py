@@ -10,6 +10,8 @@ from dsl.app import (
     clipboard_set,
     check_connectivity,
     create_notification_channel,
+    deep_link_error,
+    deep_link_get,
     http_get,
     location_enabled,
     notify_error,
@@ -101,6 +103,18 @@ def _handler_share_error():
 @on_click("btn_open_external_error")
 def _handler_open_external_error():
     err = open_external_error("https://example.com")
+    status_label.text = err
+
+
+@on_click("btn_deep_link_get")
+def _handler_deep_link_get():
+    value = deep_link_get("ahnali://fallback")
+    status_label.text = value
+
+
+@on_click("btn_deep_link_error")
+def _handler_deep_link_error():
+    err = deep_link_error()
     status_label.text = err
 
 
@@ -240,6 +254,18 @@ def _handler_clipboard_get():
             "Sharing",
             [text("status", id="status_label"), button("OpenErr", id="btn_open_external_error")],
             _handler_open_external_error,
+        ),
+        (
+            "deep_link_get",
+            "DeepLinking",
+            [text("status", id="status_label"), button("DeepGet", id="btn_deep_link_get")],
+            _handler_deep_link_get,
+        ),
+        (
+            "deep_link_error",
+            "DeepLinking",
+            [text("status", id="status_label"), button("DeepErr", id="btn_deep_link_error")],
+            _handler_deep_link_error,
         ),
         (
             "web_set_policy",

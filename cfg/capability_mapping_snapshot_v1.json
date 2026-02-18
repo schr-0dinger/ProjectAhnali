@@ -52,6 +52,20 @@
       ]
     },
     {
+      "capability": "DeepLinking",
+      "emitted_class_desc": "Lcom/ahnali/runtime/DeepLinkHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "getLaunchUri(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+        "getLaunchUriError(Landroid/app/Activity;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/DeepLinkHelper;",
+      "helper_method": "getLaunchUri",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+      "mode": "helper_call",
+      "permissions": []
+    },
+    {
       "capability": "FilePicker",
       "helper_class_desc": null,
       "helper_method": null,

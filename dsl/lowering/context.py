@@ -27,6 +27,8 @@ from dsl.ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprClipboardGet,
+    _ExprDeepLinkError,
+    _ExprDeepLinkGet,
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
@@ -6661,6 +6663,16 @@ class _PythonicContext:
                 tmp_prefix="clipboard_get_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprDeepLinkGet):
+            prefix, result = self._compile_deep_link_get_call(
+                fallback=stmt.value.fallback,
+                tmp_prefix="deep_link_get_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprDeepLinkError):
+            prefix, result = self._compile_deep_link_error_call(
+                tmp_prefix="deep_link_error_result",
+            )
         elif isinstance(stmt.value, _ExprShareTextResult):
             prefix, result = self._compile_share_text_result_call(
                 text=stmt.value.text,
@@ -6850,7 +6862,7 @@ class _PythonicContext:
                 "storage_exists(...), datastore_get(...), file_read(...), sqlite_get(...), room_get(...), "
                 "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
-                "clipboard_get(...), "
+                "clipboard_get(...), deep_link_get(...), deep_link_error(...), "
                 "share_text_result(...), share_text_error(...), open_external_error(...), "
                 "web_load_result(...), web_load_error(...), "
                 "web_add_js_bridge_result(...), web_add_js_bridge_error(...), "
@@ -7585,6 +7597,59 @@ class _PythonicContext:
                     args=[var("ctx"), const(str(fallback))],
                     return_type="Ljava/lang/String;",
                     arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_deep_link_get_call(
+        self,
+        *,
+        fallback: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="deep_link_get",
+            capability_name="DeepLinking",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(fallback))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_deep_link_error_call(
+        self,
+        *,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="deep_link_error",
+            capability_name="DeepLinking",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getLaunchUriError",
+                    args=[var("ctx")],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;"],
                     invoke_kind="static",
                     owner=binding.helper_class_desc,
                 ),

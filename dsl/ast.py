@@ -126,6 +126,16 @@ class _ExprOpenExternalError:
         self.uri = uri
 
 
+class _ExprDeepLinkGet:
+    def __init__(self, fallback):
+        self.fallback = fallback
+
+
+class _ExprDeepLinkError:
+    def __init__(self):
+        pass
+
+
 class _ExprWebLoadResult:
     def __init__(self, url):
         self.url = url

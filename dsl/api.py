@@ -162,6 +162,7 @@ from .widgets import (
 import importlib
 import inspect
 import builtins as _builtins
+import re
 
 
 def toast(*args, **kwargs):
@@ -352,6 +353,36 @@ class _ActivitySpec:
         self.parts = parts
 
 
+def _sanitize_descriptor_part(value: str, *, fallback: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    text = re.sub(r"[^A-Za-z0-9_$]", "_", text)
+    if not text:
+        return fallback
+    if text[0].isdigit():
+        text = "_" + text
+    return text
+
+
+def _runtime_class_descriptors(*, package: str, activity_name: str) -> dict[str, str]:
+    package_parts = [
+        _sanitize_descriptor_part(part, fallback="")
+        for part in str(package or "").split(".")
+    ]
+    package_parts = [p for p in package_parts if p]
+    if not package_parts:
+        package_parts = ["com", "ahnali", "preview"]
+    activity_part = _sanitize_descriptor_part(activity_name, fallback="MainActivity")
+    package_path = "/".join(package_parts)
+    wrapper = f"L{package_path}/{activity_part};"
+    program = f"L{package_path}/{activity_part}Program;"
+    return {
+        "wrapper": wrapper,
+        "program": program,
+    }
+
+
 class AppConfig:
     def __init__(
         self,
@@ -416,6 +447,11 @@ class AppSpec:
         from apk.toolchain import build_install_run
 
         app_config = _extract_app_config(self.activity_spec, self.caller_module)
+        class_descs = _runtime_class_descriptors(
+            package=app_config.package,
+            activity_name=self.activity_spec.name,
+        )
+        frontend_ir = self.build()
         config_kwargs = {
             "application_id": app_config.package,
             "min_sdk": app_config.min_sdk,
@@ -434,8 +470,12 @@ class AppSpec:
             "verify_reproducible": app_config.verify_reproducible,
         }
         config_kwargs = {k: v for k, v in config_kwargs.items() if v is not None}
+        config_kwargs.setdefault("class_name", class_descs["program"])
+        config_kwargs.setdefault("wrapper_class_desc", class_descs["wrapper"])
+        config_kwargs.setdefault("wrapper_target_desc", class_descs["program"])
+        config_kwargs.setdefault("emit_support_classes", False)
         config_kwargs.update(kwargs)
-        return build_install_run(self.build(), **config_kwargs)
+        return build_install_run(frontend_ir, **config_kwargs)
 
 
 def app(activity_spec: _ActivitySpec):
@@ -1218,6 +1258,22 @@ def open_uri(uri: str):
 
 def open_external_error(uri: str):
     return _ExprOpenExternalError(str(uri))
+
+
+def deep_link_get(fallback: str = ""):
+    return _ExprDeepLinkGet(str(fallback))
+
+
+def get_deep_link(fallback: str = ""):
+    return deep_link_get(fallback)
+
+
+def deep_link_error():
+    return _ExprDeepLinkError()
+
+
+def get_deep_link_error():
+    return deep_link_error()
 
 
 def web_set_policy(

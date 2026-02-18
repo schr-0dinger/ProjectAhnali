@@ -82,6 +82,14 @@ def test_capability_runtime_mapping_v1_shape():
                 binding.helper_sig
                 == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
             )
+        elif cap_name == "DeepLinking":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/DeepLinkHelper;"
+            assert binding.helper_method == "getLaunchUri"
+            assert (
+                binding.helper_sig
+                == "(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;"
+            )
         elif cap_name == "WebView":
             assert binding.mode == "helper_call"
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/WebHelper;"

@@ -24,6 +24,8 @@ from .ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprClipboardGet,
+    _ExprDeepLinkError,
+    _ExprDeepLinkGet,
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
@@ -1189,6 +1191,29 @@ def _parse_expr(node):
             if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                 raise RuntimeError("open_external_error argument 'uri' must be a constant string")
             return _ExprOpenExternalError(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"deep_link_get", "DeepLinkGet", "get_deep_link", "GetDeepLink"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) > 1:
+                raise RuntimeError(
+                    'deep_link_get expects 0 or 1 string argument. Usage: deep_link_get("fallback://...")'
+                )
+            fallback_expr = args[0] if len(args) > 0 else _ExprConst("")
+            if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
+                raise RuntimeError("deep_link_get argument 'fallback' must be a constant string")
+            return _ExprDeepLinkGet(fallback_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"deep_link_error", "DeepLinkError", "get_deep_link_error", "GetDeepLinkError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if args:
+                raise RuntimeError("deep_link_error expects no arguments. Usage: deep_link_error()")
+            return _ExprDeepLinkError()
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {"web_load_result", "WebLoadResult"}

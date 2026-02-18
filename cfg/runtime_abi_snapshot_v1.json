@@ -129,6 +129,15 @@
       "source": "capability:Connectivity"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/DeepLinkHelper;",
+      "methods": [
+        "<init>()V",
+        "getLaunchUri(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+        "getLaunchUriError(Landroid/app/Activity;)I"
+      ],
+      "source": "capability:DeepLinking"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/HttpHelper;",
       "methods": [
         "<init>()V",

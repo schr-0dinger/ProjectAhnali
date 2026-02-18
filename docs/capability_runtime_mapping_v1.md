@@ -23,6 +23,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Track C Wave 11 adds WebView helper-call binding (`web_set_policy`, `web_load`, `web_load_result`, `web_load_error`) with deterministic policy/error surfaces.
 - Track C Wave 12 adds Web JS bridge helper-call binding (`web_add_js_bridge`, `web_add_js_bridge_result`, `web_add_js_bridge_error`) with deterministic policy-constrained error surfaces.
 - Track C Wave 13 adds Web file chooser/cookie helper-call bindings (`web_choose_file`, `web_choose_file_result`, `web_choose_file_error`, `web_cookie_set`, `web_cookie_set_result`, `web_cookie_set_error`, `web_cookie_get`, `web_cookie_get_error`) with deterministic chooser/cookie surfaces.
+- Track C Wave 14 adds deep-link helper-call bindings (`deep_link_get`, `deep_link_error`) with deterministic launch-intent fallback/error surfaces.
 - Program 5 extends `StorageHelper` with deterministic backend-specific surfaces for DataStore/file/SQLite/Room/encrypted storage.
 
 ## Mapping Table (v1)
@@ -44,6 +45,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `URLLauncher` | `URLLauncher`, `URL launcher` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/UrlLauncherHelper;` | `openUrl(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Permissions` | `Permissions` | none | `Lcom/ahnali/runtime/PermissionHelper;` | `isGranted(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Sharing` | `Sharing`, `Intents`, `Share` | none | `Lcom/ahnali/runtime/ShareHelper;` | `shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `openUri(Landroid/app/Activity;Ljava/lang/String;)I`, `openUriError(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
+| `DeepLinking` | `DeepLinking`, `DeepLink`, `Deep Links` | none | `Lcom/ahnali/runtime/DeepLinkHelper;` | `getLaunchUri(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;`, `getLaunchUriError(Landroid/app/Activity;)I` | `helper_call` |
 | `Maps` | `Maps` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |
 | `Location` | `Location` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | `Lcom/ahnali/runtime/LocationHelper;` | `isLocationEnabled(Landroid/app/Activity;)I` | `helper_call` |
 

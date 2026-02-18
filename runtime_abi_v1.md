@@ -26,12 +26,13 @@ In scope:
 - Track C Wave 11 capability helper ABI: WebView load/settings policy + error-code surfaces
 - Track C Wave 12 capability helper ABI: Web JS bridge registration + policy-constrained error-code surfaces
 - Track C Wave 13 capability helper ABI: Web file chooser + cookie-manager deterministic surfaces
+- Track C Wave 14 capability helper ABI: deep-link launch-intent fallback/error surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard/sharing/WebView fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications/clipboard/sharing/WebView wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard/sharing/WebView/deep-link fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications/clipboard/sharing/WebView/deep-link wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 - Runtime UI diff/recomposition engines (reactive mode stays explicit-bind only)
 

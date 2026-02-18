@@ -70,6 +70,14 @@ def test_runtime_abi_snapshot_includes_sharing_helper_surface():
     assert "openUriError(Landroid/app/Activity;Ljava/lang/String;)I" in sharing_methods
 
 
+def test_runtime_abi_snapshot_includes_deep_link_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    deep_link_methods = classes["Lcom/ahnali/runtime/DeepLinkHelper;"]
+    assert "getLaunchUri(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;" in deep_link_methods
+    assert "getLaunchUriError(Landroid/app/Activity;)I" in deep_link_methods
+
+
 def test_runtime_abi_snapshot_includes_web_helper_surface():
     snapshot = build_runtime_abi_snapshot()
     classes = _snapshot_classes(snapshot)

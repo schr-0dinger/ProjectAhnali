@@ -40,6 +40,35 @@ def _class_desc_to_path(desc: str) -> Path:
     return Path(*desc.split("/"))
 
 
+def _class_desc_is_valid(desc: str) -> bool:
+    if not isinstance(desc, str):
+        return False
+    text = desc.strip()
+    if not (text.startswith("L") and text.endswith(";")):
+        return False
+    body = text[1:-1]
+    return bool(body) and "//" not in body
+
+
+def _related_class_descs(program_class_desc: str) -> tuple[str, str]:
+    if not _class_desc_is_valid(program_class_desc):
+        return ("LTestRes;", "LTestHandlers;")
+    base = program_class_desc[1:-1]
+    if base.endswith("Program"):
+        base = base[:-7]
+    return (f"L{base}Res;", f"L{base}Handlers;")
+
+
+def _rewrite_class_descriptors(smali_text: str, desc_map: dict[str, str]) -> str:
+    out = smali_text
+    for old_desc in sorted(desc_map.keys(), key=len, reverse=True):
+        new_desc = desc_map[old_desc]
+        if old_desc == new_desc:
+            continue
+        out = out.replace(old_desc, new_desc)
+    return out
+
+
 def _activity_name_from_desc(desc: str, application_id: str) -> str:
     if desc.startswith("L") and desc.endswith(";"):
         desc = desc[1:-1]
@@ -566,8 +595,24 @@ def emit_build_dir_from_program(
     click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
 ) -> Path:
+    out_dir_path = Path(out_dir)
+    smali_out_dir = out_dir_path / "smali"
+    if smali_out_dir.exists():
+        shutil.rmtree(smali_out_dir)
+
     result = alpha_pipeline(frontend_ir)
     smali_text = result["smali_class"]
+    parsed_class_desc = _class_desc_from_smali(smali_text)
+    desc_map: dict[str, str] = {}
+    if _class_desc_is_valid(class_name) and class_name != parsed_class_desc:
+        old_res_desc, old_handlers_desc = _related_class_descs(parsed_class_desc)
+        new_res_desc, new_handlers_desc = _related_class_descs(class_name)
+        desc_map = {
+            parsed_class_desc: class_name,
+            old_res_desc: new_res_desc,
+            old_handlers_desc: new_handlers_desc,
+        }
+        smali_text = _rewrite_class_descriptors(smali_text, desc_map)
     if emit_system_back_bridge is None:
         methods = getattr(frontend_ir, "methods", []) or []
         emit_system_back_bridge = any(getattr(m, "name", "") == "onSystemBack" for m in methods)
@@ -581,7 +626,7 @@ def emit_build_dir_from_program(
         ]
     build_dir = emit_build_dir(
         smali_text,
-        out_dir=out_dir,
+        out_dir=out_dir_path,
         class_name=class_name,
         emit_wrapper=emit_wrapper,
         wrapper_class_desc=wrapper_class_desc,
@@ -589,7 +634,7 @@ def emit_build_dir_from_program(
         wrapper_target_sig=wrapper_target_sig,
         emit_system_back_bridge=bool(emit_system_back_bridge),
         wrapper_lifecycle_bridges=wrapper_lifecycle_bridges,
-        emit_support_classes=emit_support_classes or bool(getattr(frontend_ir, "support_classes", [])),
+        emit_support_classes=emit_support_classes,
         click_listener_class_desc=click_listener_class_desc,
         click_listener_target_method=click_listener_target_method,
     )
@@ -599,6 +644,12 @@ def emit_build_dir_from_program(
         support_classes = result.get("support_classes", [])
     extra_smali_classes = result.get("extra_smali_classes", {})
     if extra_smali_classes:
+        if desc_map:
+            rewritten_extra: dict[str, str] = {}
+            for class_desc, extra_smali in extra_smali_classes.items():
+                mapped_desc = desc_map.get(class_desc, class_desc)
+                rewritten_extra[mapped_desc] = _rewrite_class_descriptors(extra_smali, desc_map)
+            extra_smali_classes = rewritten_extra
         for class_desc in sorted(extra_smali_classes.keys()):
             extra_smali = extra_smali_classes[class_desc]
             extra_path = _class_desc_to_path(class_desc).with_suffix(".smali")
@@ -643,6 +694,9 @@ def emit_build_dir_from_program(
                 class_desc, target_method, target_desc, listener_kind = entry
             else:
                 raise RuntimeError(f"Unsupported support class entry: {entry!r}")
+            if desc_map:
+                class_desc = desc_map.get(class_desc, class_desc)
+                target_desc = desc_map.get(target_desc, target_desc)
             listener_path = _class_desc_to_path(class_desc).with_suffix(".smali")
             listener_out = build_dir / "smali" / listener_path
             listener_out.parent.mkdir(parents=True, exist_ok=True)
@@ -1362,7 +1416,7 @@ def build_install_run(
     wrapper_class_desc: str = "Lcom/ahnali/preview/MainActivity;",
     wrapper_target_desc: str | None = None,
     wrapper_target_sig: str = "(Landroid/app/Activity;)V",
-    emit_support_classes: bool = True,
+    emit_support_classes: bool = False,
     click_listener_class_desc: str = "Lcom/ahnali/preview/AhnaliClickListener;",
     click_listener_target_method: str = "onClick",
     application_id: str = "com.ahnali.preview",

@@ -266,6 +266,14 @@ register_default_capability(
     helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
 )
 register_default_capability(
+    "DeepLinking",
+    [],
+    aliases=["DeepLink", "Deep Links"],
+    helper_class_desc="Lcom/ahnali/runtime/DeepLinkHelper;",
+    helper_method="getLaunchUri",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+)
+register_default_capability(
     "Maps",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
@@ -294,6 +302,7 @@ class _Caps:
     Notifications = "Notifications"
     Clipboard = "Clipboard"
     Sharing = "Sharing"
+    DeepLinking = "DeepLinking"
     Maps = "Maps"
     Location = "Location"
 

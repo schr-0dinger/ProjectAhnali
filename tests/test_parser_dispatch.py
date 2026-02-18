@@ -21,6 +21,8 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "notify_error" in capability_expr
     assert "clipboard_get" in capability_expr
     assert "share_text_error" in capability_expr
+    assert "deep_link_get" in capability_expr
+    assert "deep_link_error" in capability_expr
     assert "web_load_result" in capability_expr
     assert "web_load_error" in capability_expr
     assert "web_add_js_bridge_result" in capability_expr

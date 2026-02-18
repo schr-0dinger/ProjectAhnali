@@ -1063,6 +1063,59 @@ def _emit_http_get_json_field_method() -> list[str]:
     ]
 
 
+def _emit_deep_link_get_launch_uri_method() -> list[str]:
+    return [
+        ".method public static getLaunchUri(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+        "    .locals 4",
+        "    if-eqz p0, :ahnali_deep_link_fallback",
+        "    :ahnali_deep_link_try_start",
+        "    invoke-static {p0}, Lcom/ahnali/runtime/DeepLinkHelper;->getLaunchUriError(Landroid/app/Activity;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_deep_link_fallback",
+        "    invoke-virtual {p0}, Landroid/app/Activity;->getIntent()Landroid/content/Intent;",
+        "    move-result-object v1",
+        "    if-eqz v1, :ahnali_deep_link_fallback",
+        "    invoke-virtual {v1}, Landroid/content/Intent;->getDataString()Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_deep_link_fallback",
+        "    return-object v2",
+        "    :ahnali_deep_link_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_deep_link_try_start .. :ahnali_deep_link_try_end} :ahnali_deep_link_fallback",
+        "    :ahnali_deep_link_fallback",
+        "    return-object p1",
+        ".end method",
+    ]
+
+
+def _emit_deep_link_get_launch_uri_error_method() -> list[str]:
+    return [
+        ".method public static getLaunchUriError(Landroid/app/Activity;)I",
+        "    .locals 4",
+        "    if-eqz p0, :ahnali_deep_link_invalid",
+        "    :ahnali_deep_link_error_try_start",
+        "    invoke-virtual {p0}, Landroid/app/Activity;->getIntent()Landroid/content/Intent;",
+        "    move-result-object v1",
+        "    if-eqz v1, :ahnali_deep_link_invalid",
+        "    invoke-virtual {v1}, Landroid/content/Intent;->getDataString()Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_deep_link_invalid",
+        "    invoke-virtual {v2}, Ljava/lang/String;->length()I",
+        "    move-result v3",
+        "    if-lez v3, :ahnali_deep_link_invalid",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_deep_link_error_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_deep_link_error_try_start .. :ahnali_deep_link_error_try_end} :ahnali_deep_link_exception",
+        "    :ahnali_deep_link_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_deep_link_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_http_resolve_request_method_method() -> list[str]:
     return [
         ".method private static resolveRequestMethod(Ljava/lang/String;)Ljava/lang/String;",
@@ -2178,6 +2231,16 @@ def emit_capability_helper_smali(
         lines.extend(_emit_open_uri_method())
         lines.append("")
         lines.extend(_emit_open_uri_error_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/DeepLinkHelper;"
+        and helper_method == "getLaunchUri"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;"
+    ):
+        lines.extend(_emit_deep_link_get_launch_uri_method())
+        lines.append("")
+        lines.extend(_emit_deep_link_get_launch_uri_error_method())
         return "\n".join(lines)
 
     if (
