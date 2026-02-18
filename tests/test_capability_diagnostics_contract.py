@@ -6,6 +6,8 @@ from dsl.app import (
     activity,
     app,
     button,
+    clipboard_get,
+    clipboard_set,
     check_connectivity,
     create_notification_channel,
     http_get,
@@ -71,6 +73,17 @@ def _handler_notify_error():
     status_label.text = err
 
 
+@on_click("btn_clipboard_set")
+def _handler_clipboard_set():
+    clipboard_set("diag clipboard value")
+
+
+@on_click("btn_clipboard_get")
+def _handler_clipboard_get():
+    value = clipboard_get("diag fallback")
+    status_label.text = value
+
+
 @pytest.mark.parametrize(
     "api_name,cap_name,ui_items,handler",
     [
@@ -117,6 +130,18 @@ def _handler_notify_error():
             "Notifications",
             [text("status", id="status_label"), button("PostErr", id="btn_notify_error")],
             _handler_notify_error,
+        ),
+        (
+            "clipboard_set",
+            "Clipboard",
+            [button("ClipSet", id="btn_clipboard_set")],
+            _handler_clipboard_set,
+        ),
+        (
+            "clipboard_get",
+            "Clipboard",
+            [text("status", id="status_label"), button("ClipGet", id="btn_clipboard_get")],
+            _handler_clipboard_get,
         ),
     ],
 )

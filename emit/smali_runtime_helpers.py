@@ -295,6 +295,69 @@ def _emit_notification_post_error_method() -> list[str]:
     ]
 
 
+def _emit_clipboard_set_text_method() -> list[str]:
+    return [
+        ".method public static setText(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 5",
+        "    if-eqz p0, :ahnali_clip_set_fail",
+        "    if-eqz p1, :ahnali_clip_set_fail",
+        "    :ahnali_clip_set_try_start",
+        '    const-string v0, "clipboard"',
+        "    invoke-virtual {p0, v0}, Landroid/app/Activity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v1",
+        "    check-cast v1, Landroid/content/ClipboardManager;",
+        "    if-eqz v1, :ahnali_clip_set_fail",
+        '    const-string v2, "ahnali_clip"',
+        "    invoke-static {v2, p1}, Landroid/content/ClipData;->newPlainText(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Landroid/content/ClipData;",
+        "    move-result-object v3",
+        "    invoke-virtual {v1, v3}, Landroid/content/ClipboardManager;->setPrimaryClip(Landroid/content/ClipData;)V",
+        "    const/4 v4, 0x1",
+        "    return v4",
+        "    :ahnali_clip_set_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_clip_set_try_start .. :ahnali_clip_set_try_end} :ahnali_clip_set_fail",
+        "    :ahnali_clip_set_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_clipboard_get_text_method() -> list[str]:
+    return [
+        ".method public static getText(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+        "    .locals 8",
+        "    if-eqz p0, :ahnali_clip_get_fallback",
+        "    :ahnali_clip_get_try_start",
+        '    const-string v0, "clipboard"',
+        "    invoke-virtual {p0, v0}, Landroid/app/Activity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v1",
+        "    check-cast v1, Landroid/content/ClipboardManager;",
+        "    if-eqz v1, :ahnali_clip_get_fallback",
+        "    invoke-virtual {v1}, Landroid/content/ClipboardManager;->hasPrimaryClip()Z",
+        "    move-result v2",
+        "    if-eqz v2, :ahnali_clip_get_fallback",
+        "    invoke-virtual {v1}, Landroid/content/ClipboardManager;->getPrimaryClip()Landroid/content/ClipData;",
+        "    move-result-object v3",
+        "    if-eqz v3, :ahnali_clip_get_fallback",
+        "    const/4 v4, 0x0",
+        "    invoke-virtual {v3, v4}, Landroid/content/ClipData;->getItemAt(I)Landroid/content/ClipData$Item;",
+        "    move-result-object v5",
+        "    if-eqz v5, :ahnali_clip_get_fallback",
+        "    invoke-virtual {v5, p0}, Landroid/content/ClipData$Item;->coerceToText(Landroid/content/Context;)Ljava/lang/CharSequence;",
+        "    move-result-object v6",
+        "    if-eqz v6, :ahnali_clip_get_fallback",
+        "    invoke-virtual {v6}, Ljava/lang/Object;->toString()Ljava/lang/String;",
+        "    move-result-object v7",
+        "    if-eqz v7, :ahnali_clip_get_fallback",
+        "    return-object v7",
+        "    :ahnali_clip_get_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_clip_get_try_start .. :ahnali_clip_get_try_end} :ahnali_clip_get_fallback",
+        "    :ahnali_clip_get_fallback",
+        "    return-object p1",
+        ".end method",
+    ]
+
+
 def _emit_http_get_method() -> list[str]:
     return [
         ".method public static httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
@@ -1655,6 +1718,16 @@ def emit_capability_helper_smali(
         lines.extend(_emit_notification_post_method())
         lines.append("")
         lines.extend(_emit_notification_post_error_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/ClipboardHelper;"
+        and helper_method == "setText"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+    ):
+        lines.extend(_emit_clipboard_set_text_method())
+        lines.append("")
+        lines.extend(_emit_clipboard_get_text_method())
         return "\n".join(lines)
 
     if (

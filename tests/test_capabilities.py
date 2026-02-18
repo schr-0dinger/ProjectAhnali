@@ -69,6 +69,11 @@ def test_capability_runtime_mapping_v1_shape():
                 binding.helper_sig
                 == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
             )
+        elif cap_name == "Clipboard":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/ClipboardHelper;"
+            assert binding.helper_method == "setText"
+            assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
         else:
             assert binding.mode == "permission_only"
             assert binding.helper_class_desc is None

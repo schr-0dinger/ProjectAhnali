@@ -1,6 +1,8 @@
 from dsl.api import (
     Caps,
     Perms,
+    clipboard_get,
+    clipboard_set,
     check_connectivity,
     check_location,
     check_permission,
@@ -23,6 +25,7 @@ from dsl.api import (
     http_get_route_async,
     http_get_status,
     is_location_enabled,
+    get_clipboard,
     launch_url,
     location_enabled,
     notification_channel,
@@ -34,11 +37,16 @@ from dsl.api import (
     request_permission,
     request_permissions,
     send_notification,
+    set_clipboard,
 )
 
 __all__ = [
     "Caps",
     "Perms",
+    "clipboard_set",
+    "set_clipboard",
+    "clipboard_get",
+    "get_clipboard",
     "request_permission",
     "request_permissions",
     "open_url",

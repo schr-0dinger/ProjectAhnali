@@ -112,6 +112,15 @@
       "source": "wrapper"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/ClipboardHelper;",
+      "methods": [
+        "<init>()V",
+        "getText(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+        "setText(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "source": "capability:Clipboard"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/ConnectivityHelper;",
       "methods": [
         "<init>()V",

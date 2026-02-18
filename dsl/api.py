@@ -1176,6 +1176,22 @@ def has_permission(permission: str):
     return permission_granted(permission)
 
 
+def clipboard_set(text: str):
+    return _StmtClipboardSet(str(text))
+
+
+def set_clipboard(text: str):
+    return clipboard_set(text)
+
+
+def clipboard_get(fallback: str = ""):
+    return _ExprClipboardGet(str(fallback))
+
+
+def get_clipboard(fallback: str = ""):
+    return clipboard_get(fallback)
+
+
 def create_notification_channel(channel_id: str, channel_name: str):
     return _StmtCreateNotificationChannel(str(channel_id), str(channel_name))
 

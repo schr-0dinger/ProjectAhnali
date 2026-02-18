@@ -104,6 +104,11 @@ class _ExprPermissionGranted:
         self.permission = permission
 
 
+class _ExprClipboardGet:
+    def __init__(self, fallback):
+        self.fallback = fallback
+
+
 class _ExprNotifyResult:
     def __init__(self, title, body, channel_id):
         self.title = title
@@ -288,6 +293,11 @@ class _StmtNotify:
         self.title = title
         self.body = body
         self.channel_id = channel_id
+
+
+class _StmtClipboardSet:
+    def __init__(self, text):
+        self.text = text
 
 
 class _StmtStoragePut:

@@ -244,6 +244,13 @@ register_default_capability(
     helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
 )
 register_default_capability(
+    "Clipboard",
+    [],
+    helper_class_desc="Lcom/ahnali/runtime/ClipboardHelper;",
+    helper_method="setText",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;)I",
+)
+register_default_capability(
     "Maps",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
@@ -270,6 +277,7 @@ class _Caps:
     URLLauncher = "URLLauncher"
     Permissions = "Permissions"
     Notifications = "Notifications"
+    Clipboard = "Clipboard"
     Maps = "Maps"
     Location = "Location"
 

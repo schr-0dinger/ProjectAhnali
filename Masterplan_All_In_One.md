@@ -254,9 +254,10 @@ Implemented:
 - ✅ Track C Wave 6 completed: `Location` helper-call capability (`Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(...)I`) + DSL (`location_enabled`, `check_location`) + visible integration flow combining location + networking + storage deterministic fallback routing (`tests/test_track_c_wave6_location.py`, `tests/test_track_c_wave6_visible_flow.py`, `docs/TrackC_Wave6_Location.md`)
 - ✅ Track C Wave 7 completed: `Permissions` helper-call capability (`Lcom/ahnali/runtime/PermissionHelper;->isGranted(...)I`) + DSL (`permission_granted`, `has_permission`, `check_permission`, `permission_check`) + visible integration flow combining permissions + storage + URL launcher deterministic fallback routing (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave7_visible_flow.py`, `docs/TrackC_Wave7_Permissions.md`)
 - ✅ Track C Wave 8 completed: `Notifications` helper-call capability (`Lcom/ahnali/runtime/NotificationHelper;->postNotification(...)I`) + channels/delivery/error helper surfaces (`createChannel(...)`, `postNotificationError(...)`) + DSL (`create_notification_channel`, `notification_channel`, `notify`, `send_notification`, `notify_result`, `notify_error`) + visible integration flow combining notifications + storage + URL launcher deterministic fallback routing (`tests/test_track_c_wave8_notifications.py`, `tests/test_track_c_wave8_visible_flow.py`, `docs/TrackC_Wave8_Notifications.md`)
+- ✅ Track C Wave 9 completed: `Clipboard` helper-call capability (`Lcom/ahnali/runtime/ClipboardHelper;->setText(...)I`) + deterministic get fallback surface (`getText(...)`) + DSL (`clipboard_set`, `set_clipboard`, `clipboard_get`, `get_clipboard`) + visible integration flow combining clipboard + notifications + URL launcher deterministic fallback routing (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave9_visible_flow.py`, `docs/TrackC_Wave9_Clipboard.md`)
 
 Pending:
-- ⚠️ Broaden capability modules beyond current network/storage/location helpers.
+- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard helpers.
 
 ---
 
@@ -833,8 +834,8 @@ This is the authoritative execution order for Program 5 and beyond.
 
 1. ✅ Program 5 closure pass: state/lifecycle traceability locked to tests/docs (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2. ✅ Program 11-A gate hardening before breadth: contract/CI guardrails are strict and blocking (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`, `tests/test_capability_mapping_contract.py`, `tests/test_docs_consistency.py`, `tests/test_capability_diagnostics_contract.py`).
-3. ⚠️ Program 6-A capability core tranche: runtime-permission end-to-end + next high-value capability slices under the existing ABI/test/doc pattern.
-4. ⚠️ Program 6-B capability breadth tranche: continue grouped `8.5` families with deterministic helper error contracts.
+3. ✅ Program 6-A capability core tranche: runtime-permission + notifications/channels slices shipped under the ABI/test/doc pattern (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`, `docs/TrackC_Wave7_Permissions.md`, `docs/TrackC_Wave8_Notifications.md`).
+4. ⚠️ Program 6-B capability breadth tranche: started with Wave 9 clipboard slice; continue grouped `8.5` families with deterministic helper error contracts.
 5. ⚠️ Program 7 motion completion (`8.6`): finish missing animator/transition/transform surfaces with deterministic ordering/fallback.
 6. ⚠️ Program 8 advanced/system/security/debug completion (`8.7`-`8.10`) with explicit policy constraints and release-mode tests.
 7. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled.
@@ -1782,7 +1783,7 @@ never as core behavior.
 - ✅ State storage
 - ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
 - ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
-- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7/Wave 8 visible capability integration flow compile coverage
+- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7/Wave 8/Wave 9 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests

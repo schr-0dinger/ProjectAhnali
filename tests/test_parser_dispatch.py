@@ -9,9 +9,11 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "check_permission" in capability_stmt
     assert "request_permissions" in capability_stmt
     assert "notify" in capability_stmt
+    assert "clipboard_set" in capability_stmt
     assert "permission_granted" in capability_expr
     assert "location_enabled" in capability_expr
     assert "notify_error" in capability_expr
+    assert "clipboard_get" in capability_expr
 
 
 def test_parser_dispatch_domains_include_motion_aliases():

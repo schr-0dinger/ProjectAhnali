@@ -52,6 +52,14 @@ def test_runtime_abi_snapshot_includes_notification_helper_surface():
     )
 
 
+def test_runtime_abi_snapshot_includes_clipboard_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    clipboard_methods = classes["Lcom/ahnali/runtime/ClipboardHelper;"]
+    assert "setText(Landroid/app/Activity;Ljava/lang/String;)I" in clipboard_methods
+    assert "getText(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;" in clipboard_methods
+
+
 def test_runtime_abi_snapshot_includes_program5_storage_backend_surface():
     snapshot = build_runtime_abi_snapshot()
     classes = _snapshot_classes(snapshot)

@@ -21,12 +21,13 @@ In scope:
 - Track C Wave 6 capability helper ABI: location provider enabled surface
 - Track C Wave 7 capability helper ABI: permissions granted surface
 - Track C Wave 8 capability helper ABI: notifications/channels delivery + error-code surfaces
+- Track C Wave 9 capability helper ABI: clipboard set/get fallback surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications/clipboard wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 - Runtime UI diff/recomposition engines (reactive mode stays explicit-bind only)
 
@@ -271,6 +272,15 @@ Deprecation policy:
     - `createChannel`: `0` success, `1` invalid args, `3` channel/service failure, `4` caught exception.
     - `postNotification`: `1` successful delivery, `0` on any failure.
     - `postNotificationError`: `0` success, `1` invalid args, `2` notification permission denied (SDK >= 33), `3` channel/service failure, `4` caught exception.
+- Track C Wave 9 helper-call binding:
+  - Capability: `Clipboard`
+  - Helper class: `Lcom/ahnali/runtime/ClipboardHelper;`
+  - Helper methods/sigs:
+    - `setText(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `getText(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;`
+  - Return semantics:
+    - `setText`: `1` on clipboard write success, `0` on null args, missing clipboard service, or caught exception.
+    - `getText`: clipboard text when present; fallback argument on null context, empty clipboard, missing service, null item text, or caught exception.
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -388,6 +398,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave7_visible_flow.py`
 - `tests/test_track_c_wave8_notifications.py`
 - `tests/test_track_c_wave8_visible_flow.py`
+- `tests/test_track_c_wave9_clipboard.py`
+- `tests/test_track_c_wave9_visible_flow.py`
 - `tests/test_program5_state_backends.py`
 - `tests/test_program5_lifecycle.py`
 - `tests/test_support_click_listener.py`

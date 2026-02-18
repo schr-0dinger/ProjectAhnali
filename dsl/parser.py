@@ -23,6 +23,7 @@ from .ast import (
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
+    _ExprClipboardGet,
     _ExprLocationEnabled,
     _ExprNotifyError,
     _ExprNotifyResult,
@@ -45,6 +46,7 @@ from .ast import (
     _StmtCheckConnectivity,
     _StmtCheckLocation,
     _StmtCheckPermission,
+    _StmtClipboardSet,
     _StmtCreateNotificationChannel,
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
@@ -495,6 +497,19 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("check_permission argument 'permission' must be a constant string")
                 return _StmtCheckPermission(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"clipboard_set", "ClipboardSet", "set_clipboard", "SetClipboard"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        'clipboard_set expects exactly 1 string argument. Usage: clipboard_set("value")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("clipboard_set argument 'text' must be a constant string")
+                return _StmtClipboardSet(args[0].value)
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {
@@ -965,6 +980,20 @@ def _parse_expr(node):
             if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                 raise RuntimeError("permission_granted argument 'permission' must be a constant string")
             return _ExprPermissionGranted(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"clipboard_get", "ClipboardGet", "get_clipboard", "GetClipboard"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) > 1:
+                raise RuntimeError(
+                    'clipboard_get expects 0 or 1 string argument. Usage: clipboard_get("fallback")'
+                )
+            fallback_expr = args[0] if len(args) > 0 else _ExprConst("")
+            if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
+                raise RuntimeError("clipboard_get argument 'fallback' must be a constant string")
+            return _ExprClipboardGet(fallback_expr.value)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {

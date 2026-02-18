@@ -26,6 +26,7 @@ from dsl.ast import (
     _ExprHttpGetRetry,
     _ExprHttpGetStatus,
     _ExprHttpGet,
+    _ExprClipboardGet,
     _ExprLocationEnabled,
     _ExprNotifyError,
     _ExprNotifyResult,
@@ -55,6 +56,7 @@ from dsl.ast import (
     _StmtCheckConnectivity,
     _StmtCheckLocation,
     _StmtCheckPermission,
+    _StmtClipboardSet,
     _StmtCreateNotificationChannel,
     _StmtHttpGetError,
     _StmtHttpAsyncBody,
@@ -4216,6 +4218,8 @@ class _PythonicContext:
             return self._compile_check_location_stmt(stmt)
         if isinstance(stmt, _StmtCheckPermission):
             return self._compile_check_permission_stmt(stmt)
+        if isinstance(stmt, _StmtClipboardSet):
+            return self._compile_clipboard_set_stmt(stmt)
         if isinstance(stmt, _StmtCreateNotificationChannel):
             return self._compile_create_notification_channel_stmt(stmt)
         if isinstance(stmt, _StmtNotify):
@@ -6617,6 +6621,12 @@ class _PythonicContext:
                 permission=stmt.value.permission,
                 tmp_prefix="permission_granted_result",
             )
+        elif isinstance(stmt.value, _ExprClipboardGet):
+            prefix, result = self._compile_clipboard_get_call(
+                fallback=stmt.value.fallback,
+                tmp_prefix="clipboard_get_result",
+            )
+            value_type = "Ljava/lang/String;"
         elif isinstance(stmt.value, _ExprNotifyResult):
             prefix, result = self._compile_notify_result_call(
                 title=stmt.value.title,
@@ -6735,6 +6745,7 @@ class _PythonicContext:
                 "storage_exists(...), datastore_get(...), file_read(...), sqlite_get(...), room_get(...), "
                 "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
+                "clipboard_get(...), "
                 "notify_result(...), notify_error(...), "
                 "http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
@@ -7415,6 +7426,67 @@ class _PythonicContext:
                 ),
             ),
         ]
+
+    def _compile_clipboard_set_call(
+        self,
+        *,
+        text: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="clipboard_set",
+            capability_name="Clipboard",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(text))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_clipboard_get_call(
+        self,
+        *,
+        fallback: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="clipboard_get",
+            capability_name="Clipboard",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getText",
+                    args=[var("ctx"), const(str(fallback))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_clipboard_set_stmt(self, stmt):
+        out, _ = self._compile_clipboard_set_call(
+            text=getattr(stmt, "text", ""),
+            tmp_prefix="clipboard_set_ignored",
+        )
+        return out
 
     def _compile_create_notification_channel_call(
         self,

@@ -22,6 +22,20 @@
       ]
     },
     {
+      "capability": "Clipboard",
+      "emitted_class_desc": "Lcom/ahnali/runtime/ClipboardHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "getText(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
+        "setText(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/ClipboardHelper;",
+      "helper_method": "setText",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;)I",
+      "mode": "helper_call",
+      "permissions": []
+    },
+    {
       "capability": "Connectivity",
       "emitted_class_desc": "Lcom/ahnali/runtime/ConnectivityHelper;",
       "emitted_methods": [

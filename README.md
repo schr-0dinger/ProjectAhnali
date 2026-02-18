@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `521 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `533 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
 
 ## Python Library Policy (Enforced)
 
@@ -197,8 +197,8 @@ Constraints:
 
 1) Program 5 closure pass completed: state/lifecycle traceability locked (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2) Program 11-A gate hardening completed: strict blocking guardrails are active for scope matrix, capability mapping/docs drift, docs consistency, ABI snapshot, reactive snapshot, and dependency policy (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`).
-3) Program 6-A capability core tranche: runtime permission handling + next high-value capability slices.
-4) Program 6-B capability breadth tranche across section `8.5`.
+3) Program 6-A capability core tranche completed: runtime permission + notifications/channels slices shipped with deterministic contracts and visible flows (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`).
+4) Program 6-B capability breadth tranche started across section `8.5`: Sharing/Intents/Clipboard tranche now includes Wave 9 clipboard helper-call slice (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave9_visible_flow.py`).
 5) Program 7 motion completion (`8.6`).
 6) Program 8 advanced/system/security/debug completion (`8.7`-`8.10`).
 7) Program 12-A docs/API reference freeze and continuous reconciliation.
@@ -252,7 +252,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18; Wave 9 clipboard helper-call capability + visible integration flow completed on 2026-02-18)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -326,11 +326,16 @@ Work items:
   - DSL surfaces: `create_notification_channel()`, `notify()`, `notify_result()`, `notify_error()`
 - ✅ Add Wave 8 visible integration flow combining notifications + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave8_visible_flow.py`)
 - ✅ Document Wave 8 notifications/channels contract + flow (`docs/TrackC_Wave8_Notifications.md`)
+- ✅ Add Wave 9 clipboard capability helper-call primitive:
+  - `Clipboard` → `Lcom/ahnali/runtime/ClipboardHelper;->setText(...)I`
+  - DSL surfaces: `clipboard_set()`, `set_clipboard()`, `clipboard_get()`, `get_clipboard()`
+- ✅ Add Wave 9 visible integration flow combining clipboard + notifications + URL launcher with deterministic fallback routing (`tests/test_track_c_wave9_visible_flow.py`)
+- ✅ Document Wave 9 clipboard contract + flow (`docs/TrackC_Wave9_Clipboard.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - ✅ Complete Program 5 state surfaces:
   - lifecycle hooks: `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
   - deterministic state backends: `datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_storage_*`/`secure_storage_*`
-- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications.
+- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications/clipboard.
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
@@ -347,6 +352,8 @@ Exit criteria:
 - ✅ Wave 7 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave7_visible_flow.py`.
 - ✅ Wave 8 notifications/channels capability conformance is enforced by `tests/test_track_c_wave8_notifications.py`.
 - ✅ Wave 8 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave8_visible_flow.py`.
+- ✅ Wave 9 clipboard capability conformance is enforced by `tests/test_track_c_wave9_clipboard.py`.
+- ✅ Wave 9 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave9_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
