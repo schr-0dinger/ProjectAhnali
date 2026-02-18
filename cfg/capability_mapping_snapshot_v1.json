@@ -252,6 +252,8 @@
         "<init>()V",
         "openUri(Landroid/app/Activity;Ljava/lang/String;)I",
         "openUriError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "shareFile(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "shareFileError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
         "shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
         "shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
       ],

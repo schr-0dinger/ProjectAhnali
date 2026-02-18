@@ -30,6 +30,7 @@ In scope:
 - Track C Wave 15 capability helper ABI: WorkManager-style deterministic enqueue/cancel/status/error surfaces
 - Track C Wave 16 capability helper ABI: AlarmManager-style deterministic schedule/cancel/status/error surfaces
 - Track C Wave 17 capability helper ABI: JobScheduler-style deterministic schedule/cancel/status/error surfaces with API-level guard
+- Track C Wave 18 capability helper ABI: sharing file + open-external result/error deterministic surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
@@ -402,6 +403,15 @@ Deprecation policy:
     - `cancelJobError`: `0` success, `1` invalid args/context, `2` unsupported API level, `3` missing job-id, `4` caught exception.
     - `getJobStatus`: stored deterministic status value when present; `0` on invalid input/missing job/unsupported API/exception.
     - `getJobStatusError`: `0` status available, `1` invalid args/context, `2` unsupported API level, `3` missing job-id, `4` caught exception.
+- Track C Wave 18 helper-call binding:
+  - Capability: `Sharing`
+  - Helper class: `Lcom/ahnali/runtime/ShareHelper;`
+  - Helper methods/sigs added:
+    - `shareFile(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`
+    - `shareFileError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`
+  - Return semantics:
+    - `shareFile`: `1` on successful share intent dispatch, `0` on any failure.
+    - `shareFileError`: `0` success, `1` invalid args, `3` no handler/activity not found, `4` caught exception.
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -531,6 +541,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave16_alarmmanager.py`
 - `tests/test_track_c_wave17_jobscheduler.py`
 - `tests/test_track_c_wave17_visible_flow.py`
+- `tests/test_track_c_wave18_sharing_completion.py`
+- `tests/test_track_c_wave18_visible_flow.py`
 - `tests/test_track_c_wave11_webview.py`
 - `tests/test_track_c_wave11_visible_flow.py`
 - `tests/test_program5_state_backends.py`

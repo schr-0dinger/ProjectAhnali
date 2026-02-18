@@ -66,6 +66,8 @@ def test_runtime_abi_snapshot_includes_sharing_helper_surface():
     sharing_methods = classes["Lcom/ahnali/runtime/ShareHelper;"]
     assert "shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in sharing_methods
     assert "shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in sharing_methods
+    assert "shareFile(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I" in sharing_methods
+    assert "shareFileError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I" in sharing_methods
     assert "openUri(Landroid/app/Activity;Ljava/lang/String;)I" in sharing_methods
     assert "openUriError(Landroid/app/Activity;Ljava/lang/String;)I" in sharing_methods
 

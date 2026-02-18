@@ -1248,12 +1248,36 @@ def share_text_error(text: str, chooser_title: str = "Share via"):
     return _ExprShareTextError(str(text), str(chooser_title))
 
 
+def share_file(uri: str, chooser_title: str = "Share file via", mime_type: str = "*/*"):
+    return _StmtShareFile(str(uri), str(chooser_title), str(mime_type))
+
+
+def share_uri(uri: str, chooser_title: str = "Share file via", mime_type: str = "*/*"):
+    return share_file(uri, chooser_title, mime_type)
+
+
+def share_file_result(uri: str, chooser_title: str = "Share file via", mime_type: str = "*/*"):
+    return _ExprShareFileResult(str(uri), str(chooser_title), str(mime_type))
+
+
+def share_file_error(uri: str, chooser_title: str = "Share file via", mime_type: str = "*/*"):
+    return _ExprShareFileError(str(uri), str(chooser_title), str(mime_type))
+
+
 def open_external(uri: str):
     return _StmtOpenExternal(str(uri))
 
 
 def open_uri(uri: str):
     return open_external(uri)
+
+
+def open_external_result(uri: str):
+    return _ExprOpenExternalResult(str(uri))
+
+
+def open_uri_result(uri: str):
+    return open_external_result(uri)
 
 
 def open_external_error(uri: str):

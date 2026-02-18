@@ -121,6 +121,25 @@ class _ExprShareTextError:
         self.chooser_title = chooser_title
 
 
+class _ExprShareFileResult:
+    def __init__(self, uri, chooser_title, mime_type):
+        self.uri = uri
+        self.chooser_title = chooser_title
+        self.mime_type = mime_type
+
+
+class _ExprShareFileError:
+    def __init__(self, uri, chooser_title, mime_type):
+        self.uri = uri
+        self.chooser_title = chooser_title
+        self.mime_type = mime_type
+
+
+class _ExprOpenExternalResult:
+    def __init__(self, uri):
+        self.uri = uri
+
+
 class _ExprOpenExternalError:
     def __init__(self, uri):
         self.uri = uri
@@ -414,6 +433,13 @@ class _StmtShareText:
     def __init__(self, text, chooser_title):
         self.text = text
         self.chooser_title = chooser_title
+
+
+class _StmtShareFile:
+    def __init__(self, uri, chooser_title, mime_type):
+        self.uri = uri
+        self.chooser_title = chooser_title
+        self.mime_type = mime_type
 
 
 class _StmtOpenExternal:
@@ -807,6 +833,9 @@ def _coerce_expr(value):
             _ExprJobError,
             _ExprShareTextResult,
             _ExprShareTextError,
+            _ExprShareFileResult,
+            _ExprShareFileError,
+            _ExprOpenExternalResult,
             _ExprOpenExternalError,
             _ExprWebLoadResult,
             _ExprWebLoadError,

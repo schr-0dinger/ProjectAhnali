@@ -22,6 +22,7 @@ from dsl.app import (
     notify_result,
     on_click,
     open_external_error,
+    open_external_result,
     open_url,
     job_cancel,
     job_error,
@@ -29,6 +30,9 @@ from dsl.app import (
     job_status,
     permission_granted,
     share_text,
+    share_file,
+    share_file_error,
+    share_file_result,
     share_text_error,
     storage_put,
     text,
@@ -115,6 +119,29 @@ def _handler_share_error():
 @on_click("btn_open_external_error")
 def _handler_open_external_error():
     err = open_external_error("https://example.com")
+    status_label.text = err
+
+
+@on_click("btn_open_external_result")
+def _handler_open_external_result():
+    ok = open_external_result("https://example.com")
+    status_label.text = ok
+
+
+@on_click("btn_share_file")
+def _handler_share_file():
+    share_file("content://ahnali/wave18", "Share file via", "text/plain")
+
+
+@on_click("btn_share_file_result")
+def _handler_share_file_result():
+    ok = share_file_result("content://ahnali/wave18", "Share file via", "text/plain")
+    status_label.text = ok
+
+
+@on_click("btn_share_file_error")
+def _handler_share_file_error():
+    err = share_file_error("content://ahnali/wave18", "Share file via", "text/plain")
     status_label.text = err
 
 
@@ -332,6 +359,30 @@ def _handler_clipboard_get():
             "Sharing",
             [text("status", id="status_label"), button("OpenErr", id="btn_open_external_error")],
             _handler_open_external_error,
+        ),
+        (
+            "open_external_result",
+            "Sharing",
+            [text("status", id="status_label"), button("OpenResult", id="btn_open_external_result")],
+            _handler_open_external_result,
+        ),
+        (
+            "share_file",
+            "Sharing",
+            [button("ShareFile", id="btn_share_file")],
+            _handler_share_file,
+        ),
+        (
+            "share_file_result",
+            "Sharing",
+            [text("status", id="status_label"), button("ShareFileResult", id="btn_share_file_result")],
+            _handler_share_file_result,
+        ),
+        (
+            "share_file_error",
+            "Sharing",
+            [text("status", id="status_label"), button("ShareFileError", id="btn_share_file_error")],
+            _handler_share_file_error,
         ),
         (
             "deep_link_get",

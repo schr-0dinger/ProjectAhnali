@@ -11,6 +11,7 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "notify" in capability_stmt
     assert "clipboard_set" in capability_stmt
     assert "share_text" in capability_stmt
+    assert "share_file" in capability_stmt
     assert "work_enqueue" in capability_stmt
     assert "work_cancel" in capability_stmt
     assert "alarm_schedule" in capability_stmt
@@ -27,6 +28,9 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "notify_error" in capability_expr
     assert "clipboard_get" in capability_expr
     assert "share_text_error" in capability_expr
+    assert "share_file_result" in capability_expr
+    assert "share_file_error" in capability_expr
+    assert "open_external_result" in capability_expr
     assert "deep_link_get" in capability_expr
     assert "deep_link_error" in capability_expr
     assert "work_status" in capability_expr

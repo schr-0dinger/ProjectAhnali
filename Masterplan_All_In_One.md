@@ -263,9 +263,10 @@ Implemented:
 - ✅ Track C Wave 15 completed: WorkManager helper-call capability (`Lcom/ahnali/runtime/WorkHelper;->enqueueWork(...)I`, `cancelWork(...)I`, `getWorkStatus(...)I`, `getWorkStatusError(...)I`) + DSL (`work_enqueue`, `work_cancel`, `work_status`, `work_error`) + conformance coverage (`tests/test_track_c_wave15_workmanager.py`, `docs/TrackC_Wave15_WorkManager.md`)
 - ✅ Track C Wave 16 completed: AlarmManager helper-call capability (`Lcom/ahnali/runtime/AlarmHelper;->scheduleAlarm(...)I`, `cancelAlarm(...)I`, `getAlarmStatus(...)I`, `getAlarmStatusError(...)I`) + DSL (`alarm_schedule`, `alarm_cancel`, `alarm_status`, `alarm_error`) + conformance coverage (`tests/test_track_c_wave16_alarmmanager.py`, `docs/TrackC_Wave16_AlarmManager.md`)
 - ✅ Track C Wave 17 completed: JobScheduler helper-call capability (`Lcom/ahnali/runtime/JobHelper;->scheduleJob(...)I`, `cancelJob(...)I`, `getJobStatus(...)I`, `getJobStatusError(...)I`) + API-level guard + DSL (`job_schedule`, `job_cancel`, `job_status`, `job_error`) + visible integration flow (`tests/test_track_c_wave17_jobscheduler.py`, `tests/test_track_c_wave17_visible_flow.py`, `docs/TrackC_Wave17_JobScheduler.md`)
+- ✅ Track C Wave 18 completed: sharing/intents completion helper-call capability (`Lcom/ahnali/runtime/ShareHelper;->shareFile(...)I`, `shareFileError(...)I`) + result/error DSL surfaces (`share_file`, `share_file_result`, `share_file_error`, `open_external_result`) + visible integration flow (`tests/test_track_c_wave18_sharing_completion.py`, `tests/test_track_c_wave18_visible_flow.py`, `docs/TrackC_Wave18_Sharing_File.md`)
 
 Pending:
-- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager/deep-link/background-work helpers.
+- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager/deep-link/background-work/file-share helpers.
 
 ---
 
@@ -616,7 +617,7 @@ Storage:
 Sharing and intents:
 - ✅ open URL
 - ✅ share text
-- ❌ share file
+- ✅ share file
 - ✅ open external app
 - ✅ deep linking
 - ✅ custom URI schemes
@@ -843,7 +844,7 @@ This is the authoritative execution order for Program 5 and beyond.
 1. ✅ Program 5 closure pass: state/lifecycle traceability locked to tests/docs (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2. ✅ Program 11-A gate hardening before breadth: contract/CI guardrails are strict and blocking (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`, `tests/test_capability_mapping_contract.py`, `tests/test_docs_consistency.py`, `tests/test_capability_diagnostics_contract.py`).
 3. ✅ Program 6-A capability core tranche: runtime-permission + notifications/channels slices shipped under the ABI/test/doc pattern (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`, `docs/TrackC_Wave7_Permissions.md`, `docs/TrackC_Wave8_Notifications.md`).
-4. ⚠️ Program 6-B capability breadth tranche: Wave 9-17 baseline is complete (clipboard, sharing/intents, WebView/settings, JS bridge, file chooser/cookies, deep-linking, WorkManager/AlarmManager/JobScheduler). Remaining work is split into explicit completion tasks in `docs/Program6B_Task_Breakdown.md` (next immediate slice: Task B5 sharing/intents completion pass).
+4. ⚠️ Program 6-B capability breadth tranche: Wave 9-18 baseline is complete (clipboard, sharing/intents including file-share/result surfaces, WebView/settings, JS bridge, file chooser/cookies, deep-linking, WorkManager/AlarmManager/JobScheduler). Remaining work is split into explicit completion tasks in `docs/Program6B_Task_Breakdown.md` (next immediate slice: Task B6 media tranche A).
 5. ⚠️ Program 7 motion completion (`8.6`): finish missing animator/transition/transform surfaces with deterministic ordering/fallback.
 6. ⚠️ Program 8 advanced/system/security/debug completion (`8.7`-`8.10`) with explicit policy constraints and release-mode tests.
 7. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled.

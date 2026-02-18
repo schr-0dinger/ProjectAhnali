@@ -32,6 +32,7 @@ from .ast import (
     _ExprAlarmStatus,
     _ExprJobError,
     _ExprJobStatus,
+    _ExprOpenExternalResult,
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
@@ -44,6 +45,8 @@ from .ast import (
     _ExprWebLoadError,
     _ExprWebLoadResult,
     _ExprLocationEnabled,
+    _ExprShareFileError,
+    _ExprShareFileResult,
     _ExprShareTextError,
     _ExprShareTextResult,
     _ExprNotifyError,
@@ -76,6 +79,7 @@ from .ast import (
     _StmtJobCancel,
     _StmtJobSchedule,
     _StmtOpenExternal,
+    _StmtShareFile,
     _StmtWebAddJsBridge,
     _StmtWebChooseFile,
     _StmtWebCookieSet,
@@ -577,6 +581,31 @@ def _parse_stmt(stmt):
                 if not isinstance(chooser_expr, _ExprConst) or not isinstance(chooser_expr.value, str):
                     raise RuntimeError("share_text argument 'chooser_title' must be a constant string")
                 return _StmtShareText(args[0].value, chooser_expr.value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"share_file", "ShareFile", "share_uri", "ShareUri"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 3):
+                    raise RuntimeError(
+                        "share_file expects 1 to 3 string arguments. "
+                        'Usage: share_file("content://...", "Share file via", "*/*")'
+                    )
+                uri = _const_string_arg(args[0], fn_name="share_file", arg_name="uri")
+                chooser_expr = args[1] if len(args) > 1 else _ExprConst("Share file via")
+                chooser_title = _const_string_arg(
+                    chooser_expr,
+                    fn_name="share_file",
+                    arg_name="chooser_title",
+                )
+                mime_expr = args[2] if len(args) > 2 else _ExprConst("*/*")
+                mime_type = _const_string_arg(
+                    mime_expr,
+                    fn_name="share_file",
+                    arg_name="mime_type",
+                )
+                return _StmtShareFile(uri, chooser_title, mime_type)
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {"open_external", "OpenExternal", "open_uri", "OpenUri"}
@@ -1297,6 +1326,68 @@ def _parse_expr(node):
             if not isinstance(chooser_expr, _ExprConst) or not isinstance(chooser_expr.value, str):
                 raise RuntimeError("share_text_error argument 'chooser_title' must be a constant string")
             return _ExprShareTextError(args[0].value, chooser_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"share_file_result", "ShareFileResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 3):
+                raise RuntimeError(
+                    "share_file_result expects 1 to 3 string arguments. "
+                    'Usage: share_file_result("content://...", "Share file via", "*/*")'
+                )
+            uri = _const_string_arg(args[0], fn_name="share_file_result", arg_name="uri")
+            chooser_expr = args[1] if len(args) > 1 else _ExprConst("Share file via")
+            chooser_title = _const_string_arg(
+                chooser_expr,
+                fn_name="share_file_result",
+                arg_name="chooser_title",
+            )
+            mime_expr = args[2] if len(args) > 2 else _ExprConst("*/*")
+            mime_type = _const_string_arg(
+                mime_expr,
+                fn_name="share_file_result",
+                arg_name="mime_type",
+            )
+            return _ExprShareFileResult(uri, chooser_title, mime_type)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"share_file_error", "ShareFileError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 3):
+                raise RuntimeError(
+                    "share_file_error expects 1 to 3 string arguments. "
+                    'Usage: share_file_error("content://...", "Share file via", "*/*")'
+                )
+            uri = _const_string_arg(args[0], fn_name="share_file_error", arg_name="uri")
+            chooser_expr = args[1] if len(args) > 1 else _ExprConst("Share file via")
+            chooser_title = _const_string_arg(
+                chooser_expr,
+                fn_name="share_file_error",
+                arg_name="chooser_title",
+            )
+            mime_expr = args[2] if len(args) > 2 else _ExprConst("*/*")
+            mime_type = _const_string_arg(
+                mime_expr,
+                fn_name="share_file_error",
+                arg_name="mime_type",
+            )
+            return _ExprShareFileError(uri, chooser_title, mime_type)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"open_external_result", "OpenExternalResult", "open_uri_result", "OpenUriResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'open_external_result expects exactly 1 string argument. Usage: open_external_result("scheme://...")'
+                )
+            uri = _const_string_arg(args[0], fn_name="open_external_result", arg_name="uri")
+            return _ExprOpenExternalResult(uri)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {"open_external_error", "OpenExternalError"}

@@ -713,6 +713,60 @@ def _emit_share_text_error_method() -> list[str]:
     ]
 
 
+def _emit_share_file_method() -> list[str]:
+    return [
+        ".method public static shareFile(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1, p2, p3}, Lcom/ahnali/runtime/ShareHelper;->shareFileError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_share_file_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_share_file_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_share_file_error_method() -> list[str]:
+    return [
+        ".method public static shareFileError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 8",
+        "    if-eqz p0, :ahnali_share_file_invalid",
+        "    if-eqz p1, :ahnali_share_file_invalid",
+        "    if-eqz p2, :ahnali_share_file_invalid",
+        "    if-eqz p3, :ahnali_share_file_invalid",
+        "    :ahnali_share_file_try_start",
+        "    new-instance v1, Landroid/content/Intent;",
+        '    const-string v2, "android.intent.action.SEND"',
+        "    invoke-direct {v1, v2}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v1, p3}, Landroid/content/Intent;->setType(Ljava/lang/String;)Landroid/content/Intent;",
+        '    const-string v4, "android.intent.extra.STREAM"',
+        "    invoke-static {p1}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;",
+        "    move-result-object v5",
+        "    invoke-virtual {v1, v4, v5}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Landroid/os/Parcelable;)Landroid/content/Intent;",
+        "    invoke-static {v1, p2}, Landroid/content/Intent;->createChooser(Landroid/content/Intent;Ljava/lang/CharSequence;)Landroid/content/Intent;",
+        "    move-result-object v6",
+        "    invoke-virtual {p0, v6}, Landroid/app/Activity;->startActivity(Landroid/content/Intent;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_share_file_try_end",
+        "    .catch Landroid/content/ActivityNotFoundException; {:ahnali_share_file_try_start .. :ahnali_share_file_try_end} :ahnali_share_file_not_found",
+        "    .catch Ljava/lang/Exception; {:ahnali_share_file_try_start .. :ahnali_share_file_try_end} :ahnali_share_file_exception",
+        "    :ahnali_share_file_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_share_file_not_found",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_share_file_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_open_uri_method() -> list[str]:
     return [
         ".method public static openUri(Landroid/app/Activity;Ljava/lang/String;)I",
@@ -2745,6 +2799,10 @@ def emit_capability_helper_smali(
         lines.extend(_emit_share_text_method())
         lines.append("")
         lines.extend(_emit_share_text_error_method())
+        lines.append("")
+        lines.extend(_emit_share_file_method())
+        lines.append("")
+        lines.extend(_emit_share_file_error_method())
         lines.append("")
         lines.extend(_emit_open_uri_method())
         lines.append("")

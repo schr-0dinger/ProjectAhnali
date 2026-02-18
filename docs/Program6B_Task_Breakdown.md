@@ -16,6 +16,7 @@ This document breaks Program 6-B into execution tasks with strict completion gat
 7. Wave 15: WorkManager tranche A (`Caps.WorkManager`)
 8. Wave 16: AlarmManager tranche B (`Caps.AlarmManager`)
 9. Wave 17: JobScheduler tranche C (`Caps.JobScheduler`)
+10. Wave 18: Sharing/intents completion pass (`Caps.Sharing`)
 
 ## Program 6-B completion tasks
 
@@ -45,12 +46,12 @@ This document breaks Program 6-B into execution tasks with strict completion gat
 - Add API level guards and deterministic diagnostics.
 - Gate: JobScheduler slice is fully contract-complete.
 
-6. Task B5: Sharing/intents completion pass (next immediate)
+6. Task B5: Sharing/intents completion pass (completed)
 - Close remaining 8.5 intent/deep-link/custom URI/open-app gaps.
 - Add deterministic result/error surfaces for each new helper call.
 - Gate: all retained sharing/intents scope entries are done.
 
-7. Task B6: Media tranche A (audio/video core)
+7. Task B6: Media tranche A (audio/video core) (next immediate)
 - Add retained audio/video deterministic helper surfaces.
 - Add explicit capability + permission diagnostics.
 - Gate: media slice ships with visible flow and ABI snapshot update.

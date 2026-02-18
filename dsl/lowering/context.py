@@ -35,6 +35,7 @@ from dsl.ast import (
     _ExprAlarmStatus,
     _ExprJobError,
     _ExprJobStatus,
+    _ExprOpenExternalResult,
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
@@ -50,6 +51,8 @@ from dsl.ast import (
     _ExprNotifyError,
     _ExprNotifyResult,
     _ExprPermissionGranted,
+    _ExprShareFileError,
+    _ExprShareFileResult,
     _ExprShareTextError,
     _ExprShareTextResult,
     _ExprReactiveGet,
@@ -86,6 +89,7 @@ from dsl.ast import (
     _StmtJobSchedule,
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
+    _StmtShareFile,
     _StmtWebAddJsBridge,
     _StmtWebChooseFile,
     _StmtWebCookieSet,
@@ -4256,6 +4260,8 @@ class _PythonicContext:
             return self._compile_clipboard_set_stmt(stmt)
         if isinstance(stmt, _StmtShareText):
             return self._compile_share_text_stmt(stmt)
+        if isinstance(stmt, _StmtShareFile):
+            return self._compile_share_file_stmt(stmt)
         if isinstance(stmt, _StmtOpenExternal):
             return self._compile_open_external_stmt(stmt)
         if isinstance(stmt, _StmtWorkEnqueue):
@@ -6739,6 +6745,26 @@ class _PythonicContext:
                 chooser_title=stmt.value.chooser_title,
                 tmp_prefix="share_text_error_value",
             )
+        elif isinstance(stmt.value, _ExprShareFileResult):
+            prefix, result = self._compile_share_file_result_call(
+                uri=stmt.value.uri,
+                chooser_title=stmt.value.chooser_title,
+                mime_type=stmt.value.mime_type,
+                tmp_prefix="share_file_result_value",
+            )
+        elif isinstance(stmt.value, _ExprShareFileError):
+            prefix, result = self._compile_share_file_error_call(
+                uri=stmt.value.uri,
+                chooser_title=stmt.value.chooser_title,
+                mime_type=stmt.value.mime_type,
+                tmp_prefix="share_file_error_value",
+            )
+        elif isinstance(stmt.value, _ExprOpenExternalResult):
+            prefix, result = self._compile_open_external_call(
+                api_name="open_external_result",
+                uri=stmt.value.uri,
+                tmp_prefix="open_external_result_value",
+            )
         elif isinstance(stmt.value, _ExprOpenExternalError):
             prefix, result = self._compile_open_external_error_call(
                 uri=stmt.value.uri,
@@ -6918,7 +6944,8 @@ class _PythonicContext:
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
                 "clipboard_get(...), deep_link_get(...), deep_link_error(...), "
                 "work_status(...), work_error(...), alarm_status(...), alarm_error(...), job_status(...), job_error(...), "
-                "share_text_result(...), share_text_error(...), open_external_error(...), "
+                "share_text_result(...), share_text_error(...), share_file_result(...), share_file_error(...), "
+                "open_external_result(...), open_external_error(...), "
                 "web_load_result(...), web_load_error(...), "
                 "web_add_js_bridge_result(...), web_add_js_bridge_error(...), "
                 "web_choose_file_result(...), web_choose_file_error(...), "
@@ -8119,6 +8146,75 @@ class _PythonicContext:
             ),
         ], var(result_tmp)
 
+    def _compile_share_file_result_call(
+        self,
+        *,
+        api_name: str = "share_file_result",
+        uri: str,
+        chooser_title: str,
+        mime_type: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Sharing",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "shareFile",
+                    args=[var("ctx"), const(str(uri)), const(str(chooser_title)), const(str(mime_type))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_share_file_error_call(
+        self,
+        *,
+        uri: str,
+        chooser_title: str,
+        mime_type: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="share_file_error",
+            capability_name="Sharing",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "shareFileError",
+                    args=[var("ctx"), const(str(uri)), const(str(chooser_title)), const(str(mime_type))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
     def _compile_open_external_call(
         self,
         *,
@@ -8180,6 +8276,16 @@ class _PythonicContext:
             text=getattr(stmt, "text", ""),
             chooser_title=getattr(stmt, "chooser_title", "Share via"),
             tmp_prefix="share_text_ignored",
+        )
+        return out
+
+    def _compile_share_file_stmt(self, stmt):
+        out, _ = self._compile_share_file_result_call(
+            api_name="share_file",
+            uri=getattr(stmt, "uri", ""),
+            chooser_title=getattr(stmt, "chooser_title", "Share file via"),
+            mime_type=getattr(stmt, "mime_type", "*/*"),
+            tmp_prefix="share_file_ignored",
         )
         return out
 
