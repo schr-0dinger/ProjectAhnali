@@ -328,6 +328,155 @@ def _emit_web_add_js_bridge_error_method() -> list[str]:
     ]
 
 
+def _emit_web_choose_file_method() -> list[str]:
+    return [
+        ".method public static chooseFile(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/WebHelper;->chooseFileError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_web_choose_file_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_web_choose_file_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_web_choose_file_error_method() -> list[str]:
+    return [
+        ".method public static chooseFileError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 7",
+        "    if-eqz p0, :ahnali_web_choose_file_invalid",
+        "    if-eqz p1, :ahnali_web_choose_file_invalid",
+        "    :ahnali_web_choose_file_try_start",
+        "    new-instance v1, Landroid/content/Intent;",
+        '    const-string v2, "android.intent.action.GET_CONTENT"',
+        "    invoke-direct {v1, v2}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+        "    invoke-virtual {v1, p1}, Landroid/content/Intent;->setType(Ljava/lang/String;)Landroid/content/Intent;",
+        '    const-string v3, "android.intent.category.OPENABLE"',
+        "    invoke-virtual {v1, v3}, Landroid/content/Intent;->addCategory(Ljava/lang/String;)Landroid/content/Intent;",
+        "    move-result-object v1",
+        '    const-string v4, "Select file"',
+        "    invoke-static {v1, v4}, Landroid/content/Intent;->createChooser(Landroid/content/Intent;Ljava/lang/CharSequence;)Landroid/content/Intent;",
+        "    move-result-object v5",
+        "    invoke-virtual {p0, v5}, Landroid/app/Activity;->startActivity(Landroid/content/Intent;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_web_choose_file_try_end",
+        "    .catch Landroid/content/ActivityNotFoundException; {:ahnali_web_choose_file_try_start .. :ahnali_web_choose_file_try_end} :ahnali_web_choose_file_not_found",
+        "    .catch Ljava/lang/Exception; {:ahnali_web_choose_file_try_start .. :ahnali_web_choose_file_try_end} :ahnali_web_choose_file_exception",
+        "    :ahnali_web_choose_file_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_web_choose_file_not_found",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_web_choose_file_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_web_set_cookie_method() -> list[str]:
+    return [
+        ".method public static setCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1, p2}, Lcom/ahnali/runtime/WebHelper;->setCookieError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_web_set_cookie_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_web_set_cookie_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_web_set_cookie_error_method() -> list[str]:
+    return [
+        ".method public static setCookieError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 4",
+        "    if-eqz p0, :ahnali_web_set_cookie_invalid",
+        "    if-eqz p1, :ahnali_web_set_cookie_invalid",
+        "    if-eqz p2, :ahnali_web_set_cookie_invalid",
+        "    :ahnali_web_set_cookie_try_start",
+        "    invoke-static {}, Landroid/webkit/CookieManager;->getInstance()Landroid/webkit/CookieManager;",
+        "    move-result-object v1",
+        "    if-eqz v1, :ahnali_web_set_cookie_missing",
+        "    invoke-virtual {v1, p1, p2}, Landroid/webkit/CookieManager;->setCookie(Ljava/lang/String;Ljava/lang/String;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_web_set_cookie_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_web_set_cookie_try_start .. :ahnali_web_set_cookie_try_end} :ahnali_web_set_cookie_exception",
+        "    :ahnali_web_set_cookie_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_web_set_cookie_missing",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_web_set_cookie_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_web_get_cookie_method() -> list[str]:
+    return [
+        ".method public static getCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "    .locals 4",
+        "    if-eqz p0, :ahnali_web_get_cookie_fallback",
+        "    if-eqz p1, :ahnali_web_get_cookie_fallback",
+        "    :ahnali_web_get_cookie_try_start",
+        "    invoke-static {}, Landroid/webkit/CookieManager;->getInstance()Landroid/webkit/CookieManager;",
+        "    move-result-object v1",
+        "    if-eqz v1, :ahnali_web_get_cookie_fallback",
+        "    invoke-virtual {v1, p1}, Landroid/webkit/CookieManager;->getCookie(Ljava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_web_get_cookie_fallback",
+        "    return-object v2",
+        "    :ahnali_web_get_cookie_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_web_get_cookie_try_start .. :ahnali_web_get_cookie_try_end} :ahnali_web_get_cookie_fallback",
+        "    :ahnali_web_get_cookie_fallback",
+        "    return-object p2",
+        ".end method",
+    ]
+
+
+def _emit_web_get_cookie_error_method() -> list[str]:
+    return [
+        ".method public static getCookieError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 3",
+        "    if-eqz p0, :ahnali_web_get_cookie_error_invalid",
+        "    if-eqz p1, :ahnali_web_get_cookie_error_invalid",
+        "    :ahnali_web_get_cookie_error_try_start",
+        "    invoke-static {}, Landroid/webkit/CookieManager;->getInstance()Landroid/webkit/CookieManager;",
+        "    move-result-object v1",
+        "    if-eqz v1, :ahnali_web_get_cookie_error_missing",
+        "    invoke-virtual {v1, p1}, Landroid/webkit/CookieManager;->getCookie(Ljava/lang/String;)Ljava/lang/String;",
+        "    move-result-object v2",
+        "    if-eqz v2, :ahnali_web_get_cookie_error_missing",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_web_get_cookie_error_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_web_get_cookie_error_try_start .. :ahnali_web_get_cookie_error_try_end} :ahnali_web_get_cookie_error_exception",
+        "    :ahnali_web_get_cookie_error_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_web_get_cookie_error_missing",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_web_get_cookie_error_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_notification_create_channel_method() -> list[str]:
     return [
         ".method public static createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -1977,6 +2126,18 @@ def emit_capability_helper_smali(
         lines.extend(_emit_web_add_js_bridge_method())
         lines.append("")
         lines.extend(_emit_web_add_js_bridge_error_method())
+        lines.append("")
+        lines.extend(_emit_web_choose_file_method())
+        lines.append("")
+        lines.extend(_emit_web_choose_file_error_method())
+        lines.append("")
+        lines.extend(_emit_web_set_cookie_method())
+        lines.append("")
+        lines.extend(_emit_web_set_cookie_error_method())
+        lines.append("")
+        lines.extend(_emit_web_get_cookie_method())
+        lines.append("")
+        lines.extend(_emit_web_get_cookie_error_method())
         lines.append("")
         lines.extend(_emit_web_load_url_method())
         lines.append("")

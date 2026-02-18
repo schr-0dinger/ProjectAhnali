@@ -146,6 +146,39 @@ class _ExprWebAddJsBridgeError:
         self.bridge_name = bridge_name
 
 
+class _ExprWebChooseFileResult:
+    def __init__(self, mime_type):
+        self.mime_type = mime_type
+
+
+class _ExprWebChooseFileError:
+    def __init__(self, mime_type):
+        self.mime_type = mime_type
+
+
+class _ExprWebCookieSetResult:
+    def __init__(self, url, cookie):
+        self.url = url
+        self.cookie = cookie
+
+
+class _ExprWebCookieSetError:
+    def __init__(self, url, cookie):
+        self.url = url
+        self.cookie = cookie
+
+
+class _ExprWebCookieGet:
+    def __init__(self, url, fallback):
+        self.url = url
+        self.fallback = fallback
+
+
+class _ExprWebCookieGetError:
+    def __init__(self, url):
+        self.url = url
+
+
 class _ExprNotifyResult:
     def __init__(self, title, body, channel_id):
         self.title = title
@@ -364,6 +397,17 @@ class _StmtWebLoad:
 class _StmtWebAddJsBridge:
     def __init__(self, bridge_name):
         self.bridge_name = bridge_name
+
+
+class _StmtWebChooseFile:
+    def __init__(self, mime_type):
+        self.mime_type = mime_type
+
+
+class _StmtWebCookieSet:
+    def __init__(self, url, cookie):
+        self.url = url
+        self.cookie = cookie
 
 
 class _StmtStoragePut:

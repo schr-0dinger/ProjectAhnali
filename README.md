@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `573 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `588 passed` (`PYTHONPATH=. pytest -q -rs`)
 
 ## Python Library Policy (Enforced)
 
@@ -198,7 +198,7 @@ Constraints:
 1) Program 5 closure pass completed: state/lifecycle traceability locked (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2) Program 11-A gate hardening completed: strict blocking guardrails are active for scope matrix, capability mapping/docs drift, docs consistency, ABI snapshot, reactive snapshot, and dependency policy (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`).
 3) Program 6-A capability core tranche completed: runtime permission + notifications/channels slices shipped with deterministic contracts and visible flows (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`).
-4) Program 6-B capability breadth tranche started across section `8.5`: Sharing/Intents/Clipboard/Web tranche now includes Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView + Wave 12 Web JS bridge helper-call slices (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave10_sharing_intents.py`, `tests/test_track_c_wave11_webview.py`, `tests/test_track_c_wave12_web_js_bridge.py`).
+4) Program 6-B capability breadth tranche started across section `8.5`: Sharing/Intents/Clipboard/Web tranche now includes Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView + Wave 12 Web JS bridge + Wave 13 file chooser/cookie-manager helper-call slices (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave10_sharing_intents.py`, `tests/test_track_c_wave11_webview.py`, `tests/test_track_c_wave12_web_js_bridge.py`, `tests/test_track_c_wave13_web_file_cookie.py`).
 5) Program 7 motion completion (`8.6`).
 6) Program 8 advanced/system/security/debug completion (`8.7`-`8.10`).
 7) Program 12-A docs/API reference freeze and continuous reconciliation.
@@ -252,7 +252,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18; Wave 9 clipboard helper-call capability + visible integration flow completed on 2026-02-18; Wave 10 sharing/intents helper-call capability + visible integration flow completed on 2026-02-18; Wave 11 WebView/settings policy helper-call capability + visible integration flow completed on 2026-02-18; Wave 12 Web JS bridge policy-constrained helper-call capability + visible integration flow completed on 2026-02-18)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18; Wave 9 clipboard helper-call capability + visible integration flow completed on 2026-02-18; Wave 10 sharing/intents helper-call capability + visible integration flow completed on 2026-02-18; Wave 11 WebView/settings policy helper-call capability + visible integration flow completed on 2026-02-18; Wave 12 Web JS bridge policy-constrained helper-call capability + visible integration flow completed on 2026-02-18; Wave 13 Web file chooser/cookie-manager helper-call capability + visible integration flow completed on 2026-02-18)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -346,11 +346,16 @@ Work items:
   - DSL surfaces: `web_add_js_bridge()`, `web_register_js_bridge()`, `web_add_js_bridge_result()`, `web_add_js_bridge_error()`
 - ✅ Add Wave 12 visible integration flow combining JS bridge policy routing + sharing fallback (`tests/test_track_c_wave12_visible_flow.py`)
 - ✅ Document Wave 12 Web JS bridge contract + flow (`docs/TrackC_Wave12_Web_JS_Bridge.md`)
+- ✅ Add Wave 13 file chooser/cookie-manager capability helper-call primitive:
+  - `WebView` → `Lcom/ahnali/runtime/WebHelper;->chooseFile(...)I`, `setCookie(...)I`, `getCookie(...)Ljava/lang/String;`
+  - DSL surfaces: `web_choose_file()`, `web_choose_file_result()`, `web_choose_file_error()`, `web_cookie_set()`, `web_cookie_set_result()`, `web_cookie_set_error()`, `web_cookie_get()`, `web_cookie_get_error()`
+- ✅ Add Wave 13 visible integration flow combining file chooser/cookie routing + sharing fallback (`tests/test_track_c_wave13_visible_flow.py`)
+- ✅ Document Wave 13 file chooser/cookie-manager contract + flow (`docs/TrackC_Wave13_Web_FileChooser_Cookies.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - ✅ Complete Program 5 state surfaces:
   - lifecycle hooks: `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
   - deterministic state backends: `datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_storage_*`/`secure_storage_*`
-- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge.
+- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager.
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
@@ -375,6 +380,8 @@ Exit criteria:
 - ✅ Wave 11 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave11_visible_flow.py`.
 - ✅ Wave 12 Web JS bridge policy-constrained capability conformance is enforced by `tests/test_track_c_wave12_web_js_bridge.py`.
 - ✅ Wave 12 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave12_visible_flow.py`.
+- ✅ Wave 13 Web file chooser/cookie-manager capability conformance is enforced by `tests/test_track_c_wave13_web_file_cookie.py`.
+- ✅ Wave 13 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave13_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`

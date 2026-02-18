@@ -264,8 +264,14 @@
         "<init>()V",
         "addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I",
         "addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "chooseFile(Landroid/app/Activity;Ljava/lang/String;)I",
+        "chooseFileError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "getCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        "getCookieError(Landroid/app/Activity;Ljava/lang/String;)I",
         "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I",
         "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "setCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "setCookieError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
         "setPolicy(Landroid/app/Activity;IIII)I"
       ],
       "source": "capability:WebView"

@@ -26,6 +26,12 @@ from dsl.app import (
     web_load,
     web_add_js_bridge,
     web_add_js_bridge_error,
+    web_choose_file,
+    web_choose_file_error,
+    web_cookie_get,
+    web_cookie_get_error,
+    web_cookie_set,
+    web_cookie_set_error,
     web_load_error,
     web_set_policy,
 )
@@ -116,6 +122,40 @@ def _handler_web_bridge():
 @on_click("btn_web_bridge_error")
 def _handler_web_bridge_error():
     err = web_add_js_bridge_error("ahnali_bridge")
+    status_label.text = err
+
+
+@on_click("btn_web_choose_file")
+def _handler_web_choose_file():
+    web_choose_file("*/*")
+
+
+@on_click("btn_web_choose_file_error")
+def _handler_web_choose_file_error():
+    err = web_choose_file_error("*/*")
+    status_label.text = err
+
+
+@on_click("btn_web_cookie_set")
+def _handler_web_cookie_set():
+    web_cookie_set("https://example.com", "ahnali=diag")
+
+
+@on_click("btn_web_cookie_set_error")
+def _handler_web_cookie_set_error():
+    err = web_cookie_set_error("https://example.com", "ahnali=diag")
+    status_label.text = err
+
+
+@on_click("btn_web_cookie_get")
+def _handler_web_cookie_get():
+    value = web_cookie_get("https://example.com", "fallback-cookie")
+    status_label.text = value
+
+
+@on_click("btn_web_cookie_get_error")
+def _handler_web_cookie_get_error():
+    err = web_cookie_get_error("https://example.com")
     status_label.text = err
 
 
@@ -224,6 +264,42 @@ def _handler_clipboard_get():
             "WebView",
             [text("status", id="status_label"), button("WebBridgeErr", id="btn_web_bridge_error")],
             _handler_web_bridge_error,
+        ),
+        (
+            "web_choose_file",
+            "WebView",
+            [button("WebChooseFile", id="btn_web_choose_file")],
+            _handler_web_choose_file,
+        ),
+        (
+            "web_choose_file_error",
+            "WebView",
+            [text("status", id="status_label"), button("WebChooseErr", id="btn_web_choose_file_error")],
+            _handler_web_choose_file_error,
+        ),
+        (
+            "web_cookie_set",
+            "WebView",
+            [button("WebCookieSet", id="btn_web_cookie_set")],
+            _handler_web_cookie_set,
+        ),
+        (
+            "web_cookie_set_error",
+            "WebView",
+            [text("status", id="status_label"), button("WebCookieSetErr", id="btn_web_cookie_set_error")],
+            _handler_web_cookie_set_error,
+        ),
+        (
+            "web_cookie_get",
+            "WebView",
+            [text("status", id="status_label"), button("WebCookieGet", id="btn_web_cookie_get")],
+            _handler_web_cookie_get,
+        ),
+        (
+            "web_cookie_get_error",
+            "WebView",
+            [text("status", id="status_label"), button("WebCookieGetErr", id="btn_web_cookie_get_error")],
+            _handler_web_cookie_get_error,
         ),
         (
             "web_load_error",

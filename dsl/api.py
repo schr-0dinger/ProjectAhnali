@@ -1275,6 +1275,50 @@ def web_add_js_bridge_error(bridge_name: str):
     return _ExprWebAddJsBridgeError(str(bridge_name))
 
 
+def web_choose_file(mime_type: str = "*/*"):
+    return _StmtWebChooseFile(str(mime_type))
+
+
+def web_file_chooser(mime_type: str = "*/*"):
+    return web_choose_file(mime_type)
+
+
+def web_choose_file_result(mime_type: str = "*/*"):
+    return _ExprWebChooseFileResult(str(mime_type))
+
+
+def web_choose_file_error(mime_type: str = "*/*"):
+    return _ExprWebChooseFileError(str(mime_type))
+
+
+def web_cookie_set(url: str, cookie: str):
+    return _StmtWebCookieSet(str(url), str(cookie))
+
+
+def web_set_cookie(url: str, cookie: str):
+    return web_cookie_set(url, cookie)
+
+
+def web_cookie_set_result(url: str, cookie: str):
+    return _ExprWebCookieSetResult(str(url), str(cookie))
+
+
+def web_cookie_set_error(url: str, cookie: str):
+    return _ExprWebCookieSetError(str(url), str(cookie))
+
+
+def web_cookie_get(url: str, fallback: str = ""):
+    return _ExprWebCookieGet(str(url), str(fallback))
+
+
+def web_get_cookie(url: str, fallback: str = ""):
+    return web_cookie_get(url, fallback)
+
+
+def web_cookie_get_error(url: str):
+    return _ExprWebCookieGetError(str(url))
+
+
 def create_notification_channel(channel_id: str, channel_name: str):
     return _StmtCreateNotificationChannel(str(channel_id), str(channel_name))
 

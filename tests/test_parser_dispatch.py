@@ -14,6 +14,8 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "web_set_policy" in capability_stmt
     assert "web_load" in capability_stmt
     assert "web_add_js_bridge" in capability_stmt
+    assert "web_choose_file" in capability_stmt
+    assert "web_cookie_set" in capability_stmt
     assert "permission_granted" in capability_expr
     assert "location_enabled" in capability_expr
     assert "notify_error" in capability_expr
@@ -23,6 +25,12 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "web_load_error" in capability_expr
     assert "web_add_js_bridge_result" in capability_expr
     assert "web_add_js_bridge_error" in capability_expr
+    assert "web_choose_file_result" in capability_expr
+    assert "web_choose_file_error" in capability_expr
+    assert "web_cookie_set_result" in capability_expr
+    assert "web_cookie_set_error" in capability_expr
+    assert "web_cookie_get" in capability_expr
+    assert "web_cookie_get_error" in capability_expr
 
 
 def test_parser_dispatch_domains_include_motion_aliases():

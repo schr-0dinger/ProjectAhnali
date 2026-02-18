@@ -25,6 +25,7 @@ In scope:
 - Track C Wave 10 capability helper ABI: sharing/intents dispatch + error-code surfaces
 - Track C Wave 11 capability helper ABI: WebView load/settings policy + error-code surfaces
 - Track C Wave 12 capability helper ABI: Web JS bridge registration + policy-constrained error-code surfaces
+- Track C Wave 13 capability helper ABI: Web file chooser + cookie-manager deterministic surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
@@ -328,6 +329,23 @@ Deprecation policy:
       - `3`: runtime setup failure (missing `WebSettings`)
       - `4`: caught exception
       - `5`: bridge-name policy violation (must start with `ahnali_`)
+- Track C Wave 13 helper-call binding:
+  - Capability: `WebView`
+  - Helper class: `Lcom/ahnali/runtime/WebHelper;`
+  - Helper methods/sigs:
+    - `chooseFile(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `chooseFileError(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `setCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `setCookieError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `getCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;`
+    - `getCookieError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `chooseFile`: `1` on successful chooser dispatch, `0` on any failure.
+    - `chooseFileError`: `0` success, `1` invalid args/context, `3` no chooser handler/activity not found, `4` caught exception.
+    - `setCookie`: `1` on successful cookie write, `0` on any failure.
+    - `setCookieError`: `0` success, `1` invalid args/context, `3` missing cookie manager, `4` caught exception.
+    - `getCookie`: cookie string when present; fallback argument on null args, missing cookie manager/cookie, or caught exception.
+    - `getCookieError`: `0` cookie present, `1` invalid args/context, `3` missing cookie manager/cookie, `4` caught exception.
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -451,6 +469,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave10_visible_flow.py`
 - `tests/test_track_c_wave12_web_js_bridge.py`
 - `tests/test_track_c_wave12_visible_flow.py`
+- `tests/test_track_c_wave13_web_file_cookie.py`
+- `tests/test_track_c_wave13_visible_flow.py`
 - `tests/test_track_c_wave11_webview.py`
 - `tests/test_track_c_wave11_visible_flow.py`
 - `tests/test_program5_state_backends.py`

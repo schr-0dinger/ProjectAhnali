@@ -27,6 +27,12 @@ from .ast import (
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
+    _ExprWebChooseFileError,
+    _ExprWebChooseFileResult,
+    _ExprWebCookieGet,
+    _ExprWebCookieGetError,
+    _ExprWebCookieSetError,
+    _ExprWebCookieSetResult,
     _ExprWebLoadError,
     _ExprWebLoadResult,
     _ExprLocationEnabled,
@@ -57,6 +63,8 @@ from .ast import (
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
     _StmtWebAddJsBridge,
+    _StmtWebChooseFile,
+    _StmtWebCookieSet,
     _StmtWebLoad,
     _StmtWebSetPolicy,
     _StmtHttpGetError,
@@ -623,6 +631,35 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("web_add_js_bridge argument 'bridge_name' must be a constant string")
                 return _StmtWebAddJsBridge(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"web_choose_file", "WebChooseFile", "web_file_chooser", "WebFileChooser"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) > 1:
+                    raise RuntimeError(
+                        'web_choose_file expects 0 or 1 string argument. Usage: web_choose_file("*/*")'
+                    )
+                mime_expr = args[0] if args else _ExprConst("*/*")
+                if not isinstance(mime_expr, _ExprConst) or not isinstance(mime_expr.value, str):
+                    raise RuntimeError("web_choose_file argument 'mime_type' must be a constant string")
+                return _StmtWebChooseFile(mime_expr.value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"web_cookie_set", "WebCookieSet", "web_set_cookie", "WebSetCookie"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'web_cookie_set expects exactly 2 string arguments. Usage: web_cookie_set("https://...", "k=v")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("web_cookie_set argument 'url' must be a constant string")
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("web_cookie_set argument 'cookie' must be a constant string")
+                return _StmtWebCookieSet(args[0].value, args[1].value)
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {
@@ -1210,6 +1247,93 @@ def _parse_expr(node):
                     "web_add_js_bridge_error argument 'bridge_name' must be a constant string"
                 )
             return _ExprWebAddJsBridgeError(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_choose_file_result", "WebChooseFileResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) > 1:
+                raise RuntimeError(
+                    'web_choose_file_result expects 0 or 1 string argument. Usage: web_choose_file_result("*/*")'
+                )
+            mime_expr = args[0] if args else _ExprConst("*/*")
+            if not isinstance(mime_expr, _ExprConst) or not isinstance(mime_expr.value, str):
+                raise RuntimeError("web_choose_file_result argument 'mime_type' must be a constant string")
+            return _ExprWebChooseFileResult(mime_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_choose_file_error", "WebChooseFileError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) > 1:
+                raise RuntimeError(
+                    'web_choose_file_error expects 0 or 1 string argument. Usage: web_choose_file_error("*/*")'
+                )
+            mime_expr = args[0] if args else _ExprConst("*/*")
+            if not isinstance(mime_expr, _ExprConst) or not isinstance(mime_expr.value, str):
+                raise RuntimeError("web_choose_file_error argument 'mime_type' must be a constant string")
+            return _ExprWebChooseFileError(mime_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_cookie_set_result", "WebCookieSetResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 2:
+                raise RuntimeError(
+                    'web_cookie_set_result expects exactly 2 string arguments. Usage: web_cookie_set_result("https://...", "k=v")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("web_cookie_set_result argument 'url' must be a constant string")
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("web_cookie_set_result argument 'cookie' must be a constant string")
+            return _ExprWebCookieSetResult(args[0].value, args[1].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_cookie_set_error", "WebCookieSetError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 2:
+                raise RuntimeError(
+                    'web_cookie_set_error expects exactly 2 string arguments. Usage: web_cookie_set_error("https://...", "k=v")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("web_cookie_set_error argument 'url' must be a constant string")
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("web_cookie_set_error argument 'cookie' must be a constant string")
+            return _ExprWebCookieSetError(args[0].value, args[1].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_cookie_get", "WebCookieGet", "web_get_cookie", "WebGetCookie"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError(
+                    'web_cookie_get expects 1 or 2 string arguments. Usage: web_cookie_get("https://...", "fallback")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("web_cookie_get argument 'url' must be a constant string")
+            fallback_expr = args[1] if len(args) > 1 else _ExprConst("")
+            if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
+                raise RuntimeError("web_cookie_get argument 'fallback' must be a constant string")
+            return _ExprWebCookieGet(args[0].value, fallback_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_cookie_get_error", "WebCookieGetError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'web_cookie_get_error expects exactly 1 string argument. Usage: web_cookie_get_error("https://...")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("web_cookie_get_error argument 'url' must be a constant string")
+            return _ExprWebCookieGetError(args[0].value)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {

@@ -77,6 +77,12 @@ def test_runtime_abi_snapshot_includes_web_helper_surface():
     assert "setPolicy(Landroid/app/Activity;IIII)I" in web_methods
     assert "addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
     assert "addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
+    assert "chooseFile(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
+    assert "chooseFileError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
+    assert "setCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in web_methods
+    assert "setCookieError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in web_methods
+    assert "getCookie(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;" in web_methods
+    assert "getCookieError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
     assert "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
     assert "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
 

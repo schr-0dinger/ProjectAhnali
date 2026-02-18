@@ -30,6 +30,12 @@ from dsl.ast import (
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
+    _ExprWebChooseFileError,
+    _ExprWebChooseFileResult,
+    _ExprWebCookieGet,
+    _ExprWebCookieGetError,
+    _ExprWebCookieSetError,
+    _ExprWebCookieSetResult,
     _ExprWebLoadError,
     _ExprWebLoadResult,
     _ExprLocationEnabled,
@@ -67,6 +73,8 @@ from dsl.ast import (
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
     _StmtWebAddJsBridge,
+    _StmtWebChooseFile,
+    _StmtWebCookieSet,
     _StmtWebLoad,
     _StmtWebSetPolicy,
     _StmtHttpGetError,
@@ -4242,6 +4250,10 @@ class _PythonicContext:
             return self._compile_web_load_stmt(stmt)
         if isinstance(stmt, _StmtWebAddJsBridge):
             return self._compile_web_add_js_bridge_stmt(stmt)
+        if isinstance(stmt, _StmtWebChooseFile):
+            return self._compile_web_choose_file_stmt(stmt)
+        if isinstance(stmt, _StmtWebCookieSet):
+            return self._compile_web_cookie_set_stmt(stmt)
         if isinstance(stmt, _StmtCreateNotificationChannel):
             return self._compile_create_notification_channel_stmt(stmt)
         if isinstance(stmt, _StmtNotify):
@@ -6686,6 +6698,40 @@ class _PythonicContext:
                 bridge_name=stmt.value.bridge_name,
                 tmp_prefix="web_add_js_bridge_error_value",
             )
+        elif isinstance(stmt.value, _ExprWebChooseFileResult):
+            prefix, result = self._compile_web_choose_file_result_call(
+                mime_type=stmt.value.mime_type,
+                tmp_prefix="web_choose_file_result_value",
+            )
+        elif isinstance(stmt.value, _ExprWebChooseFileError):
+            prefix, result = self._compile_web_choose_file_error_call(
+                mime_type=stmt.value.mime_type,
+                tmp_prefix="web_choose_file_error_value",
+            )
+        elif isinstance(stmt.value, _ExprWebCookieSetResult):
+            prefix, result = self._compile_web_cookie_set_result_call(
+                url=stmt.value.url,
+                cookie=stmt.value.cookie,
+                tmp_prefix="web_cookie_set_result_value",
+            )
+        elif isinstance(stmt.value, _ExprWebCookieSetError):
+            prefix, result = self._compile_web_cookie_set_error_call(
+                url=stmt.value.url,
+                cookie=stmt.value.cookie,
+                tmp_prefix="web_cookie_set_error_value",
+            )
+        elif isinstance(stmt.value, _ExprWebCookieGet):
+            prefix, result = self._compile_web_cookie_get_call(
+                url=stmt.value.url,
+                fallback=stmt.value.fallback,
+                tmp_prefix="web_cookie_get_value",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprWebCookieGetError):
+            prefix, result = self._compile_web_cookie_get_error_call(
+                url=stmt.value.url,
+                tmp_prefix="web_cookie_get_error_value",
+            )
         elif isinstance(stmt.value, _ExprNotifyResult):
             prefix, result = self._compile_notify_result_call(
                 title=stmt.value.title,
@@ -6808,6 +6854,8 @@ class _PythonicContext:
                 "share_text_result(...), share_text_error(...), open_external_error(...), "
                 "web_load_result(...), web_load_error(...), "
                 "web_add_js_bridge_result(...), web_add_js_bridge_error(...), "
+                "web_choose_file_result(...), web_choose_file_error(...), "
+                "web_cookie_set_result(...), web_cookie_set_error(...), web_cookie_get(...), web_cookie_get_error(...), "
                 "notify_result(...), notify_error(...), "
                 "http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
@@ -7864,6 +7912,202 @@ class _PythonicContext:
             api_name="web_add_js_bridge",
             bridge_name=getattr(stmt, "bridge_name", ""),
             tmp_prefix="web_add_js_bridge_ignored",
+        )
+        return out
+
+    def _compile_web_choose_file_result_call(
+        self,
+        *,
+        api_name: str = "web_choose_file_result",
+        mime_type: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "chooseFile",
+                    args=[var("ctx"), const(str(mime_type))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_choose_file_error_call(
+        self,
+        *,
+        mime_type: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="web_choose_file_error",
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "chooseFileError",
+                    args=[var("ctx"), const(str(mime_type))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_cookie_set_result_call(
+        self,
+        *,
+        api_name: str = "web_cookie_set_result",
+        url: str,
+        cookie: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "setCookie",
+                    args=[var("ctx"), const(str(url)), const(str(cookie))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_cookie_set_error_call(
+        self,
+        *,
+        url: str,
+        cookie: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="web_cookie_set_error",
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "setCookieError",
+                    args=[var("ctx"), const(str(url)), const(str(cookie))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_cookie_get_call(
+        self,
+        *,
+        url: str,
+        fallback: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="web_cookie_get",
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getCookie",
+                    args=[var("ctx"), const(str(url)), const(str(fallback))],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_cookie_get_error_call(
+        self,
+        *,
+        url: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="web_cookie_get_error",
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getCookieError",
+                    args=[var("ctx"), const(str(url))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_choose_file_stmt(self, stmt):
+        out, _ = self._compile_web_choose_file_result_call(
+            api_name="web_choose_file",
+            mime_type=getattr(stmt, "mime_type", "*/*"),
+            tmp_prefix="web_choose_file_ignored",
+        )
+        return out
+
+    def _compile_web_cookie_set_stmt(self, stmt):
+        out, _ = self._compile_web_cookie_set_result_call(
+            api_name="web_cookie_set",
+            url=getattr(stmt, "url", ""),
+            cookie=getattr(stmt, "cookie", ""),
+            tmp_prefix="web_cookie_set_ignored",
         )
         return out
 
