@@ -1176,6 +1176,30 @@ def has_permission(permission: str):
     return permission_granted(permission)
 
 
+def create_notification_channel(channel_id: str, channel_name: str):
+    return _StmtCreateNotificationChannel(str(channel_id), str(channel_name))
+
+
+def notification_channel(channel_id: str, channel_name: str):
+    return create_notification_channel(channel_id, channel_name)
+
+
+def notify(title: str, body: str, channel_id: str = "ahnali_default"):
+    return _StmtNotify(str(title), str(body), str(channel_id))
+
+
+def send_notification(title: str, body: str, channel_id: str = "ahnali_default"):
+    return notify(title, body, channel_id)
+
+
+def notify_result(title: str, body: str, channel_id: str = "ahnali_default"):
+    return _ExprNotifyResult(str(title), str(body), str(channel_id))
+
+
+def notify_error(title: str, body: str, channel_id: str = "ahnali_default"):
+    return _ExprNotifyError(str(title), str(body), str(channel_id))
+
+
 def http_get(url: str, default_value: str = ""):
     return _ExprHttpGet(str(url), str(default_value))
 

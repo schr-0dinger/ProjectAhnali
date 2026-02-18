@@ -7,8 +7,11 @@ from dsl.app import (
     app,
     button,
     check_connectivity,
+    create_notification_channel,
     http_get,
     location_enabled,
+    notify_error,
+    notify_result,
     on_click,
     open_url,
     permission_granted,
@@ -51,6 +54,23 @@ def _handler_permission_granted():
     status_label.text = granted
 
 
+@on_click("btn_notification_channel")
+def _handler_create_notification_channel():
+    create_notification_channel("ahnali_diag", "Ahnali Diagnostics")
+
+
+@on_click("btn_notify_result")
+def _handler_notify_result():
+    posted = notify_result("Diag", "Body", "ahnali_diag")
+    status_label.text = posted
+
+
+@on_click("btn_notify_error")
+def _handler_notify_error():
+    err = notify_error("Diag", "Body", "ahnali_diag")
+    status_label.text = err
+
+
 @pytest.mark.parametrize(
     "api_name,cap_name,ui_items,handler",
     [
@@ -79,6 +99,24 @@ def _handler_permission_granted():
             "Permissions",
             [text("status", id="status_label"), button("Perm", id="btn_permission")],
             _handler_permission_granted,
+        ),
+        (
+            "create_notification_channel",
+            "Notifications",
+            [button("Channel", id="btn_notification_channel")],
+            _handler_create_notification_channel,
+        ),
+        (
+            "notify_result",
+            "Notifications",
+            [text("status", id="status_label"), button("Post", id="btn_notify_result")],
+            _handler_notify_result,
+        ),
+        (
+            "notify_error",
+            "Notifications",
+            [text("status", id="status_label"), button("PostErr", id="btn_notify_error")],
+            _handler_notify_error,
         ),
     ],
 )

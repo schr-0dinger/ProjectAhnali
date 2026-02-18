@@ -27,6 +27,8 @@ from dsl.ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprLocationEnabled,
+    _ExprNotifyError,
+    _ExprNotifyResult,
     _ExprPermissionGranted,
     _ExprReactiveGet,
     _ExprStateBackendGet,
@@ -53,6 +55,7 @@ from dsl.ast import (
     _StmtCheckConnectivity,
     _StmtCheckLocation,
     _StmtCheckPermission,
+    _StmtCreateNotificationChannel,
     _StmtHttpGetError,
     _StmtHttpAsyncBody,
     _StmtHttpAsyncJsonArrayLength,
@@ -86,6 +89,7 @@ from dsl.ast import (
     _StmtStateBackendRemove,
     _StmtLog,
     _StmtNavigate,
+    _StmtNotify,
     _StmtWhile,
 )
 from dsl.ir_helpers import (
@@ -4212,6 +4216,10 @@ class _PythonicContext:
             return self._compile_check_location_stmt(stmt)
         if isinstance(stmt, _StmtCheckPermission):
             return self._compile_check_permission_stmt(stmt)
+        if isinstance(stmt, _StmtCreateNotificationChannel):
+            return self._compile_create_notification_channel_stmt(stmt)
+        if isinstance(stmt, _StmtNotify):
+            return self._compile_notify_stmt(stmt)
         if isinstance(stmt, _StmtHttpGet):
             return self._compile_http_get_stmt(stmt)
         if isinstance(stmt, _StmtHttpGetStatus):
@@ -6609,6 +6617,20 @@ class _PythonicContext:
                 permission=stmt.value.permission,
                 tmp_prefix="permission_granted_result",
             )
+        elif isinstance(stmt.value, _ExprNotifyResult):
+            prefix, result = self._compile_notify_result_call(
+                title=stmt.value.title,
+                body=stmt.value.body,
+                channel_id=stmt.value.channel_id,
+                tmp_prefix="notify_result_value",
+            )
+        elif isinstance(stmt.value, _ExprNotifyError):
+            prefix, result = self._compile_notify_error_call(
+                title=stmt.value.title,
+                body=stmt.value.body,
+                channel_id=stmt.value.channel_id,
+                tmp_prefix="notify_error_value",
+            )
         elif isinstance(stmt.value, _ExprHttpGet):
             prefix, result = self._compile_http_get_call(
                 url=stmt.value.url,
@@ -6713,6 +6735,7 @@ class _PythonicContext:
                 "storage_exists(...), datastore_get(...), file_read(...), sqlite_get(...), room_get(...), "
                 "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
+                "notify_result(...), notify_error(...), "
                 "http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
                 "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
@@ -7392,6 +7415,135 @@ class _PythonicContext:
                 ),
             ),
         ]
+
+    def _compile_create_notification_channel_call(
+        self,
+        *,
+        channel_id: str,
+        channel_name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="create_notification_channel",
+            capability_name="Notifications",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "createChannel",
+                    args=[var("ctx"), const(str(channel_id)), const(str(channel_name))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_notify_result_call(
+        self,
+        *,
+        api_name: str = "notify_result",
+        title: str,
+        body: str,
+        channel_id: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Notifications",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[
+                        var("ctx"),
+                        const(str(title)),
+                        const(str(body)),
+                        const(str(channel_id)),
+                    ],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_notify_error_call(
+        self,
+        *,
+        title: str,
+        body: str,
+        channel_id: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="notify_error",
+            capability_name="Notifications",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "postNotificationError",
+                    args=[
+                        var("ctx"),
+                        const(str(title)),
+                        const(str(body)),
+                        const(str(channel_id)),
+                    ],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_create_notification_channel_stmt(self, stmt):
+        out, _ = self._compile_create_notification_channel_call(
+            channel_id=getattr(stmt, "channel_id", ""),
+            channel_name=getattr(stmt, "channel_name", ""),
+            tmp_prefix="notification_channel_ignored",
+        )
+        return out
+
+    def _compile_notify_stmt(self, stmt):
+        out, _ = self._compile_notify_result_call(
+            api_name="notify",
+            title=getattr(stmt, "title", ""),
+            body=getattr(stmt, "body", ""),
+            channel_id=getattr(stmt, "channel_id", "ahnali_default"),
+            tmp_prefix="notify_ignored",
+        )
+        return out
 
     def _compile_http_get_call(self, *, url: str, default_value: str, tmp_prefix: str):
         binding = self._require_helper_capability(

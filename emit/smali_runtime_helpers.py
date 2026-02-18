@@ -174,6 +174,127 @@ def _emit_permission_is_granted_method() -> list[str]:
     ]
 
 
+def _emit_notification_create_channel_method() -> list[str]:
+    return [
+        ".method public static createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 7",
+        "    if-eqz p0, :ahnali_notify_channel_invalid",
+        "    if-eqz p1, :ahnali_notify_channel_invalid",
+        "    if-eqz p2, :ahnali_notify_channel_invalid",
+        "    :ahnali_notify_channel_try_start",
+        '    const-string v1, "notification"',
+        "    invoke-virtual {p0, v1}, Landroid/app/Activity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v2",
+        "    check-cast v2, Landroid/app/NotificationManager;",
+        "    if-eqz v2, :ahnali_notify_channel_error",
+        "    sget v3, Landroid/os/Build$VERSION;->SDK_INT:I",
+        "    const/16 v4, 0x1a",
+        "    if-lt v3, v4, :ahnali_notify_channel_ok",
+        "    new-instance v5, Landroid/app/NotificationChannel;",
+        "    const/4 v6, 0x3",
+        "    invoke-direct {v5, p1, p2, v6}, Landroid/app/NotificationChannel;-><init>(Ljava/lang/String;Ljava/lang/CharSequence;I)V",
+        "    invoke-virtual {v2, v5}, Landroid/app/NotificationManager;->createNotificationChannel(Landroid/app/NotificationChannel;)V",
+        "    :ahnali_notify_channel_ok",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_notify_channel_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_notify_channel_try_start .. :ahnali_notify_channel_try_end} :ahnali_notify_channel_exception",
+        "    :ahnali_notify_channel_error",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_notify_channel_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_notify_channel_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_notification_post_method() -> list[str]:
+    return [
+        ".method public static postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1, p2, p3}, Lcom/ahnali/runtime/NotificationHelper;->postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_notify_post_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_notify_post_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_notification_post_error_method() -> list[str]:
+    return [
+        ".method public static postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 12",
+        "    if-eqz p0, :ahnali_notify_post_invalid",
+        "    if-eqz p1, :ahnali_notify_post_invalid",
+        "    if-eqz p2, :ahnali_notify_post_invalid",
+        "    if-eqz p3, :ahnali_notify_post_invalid",
+        "    sget v1, Landroid/os/Build$VERSION;->SDK_INT:I",
+        "    const/16 v2, 0x21",
+        "    if-lt v1, v2, :ahnali_notify_post_permission_ok",
+        '    const-string v3, "android.permission.POST_NOTIFICATIONS"',
+        "    invoke-virtual {p0, v3}, Landroid/app/Activity;->checkCallingOrSelfPermission(Ljava/lang/String;)I",
+        "    move-result v4",
+        "    if-eqz v4, :ahnali_notify_post_permission_ok",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        "    :ahnali_notify_post_permission_ok",
+        "    invoke-static {p0, p3, p3}, Lcom/ahnali/runtime/NotificationHelper;->createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    move-result v5",
+        "    if-nez v5, :ahnali_notify_post_channel_error",
+        "    :ahnali_notify_post_try_start",
+        '    const-string v6, "notification"',
+        "    invoke-virtual {p0, v6}, Landroid/app/Activity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;",
+        "    move-result-object v7",
+        "    check-cast v7, Landroid/app/NotificationManager;",
+        "    if-eqz v7, :ahnali_notify_post_runtime_error",
+        "    sget v8, Landroid/os/Build$VERSION;->SDK_INT:I",
+        "    const/16 v9, 0x1a",
+        "    if-lt v8, v9, :ahnali_notify_builder_legacy",
+        "    new-instance v10, Landroid/app/Notification$Builder;",
+        "    invoke-direct {v10, p0, p3}, Landroid/app/Notification$Builder;-><init>(Landroid/content/Context;Ljava/lang/String;)V",
+        "    goto :ahnali_notify_builder_ready",
+        "    :ahnali_notify_builder_legacy",
+        "    new-instance v10, Landroid/app/Notification$Builder;",
+        "    invoke-direct {v10, p0}, Landroid/app/Notification$Builder;-><init>(Landroid/content/Context;)V",
+        "    :ahnali_notify_builder_ready",
+        "    invoke-virtual {v10, p1}, Landroid/app/Notification$Builder;->setContentTitle(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;",
+        "    move-result-object v10",
+        "    invoke-virtual {v10, p2}, Landroid/app/Notification$Builder;->setContentText(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;",
+        "    move-result-object v10",
+        "    const v11, 0x1080027",
+        "    invoke-virtual {v10, v11}, Landroid/app/Notification$Builder;->setSmallIcon(I)Landroid/app/Notification$Builder;",
+        "    move-result-object v10",
+        "    const/4 v11, 0x1",
+        "    invoke-virtual {v10, v11}, Landroid/app/Notification$Builder;->setAutoCancel(Z)Landroid/app/Notification$Builder;",
+        "    move-result-object v10",
+        "    invoke-virtual {v10}, Landroid/app/Notification$Builder;->build()Landroid/app/Notification;",
+        "    move-result-object v6",
+        "    const/16 v8, 0x11",
+        "    invoke-virtual {v7, v8, v6}, Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_notify_post_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_notify_post_try_start .. :ahnali_notify_post_try_end} :ahnali_notify_post_runtime_error",
+        "    :ahnali_notify_post_channel_error",
+        "    return v5",
+        "    :ahnali_notify_post_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_notify_post_runtime_error",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_http_get_method() -> list[str]:
     return [
         ".method public static httpGet(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
@@ -1522,6 +1643,18 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
     ):
         lines.extend(_emit_permission_is_granted_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/NotificationHelper;"
+        and helper_method == "postNotification"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
+    ):
+        lines.extend(_emit_notification_create_channel_method())
+        lines.append("")
+        lines.extend(_emit_notification_post_method())
+        lines.append("")
+        lines.extend(_emit_notification_post_error_method())
         return "\n".join(lines)
 
     if (

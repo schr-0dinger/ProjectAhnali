@@ -253,6 +253,7 @@ Implemented:
 - ✅ Track C Wave 5 visible integration completed: end-to-end flow combining storage + async networking + connectivity check with deterministic fallback UI/cache routing (`tests/test_track_c_wave5_visible_flow.py`, `docs/TrackC_Wave5_Visible_Flow.md`)
 - ✅ Track C Wave 6 completed: `Location` helper-call capability (`Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(...)I`) + DSL (`location_enabled`, `check_location`) + visible integration flow combining location + networking + storage deterministic fallback routing (`tests/test_track_c_wave6_location.py`, `tests/test_track_c_wave6_visible_flow.py`, `docs/TrackC_Wave6_Location.md`)
 - ✅ Track C Wave 7 completed: `Permissions` helper-call capability (`Lcom/ahnali/runtime/PermissionHelper;->isGranted(...)I`) + DSL (`permission_granted`, `has_permission`, `check_permission`, `permission_check`) + visible integration flow combining permissions + storage + URL launcher deterministic fallback routing (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave7_visible_flow.py`, `docs/TrackC_Wave7_Permissions.md`)
+- ✅ Track C Wave 8 completed: `Notifications` helper-call capability (`Lcom/ahnali/runtime/NotificationHelper;->postNotification(...)I`) + channels/delivery/error helper surfaces (`createChannel(...)`, `postNotificationError(...)`) + DSL (`create_notification_channel`, `notification_channel`, `notify`, `send_notification`, `notify_result`, `notify_error`) + visible integration flow combining notifications + storage + URL launcher deterministic fallback routing (`tests/test_track_c_wave8_notifications.py`, `tests/test_track_c_wave8_visible_flow.py`, `docs/TrackC_Wave8_Notifications.md`)
 
 Pending:
 - ⚠️ Broaden capability modules beyond current network/storage/location helpers.
@@ -1781,7 +1782,7 @@ never as core behavior.
 - ✅ State storage
 - ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
 - ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
-- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7 visible capability integration flow compile coverage
+- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7/Wave 8 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests

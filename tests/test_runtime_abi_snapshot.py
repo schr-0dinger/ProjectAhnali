@@ -37,6 +37,21 @@ def test_runtime_abi_snapshot_includes_permission_helper_surface():
     assert "isGranted(Landroid/app/Activity;Ljava/lang/String;)I" in permission_methods
 
 
+def test_runtime_abi_snapshot_includes_notification_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    notification_methods = classes["Lcom/ahnali/runtime/NotificationHelper;"]
+    assert "createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in notification_methods
+    assert (
+        "postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
+        in notification_methods
+    )
+    assert (
+        "postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
+        in notification_methods
+    )
+
+
 def test_runtime_abi_snapshot_includes_program5_storage_backend_surface():
     snapshot = build_runtime_abi_snapshot()
     classes = _snapshot_classes(snapshot)

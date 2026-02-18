@@ -236,6 +236,14 @@ register_default_capability(
     helper_sig="(Landroid/app/Activity;Ljava/lang/String;)I",
 )
 register_default_capability(
+    "Notifications",
+    ["android.permission.POST_NOTIFICATIONS"],
+    aliases=["Notification"],
+    helper_class_desc="Lcom/ahnali/runtime/NotificationHelper;",
+    helper_method="postNotification",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+)
+register_default_capability(
     "Maps",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
@@ -261,6 +269,7 @@ class _Caps:
     Networking = "Networking"
     URLLauncher = "URLLauncher"
     Permissions = "Permissions"
+    Notifications = "Notifications"
     Maps = "Maps"
     Location = "Location"
 

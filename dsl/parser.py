@@ -24,6 +24,8 @@ from .ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprLocationEnabled,
+    _ExprNotifyError,
+    _ExprNotifyResult,
     _ExprPermissionGranted,
     _ExprReactiveGet,
     _ExprStateBackendGet,
@@ -43,6 +45,7 @@ from .ast import (
     _StmtCheckConnectivity,
     _StmtCheckLocation,
     _StmtCheckPermission,
+    _StmtCreateNotificationChannel,
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncBody,
@@ -78,6 +81,7 @@ from .ast import (
     _StmtAnimationGroup,
     _StmtLog,
     _StmtNavigate,
+    _StmtNotify,
     _StmtWhile,
 )
 
@@ -491,6 +495,48 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("check_permission argument 'permission' must be a constant string")
                 return _StmtCheckPermission(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {
+                        "create_notification_channel",
+                        "CreateNotificationChannel",
+                        "notification_channel",
+                        "NotificationChannel",
+                    }
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 2:
+                    raise RuntimeError(
+                        'create_notification_channel expects exactly 2 string arguments. '
+                        'Usage: create_notification_channel("channel_id", "Channel Name")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("create_notification_channel argument 'channel_id' must be a constant string")
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError(
+                        "create_notification_channel argument 'channel_name' must be a constant string"
+                    )
+                return _StmtCreateNotificationChannel(args[0].value, args[1].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"notify", "Notify", "send_notification", "SendNotification"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (2 <= len(args) <= 3):
+                    raise RuntimeError(
+                        'notify expects 2 or 3 string arguments. '
+                        'Usage: notify("Title", "Body", "channel_id")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("notify argument 'title' must be a constant string")
+                if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                    raise RuntimeError("notify argument 'body' must be a constant string")
+                channel_expr = args[2] if len(args) > 2 else _ExprConst("ahnali_default")
+                if not isinstance(channel_expr, _ExprConst) or not isinstance(channel_expr.value, str):
+                    raise RuntimeError("notify argument 'channel_id' must be a constant string")
+                return _StmtNotify(args[0].value, args[1].value, channel_expr.value)
             if fn in (
                 "http_get",
                 "HttpGet",
@@ -938,6 +984,44 @@ def _parse_expr(node):
             if node.args:
                 raise RuntimeError("location_enabled expects no arguments. Usage: location_enabled()")
             return _ExprLocationEnabled()
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"notify_result", "NotifyResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (2 <= len(args) <= 3):
+                raise RuntimeError(
+                    'notify_result expects 2 or 3 string arguments. '
+                    'Usage: notify_result("Title", "Body", "channel_id")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("notify_result argument 'title' must be a constant string")
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("notify_result argument 'body' must be a constant string")
+            channel_expr = args[2] if len(args) > 2 else _ExprConst("ahnali_default")
+            if not isinstance(channel_expr, _ExprConst) or not isinstance(channel_expr.value, str):
+                raise RuntimeError("notify_result argument 'channel_id' must be a constant string")
+            return _ExprNotifyResult(args[0].value, args[1].value, channel_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"notify_error", "NotifyError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (2 <= len(args) <= 3):
+                raise RuntimeError(
+                    'notify_error expects 2 or 3 string arguments. '
+                    'Usage: notify_error("Title", "Body", "channel_id")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("notify_error argument 'title' must be a constant string")
+            if not isinstance(args[1], _ExprConst) or not isinstance(args[1].value, str):
+                raise RuntimeError("notify_error argument 'body' must be a constant string")
+            channel_expr = args[2] if len(args) > 2 else _ExprConst("ahnali_default")
+            if not isinstance(channel_expr, _ExprConst) or not isinstance(channel_expr.value, str):
+                raise RuntimeError("notify_error argument 'channel_id' must be a constant string")
+            return _ExprNotifyError(args[0].value, args[1].value, channel_expr.value)
         if node.func.id in (
             "http_get",
             "HttpGet",

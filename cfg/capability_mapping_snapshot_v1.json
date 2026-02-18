@@ -140,6 +140,23 @@
       ]
     },
     {
+      "capability": "Notifications",
+      "emitted_class_desc": "Lcom/ahnali/runtime/NotificationHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/NotificationHelper;",
+      "helper_method": "postNotification",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+      "mode": "helper_call",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    {
       "capability": "Permissions",
       "emitted_class_desc": "Lcom/ahnali/runtime/PermissionHelper;",
       "emitted_methods": [

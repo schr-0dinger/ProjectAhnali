@@ -411,6 +411,7 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
         "Maps",
         "Microphone",
         "Networking",
+        "Notifications",
         "Permissions",
         "Sensors",
         "Storage",
@@ -470,6 +471,18 @@ def test_runtime_abi_permissions_helper_binding_contract():
     assert binding.helper_class_desc == "Lcom/ahnali/runtime/PermissionHelper;"
     assert binding.helper_method == "isGranted"
     assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+
+
+def test_runtime_abi_notifications_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["Notifications"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/NotificationHelper;"
+    assert binding.helper_method == "postNotification"
+    assert (
+        binding.helper_sig
+        == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
+    )
 
 
 def test_runtime_abi_networking_helper_binding_contract():

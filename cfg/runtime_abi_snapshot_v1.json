@@ -176,6 +176,16 @@
       "source": "capability:Location"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/NotificationHelper;",
+      "methods": [
+        "<init>()V",
+        "createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+        "postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
+      ],
+      "source": "capability:Notifications"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/PermissionHelper;",
       "methods": [
         "<init>()V",

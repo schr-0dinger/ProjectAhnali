@@ -20,12 +20,13 @@ In scope:
 - Track C Wave 3/4 capability helper ABI: tokened async route dispatch + deterministic cancellation/progress/error/status/body helper methods + runnable support classes + timeout/retry controls + request-option and typed async JSON adapter helpers
 - Track C Wave 6 capability helper ABI: location provider enabled surface
 - Track C Wave 7 capability helper ABI: permissions granted surface
+- Track C Wave 8 capability helper ABI: notifications/channels delivery + error-code surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 - Runtime UI diff/recomposition engines (reactive mode stays explicit-bind only)
 
@@ -259,6 +260,17 @@ Deprecation policy:
   - Return semantics:
     - `1`: permission is granted
     - `0`: null context, null permission, denied permission, or caught exception
+- Track C Wave 8 helper-call binding:
+  - Capability: `Notifications`
+  - Helper class: `Lcom/ahnali/runtime/NotificationHelper;`
+  - Helper methods/sigs:
+    - `createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`
+    - `postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`
+  - Return semantics:
+    - `createChannel`: `0` success, `1` invalid args, `3` channel/service failure, `4` caught exception.
+    - `postNotification`: `1` successful delivery, `0` on any failure.
+    - `postNotificationError`: `0` success, `1` invalid args, `2` notification permission denied (SDK >= 33), `3` channel/service failure, `4` caught exception.
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -374,6 +386,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave6_visible_flow.py`
 - `tests/test_track_c_wave7_permissions.py`
 - `tests/test_track_c_wave7_visible_flow.py`
+- `tests/test_track_c_wave8_notifications.py`
+- `tests/test_track_c_wave8_visible_flow.py`
 - `tests/test_program5_state_backends.py`
 - `tests/test_program5_lifecycle.py`
 - `tests/test_support_click_listener.py`

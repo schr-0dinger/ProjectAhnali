@@ -104,6 +104,20 @@ class _ExprPermissionGranted:
         self.permission = permission
 
 
+class _ExprNotifyResult:
+    def __init__(self, title, body, channel_id):
+        self.title = title
+        self.body = body
+        self.channel_id = channel_id
+
+
+class _ExprNotifyError:
+    def __init__(self, title, body, channel_id):
+        self.title = title
+        self.body = body
+        self.channel_id = channel_id
+
+
 class _ExprHttpGet:
     def __init__(self, url, default_value):
         self.url = url
@@ -261,6 +275,19 @@ class _StmtCheckLocation:
 class _StmtCheckPermission:
     def __init__(self, permission):
         self.permission = permission
+
+
+class _StmtCreateNotificationChannel:
+    def __init__(self, channel_id, channel_name):
+        self.channel_id = channel_id
+        self.channel_name = channel_name
+
+
+class _StmtNotify:
+    def __init__(self, title, body, channel_id):
+        self.title = title
+        self.body = body
+        self.channel_id = channel_id
 
 
 class _StmtStoragePut:

@@ -67,7 +67,7 @@ Active:
 - Inline event attribute sugar is available and wired to existing event lowering
 
 Test status:
-- Last suite run: `507 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `521 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
 
 ## Python Library Policy (Enforced)
 
@@ -252,7 +252,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -321,11 +321,16 @@ Work items:
   - DSL surfaces: `permission_granted()`, `has_permission()`, `check_permission()`, `permission_check()`
 - ✅ Add Wave 7 visible integration flow combining permissions + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave7_visible_flow.py`)
 - ✅ Document Wave 7 permissions contract + flow (`docs/TrackC_Wave7_Permissions.md`)
+- ✅ Add Wave 8 notifications/channels capability helper-call primitive:
+  - `Notifications` → `Lcom/ahnali/runtime/NotificationHelper;->postNotification(...)I`
+  - DSL surfaces: `create_notification_channel()`, `notify()`, `notify_result()`, `notify_error()`
+- ✅ Add Wave 8 visible integration flow combining notifications + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave8_visible_flow.py`)
+- ✅ Document Wave 8 notifications/channels contract + flow (`docs/TrackC_Wave8_Notifications.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - ✅ Complete Program 5 state surfaces:
   - lifecycle hooks: `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
   - deterministic state backends: `datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_storage_*`/`secure_storage_*`
-- Continue adding capability-scoped primitives beyond networking/storage/location/permissions.
+- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications.
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
@@ -340,6 +345,8 @@ Exit criteria:
 - ✅ Wave 6 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave6_visible_flow.py`.
 - ✅ Wave 7 permissions capability conformance is enforced by `tests/test_track_c_wave7_permissions.py`.
 - ✅ Wave 7 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave7_visible_flow.py`.
+- ✅ Wave 8 notifications/channels capability conformance is enforced by `tests/test_track_c_wave8_notifications.py`.
+- ✅ Wave 8 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave8_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
