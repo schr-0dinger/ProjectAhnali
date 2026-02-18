@@ -11,6 +11,12 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "notify" in capability_stmt
     assert "clipboard_set" in capability_stmt
     assert "share_text" in capability_stmt
+    assert "work_enqueue" in capability_stmt
+    assert "work_cancel" in capability_stmt
+    assert "alarm_schedule" in capability_stmt
+    assert "alarm_cancel" in capability_stmt
+    assert "job_schedule" in capability_stmt
+    assert "job_cancel" in capability_stmt
     assert "web_set_policy" in capability_stmt
     assert "web_load" in capability_stmt
     assert "web_add_js_bridge" in capability_stmt
@@ -23,6 +29,12 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "share_text_error" in capability_expr
     assert "deep_link_get" in capability_expr
     assert "deep_link_error" in capability_expr
+    assert "work_status" in capability_expr
+    assert "work_error" in capability_expr
+    assert "alarm_status" in capability_expr
+    assert "alarm_error" in capability_expr
+    assert "job_status" in capability_expr
+    assert "job_error" in capability_expr
     assert "web_load_result" in capability_expr
     assert "web_load_error" in capability_expr
     assert "web_add_js_bridge_result" in capability_expr

@@ -403,12 +403,14 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
     assert CAPABILITY_RUNTIME_ABI_VERSION == "1.0.0"
     mapping = default_capability_runtime_mapping()
     assert sorted(mapping.keys()) == [
+        "AlarmManager",
         "Audio",
         "Camera",
         "Clipboard",
         "Connectivity",
         "DeepLinking",
         "FilePicker",
+        "JobScheduler",
         "Location",
         "Maps",
         "Microphone",
@@ -421,6 +423,7 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
         "URLLauncher",
         "Video",
         "WebView",
+        "WorkManager",
     ]
 
 
@@ -533,6 +536,33 @@ def test_runtime_abi_deep_link_helper_binding_contract():
         binding.helper_sig
         == "(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;"
     )
+
+
+def test_runtime_abi_workmanager_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["WorkManager"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/WorkHelper;"
+    assert binding.helper_method == "enqueueWork"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;I)I"
+
+
+def test_runtime_abi_alarmmanager_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["AlarmManager"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/AlarmHelper;"
+    assert binding.helper_method == "scheduleAlarm"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;I)I"
+
+
+def test_runtime_abi_jobscheduler_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["JobScheduler"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/JobHelper;"
+    assert binding.helper_method == "scheduleJob"
+    assert binding.helper_sig == "(Landroid/app/Activity;II)I"
 
 
 def test_runtime_abi_webview_helper_binding_contract():

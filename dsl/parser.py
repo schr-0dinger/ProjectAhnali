@@ -26,6 +26,12 @@ from .ast import (
     _ExprClipboardGet,
     _ExprDeepLinkError,
     _ExprDeepLinkGet,
+    _ExprWorkError,
+    _ExprWorkStatus,
+    _ExprAlarmError,
+    _ExprAlarmStatus,
+    _ExprJobError,
+    _ExprJobStatus,
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
@@ -63,6 +69,12 @@ from .ast import (
     _StmtCheckPermission,
     _StmtClipboardSet,
     _StmtCreateNotificationChannel,
+    _StmtWorkCancel,
+    _StmtWorkEnqueue,
+    _StmtAlarmCancel,
+    _StmtAlarmSchedule,
+    _StmtJobCancel,
+    _StmtJobSchedule,
     _StmtOpenExternal,
     _StmtWebAddJsBridge,
     _StmtWebChooseFile,
@@ -225,6 +237,12 @@ def _const_int_bool_arg(expr, *, fn_name: str, arg_name: str):
     if isinstance(value, int):
         return int(value)
     raise RuntimeError(f"{fn_name} argument '{arg_name}' must be an integer/bool constant")
+
+
+def _const_int_arg(expr, *, fn_name: str, arg_name: str):
+    if not isinstance(expr, _ExprConst) or not isinstance(expr.value, int) or isinstance(expr.value, bool):
+        raise RuntimeError(f"{fn_name} argument '{arg_name}' must be a constant integer")
+    return int(expr.value)
 
 
 def _const_string_kwarg(call: ast.Call, *, fn_name: str, kw: str, default: str = "") -> str:
@@ -572,6 +590,107 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("open_external argument 'uri' must be a constant string")
                 return _StmtOpenExternal(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"work_enqueue", "WorkEnqueue", "enqueue_work", "EnqueueWork"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError(
+                        'work_enqueue expects 1 or 2 arguments. Usage: work_enqueue("work_name", delay_seconds)'
+                    )
+                name = _const_string_arg(args[0], fn_name="work_enqueue", arg_name="name")
+                delay_expr = args[1] if len(args) > 1 else _ExprConst(0)
+                delay_seconds = _const_int_arg(
+                    delay_expr,
+                    fn_name="work_enqueue",
+                    arg_name="delay_seconds",
+                )
+                if delay_seconds < 0:
+                    raise RuntimeError("work_enqueue argument 'delay_seconds' must be >= 0")
+                return _StmtWorkEnqueue(name, delay_seconds)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"work_cancel", "WorkCancel", "cancel_work", "CancelWork"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        'work_cancel expects exactly 1 string argument. Usage: work_cancel("work_name")'
+                    )
+                name = _const_string_arg(args[0], fn_name="work_cancel", arg_name="name")
+                return _StmtWorkCancel(name)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"alarm_schedule", "AlarmSchedule", "schedule_alarm", "ScheduleAlarm"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError(
+                        'alarm_schedule expects 1 or 2 arguments. Usage: alarm_schedule("alarm_name", trigger_seconds)'
+                    )
+                name = _const_string_arg(args[0], fn_name="alarm_schedule", arg_name="name")
+                trigger_expr = args[1] if len(args) > 1 else _ExprConst(0)
+                trigger_seconds = _const_int_arg(
+                    trigger_expr,
+                    fn_name="alarm_schedule",
+                    arg_name="trigger_seconds",
+                )
+                if trigger_seconds < 0:
+                    raise RuntimeError("alarm_schedule argument 'trigger_seconds' must be >= 0")
+                return _StmtAlarmSchedule(name, trigger_seconds)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"alarm_cancel", "AlarmCancel", "cancel_alarm", "CancelAlarm"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        'alarm_cancel expects exactly 1 string argument. Usage: alarm_cancel("alarm_name")'
+                    )
+                name = _const_string_arg(args[0], fn_name="alarm_cancel", arg_name="name")
+                return _StmtAlarmCancel(name)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"job_schedule", "JobSchedule", "schedule_job", "ScheduleJob"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError(
+                        "job_schedule expects 1 or 2 integer arguments. "
+                        "Usage: job_schedule(job_id, delay_seconds)"
+                    )
+                job_id = _const_int_arg(args[0], fn_name="job_schedule", arg_name="job_id")
+                if job_id <= 0:
+                    raise RuntimeError("job_schedule argument 'job_id' must be > 0")
+                delay_expr = args[1] if len(args) > 1 else _ExprConst(0)
+                delay_seconds = _const_int_arg(
+                    delay_expr,
+                    fn_name="job_schedule",
+                    arg_name="delay_seconds",
+                )
+                if delay_seconds < 0:
+                    raise RuntimeError("job_schedule argument 'delay_seconds' must be >= 0")
+                return _StmtJobSchedule(job_id, delay_seconds)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"job_cancel", "JobCancel", "cancel_job", "CancelJob"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        "job_cancel expects exactly 1 integer argument. Usage: job_cancel(job_id)"
+                    )
+                job_id = _const_int_arg(args[0], fn_name="job_cancel", arg_name="job_id")
+                if job_id <= 0:
+                    raise RuntimeError("job_cancel argument 'job_id' must be > 0")
+                return _StmtJobCancel(job_id)
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {"web_set_policy", "WebSetPolicy", "web_policy", "WebPolicy"}
@@ -1214,6 +1333,86 @@ def _parse_expr(node):
             if args:
                 raise RuntimeError("deep_link_error expects no arguments. Usage: deep_link_error()")
             return _ExprDeepLinkError()
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"work_status", "WorkStatus"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'work_status expects exactly 1 string argument. Usage: work_status("work_name")'
+                )
+            return _ExprWorkStatus(
+                _const_string_arg(args[0], fn_name="work_status", arg_name="name")
+            )
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"work_error", "WorkError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'work_error expects exactly 1 string argument. Usage: work_error("work_name")'
+                )
+            return _ExprWorkError(
+                _const_string_arg(args[0], fn_name="work_error", arg_name="name")
+            )
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"alarm_status", "AlarmStatus"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'alarm_status expects exactly 1 string argument. Usage: alarm_status("alarm_name")'
+                )
+            return _ExprAlarmStatus(
+                _const_string_arg(args[0], fn_name="alarm_status", arg_name="name")
+            )
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"alarm_error", "AlarmError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'alarm_error expects exactly 1 string argument. Usage: alarm_error("alarm_name")'
+                )
+            return _ExprAlarmError(
+                _const_string_arg(args[0], fn_name="alarm_error", arg_name="name")
+            )
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"job_status", "JobStatus"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    "job_status expects exactly 1 integer argument. Usage: job_status(job_id)"
+                )
+            job_id = _const_int_arg(args[0], fn_name="job_status", arg_name="job_id")
+            if job_id <= 0:
+                raise RuntimeError("job_status argument 'job_id' must be > 0")
+            return _ExprJobStatus(job_id)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"job_error", "JobError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    "job_error expects exactly 1 integer argument. Usage: job_error(job_id)"
+                )
+            job_id = _const_int_arg(args[0], fn_name="job_error", arg_name="job_id")
+            if job_id <= 0:
+                raise RuntimeError("job_error argument 'job_id' must be > 0")
+            return _ExprJobError(job_id)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {"web_load_result", "WebLoadResult"}

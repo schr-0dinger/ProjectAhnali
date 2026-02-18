@@ -260,9 +260,12 @@ Implemented:
 - ✅ Track C Wave 12 completed: Web JS bridge policy-constrained helper-call surface (`Lcom/ahnali/runtime/WebHelper;->addJsBridge(...)I`, `addJsBridgeError(...)I`) + DSL (`web_add_js_bridge`, `web_register_js_bridge`, `web_add_js_bridge_result`, `web_add_js_bridge_error`) + visible integration flow combining JS bridge policy routing + sharing fallback (`tests/test_track_c_wave12_web_js_bridge.py`, `tests/test_track_c_wave12_visible_flow.py`, `docs/TrackC_Wave12_Web_JS_Bridge.md`)
 - ✅ Track C Wave 13 completed: Web file chooser + cookie-manager helper-call surface (`Lcom/ahnali/runtime/WebHelper;->chooseFile(...)I`, `chooseFileError(...)I`, `setCookie(...)I`, `setCookieError(...)I`, `getCookie(...)Ljava/lang/String;`, `getCookieError(...)I`) + DSL (`web_choose_file`, `web_file_chooser`, `web_choose_file_result`, `web_choose_file_error`, `web_cookie_set`, `web_set_cookie`, `web_cookie_set_result`, `web_cookie_set_error`, `web_cookie_get`, `web_get_cookie`, `web_cookie_get_error`) + visible integration flow combining chooser/cookie routing + sharing fallback (`tests/test_track_c_wave13_web_file_cookie.py`, `tests/test_track_c_wave13_visible_flow.py`, `docs/TrackC_Wave13_Web_FileChooser_Cookies.md`)
 - ✅ Track C Wave 14 completed: deep-link helper-call capability (`Lcom/ahnali/runtime/DeepLinkHelper;->getLaunchUri(...)Ljava/lang/String;`, `getLaunchUriError(...)I`) + DSL (`deep_link_get`, `get_deep_link`, `deep_link_error`, `get_deep_link_error`) + visible integration flow combining deep-link route + deterministic URL fallback (`tests/test_track_c_wave14_deep_linking.py`, `tests/test_track_c_wave14_visible_flow.py`, `docs/TrackC_Wave14_DeepLinking.md`)
+- ✅ Track C Wave 15 completed: WorkManager helper-call capability (`Lcom/ahnali/runtime/WorkHelper;->enqueueWork(...)I`, `cancelWork(...)I`, `getWorkStatus(...)I`, `getWorkStatusError(...)I`) + DSL (`work_enqueue`, `work_cancel`, `work_status`, `work_error`) + conformance coverage (`tests/test_track_c_wave15_workmanager.py`, `docs/TrackC_Wave15_WorkManager.md`)
+- ✅ Track C Wave 16 completed: AlarmManager helper-call capability (`Lcom/ahnali/runtime/AlarmHelper;->scheduleAlarm(...)I`, `cancelAlarm(...)I`, `getAlarmStatus(...)I`, `getAlarmStatusError(...)I`) + DSL (`alarm_schedule`, `alarm_cancel`, `alarm_status`, `alarm_error`) + conformance coverage (`tests/test_track_c_wave16_alarmmanager.py`, `docs/TrackC_Wave16_AlarmManager.md`)
+- ✅ Track C Wave 17 completed: JobScheduler helper-call capability (`Lcom/ahnali/runtime/JobHelper;->scheduleJob(...)I`, `cancelJob(...)I`, `getJobStatus(...)I`, `getJobStatusError(...)I`) + API-level guard + DSL (`job_schedule`, `job_cancel`, `job_status`, `job_error`) + visible integration flow (`tests/test_track_c_wave17_jobscheduler.py`, `tests/test_track_c_wave17_visible_flow.py`, `docs/TrackC_Wave17_JobScheduler.md`)
 
 Pending:
-- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager helpers.
+- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager/deep-link/background-work helpers.
 
 ---
 
@@ -597,9 +600,9 @@ Notifications:
 - ❌ foreground service notification
 
 Background work:
-- ❌ WorkManager
-- ❌ AlarmManager
-- ❌ JobScheduler
+- ✅ WorkManager
+- ✅ AlarmManager
+- ✅ JobScheduler
 - ❌ foreground services
 - ❌ BroadcastReceiver
 
@@ -840,7 +843,7 @@ This is the authoritative execution order for Program 5 and beyond.
 1. ✅ Program 5 closure pass: state/lifecycle traceability locked to tests/docs (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2. ✅ Program 11-A gate hardening before breadth: contract/CI guardrails are strict and blocking (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`, `tests/test_capability_mapping_contract.py`, `tests/test_docs_consistency.py`, `tests/test_capability_diagnostics_contract.py`).
 3. ✅ Program 6-A capability core tranche: runtime-permission + notifications/channels slices shipped under the ABI/test/doc pattern (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`, `docs/TrackC_Wave7_Permissions.md`, `docs/TrackC_Wave8_Notifications.md`).
-4. ⚠️ Program 6-B capability breadth tranche: Wave 9-14 baseline is complete (clipboard, sharing/intents, WebView/settings, JS bridge, file chooser/cookies, deep-linking). Remaining work is split into explicit completion tasks in `docs/Program6B_Task_Breakdown.md` (next immediate slice: background work `WorkManager`/`AlarmManager`/`JobScheduler`).
+4. ⚠️ Program 6-B capability breadth tranche: Wave 9-17 baseline is complete (clipboard, sharing/intents, WebView/settings, JS bridge, file chooser/cookies, deep-linking, WorkManager/AlarmManager/JobScheduler). Remaining work is split into explicit completion tasks in `docs/Program6B_Task_Breakdown.md` (next immediate slice: Task B5 sharing/intents completion pass).
 5. ⚠️ Program 7 motion completion (`8.6`): finish missing animator/transition/transform surfaces with deterministic ordering/fallback.
 6. ⚠️ Program 8 advanced/system/security/debug completion (`8.7`-`8.10`) with explicit policy constraints and release-mode tests.
 7. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled.

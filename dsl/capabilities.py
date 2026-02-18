@@ -274,6 +274,30 @@ register_default_capability(
     helper_sig="(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;",
 )
 register_default_capability(
+    "WorkManager",
+    [],
+    aliases=["Work", "BackgroundWork"],
+    helper_class_desc="Lcom/ahnali/runtime/WorkHelper;",
+    helper_method="enqueueWork",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;I)I",
+)
+register_default_capability(
+    "AlarmManager",
+    [],
+    aliases=["Alarms", "Alarm"],
+    helper_class_desc="Lcom/ahnali/runtime/AlarmHelper;",
+    helper_method="scheduleAlarm",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;I)I",
+)
+register_default_capability(
+    "JobScheduler",
+    [],
+    aliases=["Jobs", "Job"],
+    helper_class_desc="Lcom/ahnali/runtime/JobHelper;",
+    helper_method="scheduleJob",
+    helper_sig="(Landroid/app/Activity;II)I",
+)
+register_default_capability(
     "Maps",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
@@ -303,6 +327,9 @@ class _Caps:
     Clipboard = "Clipboard"
     Sharing = "Sharing"
     DeepLinking = "DeepLinking"
+    WorkManager = "WorkManager"
+    AlarmManager = "AlarmManager"
+    JobScheduler = "JobScheduler"
     Maps = "Maps"
     Location = "Location"
 

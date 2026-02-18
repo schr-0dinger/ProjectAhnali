@@ -29,6 +29,12 @@ from dsl.ast import (
     _ExprClipboardGet,
     _ExprDeepLinkError,
     _ExprDeepLinkGet,
+    _ExprWorkError,
+    _ExprWorkStatus,
+    _ExprAlarmError,
+    _ExprAlarmStatus,
+    _ExprJobError,
+    _ExprJobStatus,
     _ExprOpenExternalError,
     _ExprWebAddJsBridgeError,
     _ExprWebAddJsBridgeResult,
@@ -72,6 +78,12 @@ from dsl.ast import (
     _StmtCheckLocation,
     _StmtCheckPermission,
     _StmtClipboardSet,
+    _StmtWorkCancel,
+    _StmtWorkEnqueue,
+    _StmtAlarmCancel,
+    _StmtAlarmSchedule,
+    _StmtJobCancel,
+    _StmtJobSchedule,
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
     _StmtWebAddJsBridge,
@@ -4246,6 +4258,18 @@ class _PythonicContext:
             return self._compile_share_text_stmt(stmt)
         if isinstance(stmt, _StmtOpenExternal):
             return self._compile_open_external_stmt(stmt)
+        if isinstance(stmt, _StmtWorkEnqueue):
+            return self._compile_work_enqueue_stmt(stmt)
+        if isinstance(stmt, _StmtWorkCancel):
+            return self._compile_work_cancel_stmt(stmt)
+        if isinstance(stmt, _StmtAlarmSchedule):
+            return self._compile_alarm_schedule_stmt(stmt)
+        if isinstance(stmt, _StmtAlarmCancel):
+            return self._compile_alarm_cancel_stmt(stmt)
+        if isinstance(stmt, _StmtJobSchedule):
+            return self._compile_job_schedule_stmt(stmt)
+        if isinstance(stmt, _StmtJobCancel):
+            return self._compile_job_cancel_stmt(stmt)
         if isinstance(stmt, _StmtWebSetPolicy):
             return self._compile_web_set_policy_stmt(stmt)
         if isinstance(stmt, _StmtWebLoad):
@@ -6673,6 +6697,36 @@ class _PythonicContext:
             prefix, result = self._compile_deep_link_error_call(
                 tmp_prefix="deep_link_error_result",
             )
+        elif isinstance(stmt.value, _ExprWorkStatus):
+            prefix, result = self._compile_work_status_call(
+                name=stmt.value.name,
+                tmp_prefix="work_status_result",
+            )
+        elif isinstance(stmt.value, _ExprWorkError):
+            prefix, result = self._compile_work_error_call(
+                name=stmt.value.name,
+                tmp_prefix="work_error_result",
+            )
+        elif isinstance(stmt.value, _ExprAlarmStatus):
+            prefix, result = self._compile_alarm_status_call(
+                name=stmt.value.name,
+                tmp_prefix="alarm_status_result",
+            )
+        elif isinstance(stmt.value, _ExprAlarmError):
+            prefix, result = self._compile_alarm_error_call(
+                name=stmt.value.name,
+                tmp_prefix="alarm_error_result",
+            )
+        elif isinstance(stmt.value, _ExprJobStatus):
+            prefix, result = self._compile_job_status_call(
+                job_id=stmt.value.job_id,
+                tmp_prefix="job_status_result",
+            )
+        elif isinstance(stmt.value, _ExprJobError):
+            prefix, result = self._compile_job_error_call(
+                job_id=stmt.value.job_id,
+                tmp_prefix="job_error_result",
+            )
         elif isinstance(stmt.value, _ExprShareTextResult):
             prefix, result = self._compile_share_text_result_call(
                 text=stmt.value.text,
@@ -6863,6 +6917,7 @@ class _PythonicContext:
                 "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
                 "clipboard_get(...), deep_link_get(...), deep_link_error(...), "
+                "work_status(...), work_error(...), alarm_status(...), alarm_error(...), job_status(...), job_error(...), "
                 "share_text_result(...), share_text_error(...), open_external_error(...), "
                 "web_load_result(...), web_load_error(...), "
                 "web_add_js_bridge_result(...), web_add_js_bridge_error(...), "
@@ -6928,6 +6983,36 @@ class _PythonicContext:
             return self._compile_permission_granted_call(
                 permission=expr.permission,
                 tmp_prefix="permission_granted_expr",
+            )
+        if isinstance(expr, _ExprWorkStatus):
+            return self._compile_work_status_call(
+                name=expr.name,
+                tmp_prefix="work_status_expr",
+            )
+        if isinstance(expr, _ExprWorkError):
+            return self._compile_work_error_call(
+                name=expr.name,
+                tmp_prefix="work_error_expr",
+            )
+        if isinstance(expr, _ExprAlarmStatus):
+            return self._compile_alarm_status_call(
+                name=expr.name,
+                tmp_prefix="alarm_status_expr",
+            )
+        if isinstance(expr, _ExprAlarmError):
+            return self._compile_alarm_error_call(
+                name=expr.name,
+                tmp_prefix="alarm_error_expr",
+            )
+        if isinstance(expr, _ExprJobStatus):
+            return self._compile_job_status_call(
+                job_id=expr.job_id,
+                tmp_prefix="job_status_expr",
+            )
+        if isinstance(expr, _ExprJobError):
+            return self._compile_job_error_call(
+                job_id=expr.job_id,
+                tmp_prefix="job_error_expr",
             )
         if isinstance(expr, _ExprStorageExists):
             return self._compile_storage_exists_call(
@@ -7655,6 +7740,312 @@ class _PythonicContext:
                 ),
             ),
         ], var(result_tmp)
+
+    def _compile_work_status_call(
+        self,
+        *,
+        name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="work_status",
+            capability_name="WorkManager",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getWorkStatus",
+                    args=[var("ctx"), const(str(name))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_work_error_call(
+        self,
+        *,
+        name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="work_error",
+            capability_name="WorkManager",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getWorkStatusError",
+                    args=[var("ctx"), const(str(name))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_work_enqueue_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="work_enqueue",
+            capability_name="WorkManager",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp("work_enqueue_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[
+                        var("ctx"),
+                        const(str(getattr(stmt, "name", ""))),
+                        const(int(getattr(stmt, "delay_seconds", 0) or 0)),
+                    ],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_work_cancel_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="work_cancel",
+            capability_name="WorkManager",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp("work_cancel_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "cancelWork",
+                    args=[var("ctx"), const(str(getattr(stmt, "name", "")))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_alarm_status_call(
+        self,
+        *,
+        name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="alarm_status",
+            capability_name="AlarmManager",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getAlarmStatus",
+                    args=[var("ctx"), const(str(name))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_alarm_error_call(
+        self,
+        *,
+        name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="alarm_error",
+            capability_name="AlarmManager",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getAlarmStatusError",
+                    args=[var("ctx"), const(str(name))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_alarm_schedule_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="alarm_schedule",
+            capability_name="AlarmManager",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp("alarm_schedule_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[
+                        var("ctx"),
+                        const(str(getattr(stmt, "name", ""))),
+                        const(int(getattr(stmt, "trigger_seconds", 0) or 0)),
+                    ],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_alarm_cancel_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="alarm_cancel",
+            capability_name="AlarmManager",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp("alarm_cancel_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "cancelAlarm",
+                    args=[var("ctx"), const(str(getattr(stmt, "name", "")))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_job_status_call(
+        self,
+        *,
+        job_id: int,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="job_status",
+            capability_name="JobScheduler",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getJobStatus",
+                    args=[var("ctx"), const(int(job_id))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_job_error_call(
+        self,
+        *,
+        job_id: int,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="job_error",
+            capability_name="JobScheduler",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "getJobStatusError",
+                    args=[var("ctx"), const(int(job_id))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_job_schedule_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="job_schedule",
+            capability_name="JobScheduler",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp("job_schedule_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[
+                        var("ctx"),
+                        const(int(getattr(stmt, "job_id", 0) or 0)),
+                        const(int(getattr(stmt, "delay_seconds", 0) or 0)),
+                    ],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "I", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
+
+    def _compile_job_cancel_stmt(self, stmt):
+        binding = self._require_helper_capability(
+            api_name="job_cancel",
+            capability_name="JobScheduler",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp("job_cancel_result")
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "cancelJob",
+                    args=[var("ctx"), const(int(getattr(stmt, "job_id", 0) or 0))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "I"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ]
 
     def _compile_clipboard_set_stmt(self, stmt):
         out, _ = self._compile_clipboard_set_call(

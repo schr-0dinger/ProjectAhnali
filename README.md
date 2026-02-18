@@ -198,7 +198,7 @@ Constraints:
 1) Program 5 closure pass completed: state/lifecycle traceability locked (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2) Program 11-A gate hardening completed: strict blocking guardrails are active for scope matrix, capability mapping/docs drift, docs consistency, ABI snapshot, reactive snapshot, and dependency policy (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`).
 3) Program 6-A capability core tranche completed: runtime permission + notifications/channels slices shipped with deterministic contracts and visible flows (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`).
-4) Program 6-B capability breadth tranche started across section `8.5`: Sharing/Intents/Clipboard/Web/Deep-link tranche now includes Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView + Wave 12 Web JS bridge + Wave 13 file chooser/cookie-manager + Wave 14 deep-link helper-call slices (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave10_sharing_intents.py`, `tests/test_track_c_wave11_webview.py`, `tests/test_track_c_wave12_web_js_bridge.py`, `tests/test_track_c_wave13_web_file_cookie.py`, `tests/test_track_c_wave14_deep_linking.py`).
+4) Program 6-B capability breadth tranche advanced across section `8.5`: Sharing/Intents/Clipboard/Web/Deep-link and background-work tranche now includes Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView + Wave 12 Web JS bridge + Wave 13 file chooser/cookie-manager + Wave 14 deep-link + Wave 15 WorkManager + Wave 16 AlarmManager + Wave 17 JobScheduler helper-call slices (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave10_sharing_intents.py`, `tests/test_track_c_wave11_webview.py`, `tests/test_track_c_wave12_web_js_bridge.py`, `tests/test_track_c_wave13_web_file_cookie.py`, `tests/test_track_c_wave14_deep_linking.py`, `tests/test_track_c_wave15_workmanager.py`, `tests/test_track_c_wave16_alarmmanager.py`, `tests/test_track_c_wave17_jobscheduler.py`).
 5) Program 7 motion completion (`8.6`).
 6) Program 8 advanced/system/security/debug completion (`8.7`-`8.10`).
 7) Program 12-A docs/API reference freeze and continuous reconciliation.
@@ -252,7 +252,7 @@ Exit criteria:
 ### Track C: Capability Expansion
 
 Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18; Wave 9 clipboard helper-call capability + visible integration flow completed on 2026-02-18; Wave 10 sharing/intents helper-call capability + visible integration flow completed on 2026-02-18; Wave 11 WebView/settings policy helper-call capability + visible integration flow completed on 2026-02-18; Wave 12 Web JS bridge policy-constrained helper-call capability + visible integration flow completed on 2026-02-18; Wave 13 Web file chooser/cookie-manager helper-call capability + visible integration flow completed on 2026-02-18; Wave 14 deep-link helper-call capability + visible integration flow completed on 2026-02-18)
+- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18; Wave 9 clipboard helper-call capability + visible integration flow completed on 2026-02-18; Wave 10 sharing/intents helper-call capability + visible integration flow completed on 2026-02-18; Wave 11 WebView/settings policy helper-call capability + visible integration flow completed on 2026-02-18; Wave 12 Web JS bridge policy-constrained helper-call capability + visible integration flow completed on 2026-02-18; Wave 13 Web file chooser/cookie-manager helper-call capability + visible integration flow completed on 2026-02-18; Wave 14 deep-link helper-call capability + visible integration flow completed on 2026-02-18; Wave 15 WorkManager helper-call capability + visible integration flow completed on 2026-02-18; Wave 16 AlarmManager helper-call capability completed on 2026-02-18; Wave 17 JobScheduler helper-call capability + visible integration flow completed on 2026-02-18)
 
 Objectives:
 - Enable practical app logic beyond static UI/state.
@@ -356,11 +356,24 @@ Work items:
   - DSL surfaces: `deep_link_get()`, `get_deep_link()`, `deep_link_error()`, `get_deep_link_error()`
 - ✅ Add Wave 14 visible integration flow combining deep-link route + deterministic URL fallback (`tests/test_track_c_wave14_visible_flow.py`)
 - ✅ Document Wave 14 deep-link contract + flow (`docs/TrackC_Wave14_DeepLinking.md`)
+- ✅ Add Wave 15 WorkManager capability helper-call primitive:
+  - `WorkManager` → `Lcom/ahnali/runtime/WorkHelper;->enqueueWork(...)I`
+  - DSL surfaces: `work_enqueue()`, `work_cancel()`, `work_status()`, `work_error()`
+- ✅ Document Wave 15 WorkManager contract + flow (`docs/TrackC_Wave15_WorkManager.md`)
+- ✅ Add Wave 16 AlarmManager capability helper-call primitive:
+  - `AlarmManager` → `Lcom/ahnali/runtime/AlarmHelper;->scheduleAlarm(...)I`
+  - DSL surfaces: `alarm_schedule()`, `alarm_cancel()`, `alarm_status()`, `alarm_error()`
+- ✅ Document Wave 16 AlarmManager contract + flow (`docs/TrackC_Wave16_AlarmManager.md`)
+- ✅ Add Wave 17 JobScheduler capability helper-call primitive:
+  - `JobScheduler` → `Lcom/ahnali/runtime/JobHelper;->scheduleJob(...)I`
+  - DSL surfaces: `job_schedule()`, `job_cancel()`, `job_status()`, `job_error()`
+- ✅ Add Wave 17 visible integration flow combining WorkManager + AlarmManager + JobScheduler with deterministic URL fallback (`tests/test_track_c_wave17_visible_flow.py`)
+- ✅ Document Wave 17 JobScheduler contract + flow (`docs/TrackC_Wave17_JobScheduler.md`)
 - ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
 - ✅ Complete Program 5 state surfaces:
   - lifecycle hooks: `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
   - deterministic state backends: `datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_storage_*`/`secure_storage_*`
-- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager.
+- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager/deep-link/background-work.
 
 Exit criteria:
 - At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
@@ -389,6 +402,10 @@ Exit criteria:
 - ✅ Wave 13 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave13_visible_flow.py`.
 - ✅ Wave 14 deep-link capability conformance is enforced by `tests/test_track_c_wave14_deep_linking.py`.
 - ✅ Wave 14 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave14_visible_flow.py`.
+- ✅ Wave 15 WorkManager capability conformance is enforced by `tests/test_track_c_wave15_workmanager.py`.
+- ✅ Wave 16 AlarmManager capability conformance is enforced by `tests/test_track_c_wave16_alarmmanager.py`.
+- ✅ Wave 17 JobScheduler capability conformance is enforced by `tests/test_track_c_wave17_jobscheduler.py`.
+- ✅ Wave 17 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave17_visible_flow.py`.
 
 Capability diagnostics (standard format):
 - `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`

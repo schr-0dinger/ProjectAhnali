@@ -27,12 +27,15 @@ In scope:
 - Track C Wave 12 capability helper ABI: Web JS bridge registration + policy-constrained error-code surfaces
 - Track C Wave 13 capability helper ABI: Web file chooser + cookie-manager deterministic surfaces
 - Track C Wave 14 capability helper ABI: deep-link launch-intent fallback/error surfaces
+- Track C Wave 15 capability helper ABI: WorkManager-style deterministic enqueue/cancel/status/error surfaces
+- Track C Wave 16 capability helper ABI: AlarmManager-style deterministic schedule/cancel/status/error surfaces
+- Track C Wave 17 capability helper ABI: JobScheduler-style deterministic schedule/cancel/status/error surfaces with API-level guard
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard/sharing/WebView/deep-link fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications/clipboard/sharing/WebView/deep-link wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard/sharing/WebView/deep-link/background-work fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 - Runtime UI diff/recomposition engines (reactive mode stays explicit-bind only)
 
@@ -347,6 +350,58 @@ Deprecation policy:
     - `setCookieError`: `0` success, `1` invalid args/context, `3` missing cookie manager, `4` caught exception.
     - `getCookie`: cookie string when present; fallback argument on null args, missing cookie manager/cookie, or caught exception.
     - `getCookieError`: `0` cookie present, `1` invalid args/context, `3` missing cookie manager/cookie, `4` caught exception.
+- Track C Wave 15 helper-call binding:
+  - Capability: `WorkManager`
+  - Helper class: `Lcom/ahnali/runtime/WorkHelper;`
+  - Helper methods/sigs:
+    - `enqueueWork(Landroid/app/Activity;Ljava/lang/String;I)I`
+    - `enqueueWorkError(Landroid/app/Activity;Ljava/lang/String;I)I`
+    - `cancelWork(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `cancelWorkError(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `getWorkStatus(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `getWorkStatusError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `enqueueWork`: `1` on success, `0` on any failure.
+    - `enqueueWorkError`: `0` success, `1` invalid args/context, `2` invalid delay (`<0`), `3` caught exception.
+    - `cancelWork`: `1` on success, `0` on any failure.
+    - `cancelWorkError`: `0` success, `1` invalid args/context, `2` unknown work-name, `3` caught exception.
+    - `getWorkStatus`: stored deterministic status value when present; `0` on invalid input/missing work/exception.
+    - `getWorkStatusError`: `0` status available, `1` invalid args/context, `2` missing work-name, `3` caught exception.
+- Track C Wave 16 helper-call binding:
+  - Capability: `AlarmManager`
+  - Helper class: `Lcom/ahnali/runtime/AlarmHelper;`
+  - Helper methods/sigs:
+    - `scheduleAlarm(Landroid/app/Activity;Ljava/lang/String;I)I`
+    - `scheduleAlarmError(Landroid/app/Activity;Ljava/lang/String;I)I`
+    - `cancelAlarm(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `cancelAlarmError(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `getAlarmStatus(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `getAlarmStatusError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `scheduleAlarm`: `1` on success, `0` on any failure.
+    - `scheduleAlarmError`: `0` success, `1` invalid args/context, `2` invalid delay (`<0`), `3` caught exception.
+    - `cancelAlarm`: `1` on success, `0` on any failure.
+    - `cancelAlarmError`: `0` success, `1` invalid args/context, `2` unknown alarm-name, `3` caught exception.
+    - `getAlarmStatus`: stored deterministic status value when present; `0` on invalid input/missing alarm/exception.
+    - `getAlarmStatusError`: `0` status available, `1` invalid args/context, `2` missing alarm-name, `3` caught exception.
+- Track C Wave 17 helper-call binding:
+  - Capability: `JobScheduler`
+  - Helper class: `Lcom/ahnali/runtime/JobHelper;`
+  - Helper methods/sigs:
+    - `scheduleJob(Landroid/app/Activity;II)I`
+    - `scheduleJobError(Landroid/app/Activity;II)I`
+    - `cancelJob(Landroid/app/Activity;I)I`
+    - `cancelJobError(Landroid/app/Activity;I)I`
+    - `getJobStatus(Landroid/app/Activity;I)I`
+    - `getJobStatusError(Landroid/app/Activity;I)I`
+  - Return semantics:
+    - API-level guard: SDK `<21` returns explicit unsupported code from `*Error` methods and fallback (`0`) from non-error methods.
+    - `scheduleJob`: `1` on success, `0` on any failure.
+    - `scheduleJobError`: `0` success, `1` invalid args/context, `2` unsupported API level, `3` invalid delay (`<0`), `4` caught exception.
+    - `cancelJob`: `1` on success, `0` on any failure.
+    - `cancelJobError`: `0` success, `1` invalid args/context, `2` unsupported API level, `3` missing job-id, `4` caught exception.
+    - `getJobStatus`: stored deterministic status value when present; `0` on invalid input/missing job/unsupported API/exception.
+    - `getJobStatusError`: `0` status available, `1` invalid args/context, `2` unsupported API level, `3` missing job-id, `4` caught exception.
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -472,6 +527,10 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave12_visible_flow.py`
 - `tests/test_track_c_wave13_web_file_cookie.py`
 - `tests/test_track_c_wave13_visible_flow.py`
+- `tests/test_track_c_wave15_workmanager.py`
+- `tests/test_track_c_wave16_alarmmanager.py`
+- `tests/test_track_c_wave17_jobscheduler.py`
+- `tests/test_track_c_wave17_visible_flow.py`
 - `tests/test_track_c_wave11_webview.py`
 - `tests/test_track_c_wave11_visible_flow.py`
 - `tests/test_program5_state_backends.py`

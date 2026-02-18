@@ -12,6 +12,10 @@ This document breaks Program 6-B into execution tasks with strict completion gat
 3. Wave 11: WebView + policy/settings (`Caps.Web`)
 4. Wave 12: JS bridge constrained surface (`Caps.Web`)
 5. Wave 13: File chooser + cookie manager (`Caps.Web`)
+6. Wave 14: Deep-link expansion (`Caps.DeepLinking`)
+7. Wave 15: WorkManager tranche A (`Caps.WorkManager`)
+8. Wave 16: AlarmManager tranche B (`Caps.AlarmManager`)
+9. Wave 17: JobScheduler tranche C (`Caps.JobScheduler`)
 
 ## Program 6-B completion tasks
 
@@ -25,23 +29,23 @@ This document breaks Program 6-B into execution tasks with strict completion gat
 - Add DSL/parser/lowering/runtime helper/tests/visible flow/docs.
 - Gate: deep-link slice passes ABI snapshot, capability mapping snapshot, and visible-flow tests.
 
-3. Task B2: Background work tranche A (`WorkManager`) (next immediate)
+3. Task B2: Background work tranche A (`WorkManager`) (completed)
 - Add deterministic enqueue/cancel/status-result APIs.
 - Add helper ABI contract and error-code mapping.
 - Add compile + selected runtime integration tests.
 - Gate: WorkManager slice is fully contract-complete.
 
-4. Task B3: Background work tranche B (`AlarmManager`)
+4. Task B3: Background work tranche B (`AlarmManager`) (completed)
 - Add deterministic schedule/cancel APIs with explicit parameter validation.
 - Add fallback/error contracts and tests.
 - Gate: AlarmManager slice is fully contract-complete.
 
-5. Task B4: Background work tranche C (`JobScheduler`)
+5. Task B4: Background work tranche C (`JobScheduler`) (completed)
 - Add deterministic schedule/cancel/status APIs.
 - Add API level guards and deterministic diagnostics.
 - Gate: JobScheduler slice is fully contract-complete.
 
-6. Task B5: Sharing/intents completion pass
+6. Task B5: Sharing/intents completion pass (next immediate)
 - Close remaining 8.5 intent/deep-link/custom URI/open-app gaps.
 - Add deterministic result/error surfaces for each new helper call.
 - Gate: all retained sharing/intents scope entries are done.

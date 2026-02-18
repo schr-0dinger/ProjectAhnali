@@ -78,6 +78,42 @@ def test_runtime_abi_snapshot_includes_deep_link_helper_surface():
     assert "getLaunchUriError(Landroid/app/Activity;)I" in deep_link_methods
 
 
+def test_runtime_abi_snapshot_includes_work_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    methods = classes["Lcom/ahnali/runtime/WorkHelper;"]
+    assert "enqueueWork(Landroid/app/Activity;Ljava/lang/String;I)I" in methods
+    assert "enqueueWorkError(Landroid/app/Activity;Ljava/lang/String;I)I" in methods
+    assert "cancelWork(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+    assert "cancelWorkError(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+    assert "getWorkStatus(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+    assert "getWorkStatusError(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+
+
+def test_runtime_abi_snapshot_includes_alarm_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    methods = classes["Lcom/ahnali/runtime/AlarmHelper;"]
+    assert "scheduleAlarm(Landroid/app/Activity;Ljava/lang/String;I)I" in methods
+    assert "scheduleAlarmError(Landroid/app/Activity;Ljava/lang/String;I)I" in methods
+    assert "cancelAlarm(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+    assert "cancelAlarmError(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+    assert "getAlarmStatus(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+    assert "getAlarmStatusError(Landroid/app/Activity;Ljava/lang/String;)I" in methods
+
+
+def test_runtime_abi_snapshot_includes_job_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    methods = classes["Lcom/ahnali/runtime/JobHelper;"]
+    assert "scheduleJob(Landroid/app/Activity;II)I" in methods
+    assert "scheduleJobError(Landroid/app/Activity;II)I" in methods
+    assert "cancelJob(Landroid/app/Activity;I)I" in methods
+    assert "cancelJobError(Landroid/app/Activity;I)I" in methods
+    assert "getJobStatus(Landroid/app/Activity;I)I" in methods
+    assert "getJobStatusError(Landroid/app/Activity;I)I" in methods
+
+
 def test_runtime_abi_snapshot_includes_web_helper_surface():
     snapshot = build_runtime_abi_snapshot()
     classes = _snapshot_classes(snapshot)

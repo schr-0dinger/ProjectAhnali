@@ -1276,6 +1276,78 @@ def get_deep_link_error():
     return deep_link_error()
 
 
+def work_enqueue(name: str, delay_seconds: int = 0):
+    return _StmtWorkEnqueue(str(name), int(delay_seconds))
+
+
+def enqueue_work(name: str, delay_seconds: int = 0):
+    return work_enqueue(name, delay_seconds)
+
+
+def work_cancel(name: str):
+    return _StmtWorkCancel(str(name))
+
+
+def cancel_work(name: str):
+    return work_cancel(name)
+
+
+def work_status(name: str):
+    return _ExprWorkStatus(str(name))
+
+
+def work_error(name: str):
+    return _ExprWorkError(str(name))
+
+
+def alarm_schedule(name: str, trigger_seconds: int = 0):
+    return _StmtAlarmSchedule(str(name), int(trigger_seconds))
+
+
+def schedule_alarm(name: str, trigger_seconds: int = 0):
+    return alarm_schedule(name, trigger_seconds)
+
+
+def alarm_cancel(name: str):
+    return _StmtAlarmCancel(str(name))
+
+
+def cancel_alarm(name: str):
+    return alarm_cancel(name)
+
+
+def alarm_status(name: str):
+    return _ExprAlarmStatus(str(name))
+
+
+def alarm_error(name: str):
+    return _ExprAlarmError(str(name))
+
+
+def job_schedule(job_id: int, delay_seconds: int = 0):
+    return _StmtJobSchedule(int(job_id), int(delay_seconds))
+
+
+def schedule_job(job_id: int, delay_seconds: int = 0):
+    return job_schedule(job_id, delay_seconds)
+
+
+def job_cancel(job_id: int):
+    return _StmtJobCancel(int(job_id))
+
+
+def cancel_job(job_id: int):
+    return job_cancel(job_id)
+
+
+def job_status(job_id: int):
+    return _ExprJobStatus(int(job_id))
+
+
+def job_error(job_id: int):
+    return _ExprJobError(int(job_id))
+
+
 def web_set_policy(
     js_enabled: int | bool = 0,
     dom_storage: int | bool = 0,

@@ -90,6 +90,21 @@ def test_capability_runtime_mapping_v1_shape():
                 binding.helper_sig
                 == "(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;"
             )
+        elif cap_name == "WorkManager":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/WorkHelper;"
+            assert binding.helper_method == "enqueueWork"
+            assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;I)I"
+        elif cap_name == "AlarmManager":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/AlarmHelper;"
+            assert binding.helper_method == "scheduleAlarm"
+            assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;I)I"
+        elif cap_name == "JobScheduler":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/JobHelper;"
+            assert binding.helper_method == "scheduleJob"
+            assert binding.helper_sig == "(Landroid/app/Activity;II)I"
         elif cap_name == "WebView":
             assert binding.mode == "helper_call"
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/WebHelper;"

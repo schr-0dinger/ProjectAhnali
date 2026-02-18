@@ -3,6 +3,10 @@ import re
 import pytest
 
 from dsl.app import (
+    alarm_cancel,
+    alarm_error,
+    alarm_schedule,
+    alarm_status,
     activity,
     app,
     button,
@@ -19,6 +23,10 @@ from dsl.app import (
     on_click,
     open_external_error,
     open_url,
+    job_cancel,
+    job_error,
+    job_schedule,
+    job_status,
     permission_granted,
     share_text,
     share_text_error,
@@ -36,6 +44,10 @@ from dsl.app import (
     web_cookie_set_error,
     web_load_error,
     web_set_policy,
+    work_cancel,
+    work_enqueue,
+    work_error,
+    work_status,
 )
 
 
@@ -115,6 +127,72 @@ def _handler_deep_link_get():
 @on_click("btn_deep_link_error")
 def _handler_deep_link_error():
     err = deep_link_error()
+    status_label.text = err
+
+
+@on_click("btn_work_enqueue")
+def _handler_work_enqueue():
+    work_enqueue("sync_profile", 5)
+
+
+@on_click("btn_work_cancel")
+def _handler_work_cancel():
+    work_cancel("sync_profile")
+
+
+@on_click("btn_work_status")
+def _handler_work_status():
+    value = work_status("sync_profile")
+    status_label.text = value
+
+
+@on_click("btn_work_error")
+def _handler_work_error():
+    err = work_error("sync_profile")
+    status_label.text = err
+
+
+@on_click("btn_alarm_schedule")
+def _handler_alarm_schedule():
+    alarm_schedule("sync_alarm", 5)
+
+
+@on_click("btn_alarm_cancel")
+def _handler_alarm_cancel():
+    alarm_cancel("sync_alarm")
+
+
+@on_click("btn_alarm_status")
+def _handler_alarm_status():
+    value = alarm_status("sync_alarm")
+    status_label.text = value
+
+
+@on_click("btn_alarm_error")
+def _handler_alarm_error():
+    err = alarm_error("sync_alarm")
+    status_label.text = err
+
+
+@on_click("btn_job_schedule")
+def _handler_job_schedule():
+    job_schedule(11, 5)
+
+
+@on_click("btn_job_cancel")
+def _handler_job_cancel():
+    job_cancel(11)
+
+
+@on_click("btn_job_status")
+def _handler_job_status():
+    value = job_status(11)
+    status_label.text = value
+
+
+@on_click("btn_job_error")
+def _handler_job_error():
+    err = job_error(11)
     status_label.text = err
 
 
@@ -266,6 +344,78 @@ def _handler_clipboard_get():
             "DeepLinking",
             [text("status", id="status_label"), button("DeepErr", id="btn_deep_link_error")],
             _handler_deep_link_error,
+        ),
+        (
+            "work_enqueue",
+            "WorkManager",
+            [button("WorkEnqueue", id="btn_work_enqueue")],
+            _handler_work_enqueue,
+        ),
+        (
+            "work_cancel",
+            "WorkManager",
+            [button("WorkCancel", id="btn_work_cancel")],
+            _handler_work_cancel,
+        ),
+        (
+            "work_status",
+            "WorkManager",
+            [text("status", id="status_label"), button("WorkStatus", id="btn_work_status")],
+            _handler_work_status,
+        ),
+        (
+            "work_error",
+            "WorkManager",
+            [text("status", id="status_label"), button("WorkError", id="btn_work_error")],
+            _handler_work_error,
+        ),
+        (
+            "alarm_schedule",
+            "AlarmManager",
+            [button("AlarmSchedule", id="btn_alarm_schedule")],
+            _handler_alarm_schedule,
+        ),
+        (
+            "alarm_cancel",
+            "AlarmManager",
+            [button("AlarmCancel", id="btn_alarm_cancel")],
+            _handler_alarm_cancel,
+        ),
+        (
+            "alarm_status",
+            "AlarmManager",
+            [text("status", id="status_label"), button("AlarmStatus", id="btn_alarm_status")],
+            _handler_alarm_status,
+        ),
+        (
+            "alarm_error",
+            "AlarmManager",
+            [text("status", id="status_label"), button("AlarmError", id="btn_alarm_error")],
+            _handler_alarm_error,
+        ),
+        (
+            "job_schedule",
+            "JobScheduler",
+            [button("JobSchedule", id="btn_job_schedule")],
+            _handler_job_schedule,
+        ),
+        (
+            "job_cancel",
+            "JobScheduler",
+            [button("JobCancel", id="btn_job_cancel")],
+            _handler_job_cancel,
+        ),
+        (
+            "job_status",
+            "JobScheduler",
+            [text("status", id="status_label"), button("JobStatus", id="btn_job_status")],
+            _handler_job_status,
+        ),
+        (
+            "job_error",
+            "JobScheduler",
+            [text("status", id="status_label"), button("JobError", id="btn_job_error")],
+            _handler_job_error,
         ),
         (
             "web_set_policy",

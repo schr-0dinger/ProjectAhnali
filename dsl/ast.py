@@ -136,6 +136,36 @@ class _ExprDeepLinkError:
         pass
 
 
+class _ExprWorkStatus:
+    def __init__(self, name):
+        self.name = name
+
+
+class _ExprWorkError:
+    def __init__(self, name):
+        self.name = name
+
+
+class _ExprAlarmStatus:
+    def __init__(self, name):
+        self.name = name
+
+
+class _ExprAlarmError:
+    def __init__(self, name):
+        self.name = name
+
+
+class _ExprJobStatus:
+    def __init__(self, job_id):
+        self.job_id = job_id
+
+
+class _ExprJobError:
+    def __init__(self, job_id):
+        self.job_id = job_id
+
+
 class _ExprWebLoadResult:
     def __init__(self, url):
         self.url = url
@@ -389,6 +419,39 @@ class _StmtShareText:
 class _StmtOpenExternal:
     def __init__(self, uri):
         self.uri = uri
+
+
+class _StmtWorkEnqueue:
+    def __init__(self, name, delay_seconds):
+        self.name = name
+        self.delay_seconds = delay_seconds
+
+
+class _StmtWorkCancel:
+    def __init__(self, name):
+        self.name = name
+
+
+class _StmtAlarmSchedule:
+    def __init__(self, name, trigger_seconds):
+        self.name = name
+        self.trigger_seconds = trigger_seconds
+
+
+class _StmtAlarmCancel:
+    def __init__(self, name):
+        self.name = name
+
+
+class _StmtJobSchedule:
+    def __init__(self, job_id, delay_seconds):
+        self.job_id = job_id
+        self.delay_seconds = delay_seconds
+
+
+class _StmtJobCancel:
+    def __init__(self, job_id):
+        self.job_id = job_id
 
 
 class _StmtWebSetPolicy:
@@ -733,6 +796,30 @@ def _coerce_expr(value):
             _ExprStateBackendExists,
             _ExprLocationEnabled,
             _ExprPermissionGranted,
+            _ExprClipboardGet,
+            _ExprDeepLinkGet,
+            _ExprDeepLinkError,
+            _ExprWorkStatus,
+            _ExprWorkError,
+            _ExprAlarmStatus,
+            _ExprAlarmError,
+            _ExprJobStatus,
+            _ExprJobError,
+            _ExprShareTextResult,
+            _ExprShareTextError,
+            _ExprOpenExternalError,
+            _ExprWebLoadResult,
+            _ExprWebLoadError,
+            _ExprWebAddJsBridgeResult,
+            _ExprWebAddJsBridgeError,
+            _ExprWebChooseFileResult,
+            _ExprWebChooseFileError,
+            _ExprWebCookieSetResult,
+            _ExprWebCookieSetError,
+            _ExprWebCookieGet,
+            _ExprWebCookieGetError,
+            _ExprNotifyResult,
+            _ExprNotifyError,
             _ExprHttpGet,
             _ExprHttpGetStatus,
             _ExprHttpGetError,

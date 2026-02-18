@@ -112,6 +112,20 @@
       "source": "wrapper"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/AlarmHelper;",
+      "methods": [
+        "<init>()V",
+        "cancelAlarm(Landroid/app/Activity;Ljava/lang/String;)I",
+        "cancelAlarmError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "ensureStore()V",
+        "getAlarmStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "getAlarmStatusError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "scheduleAlarm(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "scheduleAlarmError(Landroid/app/Activity;Ljava/lang/String;I)I"
+      ],
+      "source": "capability:AlarmManager"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/ClipboardHelper;",
       "methods": [
         "<init>()V",
@@ -184,6 +198,20 @@
         "startAsyncWithToken(ILjava/lang/Runnable;)I"
       ],
       "source": "capability:Networking"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/JobHelper;",
+      "methods": [
+        "<init>()V",
+        "cancelJob(Landroid/app/Activity;I)I",
+        "cancelJobError(Landroid/app/Activity;I)I",
+        "ensureStore()V",
+        "getJobStatus(Landroid/app/Activity;I)I",
+        "getJobStatusError(Landroid/app/Activity;I)I",
+        "scheduleJob(Landroid/app/Activity;II)I",
+        "scheduleJobError(Landroid/app/Activity;II)I"
+      ],
+      "source": "capability:JobScheduler"
     },
     {
       "class_desc": "Lcom/ahnali/runtime/LocationHelper;",
@@ -284,6 +312,20 @@
         "setPolicy(Landroid/app/Activity;IIII)I"
       ],
       "source": "capability:WebView"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/WorkHelper;",
+      "methods": [
+        "<init>()V",
+        "cancelWork(Landroid/app/Activity;Ljava/lang/String;)I",
+        "cancelWorkError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "enqueueWork(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "enqueueWorkError(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "ensureStore()V",
+        "getWorkStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "getWorkStatusError(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "source": "capability:WorkManager"
     }
   ],
   "snapshot_schema": "runtime_abi_v1_helper_signatures"

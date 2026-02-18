@@ -2,6 +2,25 @@
   "abi_version": "1.0.0",
   "entries": [
     {
+      "capability": "AlarmManager",
+      "emitted_class_desc": "Lcom/ahnali/runtime/AlarmHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "cancelAlarm(Landroid/app/Activity;Ljava/lang/String;)I",
+        "cancelAlarmError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "ensureStore()V",
+        "getAlarmStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "getAlarmStatusError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "scheduleAlarm(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "scheduleAlarmError(Landroid/app/Activity;Ljava/lang/String;I)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/AlarmHelper;",
+      "helper_method": "scheduleAlarm",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;I)I",
+      "mode": "helper_call",
+      "permissions": []
+    },
+    {
       "capability": "Audio",
       "helper_class_desc": null,
       "helper_method": null,
@@ -74,6 +93,25 @@
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE"
       ]
+    },
+    {
+      "capability": "JobScheduler",
+      "emitted_class_desc": "Lcom/ahnali/runtime/JobHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "cancelJob(Landroid/app/Activity;I)I",
+        "cancelJobError(Landroid/app/Activity;I)I",
+        "ensureStore()V",
+        "getJobStatus(Landroid/app/Activity;I)I",
+        "getJobStatusError(Landroid/app/Activity;I)I",
+        "scheduleJob(Landroid/app/Activity;II)I",
+        "scheduleJobError(Landroid/app/Activity;II)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/JobHelper;",
+      "helper_method": "scheduleJob",
+      "helper_sig": "(Landroid/app/Activity;II)I",
+      "mode": "helper_call",
+      "permissions": []
     },
     {
       "capability": "Location",
@@ -318,6 +356,25 @@
       "permissions": [
         "android.permission.INTERNET"
       ]
+    },
+    {
+      "capability": "WorkManager",
+      "emitted_class_desc": "Lcom/ahnali/runtime/WorkHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "cancelWork(Landroid/app/Activity;Ljava/lang/String;)I",
+        "cancelWorkError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "enqueueWork(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "enqueueWorkError(Landroid/app/Activity;Ljava/lang/String;I)I",
+        "ensureStore()V",
+        "getWorkStatus(Landroid/app/Activity;Ljava/lang/String;)I",
+        "getWorkStatusError(Landroid/app/Activity;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/WorkHelper;",
+      "helper_method": "enqueueWork",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;I)I",
+      "mode": "helper_call",
+      "permissions": []
     }
   ],
   "snapshot_schema": "capability_runtime_mapping_v1"
