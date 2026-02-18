@@ -48,14 +48,6 @@ Accepted values:
 
 Each entry must resolve to `dp(...)` or `px(...)`.
 
-Examples:
-
-```python
-padding=dp(12)
-padding=(dp(16), dp(8))
-margin=(dp(12), dp(8), dp(12), dp(8))
-```
-
 ## Layout Size Format (`layout`, `width`, `height`)
 
 `layout` accepts:
@@ -70,7 +62,7 @@ Size values accept:
 
 Rules:
 - `sp(...)` is invalid for layout size.
-- `Percent` goes through weight conversion path, not direct size.
+- `Percent` is handled via weight conversion, not direct size.
 
 ## Color Values
 
@@ -98,22 +90,23 @@ Fields:
 ## `Gradient(...)`
 
 ```python
-gradient("#FF111111", "#FF444444", "top_to_bottom")
+gradient("#FF111111", "#FF444444", "top_to_bottom", kind="linear")
 ```
 
 Direction values:
-- `left_to_right`
-- `right_to_left`
-- `top_to_bottom`
-- `bottom_to_top`
+- `left_to_right`, `right_to_left`, `top_to_bottom`, `bottom_to_top`
 - `tl_br`, `tr_bl`, `bl_tr`, `br_tl`
 - aliases: `top_left_bottom_right`, `top_right_bottom_left`, `bottom_left_top_right`, `bottom_right_top_left`
 
+Kind values:
+- `linear`
+- `radial`
+- `sweep`
+
 ## Boolean-like Fields
 
-Some fields require strict bools (not arbitrary ints/strings), for example:
+Many config flags require strict bools, e.g.:
 - `single_line`, `password`, `numeric_only`
 - `clip_to_outline`, `clip_children`
-- many flags in widget attrs and style
 
-For `important_for_accessibility`, accepted forms are broader (see [[04_Shared_Attributes]]).
+`important_for_accessibility` accepts bool/int/string forms (see [[04_Shared_Attributes]]).

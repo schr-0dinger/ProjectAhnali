@@ -8,183 +8,65 @@ Back to: [[00_Home]]
 
 See shared fields: [[04_Shared_Attributes]].
 
-## Row
+## Core Layout Containers
 
-Classification: container/layout (horizontal `LinearLayout`).
+- `Row(*items, id="row", ...)`
+- `Column(*items, id="column", ...)`
+- `Relative(*items, id="relative", ...)`
+- `Constraint(*items, id="constraint", ...)`
+- `Frame(*items, id="frame", ...)`
+- `CoordinatorLayout(*items, id="coordinator_layout", ...)`
 
-Constructor:
+`Row` and `Column` support `align`, `arrangement`, `weight_sum`.
 
-```python
-Row(
-    *items,
-    id="row",
-    layout=None, width=None, height=None,
-    padding=None, margin=None,
-    gravity=None, align=None, arrangement=None,
-    weight_sum=None,
-    relative=None, constraints=None,
-    background=None, radius=None,
-    content_description=None,
-    important_for_accessibility=None,
-    accessibility_label=None,
-    elevation=None, pressed_elevation=None,
-    text_shadow_color=None, text_shadow_radius=None,
-    text_shadow_dx=None, text_shadow_dy=None,
-    opacity=None,
-    border_width=None, border_color=None, border_radius=None,
-    ripple_color=None, blur_radius=None,
-    rotation=None, scale_x=None, scale_y=None,
-    translation_x=None, translation_y=None,
-    clip_to_outline=None, clip_children=None,
-    style=None,
-)
-```
+## Semantic Containers
 
-Example:
+- `Container(*items, id="container", **kwargs)`
+- `Card(*items, id="card", **kwargs)`
+- `ButtonBar(*items, id="button_bar", **kwargs)`
 
-```python
-row(
-    text("Left", id="left", weight=1),
-    text("Right", id="right", weight=1),
-    id="header_row",
-    layout=("match", "wrap"),
-    gravity="center_vertical",
-    weight_sum=2,
-)
-```
+## Scroll Containers
 
-## Column
+- `ScrollView(*items, id="scroll_view", **kwargs)`
+- `HorizontalScrollView(*items, id="horizontal_scroll_view", **kwargs)`
+- `NestedScrollView(*items, id="nested_scroll_view", **kwargs)`
 
-Classification: container/layout (vertical `LinearLayout`).
+Rules:
+- each requires exactly one direct child
 
-Constructor mirrors `Row` with same attribute surface.
+## Paging and Navigation Surfaces
 
-Example:
+- `ViewPager(*items, id="view_pager", initial_page=0, **kwargs)`
+- `TabLayout(id="tab_layout", tabs=[...], selected_index=0, **kwargs)`
+- `BottomNavigationView(id="bottom_navigation_view", items=[...], selected_index=0, **kwargs)`
+- `NavigationBar(id="navigation_bar", items=[...], selected_index=0, **kwargs)`
+- `NavigationRail(id="navigation_rail", items=[...], selected_index=0, **kwargs)`
 
-```python
-column(
-    text("Title", id="title"),
-    text("Subtitle", id="subtitle"),
-    id="hero_col",
-    padding=(dp(16), dp(12)),
-)
-```
+Rules:
+- `ViewPager` needs at least one page; `initial_page` must be int in range
+- tab/navigation `items`/`tabs` must be non-empty static primitive labels
+- `selected_index` must be int in range
 
-## Relative
+## Drawer and Fragment Host
 
-Classification: container/layout (`RelativeLayout`).
+- `DrawerLayout(*items, id="drawer_layout", **kwargs)`
+- `FragmentContainer(*items, id="fragment_container", **kwargs)`
 
-Constructor:
+Rules:
+- `DrawerLayout` requires exactly two direct children: `(content, drawer)`
+- `FragmentContainer` accepts no direct children in deterministic v1
 
-```python
-Relative(*items, id="relative", ...)
-```
+## Static Data Containers
 
-Use child `relative=[(...)]` rules to anchor children.
-
-Example:
-
-```python
-relative(
-    text("Top", id="top", relative=[("align_parent_top", "parent"), ("center_horizontal", "parent")]),
-    button("Action", id="action", relative=[("below", "top"), ("center_horizontal", "parent")]),
-    id="relative_root",
-)
-```
-
-## Constraint
-
-Classification: container/layout (`ConstraintLayout`).
-
-Constructor:
-
-```python
-Constraint(*items, id="constraint", ...)
-```
-
-Use child `constraints={...}` keys from [[04_Shared_Attributes]].
-
-Example:
-
-```python
-constraint(
-    text("A", id="a", constraints={"top_to_top": "parent", "start_to_start": "parent"}),
-    text("B", id="b", constraints={"top_to_bottom": "a", "start_to_start": "parent"}),
-    id="constraint_root",
-)
-```
-
-## Container
-
-Classification: semantic container (currently column-based runtime).
-
-Constructor:
-
-```python
-Container(*items, id="container", **kwargs)
-```
-
-Inherits column-like container attrs.
-
-## Card
-
-Classification: semantic surface container (currently column-based runtime).
-
-Constructor:
-
-```python
-Card(*items, id="card", **kwargs)
-```
-
-Default widget style includes white background + radius + padding if not overridden.
-
-## ButtonBar
-
-Classification: button row helper (row wrapper).
-
-Constructor:
-
-```python
-ButtonBar(*items, id="button_bar", **kwargs)
-```
-
-## ScrollView
-
-Classification: single-child vertical scroll container.
-
-Constructor:
-
-```python
-ScrollView(*items, id="scroll_view", **kwargs)
-```
-
-Rule:
-- exactly one direct child is required.
-
-## HorizontalScrollView
-
-Classification: single-child horizontal scroll container.
-
-Constructor:
-
-```python
-HorizontalScrollView(*items, id="horizontal_scroll_view", **kwargs)
-```
-
-Rule:
-- exactly one direct child is required.
+- `ListView(...)`, `GridView(...)`, `RecyclerView(...)` are documented in [[07_Input_and_Selection_Components]] but often used as structural roots in screens.
 
 ## Screen
-
-Classification: navigation container root.
-
-Constructor:
 
 ```python
 Screen(name, *items, id=None, transition=None)
 ```
 
-Transition values:
+Supported transitions:
 - `fade`
 - `slide_left`
 - `slide_right`
@@ -192,8 +74,8 @@ Transition values:
 - `slide_down`
 
 Rules:
-- if any `Screen` is used, all top-level `ui(...)` entries must be `Screen`.
-- screen names must be unique.
+- if any `Screen` is used, all top-level `ui(...)` items must be screens
+- screen names must be unique
 
 Example:
 

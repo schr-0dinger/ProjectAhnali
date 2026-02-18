@@ -17,8 +17,9 @@ Creates an activity specification. `parts` can include:
 - `state(...)`
 - `Theme(...)` / `theme(...)`
 - `ui(...)`
-- event specs (`on_click`, `on_change`, etc.)
-- lists/tuples of event specs
+- event specs (`on_click`, `on_change`, ...)
+- lifecycle specs (`on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`)
+- lists/tuples of the above specs
 
 ## `ui(*items)`
 Wraps widget tree items.
@@ -26,11 +27,14 @@ Wraps widget tree items.
 ## `state(**kwargs)`
 Declares global integer state values.
 
-Important current rule:
+Current rule:
 - state values must be integer literals at compile time.
 
 ## `run(app_spec, **kwargs)`
 Convenience wrapper around `AppSpec.run(...)`.
+
+## Optional Sugar: `simple_activity()`
+Small convenience builder for very simple one-screen text/button samples.
 
 ## AppConfig
 
@@ -58,28 +62,22 @@ app_config(
     verify_reproducible=False,
     deps=None,
     auto_deps=False,
+    mode="static",  # "static" | "reactive"
 )
 ```
 
 ### Field Notes
 
-- `package`: Android package id.
-- `min_sdk`, `target_sdk`: SDK controls.
-- `version_code`, `version_name`: app version metadata.
-- `debuggable`: manifest/debug mode flag.
-- `show_action_bar`: controls default theme/action bar behavior.
-- `label`: app label (resource `app_name`).
-- `uses`: explicit capability/permission tokens.
-- `uninstall_first`: uninstall before install on run path.
-- `output_apk`: write APK to custom path.
-- `signing_mode`: signing strategy (`debug` by default).
-- `verify_reproducible`: enables reproducibility verification path.
-- `deps`: explicit external dependencies (AAR/Maven artifacts).
-- `auto_deps`: if `True`, inferred deps are auto-merged; if `False`, missing inferred deps raise errors.
+- `deps` + `auto_deps`: explicit dependency policy and inferred-deps merge behavior.
+- `uses`: capability/permission declarations.
+- `mode`: `static` (default) or `reactive`.
+
+Reactive guardrail:
+- using reactive statements in static mode raises `[ReactiveModeError]`.
 
 ### Module-level Macros Recognized
 
-`dsl.api` reads these if present in your app module:
+`dsl.api` reads these if present in app module:
 
 - `APP_CONFIG` (dict)
 - `APP_PACKAGE`
@@ -99,12 +97,13 @@ app_config(
 - `APP_KEYSTORE_PATH`
 - `APP_KEYSTORE_ALIAS`
 - `APP_PLUGINS`
+- `APP_MODE`
 
-### Dependency Policy
+## Dependency Policy
 
 Default: explicit-only.
 
-If a plugin/core surface infers required artifacts and `auto_deps=False`, build fails with a missing dependency error until those artifacts are declared in `deps`/`APP_DEPS`.
+If inferred dependencies are required and `auto_deps=False`, build fails until they are declared in `deps`/`APP_DEPS`.
 
 ## Screen Rules in Build Layer
 
@@ -115,25 +114,20 @@ If any `Screen(...)` is present in `ui(...)`:
 
 ## Label Resolution Order
 
-Current effective behavior:
+Current behavior:
 - default `app_name = "AhnaliPreview"`
-- `AppBar(text=...)` may set label if no explicit label is locked
+- `AppBar(text=...)` can set label if not explicitly locked
 - `app_config(label=...)` locks label
-- module `APP_LABEL` overrides label at build extraction stage
+- `APP_LABEL` overrides during app-config extraction
 
 ## APK Packaging Pipeline
 
-Current packaging path in toolchain:
-
-1. `aapt2 compile/link` creates `unsigned.apk` with manifest/resources.
-2. `classes.dex` is added to `unsigned.apk`.
-3. `zipalign -f -p 4` produces `aligned.apk`.
-4. `apksigner sign` signs `aligned.apk` into final `signed.apk`.
-
-Notes:
-- `zipalign` runs before signing (required ordering).
-- Toolchain diagnostics now require `aapt2`, `zipalign`, and `apksigner`.
+1. `aapt2 compile/link` creates `unsigned.apk` with resources/manifest.
+2. `classes.dex` is added.
+3. `zipalign -f -p 4` produces aligned APK.
+4. `apksigner sign` signs final APK.
 
 See also:
+- [[10_Events_and_Handler_DSL]]
 - [[11_Navigation_State_and_Screens]]
 - [[13_Validation_and_Diagnostics]]

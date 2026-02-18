@@ -8,26 +8,17 @@ Back to: [[00_Home]]
 
 ## `Style(...)`
 
-`Style` contains reusable overrides for almost all visual/layout fields.
+`Style` is the reusable style bag used by `style(...)` and theme channels.
 
-Constructor fields:
-
-- layout/sizing:
-  - `layout`, `width`, `height`, `padding`, `margin`, `gravity`, `weight`, `align`, `arrangement`, `weight_sum`, `relative`, `constraints`
-- text/typography:
-  - `text_color`, `text_size`, `font_family`, `font_weight`, `font_style`, `letter_spacing`, `line_height`, `text_alignment`, `all_caps`, `max_lines`, `ellipsize`
-- background/shape:
-  - `background`, `radius`, `border_width`, `border_color`, `border_radius`, `ripple_color`
-- tint/stateful color:
-  - `tint`, `thumb_tint`, `track_tint`, `progress_tint`, `button_tint`
-- elevation/effects:
-  - `elevation`, `pressed_elevation`, `text_shadow_color`, `text_shadow_radius`, `text_shadow_dx`, `text_shadow_dy`, `opacity`, `blur_radius`
-- transforms/clip:
-  - `rotation`, `scale_x`, `scale_y`, `translation_x`, `translation_y`, `clip_to_outline`, `clip_children`
+Representative fields:
+- layout/sizing: `layout`, `width`, `height`, `padding`, `margin`, `gravity`, `weight`, `align`, `arrangement`, `weight_sum`, `relative`, `constraints`
+- text/typography: `text_color`, `text_size`, `font_family`, `font_weight`, `font_style`, `letter_spacing`, `line_height`, `text_alignment`, `all_caps`, `max_lines`, `ellipsize`, `hint_color`, `highlight_color`
+- tint/stateful: `text_tint`, `tint`, `thumb_tint`, `track_tint`, `progress_tint`, `secondary_progress_tint`, `button_tint`
+- background/shape/effects: `background`, `radius`, `border_width`, `border_color`, `border_radius`, `ripple_color`, `opacity`, `blur_radius`
+- transforms/clip: `rotation`, `scale_x`, `scale_y`, `translation_x`, `translation_y`, `clip_to_outline`, `clip_children`
+- image-specific: `scale_type`, `crop`, `center_inside`, `adjust_view_bounds`, `image_alpha`, `image_matrix`
 
 ## `Theme(...)`
-
-Constructor:
 
 ```python
 Theme(
@@ -46,16 +37,14 @@ Theme(
 )
 ```
 
-Channels:
-- `text`: text-like widgets
-- `button`: button-like widgets
-- `input`: text input widgets
-- `selector`: checkbox/radio/switch families
-- `progress`: progress/slider families
-- `icon`: icon text surface
-- `container`: containers/card/relative/constraint/screen
-- `appbar`: app bar widgets
-- compatibility channels: `row`, `column` (merged with container)
+Channel mapping highlights:
+- `appbar`: merged with `text` for `AppBar`
+- `input`: merged with `text` for `TextField`
+- `selector`: merged with `text` for `Checkbox`/`Radio`/`Switch`; also used for `Slider`, `DropdownButton`, `PopupMenuButton`, `RadioGroup`
+- `progress`: `ProgressBar`
+- `icon`: merged with `text` for `Icon`
+- `container`: containers/layout surfaces (`Container`, `Card`, `Relative`, `Constraint`, `Frame`, `CoordinatorLayout`, `DrawerLayout`, `RecyclerView`, `FragmentContainer`, `ViewPager`, `Screen`)
+- `row` / `column`: backward-compatible overlays merged on top of `container`
 
 ## `presets(...)`
 
@@ -63,21 +52,21 @@ Channels:
 presets(palette=None)
 ```
 
-Preset methods currently provided:
+Built-in preset methods:
 - `PrimaryButton(**overrides)`
 - `DangerButton(**overrides)`
 - `MutedText(**overrides)`
 - `Card(**overrides)`
 
-## Style Merge and Precedence
+## Merge/Precedence Rule
 
-At lowering time:
+Lowering precedence is deterministic:
 
 `inline attrs > style= > Theme channel > widget defaults`
 
-If a field exists in multiple layers, a lint warning is emitted describing precedence.
+Overlap emits lint warnings.
 
-## Example: Theme + Inline Override
+## Example
 
 ```python
 from dsl.app import Theme, Style, app, activity, ui, text, button, sp
@@ -96,7 +85,7 @@ app_spec = app(
         ),
         ui(
             text("Hello", id="title"),
-            button("Save", id="save", text_color="#FFFFEE58"),  # inline overrides theme text_color
+            button("Save", id="save", text_color="#FFFFEE58"),  # inline override
         ),
     )
 )

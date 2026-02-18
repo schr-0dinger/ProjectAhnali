@@ -4,8 +4,7 @@ tags: [ahnali, api, docs, vault]
 
 # Ahnali Getting Started + API Documentation (Code Reality)
 
-This vault is generated from the current repository implementation and tests.
-It documents the native/core DSL surface (Material plugin is paused and not part of default runtime behavior).
+This vault reflects the current repository implementation in `dsl/api.py`, `dsl/widgets.py`, parser/lowering behavior, and active tests.
 
 ## Read This First
 
@@ -30,14 +29,19 @@ It documents the native/core DSL surface (Material plugin is paused and not part
 ## Quick Reality Snapshot
 
 - Deterministic AOT lowering pipeline is active.
-- Named static handlers are required.
-- `style=` + `Theme(...)` precedence is implemented.
-- Phase 1..13 features are implemented in core path, with two known practical gaps:
-  - Dropdown text surface coverage is still pending.
-  - Popup menu item text surface coverage is still pending.
-- `ColorState` background currently applies default color for fill and emits a lint warning for fallback behavior.
+- App modes are real: `app_config(mode="static")` (default) and `app_config(mode="reactive")`.
+- Inline widget events are supported (`on_click=...`, `on_change=...`, etc.) and merged with explicit event specs.
+- Style precedence is deterministic: `inline attrs > style= > Theme channel > widget defaults`.
+- Navigation stack ops include `Navigate`, `Back`, `Replace`, `PopToRoot`, `ClearStack`.
+- Program 1..13 surfaces are active in core path, including async HTTP, WebView helpers, notifications, clipboard/share, and multi-backend state APIs.
+
+## Known Practical Gaps
+
+- Dropdown text-typography surface is still partial.
+- Popup menu item text-typography surface is still partial.
+- Background `ColorState` currently uses default color for fill (with lint fallback warning).
 
 ## Scope Notes
 
-- This vault documents APIs in `dsl/widgets.py`, `dsl/api.py`, parser/AST behavior, and lowering/validation rules in `dsl/lowering/context.py`.
-- Examples are Pythonic DSL examples intended for direct app scripts.
+- This vault documents APIs in `dsl/widgets.py`, `dsl/api.py`, parser behavior (`dsl/parser.py`), and lowering/validation rules (`dsl/lowering/context.py`).
+- Material plugin is not the default path; docs focus on core/native surface.

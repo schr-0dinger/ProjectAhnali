@@ -22,29 +22,23 @@ Back to: [[00_Home]]
 
 ## Animatable Properties
 
-Supported normalized keys:
-- `rotate`
-- `scale` (expands to `scale_x` + `scale_y`)
-- `scale_x`
-- `scale_y`
-- `translate_x`
-- `translate_y`
+Normalized property keys:
+- `rotate` (`rotation` alias)
+- `scale` (expands to both axes)
+- `scale_x`, `scale_y` (`scalex`/`scaley` aliases)
+- `translate_x`, `translate_y` (`translation_x`/`translation_y` aliases)
 - `alpha`
 - `elevation`
 
-Property aliases are normalized from user-friendly names.
+## Timing and Interpolators
 
-## Timing Fields
-
-- `duration`: numeric (cast to integer milliseconds)
-- `delay`: numeric (cast to integer milliseconds)
-- `interpolator`: string
-
-Interpolators:
-- `linear`
-- `accelerate` (`ease_in` alias)
-- `decelerate` (`ease_out` alias)
-- `accelerate_decelerate` (`ease_in_out` alias)
+- `duration`: numeric -> int ms
+- `delay`: numeric -> int ms
+- `interpolator`:
+  - `linear`
+  - `accelerate` (`ease_in` alias)
+  - `decelerate` (`ease_out` alias)
+  - `accelerate_decelerate` (`ease_in_out` alias)
 
 ## Validation Rules
 
@@ -59,14 +53,7 @@ Interpolators:
 ```python
 @on_click("animate")
 def do_animate():
-    animate(
-        "card",
-        alpha=0.6,
-        rotate=15,
-        duration=180,
-        delay=20,
-        interpolator="linear",
-    )
+    animate("card", alpha=0.6, rotate=15, duration=180, delay=20, interpolator="linear")
     animate_elevation("card", 8, duration=180)
 ```
 
@@ -86,8 +73,7 @@ def do_grouped():
 
 ## Navigation Transition Interplay
 
-Screen transitions are independent from handler animation calls.
-Both are explicit and deterministic.
+Screen transitions from `Screen(..., transition=...)` are separate from explicit handler animations.
 
 See also:
 - [[10_Events_and_Handler_DSL]]

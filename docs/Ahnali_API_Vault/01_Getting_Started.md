@@ -2,7 +2,7 @@
 tags: [ahnali, getting-started]
 ---
 
-# Getting Started
+	# Getting Started
 
 Back to: [[00_Home]]
 
@@ -44,8 +44,6 @@ app_spec = app(
         handle_inc,
     )
 )
-
-app_spec.run()
 ```
 
 ## 3. Add Screens + Navigation
@@ -65,17 +63,8 @@ app_spec = app(
     activity(
         "MainActivity",
         ui(
-            Screen(
-                "Home",
-                text("Home", id="home_title"),
-                button("Open Details", id="go_details"),
-            ),
-            Screen(
-                "Details",
-                text("Details", id="details_title"),
-                button("Back", id="go_back"),
-                transition="slide_left",
-            ),
+            Screen("Home", text("Home", id="home_title"), button("Open Details", id="go_details")),
+            Screen("Details", text("Details", id="details_title"), button("Back", id="go_back"), transition="slide_left"),
         ),
         go_details,
         go_back,
@@ -83,7 +72,7 @@ app_spec = app(
 )
 ```
 
-## 4. Add AppConfig
+## 4. Add AppConfig (Including Mode)
 
 ```python
 from dsl.app import app, activity, app_config, ui, text
@@ -94,11 +83,11 @@ app_spec = app(
         app_config(
             package="com.example.todo",
             min_sdk=21,
-            target_sdk=34,
+            target_sdk=33,
             version_code=1,
             version_name="1.0.0",
             debuggable=True,
-            show_action_bar=True,
+            mode="static",  # or "reactive"
             auto_deps=False,
         ),
         ui(text("Configured", id="title")),
@@ -106,32 +95,27 @@ app_spec = app(
 )
 ```
 
-## 5. Dependency and Plugin Control
+## 5. Enable Reactive APIs (Optional)
 
-Default behavior is explicit dependency declaration.
+Reactive statements/expressions require `app_config(mode="reactive")`.
 
 ```python
-from dsl.app import app_config
+from dsl.app import app, activity, app_config, ui, text, button, on_click, observable, bind_text, set_observable
 
-cfg = app_config(
-    deps=[
-        "androidx.appcompat:appcompat:1.6.1",
-    ],
-    auto_deps=False,
+@on_click("run")
+def run_handler():
+    observable("greeting", "hello")
+    bind_text("status", "greeting")
+    set_observable("greeting", "world")
+
+app_spec = app(
+    activity(
+        "MainActivity",
+        app_config(mode="reactive"),
+        ui(text("Status", id="status"), button("Run", id="run")),
+        run_handler,
+    )
 )
-```
-
-To enable automatic inferred dependency merging:
-
-```python
-cfg = app_config(auto_deps=True)
-```
-
-Plugins are resolved from module-level `APP_PLUGINS`:
-
-```python
-APP_PLUGINS = ["core"]
-# Material plugin is currently paused by project decision.
 ```
 
 ## 6. Where to Go Next

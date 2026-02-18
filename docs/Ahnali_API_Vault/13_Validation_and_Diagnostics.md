@@ -6,57 +6,50 @@ tags: [ahnali, validation, lint]
 
 Back to: [[00_Home]]
 
-This note summarizes the major compile-time checks currently enforced.
+This note summarizes major compile-time checks enforced by current lowering/parser.
 
 ## Identity and Structure
 
-- duplicate widget ids are rejected (default ids may auto-suffix with warning in specific cases)
-- widget id reuse across multiple screens is rejected
+- duplicate widget ids are rejected (default-like ids may auto-suffix with warning)
+- widget id reuse across screens is rejected
 - unknown target ids in events/animation/constraints are rejected
 - `ui(...)` cannot mix `Screen(...)` and non-screen top-level entries
 - duplicate screen names are rejected
+- strict child-count rules on structural widgets (`ScrollView`, `DrawerLayout`, `FragmentContainer`, etc.)
 
-## Style Compatibility
+## Style Compatibility and Visual Validation
 
-- incompatible style fields on widget kind are rejected
-- style compatibility is checked for both `style=` and Theme channel application
+- incompatible style fields per widget kind are rejected
+- invalid `layout` / spacing / gravity / relative / constraint forms are rejected
+- invalid color/gradient/border/opacity/transform values are rejected
+- `clip_children` only valid on container-like widgets
+- `text_size` must use `sp(...)`
+- image validations (`scale_type`, `image_alpha`, `image_matrix`) are enforced
 
-## State Validation
+## State and App Config
 
-- invalid state key name patterns are rejected
-- reserved runtime names are rejected
-- collisions with generated view fields are rejected
-- non-integer state literal values are rejected
+- invalid state key patterns/reserved names/collisions are rejected
+- non-integer state literals are rejected
+- invalid `app_config(mode=...)` values are rejected
 
 ## Event Binding Validation
 
-- unsupported event kind -> rejected
-- event target kind mismatch -> rejected
-- malformed event specs -> rejected
+- unsupported event kinds are rejected
+- target-kind mismatch per event is rejected
+- duplicate bindings on canonical listener slots are rejected
+- popup conflict: `on_menu_item_selected` cannot be combined with explicit `on_click` for same popup id
 
 ## Input Validation
 
 - invalid `input_type` / `ime_options` / `auto_capitalize`
-- invalid `max_length` (must be integer >= 0)
-- bool/type violations for strict fields
+- invalid `max_length` (`int >= 0`)
+- strict bool checks for fields like `single_line`, `password`, `numeric_only`, etc.
 
-## Layout and Visual Validation
+## Data/List Validation
 
-- invalid `layout` forms
-- invalid spacing forms (`padding`/`margin`)
-- invalid gravity values
-- invalid relative rule or constraint forms
-- invalid gradient config (direction/color)
-- invalid opacity range
-- invalid border config
-- invalid transform numeric values
-- `clip_children` only for container widget kinds
-
-## ListView Validation
-
-- `items` must be static primitive list/tuple
-- unsupported symbolic `item_layout` rejected
-- current deterministic adapter lowering supports `simple_list_item_1` path
+- list/grid/recycler items must be static primitive list/tuple
+- unsupported symbolic `item_layout` values are rejected
+- deterministic adapter lowering currently supports `simple_list_item_1` path
 
 ## Animation Validation
 
@@ -65,24 +58,25 @@ This note summarizes the major compile-time checks currently enforced.
 - empty animation group rejected
 - non-numeric duration/delay/property values rejected
 
+## Reactive Guardrails
+
+- reactive statements/expressions require `app_config(mode="reactive")`
+- static mode emits `[ReactiveModeError]` if reactive APIs are used
+
+## HTTP Route Guardrails
+
+- `http_get_route` / `http_get_route_async` allowed only in click-handler context
+- route target ids must point to known click handlers
+
 ## Warnings (Degraded but Deterministic)
 
-Current warning patterns include:
-- style precedence overlap warnings:
-  - inline + style/theme overlap
-- blur skipped warning:
-  - `blur_radius` ignored when `min_sdk < 31`
-- background ColorState fallback warning:
-  - only default color used for background fill
-- default border width warning:
-  - if border color is set without border width
-- duplicate default id auto-suffix warning
-
-## Non-goals Enforced by Design
-
-- no reactive runtime hooks
-- no runtime diff/recomposition system
-- no dynamic callback registration model
+Common warnings include:
+- style precedence overlap (`inline`, `style`, and `Theme` all setting same field)
+- blur skipped when `min_sdk < 31`
+- background `ColorState` default-only fallback behavior
+- default border width fallback when color is set without explicit width
+- duplicate default id auto-suffix
+- global-state-across-screens warning
 
 See also:
 - [[04_Shared_Attributes]]

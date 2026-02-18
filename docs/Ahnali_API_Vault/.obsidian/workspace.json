@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "06_Content_and_Display_Components.md",
-                "mode": "preview",
+                "file": "02_App_Model_and_Build_Run.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "06_Content_and_Display_Components"
+              "title": "02_App_Model_and_Build_Run"
             }
           }
         ]
@@ -74,8 +74,7 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -184,18 +183,22 @@
       "bases:Create new base": false
     }
   },
-  "active": "8016b74a812f8e8c",
+  "active": "db0991bda6485541",
   "lastOpenFiles": [
-    "05_Structure_Components.md",
-    "04_Shared_Attributes.md",
+    "01_Getting_Started.md",
+    "00_Home.md",
+    "14_Component_Attribute_Matrix.md",
+    "13_Validation_and_Diagnostics.md",
+    "12_Animation_DSL.md",
+    "11_Navigation_State_and_Screens.md",
     "10_Events_and_Handler_DSL.md",
     "09_Theme_Style_and_Presets.md",
     "08_Feedback_and_Utility_Components.md",
     "07_Input_and_Selection_Components.md",
     "06_Content_and_Display_Components.md",
+    "04_Shared_Attributes.md",
     "03_Value_Types_and_Units.md",
     "02_App_Model_and_Build_Run.md",
-    "01_Getting_Started.md",
-    "00_Home.md"
+    "05_Structure_Components.md"
   ]
 }

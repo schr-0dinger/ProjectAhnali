@@ -8,31 +8,31 @@ Back to: [[00_Home]]
 
 ## State
 
-API:
-
 ```python
 state(counter=0, step=1)
 ```
 
-Current constraints:
-- keys must be valid identifiers (`[A-Za-z_][A-Za-z0-9_]*`)
-- keys cannot use reserved runtime names (`app_ctx`, `nav_stack`, `nav_size`, `nav_current`)
-- keys cannot collide with generated view field names
-- values must be integer literals (bool rejected)
+Constraints:
+- keys must match `[A-Za-z_][A-Za-z0-9_]*`
+- reserved names rejected: `app_ctx`, `nav_stack`, `nav_size`, `nav_current`
+- keys cannot collide with generated widget field names
+- values must be integer literals (`bool` rejected)
 
 ## Navigation Statements
 
 - `Navigate(target)` / `navigate(target)`
 - `Back()` / `back()`
 - `Replace(target)` / `replace(target)`
+- `PopToRoot()` / `pop_to_root()`
+- `ClearStack()` / `clear_stack()`
 
 Used inside handlers.
 
 ## Screen Graph Rules
 
-- if one `Screen(...)` exists, all top-level UI entries must be screens
+- if one `Screen(...)` exists, all top-level `ui(...)` entries must be screens
 - duplicate screen names are rejected
-- generated navigation stack fields are static and deterministic
+- generated nav stack fields are static and deterministic (`nav_stack`, `nav_size`, `nav_current`)
 
 ## Screen Transition Values
 
@@ -48,7 +48,7 @@ Unsupported names fail compile-time validation.
 ## Example
 
 ```python
-from dsl.app import app, activity, ui, Screen, text, button, on_click, Navigate, Back, state
+from dsl.app import app, activity, ui, Screen, text, button, on_click, Navigate, Back, PopToRoot, state
 
 @on_click("go_settings")
 def go_settings():
@@ -58,31 +58,27 @@ def go_settings():
 def go_back():
     Back()
 
+@on_click("go_root")
+def go_root():
+    PopToRoot()
+
 app_spec = app(
     activity(
         "MainActivity",
         state(counter=0),
         ui(
-            Screen(
-                "Home",
-                text("Home", id="home_title"),
-                button("Settings", id="go_settings"),
-            ),
-            Screen(
-                "Settings",
-                text("Settings", id="settings_title"),
-                button("Back", id="go_back"),
-                transition="slide_left",
-            ),
+            Screen("Home", text("Home", id="home_title"), button("Settings", id="go_settings")),
+            Screen("Settings", text("Settings", id="settings_title"), button("Back", id="go_back"), button("Root", id="go_root"), transition="slide_left"),
         ),
         go_settings,
         go_back,
+        go_root,
     )
 )
 ```
 
 ## Known Lint Behavior
 
-When screens are used with global state, build emits a warning:
+When screens are combined with global state, build emits a warning:
 - state remains global across screens
 - screen-local state is not yet supported

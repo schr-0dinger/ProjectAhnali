@@ -6,102 +6,98 @@ tags: [ahnali, events, handlers]
 
 Back to: [[00_Home]]
 
-## Event Decorators
+## Event Specs
 
-- `on_click(button_id, stmts=None)`
+### Core
+
+- `on_click(target_id, stmts=None)`
 - `on_click_map(mapping)`
-- `on_change(view_id, stmts=None)`
-- `on_text_change(view_id, stmts=None)`
-- `on_item_selected(view_id, stmts=None)`
-- `on_menu_item_selected(view_id, stmts=None)`
-- `on_focus_change(view_id, stmts=None)`
+- `on_change(target_id, stmts=None)`
+- `on_slider_change(target_id, stmts=None)`
+- `on_text_change(target_id, stmts=None)`
+- `on_item_selected(target_id, stmts=None)`
+- `on_menu_item_selected(target_id, stmts=None)`
+- `on_focus_change(target_id, stmts=None)`
 
-`stmts` can be:
-- omitted + decorator function body (AST-parsed)
-- callable
-- prebuilt stmt list
+### Extended interaction
+
+- `on_long_click`
+- `on_touch`
+- `on_double_tap`
+- `on_swipe`
+- `on_scroll`
+- `on_fling`
+- `on_pinch`
+- `on_zoom`
+- `on_rotate_gesture`
+- `on_scale_gesture_detector`
+- `on_drag`
+- `on_drop`
+- `on_editor_action`
+- `on_key`
+
+### Lifecycle hooks
+
+- `on_start`
+- `on_resume`
+- `on_pause`
+- `on_stop`
+- `on_destroy`
+
+All hook helpers support decorator or explicit `stmts` usage.
+
+## Inline Event Attributes
+
+Widgets support inline event attrs (`on_click=...`, `on_change=...`, etc.).
+
+Rules:
+- inline + explicit duplicate binding for same canonical slot is rejected
+- alias collisions are normalized deterministically:
+  - touch-family events share one touch listener slot per target
+  - `drop` shares drag slot with `drag`
+  - `slider_change` shares change slot semantics
 
 ## Target Type Constraints
 
-Compile-time checks enforce target widget kinds:
+- `on_click`: `button`, `raised_button`, `flat_button`, `icon_button`, `fab`, `popup_button`
+- `on_change`: `checkbox`, `switch`, `radio`, `slider`, `radio_group`
+- `on_slider_change`: `slider` only
+- `on_text_change` / `on_editor_action`: `text_field` only
+- `on_item_selected`: `dropdown` only
+- `on_menu_item_selected`: `popup_button` only
+- all targets must exist in `ui(...)`
 
-- `on_click`: clickable kinds only
-- `on_change`: checkbox/switch/radio/slider/radio_group
-- `on_text_change`: text_field
-- `on_item_selected`: dropdown
-- `on_menu_item_selected`: popup_button
-- `on_focus_change`: view-level focus target
+## Supported Handler Statements (Parser Path)
 
-Unknown ids fail at compile time.
+Supported statement families include:
+- assignment and augmented assignment (`x = ...`, `x += 1`)
+- view text set (`label.text = ...`)
+- `if`/`else`, `while`
+- feedback: `toast`, `snackbar`, `simple_dialog`, `log`, `exit_app`
+- navigation: `Navigate`, `Back`, `Replace`, `PopToRoot`, `ClearStack`
+- animation: `animate`, helpers, `sequence`, `parallel`
+- permission/capability helpers
+- web/notification/http helpers
+- storage + backend helpers (`datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_*`, `secure_*`)
+- reactive helpers (`observable`, `set_observable`, `derived`, `listen`, `bind_text`) when app mode is reactive
 
-## Supported Handler Statements (AST)
+## Expression Support (Parser Path)
 
-Current parser supports:
-- assignment: `x = ...`
-- augmented assignment: `x += 1`, `x -= 1`, etc.
-- view text set: `label.text = ...`
-- `if` / `else`
-- `while`
-- `toast(...)`
-- `snackbar(...)`
-- `simple_dialog(...)`
-- `log(tag, message)`
-- `Navigate(...)` / `navigate(...)`
-- `Back()` / `back()`
-- `Replace(...)` / `replace(...)`
-- animation calls (`animate`, helpers, `sequence`, `parallel`)
-- `request_permission(...)` / `request_permissions(...)`
-- `exit_app()`
-
-Unsupported statements/expressions fail at compile time.
-
-## Expression Support in Handlers
-
-Supported expression forms include:
-- constants
-- symbols
-- binary math (`+`, `-`, `*`, `/`, `%`)
-- comparisons (`==`, `!=`, `>`, `<`, etc. single compare)
-- boolean ops (`and`, `or`)
-- unary (`not`, unary `-` for integer constants)
-- f-strings (limited AST conversion)
-
-## Example
-
-```python
-from dsl.app import on_click, on_change, on_text_change, toast, navigate
-
-@on_click("save")
-def save_handler():
-    counter = counter + 1
-    title.text = f"Saved {counter} times"
-    toast("Saved", 0)
-
-@on_change("enabled")
-def enabled_handler():
-    title.text = "Enabled changed"
-
-@on_text_change("query")
-def query_handler():
-    if counter > 10:
-        navigate("Summary")
-```
-
-## `on_click_map(...)`
-
-Bulk mapping form:
-
-```python
-specs = on_click_map({
-    "inc": lambda: None,
-    "dec": lambda: None,
-})
-```
-
-Returns a list of event specs.
+Supported expression families include:
+- constants, symbols
+- binary math/comparisons/boolean ops/unary ops
+- f-strings (limited lowering)
+- capability expressions (`permission_granted`, `clipboard_get`, `notify_result/error`, web result/error helpers)
+- HTTP expressions (`http_get*`, async token expressions)
+- storage/backend expressions (`storage_get/exists`, backend `get/exists`)
+- reactive expression `observable_get` (reactive mode)
 
 ## Notes
 
-- Handlers are named/static by design.
-- Runtime dynamic callback registration is intentionally not part of this model.
-- Compile-time id validation is mandatory.
+- handler parser is intentionally constrained for deterministic lowering.
+- many capability/helper call arguments are required to be compile-time constants in parser path.
+- runtime dynamic callback registration is not part of this model.
+
+See also:
+- [[08_Feedback_and_Utility_Components]]
+- [[11_Navigation_State_and_Screens]]
