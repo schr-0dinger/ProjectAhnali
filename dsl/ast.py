@@ -136,6 +136,16 @@ class _ExprWebLoadError:
         self.url = url
 
 
+class _ExprWebAddJsBridgeResult:
+    def __init__(self, bridge_name):
+        self.bridge_name = bridge_name
+
+
+class _ExprWebAddJsBridgeError:
+    def __init__(self, bridge_name):
+        self.bridge_name = bridge_name
+
+
 class _ExprNotifyResult:
     def __init__(self, title, body, channel_id):
         self.title = title
@@ -349,6 +359,11 @@ class _StmtWebSetPolicy:
 class _StmtWebLoad:
     def __init__(self, url):
         self.url = url
+
+
+class _StmtWebAddJsBridge:
+    def __init__(self, bridge_name):
+        self.bridge_name = bridge_name
 
 
 class _StmtStoragePut:

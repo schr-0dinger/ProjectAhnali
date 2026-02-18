@@ -257,9 +257,10 @@ Implemented:
 - ✅ Track C Wave 9 completed: `Clipboard` helper-call capability (`Lcom/ahnali/runtime/ClipboardHelper;->setText(...)I`) + deterministic get fallback surface (`getText(...)`) + DSL (`clipboard_set`, `set_clipboard`, `clipboard_get`, `get_clipboard`) + visible integration flow combining clipboard + notifications + URL launcher deterministic fallback routing (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave9_visible_flow.py`, `docs/TrackC_Wave9_Clipboard.md`)
 - ✅ Track C Wave 10 completed: `Sharing` helper-call capability (`Lcom/ahnali/runtime/ShareHelper;->shareText(...)I`) + deterministic error surfaces (`shareTextError(...)`, `openUriError(...)`) + DSL (`share_text`, `share`, `share_text_result`, `share_text_error`, `open_external`, `open_uri`, `open_external_error`) + visible integration flow combining sharing + clipboard deterministic fallback routing (`tests/test_track_c_wave10_sharing_intents.py`, `tests/test_track_c_wave10_visible_flow.py`, `docs/TrackC_Wave10_Sharing_Intents.md`)
 - ✅ Track C Wave 11 completed: `WebView` helper-call capability (`Lcom/ahnali/runtime/WebHelper;->loadUrl(...)I`) + deterministic settings/policy/error surfaces (`setPolicy(...)`, `loadUrlError(...)`) + DSL (`web_set_policy`, `web_policy`, `web_load`, `open_web`, `web_load_result`, `web_load_error`) + visible integration flow combining WebView policy routing + sharing fallback (`tests/test_track_c_wave11_webview.py`, `tests/test_track_c_wave11_visible_flow.py`, `docs/TrackC_Wave11_WebView.md`)
+- ✅ Track C Wave 12 completed: Web JS bridge policy-constrained helper-call surface (`Lcom/ahnali/runtime/WebHelper;->addJsBridge(...)I`, `addJsBridgeError(...)I`) + DSL (`web_add_js_bridge`, `web_register_js_bridge`, `web_add_js_bridge_result`, `web_add_js_bridge_error`) + visible integration flow combining JS bridge policy routing + sharing fallback (`tests/test_track_c_wave12_web_js_bridge.py`, `tests/test_track_c_wave12_visible_flow.py`, `docs/TrackC_Wave12_Web_JS_Bridge.md`)
 
 Pending:
-- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard/sharing/webview helpers.
+- ⚠️ Broaden capability modules beyond current network/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge helpers.
 
 ---
 
@@ -583,7 +584,7 @@ Networking:
 Web:
 - ✅ WebView
 - ✅ WebSettings
-- ❌ JS bridge
+- ✅ JS bridge
 - ❌ file chooser
 - ❌ cookie manager
 
@@ -837,7 +838,7 @@ This is the authoritative execution order for Program 5 and beyond.
 1. ✅ Program 5 closure pass: state/lifecycle traceability locked to tests/docs (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2. ✅ Program 11-A gate hardening before breadth: contract/CI guardrails are strict and blocking (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`, `tests/test_capability_mapping_contract.py`, `tests/test_docs_consistency.py`, `tests/test_capability_diagnostics_contract.py`).
 3. ✅ Program 6-A capability core tranche: runtime-permission + notifications/channels slices shipped under the ABI/test/doc pattern (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`, `docs/TrackC_Wave7_Permissions.md`, `docs/TrackC_Wave8_Notifications.md`).
-4. ⚠️ Program 6-B capability breadth tranche: started with Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView/settings slices; continue grouped `8.5` families with deterministic helper error contracts.
+4. ⚠️ Program 6-B capability breadth tranche: started with Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView/settings + Wave 12 JS bridge slices; continue grouped `8.5` families with deterministic helper error contracts.
 5. ⚠️ Program 7 motion completion (`8.6`): finish missing animator/transition/transform surfaces with deterministic ordering/fallback.
 6. ⚠️ Program 8 advanced/system/security/debug completion (`8.7`-`8.10`) with explicit policy constraints and release-mode tests.
 7. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled.
@@ -1785,7 +1786,7 @@ never as core behavior.
 - ✅ State storage
 - ✅ Capability helper runtime surface (URL launcher, connectivity, storage put/get/remove/exists/clear)
 - ✅ Networking helper runtime surface (fetch/status/error/route/retry/typed-JSON extraction)
-- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7/Wave 8/Wave 9/Wave 10/Wave 11 visible capability integration flow compile coverage
+- ✅ Wave 1/Wave 2/Wave 3/Wave 5/Wave 6/Wave 7/Wave 8/Wave 9/Wave 10/Wave 11/Wave 12 visible capability integration flow compile coverage
 
 ### Toolchain
 - ✅ Smali ↔ baksmali roundtrip tests

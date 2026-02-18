@@ -259,6 +259,75 @@ def _emit_web_load_url_error_method() -> list[str]:
     ]
 
 
+def _emit_web_add_js_bridge_method() -> list[str]:
+    return [
+        ".method public static addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/WebHelper;->addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_web_bridge_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_web_bridge_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_web_add_js_bridge_error_method() -> list[str]:
+    return [
+        ".method public static addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 8",
+        "    if-eqz p0, :ahnali_web_bridge_invalid",
+        "    if-eqz p1, :ahnali_web_bridge_invalid",
+        "    invoke-virtual {p1}, Ljava/lang/String;->length()I",
+        "    move-result v0",
+        "    if-lez v0, :ahnali_web_bridge_invalid",
+        "    sget v1, Lcom/ahnali/runtime/WebHelper;->sJsEnabled:I",
+        "    if-nez v1, :ahnali_web_bridge_js_ok",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        "    :ahnali_web_bridge_js_ok",
+        '    const-string v2, "ahnali_"',
+        "    invoke-virtual {p1, v2}, Ljava/lang/String;->startsWith(Ljava/lang/String;)Z",
+        "    move-result v3",
+        "    if-nez v3, :ahnali_web_bridge_name_ok",
+        "    const/4 v0, 0x5",
+        "    return v0",
+        "    :ahnali_web_bridge_name_ok",
+        "    :ahnali_web_bridge_try_start",
+        "    new-instance v4, Landroid/webkit/WebView;",
+        "    invoke-direct {v4, p0}, Landroid/webkit/WebView;-><init>(Landroid/content/Context;)V",
+        "    invoke-virtual {v4}, Landroid/webkit/WebView;->getSettings()Landroid/webkit/WebSettings;",
+        "    move-result-object v5",
+        "    if-eqz v5, :ahnali_web_bridge_runtime_error",
+        "    sget v6, Lcom/ahnali/runtime/WebHelper;->sJsEnabled:I",
+        "    invoke-virtual {v5, v6}, Landroid/webkit/WebSettings;->setJavaScriptEnabled(Z)V",
+        "    sget v7, Lcom/ahnali/runtime/WebHelper;->sDomStorage:I",
+        "    invoke-virtual {v5, v7}, Landroid/webkit/WebSettings;->setDomStorageEnabled(Z)V",
+        "    sget v6, Lcom/ahnali/runtime/WebHelper;->sAllowFileAccess:I",
+        "    invoke-virtual {v5, v6}, Landroid/webkit/WebSettings;->setAllowFileAccess(Z)V",
+        "    new-instance v7, Ljava/lang/Object;",
+        "    invoke-direct {v7}, Ljava/lang/Object;-><init>()V",
+        "    invoke-virtual {v4, v7, p1}, Landroid/webkit/WebView;->addJavascriptInterface(Ljava/lang/Object;Ljava/lang/String;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_web_bridge_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_web_bridge_try_start .. :ahnali_web_bridge_try_end} :ahnali_web_bridge_exception",
+        "    :ahnali_web_bridge_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_web_bridge_runtime_error",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_web_bridge_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_notification_create_channel_method() -> list[str]:
     return [
         ".method public static createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -1904,6 +1973,10 @@ def emit_capability_helper_smali(
         lines.insert(6, ".field private static sAllowCleartext:I")
         lines.insert(7, "")
         lines.extend(_emit_web_set_policy_method())
+        lines.append("")
+        lines.extend(_emit_web_add_js_bridge_method())
+        lines.append("")
+        lines.extend(_emit_web_add_js_bridge_error_method())
         lines.append("")
         lines.extend(_emit_web_load_url_method())
         lines.append("")

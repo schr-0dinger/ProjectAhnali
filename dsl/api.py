@@ -1259,6 +1259,22 @@ def web_load_error(url: str):
     return _ExprWebLoadError(str(url))
 
 
+def web_add_js_bridge(bridge_name: str):
+    return _StmtWebAddJsBridge(str(bridge_name))
+
+
+def web_register_js_bridge(bridge_name: str):
+    return web_add_js_bridge(bridge_name)
+
+
+def web_add_js_bridge_result(bridge_name: str):
+    return _ExprWebAddJsBridgeResult(str(bridge_name))
+
+
+def web_add_js_bridge_error(bridge_name: str):
+    return _ExprWebAddJsBridgeError(str(bridge_name))
+
+
 def create_notification_channel(channel_id: str, channel_name: str):
     return _StmtCreateNotificationChannel(str(channel_id), str(channel_name))
 

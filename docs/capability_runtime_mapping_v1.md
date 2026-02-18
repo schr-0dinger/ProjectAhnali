@@ -21,6 +21,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Track C Wave 9 adds clipboard helper-call binding (`clipboard_set`, `clipboard_get`) with deterministic set/get fallback surface.
 - Track C Wave 10 adds sharing/intents helper-call binding (`share_text`, `share_text_result`, `share_text_error`, `open_external`, `open_external_error`) with deterministic success/error surfaces.
 - Track C Wave 11 adds WebView helper-call binding (`web_set_policy`, `web_load`, `web_load_result`, `web_load_error`) with deterministic policy/error surfaces.
+- Track C Wave 12 adds Web JS bridge helper-call binding (`web_add_js_bridge`, `web_add_js_bridge_result`, `web_add_js_bridge_error`) with deterministic policy-constrained error surfaces.
 - Program 5 extends `StorageHelper` with deterministic backend-specific surfaces for DataStore/file/SQLite/Room/encrypted storage.
 
 ## Mapping Table (v1)
@@ -31,7 +32,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `Microphone` | `Microphone` | `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
 | `Audio` | `Audio` | `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
 | `Video` | `Video` | `android.permission.CAMERA`, `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
-| `WebView` | `WebView`, `Web` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/WebHelper;` | `setPolicy(Landroid/app/Activity;IIII)I`, `loadUrl(Landroid/app/Activity;Ljava/lang/String;)I`, `loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
+| `WebView` | `WebView`, `Web` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/WebHelper;` | `setPolicy(Landroid/app/Activity;IIII)I`, `loadUrl(Landroid/app/Activity;Ljava/lang/String;)I`, `loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I`, `addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I`, `addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Sensors` | `Sensors` | `android.permission.BODY_SENSORS` | n/a | n/a | `permission_only` |
 | `Storage` | `Storage` | `android.permission.READ_EXTERNAL_STORAGE`, `android.permission.WRITE_EXTERNAL_STORAGE` | `Lcom/ahnali/runtime/StorageHelper;` | `putString(...)`, `getString(...)`, `remove(...)`, `exists(...)`, `clear(...)`, `dataStorePutString(...)`, `dataStoreGetString(...)`, `dataStoreRemove(...)`, `dataStoreExists(...)`, `dataStoreClear(...)`, `fileWriteString(...)`, `fileReadString(...)`, `fileRemove(...)`, `fileExists(...)`, `fileClear(...)`, `sqlitePutString(...)`, `sqliteGetString(...)`, `sqliteRemove(...)`, `sqliteExists(...)`, `sqliteClear(...)`, `roomPutString(...)`, `roomGetString(...)`, `roomRemove(...)`, `roomExists(...)`, `roomClear(...)`, `encryptedPutString(...)`, `encryptedGetString(...)`, `encryptedRemove(...)`, `encryptedExists(...)`, `encryptedClear(...)` | `helper_call` |
 | `FilePicker` | `FilePicker`, `File Picker` | `android.permission.READ_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |

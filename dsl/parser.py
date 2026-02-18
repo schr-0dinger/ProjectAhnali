@@ -25,6 +25,8 @@ from .ast import (
     _ExprHttpGet,
     _ExprClipboardGet,
     _ExprOpenExternalError,
+    _ExprWebAddJsBridgeError,
+    _ExprWebAddJsBridgeResult,
     _ExprWebLoadError,
     _ExprWebLoadResult,
     _ExprLocationEnabled,
@@ -54,6 +56,7 @@ from .ast import (
     _StmtClipboardSet,
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
+    _StmtWebAddJsBridge,
     _StmtWebLoad,
     _StmtWebSetPolicy,
     _StmtHttpGetError,
@@ -601,6 +604,25 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("web_load argument 'url' must be a constant string")
                 return _StmtWebLoad(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {
+                        "web_add_js_bridge",
+                        "WebAddJsBridge",
+                        "web_register_js_bridge",
+                        "WebRegisterJsBridge",
+                    }
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        "web_add_js_bridge expects exactly 1 string argument. "
+                        'Usage: web_add_js_bridge("ahnali_bridge")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("web_add_js_bridge argument 'bridge_name' must be a constant string")
+                return _StmtWebAddJsBridge(args[0].value)
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {
@@ -1156,6 +1178,38 @@ def _parse_expr(node):
             if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                 raise RuntimeError("web_load_error argument 'url' must be a constant string")
             return _ExprWebLoadError(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_add_js_bridge_result", "WebAddJsBridgeResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    "web_add_js_bridge_result expects exactly 1 string argument. "
+                    'Usage: web_add_js_bridge_result("ahnali_bridge")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError(
+                    "web_add_js_bridge_result argument 'bridge_name' must be a constant string"
+                )
+            return _ExprWebAddJsBridgeResult(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_add_js_bridge_error", "WebAddJsBridgeError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    "web_add_js_bridge_error expects exactly 1 string argument. "
+                    'Usage: web_add_js_bridge_error("ahnali_bridge")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError(
+                    "web_add_js_bridge_error argument 'bridge_name' must be a constant string"
+                )
+            return _ExprWebAddJsBridgeError(args[0].value)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {

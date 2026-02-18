@@ -285,6 +285,8 @@
       "emitted_class_desc": "Lcom/ahnali/runtime/WebHelper;",
       "emitted_methods": [
         "<init>()V",
+        "addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I",
+        "addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I",
         "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I",
         "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I",
         "setPolicy(Landroid/app/Activity;IIII)I"

@@ -28,6 +28,8 @@ from dsl.ast import (
     _ExprHttpGet,
     _ExprClipboardGet,
     _ExprOpenExternalError,
+    _ExprWebAddJsBridgeError,
+    _ExprWebAddJsBridgeResult,
     _ExprWebLoadError,
     _ExprWebLoadResult,
     _ExprLocationEnabled,
@@ -64,6 +66,7 @@ from dsl.ast import (
     _StmtClipboardSet,
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
+    _StmtWebAddJsBridge,
     _StmtWebLoad,
     _StmtWebSetPolicy,
     _StmtHttpGetError,
@@ -4237,6 +4240,8 @@ class _PythonicContext:
             return self._compile_web_set_policy_stmt(stmt)
         if isinstance(stmt, _StmtWebLoad):
             return self._compile_web_load_stmt(stmt)
+        if isinstance(stmt, _StmtWebAddJsBridge):
+            return self._compile_web_add_js_bridge_stmt(stmt)
         if isinstance(stmt, _StmtCreateNotificationChannel):
             return self._compile_create_notification_channel_stmt(stmt)
         if isinstance(stmt, _StmtNotify):
@@ -6671,6 +6676,16 @@ class _PythonicContext:
                 url=stmt.value.url,
                 tmp_prefix="web_load_error_value",
             )
+        elif isinstance(stmt.value, _ExprWebAddJsBridgeResult):
+            prefix, result = self._compile_web_add_js_bridge_result_call(
+                bridge_name=stmt.value.bridge_name,
+                tmp_prefix="web_add_js_bridge_result_value",
+            )
+        elif isinstance(stmt.value, _ExprWebAddJsBridgeError):
+            prefix, result = self._compile_web_add_js_bridge_error_call(
+                bridge_name=stmt.value.bridge_name,
+                tmp_prefix="web_add_js_bridge_error_value",
+            )
         elif isinstance(stmt.value, _ExprNotifyResult):
             prefix, result = self._compile_notify_result_call(
                 title=stmt.value.title,
@@ -6792,6 +6807,7 @@ class _PythonicContext:
                 "clipboard_get(...), "
                 "share_text_result(...), share_text_error(...), open_external_error(...), "
                 "web_load_result(...), web_load_error(...), "
+                "web_add_js_bridge_result(...), web_add_js_bridge_error(...), "
                 "notify_result(...), notify_error(...), "
                 "http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
@@ -7769,6 +7785,61 @@ class _PythonicContext:
             ),
         ], var(result_tmp)
 
+    def _compile_web_add_js_bridge_result_call(
+        self,
+        *,
+        api_name: str = "web_add_js_bridge_result",
+        bridge_name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "addJsBridge",
+                    args=[var("ctx"), const(str(bridge_name))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_add_js_bridge_error_call(
+        self,
+        *,
+        bridge_name: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="web_add_js_bridge_error",
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "addJsBridgeError",
+                    args=[var("ctx"), const(str(bridge_name))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
     def _compile_web_set_policy_stmt(self, stmt):
         out, _ = self._compile_web_set_policy_call(
             api_name="web_set_policy",
@@ -7785,6 +7856,14 @@ class _PythonicContext:
             api_name="web_load",
             url=getattr(stmt, "url", ""),
             tmp_prefix="web_load_ignored",
+        )
+        return out
+
+    def _compile_web_add_js_bridge_stmt(self, stmt):
+        out, _ = self._compile_web_add_js_bridge_result_call(
+            api_name="web_add_js_bridge",
+            bridge_name=getattr(stmt, "bridge_name", ""),
+            tmp_prefix="web_add_js_bridge_ignored",
         )
         return out
 

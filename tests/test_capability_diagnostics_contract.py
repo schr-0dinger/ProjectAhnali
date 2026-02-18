@@ -24,6 +24,8 @@ from dsl.app import (
     text,
     ui,
     web_load,
+    web_add_js_bridge,
+    web_add_js_bridge_error,
     web_load_error,
     web_set_policy,
 )
@@ -104,6 +106,17 @@ def _handler_web_policy():
 @on_click("btn_web_load")
 def _handler_web_load():
     web_load("https://example.com")
+
+
+@on_click("btn_web_bridge")
+def _handler_web_bridge():
+    web_add_js_bridge("ahnali_bridge")
+
+
+@on_click("btn_web_bridge_error")
+def _handler_web_bridge_error():
+    err = web_add_js_bridge_error("ahnali_bridge")
+    status_label.text = err
 
 
 @on_click("btn_web_error")
@@ -199,6 +212,18 @@ def _handler_clipboard_get():
             "WebView",
             [button("WebLoad", id="btn_web_load")],
             _handler_web_load,
+        ),
+        (
+            "web_add_js_bridge",
+            "WebView",
+            [button("WebBridge", id="btn_web_bridge")],
+            _handler_web_bridge,
+        ),
+        (
+            "web_add_js_bridge_error",
+            "WebView",
+            [text("status", id="status_label"), button("WebBridgeErr", id="btn_web_bridge_error")],
+            _handler_web_bridge_error,
         ),
         (
             "web_load_error",

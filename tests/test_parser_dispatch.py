@@ -13,6 +13,7 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "share_text" in capability_stmt
     assert "web_set_policy" in capability_stmt
     assert "web_load" in capability_stmt
+    assert "web_add_js_bridge" in capability_stmt
     assert "permission_granted" in capability_expr
     assert "location_enabled" in capability_expr
     assert "notify_error" in capability_expr
@@ -20,6 +21,8 @@ def test_parser_dispatch_domains_include_capability_aliases():
     assert "share_text_error" in capability_expr
     assert "web_load_result" in capability_expr
     assert "web_load_error" in capability_expr
+    assert "web_add_js_bridge_result" in capability_expr
+    assert "web_add_js_bridge_error" in capability_expr
 
 
 def test_parser_dispatch_domains_include_motion_aliases():

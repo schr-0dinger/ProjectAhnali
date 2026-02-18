@@ -24,6 +24,7 @@ In scope:
 - Track C Wave 9 capability helper ABI: clipboard set/get fallback surfaces
 - Track C Wave 10 capability helper ABI: sharing/intents dispatch + error-code surfaces
 - Track C Wave 11 capability helper ABI: WebView load/settings policy + error-code surfaces
+- Track C Wave 12 capability helper ABI: Web JS bridge registration + policy-constrained error-code surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
@@ -312,6 +313,21 @@ Deprecation policy:
       - `2`: cleartext URL blocked by policy (`allow_cleartext=0` and non-HTTPS URL)
       - `3`: runtime setup failure (missing `WebSettings`)
       - `4`: caught exception
+- Track C Wave 12 helper-call binding:
+  - Capability: `WebView`
+  - Helper class: `Lcom/ahnali/runtime/WebHelper;`
+  - Helper methods/sigs:
+    - `addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `addJsBridge`: `1` on successful bridge registration, `0` on any failure.
+    - `addJsBridgeError`: deterministic error contract:
+      - `0`: success
+      - `1`: invalid args/context
+      - `2`: JS bridge blocked by policy (`js_enabled=0`)
+      - `3`: runtime setup failure (missing `WebSettings`)
+      - `4`: caught exception
+      - `5`: bridge-name policy violation (must start with `ahnali_`)
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -433,6 +449,8 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave9_visible_flow.py`
 - `tests/test_track_c_wave10_sharing_intents.py`
 - `tests/test_track_c_wave10_visible_flow.py`
+- `tests/test_track_c_wave12_web_js_bridge.py`
+- `tests/test_track_c_wave12_visible_flow.py`
 - `tests/test_track_c_wave11_webview.py`
 - `tests/test_track_c_wave11_visible_flow.py`
 - `tests/test_program5_state_backends.py`

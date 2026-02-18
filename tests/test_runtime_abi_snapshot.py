@@ -75,6 +75,8 @@ def test_runtime_abi_snapshot_includes_web_helper_surface():
     classes = _snapshot_classes(snapshot)
     web_methods = classes["Lcom/ahnali/runtime/WebHelper;"]
     assert "setPolicy(Landroid/app/Activity;IIII)I" in web_methods
+    assert "addJsBridge(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
+    assert "addJsBridgeError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
     assert "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
     assert "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
 
