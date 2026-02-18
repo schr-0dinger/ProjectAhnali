@@ -27,10 +27,15 @@ from dsl.ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprClipboardGet,
+    _ExprOpenExternalError,
+    _ExprWebLoadError,
+    _ExprWebLoadResult,
     _ExprLocationEnabled,
     _ExprNotifyError,
     _ExprNotifyResult,
     _ExprPermissionGranted,
+    _ExprShareTextError,
+    _ExprShareTextResult,
     _ExprReactiveGet,
     _ExprStateBackendGet,
     _ExprStateBackendExists,
@@ -58,6 +63,9 @@ from dsl.ast import (
     _StmtCheckPermission,
     _StmtClipboardSet,
     _StmtCreateNotificationChannel,
+    _StmtOpenExternal,
+    _StmtWebLoad,
+    _StmtWebSetPolicy,
     _StmtHttpGetError,
     _StmtHttpAsyncBody,
     _StmtHttpAsyncJsonArrayLength,
@@ -92,6 +100,7 @@ from dsl.ast import (
     _StmtLog,
     _StmtNavigate,
     _StmtNotify,
+    _StmtShareText,
     _StmtWhile,
 )
 from dsl.ir_helpers import (
@@ -4220,6 +4229,14 @@ class _PythonicContext:
             return self._compile_check_permission_stmt(stmt)
         if isinstance(stmt, _StmtClipboardSet):
             return self._compile_clipboard_set_stmt(stmt)
+        if isinstance(stmt, _StmtShareText):
+            return self._compile_share_text_stmt(stmt)
+        if isinstance(stmt, _StmtOpenExternal):
+            return self._compile_open_external_stmt(stmt)
+        if isinstance(stmt, _StmtWebSetPolicy):
+            return self._compile_web_set_policy_stmt(stmt)
+        if isinstance(stmt, _StmtWebLoad):
+            return self._compile_web_load_stmt(stmt)
         if isinstance(stmt, _StmtCreateNotificationChannel):
             return self._compile_create_notification_channel_stmt(stmt)
         if isinstance(stmt, _StmtNotify):
@@ -6627,6 +6644,33 @@ class _PythonicContext:
                 tmp_prefix="clipboard_get_result",
             )
             value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprShareTextResult):
+            prefix, result = self._compile_share_text_result_call(
+                text=stmt.value.text,
+                chooser_title=stmt.value.chooser_title,
+                tmp_prefix="share_text_result_value",
+            )
+        elif isinstance(stmt.value, _ExprShareTextError):
+            prefix, result = self._compile_share_text_error_call(
+                text=stmt.value.text,
+                chooser_title=stmt.value.chooser_title,
+                tmp_prefix="share_text_error_value",
+            )
+        elif isinstance(stmt.value, _ExprOpenExternalError):
+            prefix, result = self._compile_open_external_error_call(
+                uri=stmt.value.uri,
+                tmp_prefix="open_external_error_value",
+            )
+        elif isinstance(stmt.value, _ExprWebLoadResult):
+            prefix, result = self._compile_web_load_result_call(
+                url=stmt.value.url,
+                tmp_prefix="web_load_result_value",
+            )
+        elif isinstance(stmt.value, _ExprWebLoadError):
+            prefix, result = self._compile_web_load_error_call(
+                url=stmt.value.url,
+                tmp_prefix="web_load_error_value",
+            )
         elif isinstance(stmt.value, _ExprNotifyResult):
             prefix, result = self._compile_notify_result_call(
                 title=stmt.value.title,
@@ -6746,6 +6790,8 @@ class _PythonicContext:
                 "encrypted_storage_get(...), datastore_exists(...), file_exists(...), sqlite_exists(...), "
                 "room_exists(...), encrypted_storage_exists(...), location_enabled(...), permission_granted(...), "
                 "clipboard_get(...), "
+                "share_text_result(...), share_text_error(...), open_external_error(...), "
+                "web_load_result(...), web_load_error(...), "
                 "notify_result(...), notify_error(...), "
                 "http_get_status(...), http_get_error(...), "
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
@@ -7485,6 +7531,260 @@ class _PythonicContext:
         out, _ = self._compile_clipboard_set_call(
             text=getattr(stmt, "text", ""),
             tmp_prefix="clipboard_set_ignored",
+        )
+        return out
+
+    def _compile_share_text_result_call(
+        self,
+        *,
+        api_name: str = "share_text_result",
+        text: str,
+        chooser_title: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Sharing",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(text)), const(str(chooser_title))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_share_text_error_call(
+        self,
+        *,
+        text: str,
+        chooser_title: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="share_text_error",
+            capability_name="Sharing",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "shareTextError",
+                    args=[var("ctx"), const(str(text)), const(str(chooser_title))],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "Ljava/lang/String;",
+                        "Ljava/lang/String;",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_open_external_call(
+        self,
+        *,
+        api_name: str = "open_external",
+        uri: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="Sharing",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "openUri",
+                    args=[var("ctx"), const(str(uri))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_open_external_error_call(
+        self,
+        *,
+        uri: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="open_external_error",
+            capability_name="Sharing",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "openUriError",
+                    args=[var("ctx"), const(str(uri))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_share_text_stmt(self, stmt):
+        out, _ = self._compile_share_text_result_call(
+            api_name="share_text",
+            text=getattr(stmt, "text", ""),
+            chooser_title=getattr(stmt, "chooser_title", "Share via"),
+            tmp_prefix="share_text_ignored",
+        )
+        return out
+
+    def _compile_open_external_stmt(self, stmt):
+        out, _ = self._compile_open_external_call(
+            api_name="open_external",
+            uri=getattr(stmt, "uri", ""),
+            tmp_prefix="open_external_ignored",
+        )
+        return out
+
+    def _compile_web_set_policy_call(
+        self,
+        *,
+        api_name: str = "web_set_policy",
+        js_enabled: int,
+        dom_storage: int,
+        allow_file_access: int,
+        allow_cleartext: int,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "setPolicy",
+                    args=[
+                        var("ctx"),
+                        const(int(js_enabled)),
+                        const(int(dom_storage)),
+                        const(int(allow_file_access)),
+                        const(int(allow_cleartext)),
+                    ],
+                    return_type="I",
+                    arg_types=[
+                        "Landroid/app/Activity;",
+                        "I",
+                        "I",
+                        "I",
+                        "I",
+                    ],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_load_result_call(
+        self,
+        *,
+        api_name: str = "web_load_result",
+        url: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name=api_name,
+            capability_name="WebView",
+            require_helper_method=True,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    binding.helper_method,
+                    args=[var("ctx"), const(str(url))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_load_error_call(
+        self,
+        *,
+        url: str,
+        tmp_prefix: str,
+    ):
+        binding = self._require_helper_capability(
+            api_name="web_load_error",
+            capability_name="WebView",
+            require_helper_method=False,
+        )
+        result_tmp = self._next_tmp(tmp_prefix)
+        return [
+            assign("ctx", static_get("app_ctx", "Landroid/app/Activity;")),
+            assign(
+                result_tmp,
+                call(
+                    "loadUrlError",
+                    args=[var("ctx"), const(str(url))],
+                    return_type="I",
+                    arg_types=["Landroid/app/Activity;", "Ljava/lang/String;"],
+                    invoke_kind="static",
+                    owner=binding.helper_class_desc,
+                ),
+            ),
+        ], var(result_tmp)
+
+    def _compile_web_set_policy_stmt(self, stmt):
+        out, _ = self._compile_web_set_policy_call(
+            api_name="web_set_policy",
+            js_enabled=getattr(stmt, "js_enabled", 0),
+            dom_storage=getattr(stmt, "dom_storage", 0),
+            allow_file_access=getattr(stmt, "allow_file_access", 0),
+            allow_cleartext=getattr(stmt, "allow_cleartext", 0),
+            tmp_prefix="web_set_policy_ignored",
+        )
+        return out
+
+    def _compile_web_load_stmt(self, stmt):
+        out, _ = self._compile_web_load_result_call(
+            api_name="web_load",
+            url=getattr(stmt, "url", ""),
+            tmp_prefix="web_load_ignored",
         )
         return out
 

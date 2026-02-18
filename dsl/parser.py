@@ -24,7 +24,12 @@ from .ast import (
     _ExprHttpGetStatus,
     _ExprHttpGet,
     _ExprClipboardGet,
+    _ExprOpenExternalError,
+    _ExprWebLoadError,
+    _ExprWebLoadResult,
     _ExprLocationEnabled,
+    _ExprShareTextError,
+    _ExprShareTextResult,
     _ExprNotifyError,
     _ExprNotifyResult,
     _ExprPermissionGranted,
@@ -48,6 +53,9 @@ from .ast import (
     _StmtCheckPermission,
     _StmtClipboardSet,
     _StmtCreateNotificationChannel,
+    _StmtOpenExternal,
+    _StmtWebLoad,
+    _StmtWebSetPolicy,
     _StmtHttpGetError,
     _StmtHttpAsyncCancel,
     _StmtHttpAsyncBody,
@@ -84,6 +92,7 @@ from .ast import (
     _StmtLog,
     _StmtNavigate,
     _StmtNotify,
+    _StmtShareText,
     _StmtWhile,
 )
 
@@ -192,6 +201,17 @@ def _const_reactive_value_arg(expr, *, fn_name: str, arg_name: str):
     if isinstance(expr, (_ExprSymbol, _ExprReactiveGet)):
         return expr
     raise RuntimeError(f"{fn_name} argument '{arg_name}' must be a constant string/int or symbol")
+
+
+def _const_int_bool_arg(expr, *, fn_name: str, arg_name: str):
+    if not isinstance(expr, _ExprConst):
+        raise RuntimeError(f"{fn_name} argument '{arg_name}' must be an integer/bool constant")
+    value = expr.value
+    if isinstance(value, bool):
+        return 1 if value else 0
+    if isinstance(value, int):
+        return int(value)
+    raise RuntimeError(f"{fn_name} argument '{arg_name}' must be an integer/bool constant")
 
 
 def _const_string_kwarg(call: ast.Call, *, fn_name: str, kw: str, default: str = "") -> str:
@@ -510,6 +530,77 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("clipboard_set argument 'text' must be a constant string")
                 return _StmtClipboardSet(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"share_text", "ShareText", "share", "Share"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if not (1 <= len(args) <= 2):
+                    raise RuntimeError(
+                        'share_text expects 1 or 2 string arguments. Usage: share_text("text", "Chooser Title")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("share_text argument 'text' must be a constant string")
+                chooser_expr = args[1] if len(args) > 1 else _ExprConst("Share via")
+                if not isinstance(chooser_expr, _ExprConst) or not isinstance(chooser_expr.value, str):
+                    raise RuntimeError("share_text argument 'chooser_title' must be a constant string")
+                return _StmtShareText(args[0].value, chooser_expr.value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"open_external", "OpenExternal", "open_uri", "OpenUri"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        'open_external expects exactly 1 string argument. Usage: open_external("scheme://...")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("open_external argument 'uri' must be a constant string")
+                return _StmtOpenExternal(args[0].value)
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"web_set_policy", "WebSetPolicy", "web_policy", "WebPolicy"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) > 4:
+                    raise RuntimeError(
+                        "web_set_policy expects up to 4 integer/bool arguments. "
+                        "Usage: web_set_policy(js_enabled, dom_storage, allow_file_access, allow_cleartext)"
+                    )
+                js_expr = args[0] if len(args) > 0 else _ExprConst(0)
+                dom_expr = args[1] if len(args) > 1 else _ExprConst(0)
+                file_expr = args[2] if len(args) > 2 else _ExprConst(0)
+                cleartext_expr = args[3] if len(args) > 3 else _ExprConst(0)
+                return _StmtWebSetPolicy(
+                    _const_int_bool_arg(js_expr, fn_name="web_set_policy", arg_name="js_enabled"),
+                    _const_int_bool_arg(dom_expr, fn_name="web_set_policy", arg_name="dom_storage"),
+                    _const_int_bool_arg(
+                        file_expr,
+                        fn_name="web_set_policy",
+                        arg_name="allow_file_access",
+                    ),
+                    _const_int_bool_arg(
+                        cleartext_expr,
+                        fn_name="web_set_policy",
+                        arg_name="allow_cleartext",
+                    ),
+                )
+            if fn in (
+                STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
+                    {"web_load", "WebLoad", "open_web", "OpenWeb"}
+                )
+            ):
+                args = [_parse_expr(a) for a in call.args]
+                if len(args) != 1:
+                    raise RuntimeError(
+                        'web_load expects exactly 1 string argument. Usage: web_load("https://...")'
+                    )
+                if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                    raise RuntimeError("web_load argument 'url' must be a constant string")
+                return _StmtWebLoad(args[0].value)
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {
@@ -994,6 +1085,77 @@ def _parse_expr(node):
             if not isinstance(fallback_expr, _ExprConst) or not isinstance(fallback_expr.value, str):
                 raise RuntimeError("clipboard_get argument 'fallback' must be a constant string")
             return _ExprClipboardGet(fallback_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"share_text_result", "ShareTextResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError(
+                    'share_text_result expects 1 or 2 string arguments. Usage: share_text_result("text", "Chooser Title")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("share_text_result argument 'text' must be a constant string")
+            chooser_expr = args[1] if len(args) > 1 else _ExprConst("Share via")
+            if not isinstance(chooser_expr, _ExprConst) or not isinstance(chooser_expr.value, str):
+                raise RuntimeError("share_text_result argument 'chooser_title' must be a constant string")
+            return _ExprShareTextResult(args[0].value, chooser_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"share_text_error", "ShareTextError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if not (1 <= len(args) <= 2):
+                raise RuntimeError(
+                    'share_text_error expects 1 or 2 string arguments. Usage: share_text_error("text", "Chooser Title")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("share_text_error argument 'text' must be a constant string")
+            chooser_expr = args[1] if len(args) > 1 else _ExprConst("Share via")
+            if not isinstance(chooser_expr, _ExprConst) or not isinstance(chooser_expr.value, str):
+                raise RuntimeError("share_text_error argument 'chooser_title' must be a constant string")
+            return _ExprShareTextError(args[0].value, chooser_expr.value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"open_external_error", "OpenExternalError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'open_external_error expects exactly 1 string argument. Usage: open_external_error("scheme://...")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("open_external_error argument 'uri' must be a constant string")
+            return _ExprOpenExternalError(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_load_result", "WebLoadResult"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'web_load_result expects exactly 1 string argument. Usage: web_load_result("https://...")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("web_load_result argument 'url' must be a constant string")
+            return _ExprWebLoadResult(args[0].value)
+        if node.func.id in (
+            EXPR_FN_BY_DOMAIN["capabilities"].intersection(
+                {"web_load_error", "WebLoadError"}
+            )
+        ):
+            args = [_parse_expr(a) for a in node.args]
+            if len(args) != 1:
+                raise RuntimeError(
+                    'web_load_error expects exactly 1 string argument. Usage: web_load_error("https://...")'
+                )
+            if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
+                raise RuntimeError("web_load_error argument 'url' must be a constant string")
+            return _ExprWebLoadError(args[0].value)
         if node.func.id in (
             EXPR_FN_BY_DOMAIN["capabilities"].intersection(
                 {

@@ -1192,6 +1192,73 @@ def get_clipboard(fallback: str = ""):
     return clipboard_get(fallback)
 
 
+def share_text(text: str, chooser_title: str = "Share via"):
+    return _StmtShareText(str(text), str(chooser_title))
+
+
+def share(text: str, chooser_title: str = "Share via"):
+    return share_text(text, chooser_title)
+
+
+def share_text_result(text: str, chooser_title: str = "Share via"):
+    return _ExprShareTextResult(str(text), str(chooser_title))
+
+
+def share_text_error(text: str, chooser_title: str = "Share via"):
+    return _ExprShareTextError(str(text), str(chooser_title))
+
+
+def open_external(uri: str):
+    return _StmtOpenExternal(str(uri))
+
+
+def open_uri(uri: str):
+    return open_external(uri)
+
+
+def open_external_error(uri: str):
+    return _ExprOpenExternalError(str(uri))
+
+
+def web_set_policy(
+    js_enabled: int | bool = 0,
+    dom_storage: int | bool = 0,
+    allow_file_access: int | bool = 0,
+    allow_cleartext: int | bool = 0,
+):
+    return _StmtWebSetPolicy(
+        int(js_enabled),
+        int(dom_storage),
+        int(allow_file_access),
+        int(allow_cleartext),
+    )
+
+
+def web_policy(
+    js_enabled: int | bool = 0,
+    dom_storage: int | bool = 0,
+    allow_file_access: int | bool = 0,
+    allow_cleartext: int | bool = 0,
+):
+    return web_set_policy(js_enabled, dom_storage, allow_file_access, allow_cleartext)
+
+
+def web_load(url: str):
+    return _StmtWebLoad(str(url))
+
+
+def open_web(url: str):
+    return web_load(url)
+
+
+def web_load_result(url: str):
+    return _ExprWebLoadResult(str(url))
+
+
+def web_load_error(url: str):
+    return _ExprWebLoadError(str(url))
+
+
 def create_notification_channel(channel_id: str, channel_name: str):
     return _StmtCreateNotificationChannel(str(channel_id), str(channel_name))
 

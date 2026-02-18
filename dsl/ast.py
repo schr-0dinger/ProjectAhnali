@@ -109,6 +109,33 @@ class _ExprClipboardGet:
         self.fallback = fallback
 
 
+class _ExprShareTextResult:
+    def __init__(self, text, chooser_title):
+        self.text = text
+        self.chooser_title = chooser_title
+
+
+class _ExprShareTextError:
+    def __init__(self, text, chooser_title):
+        self.text = text
+        self.chooser_title = chooser_title
+
+
+class _ExprOpenExternalError:
+    def __init__(self, uri):
+        self.uri = uri
+
+
+class _ExprWebLoadResult:
+    def __init__(self, url):
+        self.url = url
+
+
+class _ExprWebLoadError:
+    def __init__(self, url):
+        self.url = url
+
+
 class _ExprNotifyResult:
     def __init__(self, title, body, channel_id):
         self.title = title
@@ -298,6 +325,30 @@ class _StmtNotify:
 class _StmtClipboardSet:
     def __init__(self, text):
         self.text = text
+
+
+class _StmtShareText:
+    def __init__(self, text, chooser_title):
+        self.text = text
+        self.chooser_title = chooser_title
+
+
+class _StmtOpenExternal:
+    def __init__(self, uri):
+        self.uri = uri
+
+
+class _StmtWebSetPolicy:
+    def __init__(self, js_enabled, dom_storage, allow_file_access, allow_cleartext):
+        self.js_enabled = js_enabled
+        self.dom_storage = dom_storage
+        self.allow_file_access = allow_file_access
+        self.allow_cleartext = allow_cleartext
+
+
+class _StmtWebLoad:
+    def __init__(self, url):
+        self.url = url
 
 
 class _StmtStoragePut:

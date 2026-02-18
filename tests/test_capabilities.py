@@ -74,6 +74,19 @@ def test_capability_runtime_mapping_v1_shape():
             assert binding.helper_class_desc == "Lcom/ahnali/runtime/ClipboardHelper;"
             assert binding.helper_method == "setText"
             assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+        elif cap_name == "Sharing":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/ShareHelper;"
+            assert binding.helper_method == "shareText"
+            assert (
+                binding.helper_sig
+                == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+            )
+        elif cap_name == "WebView":
+            assert binding.mode == "helper_call"
+            assert binding.helper_class_desc == "Lcom/ahnali/runtime/WebHelper;"
+            assert binding.helper_method == "loadUrl"
+            assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
         else:
             assert binding.mode == "permission_only"
             assert binding.helper_class_desc is None

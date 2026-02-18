@@ -22,12 +22,14 @@ In scope:
 - Track C Wave 7 capability helper ABI: permissions granted surface
 - Track C Wave 8 capability helper ABI: notifications/channels delivery + error-code surfaces
 - Track C Wave 9 capability helper ABI: clipboard set/get fallback surfaces
+- Track C Wave 10 capability helper ABI: sharing/intents dispatch + error-code surfaces
+- Track C Wave 11 capability helper ABI: WebView load/settings policy + error-code surfaces
 - Program 5 state helper ABI: deterministic DataStore/file/SQLite/Room/encrypted storage surfaces
 - Optional wrapper lifecycle bridges: `onStart/onResume/onPause/onStop/onDestroy`
 - Reactive surface guardrail snapshot contract (`cfg/reactive_surface_snapshot_v1.json`) for mode boundary and symbol drift checks
 
 Out of scope:
-- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications/clipboard wave expansion planned separately)
+- Future capability module helper APIs beyond URL launcher/connectivity/storage/networking/location/permissions/notifications/clipboard/sharing/WebView fetch/response/routing/retry/typed-JSON/tokened-async/request-options helpers (network/storage/location/permissions/notifications/clipboard/sharing/WebView wave expansion planned separately)
 - Internal compiler IR structures that are not emitted into helper Smali classes
 - Runtime UI diff/recomposition engines (reactive mode stays explicit-bind only)
 
@@ -281,6 +283,35 @@ Deprecation policy:
   - Return semantics:
     - `setText`: `1` on clipboard write success, `0` on null args, missing clipboard service, or caught exception.
     - `getText`: clipboard text when present; fallback argument on null context, empty clipboard, missing service, null item text, or caught exception.
+- Track C Wave 10 helper-call binding:
+  - Capability: `Sharing`
+  - Helper class: `Lcom/ahnali/runtime/ShareHelper;`
+  - Helper methods/sigs:
+    - `shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`
+    - `openUri(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `openUriError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `shareText`: `1` on successful share intent dispatch, `0` on any failure.
+    - `shareTextError`: `0` success, `1` invalid args, `3` no handler/activity not found, `4` caught exception.
+    - `openUri`: `1` on successful external intent dispatch, `0` on any failure.
+    - `openUriError`: `0` success, `1` invalid args, `3` no handler/activity not found, `4` caught exception.
+- Track C Wave 11 helper-call binding:
+  - Capability: `WebView`
+  - Helper class: `Lcom/ahnali/runtime/WebHelper;`
+  - Helper methods/sigs:
+    - `setPolicy(Landroid/app/Activity;IIII)I`
+    - `loadUrl(Landroid/app/Activity;Ljava/lang/String;)I`
+    - `loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I`
+  - Return semantics:
+    - `setPolicy`: `1` policy update applied, `0` null context.
+    - `loadUrl`: `1` on successful dialog WebView load, `0` on any failure.
+    - `loadUrlError`: deterministic error contract:
+      - `0`: success
+      - `1`: invalid args/context
+      - `2`: cleartext URL blocked by policy (`allow_cleartext=0` and non-HTTPS URL)
+      - `3`: runtime setup failure (missing `WebSettings`)
+      - `4`: caught exception
 - Track C Wave 2/3 helper-call binding:
   - Capability: `Networking`
   - Helper class: `Lcom/ahnali/runtime/HttpHelper;`
@@ -400,6 +431,10 @@ Current behavior is enforced by tests including:
 - `tests/test_track_c_wave8_visible_flow.py`
 - `tests/test_track_c_wave9_clipboard.py`
 - `tests/test_track_c_wave9_visible_flow.py`
+- `tests/test_track_c_wave10_sharing_intents.py`
+- `tests/test_track_c_wave10_visible_flow.py`
+- `tests/test_track_c_wave11_webview.py`
+- `tests/test_track_c_wave11_visible_flow.py`
 - `tests/test_program5_state_backends.py`
 - `tests/test_program5_lifecycle.py`
 - `tests/test_support_click_listener.py`

@@ -15,11 +15,17 @@ from dsl.app import (
     notify_error,
     notify_result,
     on_click,
+    open_external_error,
     open_url,
     permission_granted,
+    share_text,
+    share_text_error,
     storage_put,
     text,
     ui,
+    web_load,
+    web_load_error,
+    web_set_policy,
 )
 
 
@@ -70,6 +76,39 @@ def _handler_notify_result():
 @on_click("btn_notify_error")
 def _handler_notify_error():
     err = notify_error("Diag", "Body", "ahnali_diag")
+    status_label.text = err
+
+
+@on_click("btn_share_text")
+def _handler_share_text():
+    share_text("Diag share payload", "Ahnali share")
+
+
+@on_click("btn_share_error")
+def _handler_share_error():
+    err = share_text_error("Diag share payload", "Ahnali share")
+    status_label.text = err
+
+
+@on_click("btn_open_external_error")
+def _handler_open_external_error():
+    err = open_external_error("https://example.com")
+    status_label.text = err
+
+
+@on_click("btn_web_policy")
+def _handler_web_policy():
+    web_set_policy(1, 1, 0, 0)
+
+
+@on_click("btn_web_load")
+def _handler_web_load():
+    web_load("https://example.com")
+
+
+@on_click("btn_web_error")
+def _handler_web_error():
+    err = web_load_error("https://example.com")
     status_label.text = err
 
 
@@ -130,6 +169,42 @@ def _handler_clipboard_get():
             "Notifications",
             [text("status", id="status_label"), button("PostErr", id="btn_notify_error")],
             _handler_notify_error,
+        ),
+        (
+            "share_text",
+            "Sharing",
+            [button("Share", id="btn_share_text")],
+            _handler_share_text,
+        ),
+        (
+            "share_text_error",
+            "Sharing",
+            [text("status", id="status_label"), button("ShareErr", id="btn_share_error")],
+            _handler_share_error,
+        ),
+        (
+            "open_external_error",
+            "Sharing",
+            [text("status", id="status_label"), button("OpenErr", id="btn_open_external_error")],
+            _handler_open_external_error,
+        ),
+        (
+            "web_set_policy",
+            "WebView",
+            [button("WebPolicy", id="btn_web_policy")],
+            _handler_web_policy,
+        ),
+        (
+            "web_load",
+            "WebView",
+            [button("WebLoad", id="btn_web_load")],
+            _handler_web_load,
+        ),
+        (
+            "web_load_error",
+            "WebView",
+            [text("status", id="status_label"), button("WebErr", id="btn_web_error")],
+            _handler_web_error,
         ),
         (
             "clipboard_set",

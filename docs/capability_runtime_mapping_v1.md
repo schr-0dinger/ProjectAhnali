@@ -19,6 +19,8 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 - Track C Wave 7 adds permissions helper-call binding (`permission_granted`, `check_permission`) with deterministic granted/denied surface.
 - Track C Wave 8 adds notifications/channels helper-call binding (`create_notification_channel`, `notify`, `notify_result`, `notify_error`) with deterministic delivery and error-code surface.
 - Track C Wave 9 adds clipboard helper-call binding (`clipboard_set`, `clipboard_get`) with deterministic set/get fallback surface.
+- Track C Wave 10 adds sharing/intents helper-call binding (`share_text`, `share_text_result`, `share_text_error`, `open_external`, `open_external_error`) with deterministic success/error surfaces.
+- Track C Wave 11 adds WebView helper-call binding (`web_set_policy`, `web_load`, `web_load_result`, `web_load_error`) with deterministic policy/error surfaces.
 - Program 5 extends `StorageHelper` with deterministic backend-specific surfaces for DataStore/file/SQLite/Room/encrypted storage.
 
 ## Mapping Table (v1)
@@ -29,7 +31,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `Microphone` | `Microphone` | `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
 | `Audio` | `Audio` | `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
 | `Video` | `Video` | `android.permission.CAMERA`, `android.permission.RECORD_AUDIO` | n/a | n/a | `permission_only` |
-| `WebView` | `WebView` | `android.permission.INTERNET` | n/a | n/a | `permission_only` |
+| `WebView` | `WebView`, `Web` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/WebHelper;` | `setPolicy(Landroid/app/Activity;IIII)I`, `loadUrl(Landroid/app/Activity;Ljava/lang/String;)I`, `loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Sensors` | `Sensors` | `android.permission.BODY_SENSORS` | n/a | n/a | `permission_only` |
 | `Storage` | `Storage` | `android.permission.READ_EXTERNAL_STORAGE`, `android.permission.WRITE_EXTERNAL_STORAGE` | `Lcom/ahnali/runtime/StorageHelper;` | `putString(...)`, `getString(...)`, `remove(...)`, `exists(...)`, `clear(...)`, `dataStorePutString(...)`, `dataStoreGetString(...)`, `dataStoreRemove(...)`, `dataStoreExists(...)`, `dataStoreClear(...)`, `fileWriteString(...)`, `fileReadString(...)`, `fileRemove(...)`, `fileExists(...)`, `fileClear(...)`, `sqlitePutString(...)`, `sqliteGetString(...)`, `sqliteRemove(...)`, `sqliteExists(...)`, `sqliteClear(...)`, `roomPutString(...)`, `roomGetString(...)`, `roomRemove(...)`, `roomExists(...)`, `roomClear(...)`, `encryptedPutString(...)`, `encryptedGetString(...)`, `encryptedRemove(...)`, `encryptedExists(...)`, `encryptedClear(...)` | `helper_call` |
 | `FilePicker` | `FilePicker`, `File Picker` | `android.permission.READ_EXTERNAL_STORAGE` | n/a | n/a | `permission_only` |
@@ -39,6 +41,7 @@ This document defines the canonical capability-to-runtime mapping used by Ahnali
 | `Notifications` | `Notifications`, `Notification` | `android.permission.POST_NOTIFICATIONS` | `Lcom/ahnali/runtime/NotificationHelper;` | `createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`, `postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I` | `helper_call` |
 | `URLLauncher` | `URLLauncher`, `URL launcher` | `android.permission.INTERNET` | `Lcom/ahnali/runtime/UrlLauncherHelper;` | `openUrl(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Permissions` | `Permissions` | none | `Lcom/ahnali/runtime/PermissionHelper;` | `isGranted(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
+| `Sharing` | `Sharing`, `Intents`, `Share` | none | `Lcom/ahnali/runtime/ShareHelper;` | `shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I`, `openUri(Landroid/app/Activity;Ljava/lang/String;)I`, `openUriError(Landroid/app/Activity;Ljava/lang/String;)I` | `helper_call` |
 | `Maps` | `Maps` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | n/a | n/a | `permission_only` |
 | `Location` | `Location` | `android.permission.ACCESS_FINE_LOCATION`, `android.permission.ACCESS_COARSE_LOCATION` | `Lcom/ahnali/runtime/LocationHelper;` | `isLocationEnabled(Landroid/app/Activity;)I` | `helper_call` |
 

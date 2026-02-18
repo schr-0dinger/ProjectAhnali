@@ -60,6 +60,25 @@ def test_runtime_abi_snapshot_includes_clipboard_helper_surface():
     assert "getText(Landroid/app/Activity;Ljava/lang/String;)Ljava/lang/String;" in clipboard_methods
 
 
+def test_runtime_abi_snapshot_includes_sharing_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    sharing_methods = classes["Lcom/ahnali/runtime/ShareHelper;"]
+    assert "shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in sharing_methods
+    assert "shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I" in sharing_methods
+    assert "openUri(Landroid/app/Activity;Ljava/lang/String;)I" in sharing_methods
+    assert "openUriError(Landroid/app/Activity;Ljava/lang/String;)I" in sharing_methods
+
+
+def test_runtime_abi_snapshot_includes_web_helper_surface():
+    snapshot = build_runtime_abi_snapshot()
+    classes = _snapshot_classes(snapshot)
+    web_methods = classes["Lcom/ahnali/runtime/WebHelper;"]
+    assert "setPolicy(Landroid/app/Activity;IIII)I" in web_methods
+    assert "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
+    assert "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I" in web_methods
+
+
 def test_runtime_abi_snapshot_includes_program5_storage_backend_surface():
     snapshot = build_runtime_abi_snapshot()
     classes = _snapshot_classes(snapshot)

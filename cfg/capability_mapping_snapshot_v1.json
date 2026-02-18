@@ -194,6 +194,22 @@
       ]
     },
     {
+      "capability": "Sharing",
+      "emitted_class_desc": "Lcom/ahnali/runtime/ShareHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "openUri(Landroid/app/Activity;Ljava/lang/String;)I",
+        "openUriError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/ShareHelper;",
+      "helper_method": "shareText",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+      "mode": "helper_call",
+      "permissions": []
+    },
+    {
       "capability": "Storage",
       "emitted_class_desc": "Lcom/ahnali/runtime/StorageHelper;",
       "emitted_methods": [
@@ -266,10 +282,17 @@
     },
     {
       "capability": "WebView",
-      "helper_class_desc": null,
-      "helper_method": null,
-      "helper_sig": null,
-      "mode": "permission_only",
+      "emitted_class_desc": "Lcom/ahnali/runtime/WebHelper;",
+      "emitted_methods": [
+        "<init>()V",
+        "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I",
+        "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "setPolicy(Landroid/app/Activity;IIII)I"
+      ],
+      "helper_class_desc": "Lcom/ahnali/runtime/WebHelper;",
+      "helper_method": "loadUrl",
+      "helper_sig": "(Landroid/app/Activity;Ljava/lang/String;)I",
+      "mode": "helper_call",
       "permissions": [
         "android.permission.INTERNET"
       ]

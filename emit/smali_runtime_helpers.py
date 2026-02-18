@@ -174,6 +174,91 @@ def _emit_permission_is_granted_method() -> list[str]:
     ]
 
 
+def _emit_web_set_policy_method() -> list[str]:
+    return [
+        ".method public static setPolicy(Landroid/app/Activity;IIII)I",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_web_policy_fail",
+        "    sput p1, Lcom/ahnali/runtime/WebHelper;->sJsEnabled:I",
+        "    sput p2, Lcom/ahnali/runtime/WebHelper;->sDomStorage:I",
+        "    sput p3, Lcom/ahnali/runtime/WebHelper;->sAllowFileAccess:I",
+        "    sput p4, Lcom/ahnali/runtime/WebHelper;->sAllowCleartext:I",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_web_policy_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_web_load_url_method() -> list[str]:
+    return [
+        ".method public static loadUrl(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/WebHelper;->loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_web_load_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_web_load_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_web_load_url_error_method() -> list[str]:
+    return [
+        ".method public static loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 8",
+        "    if-eqz p0, :ahnali_web_invalid",
+        "    if-eqz p1, :ahnali_web_invalid",
+        "    sget v0, Lcom/ahnali/runtime/WebHelper;->sAllowCleartext:I",
+        "    if-nez v0, :ahnali_web_policy_ok",
+        '    const-string v1, "https://"',
+        "    invoke-virtual {p1, v1}, Ljava/lang/String;->startsWith(Ljava/lang/String;)Z",
+        "    move-result v2",
+        "    if-nez v2, :ahnali_web_policy_ok",
+        "    const/4 v0, 0x2",
+        "    return v0",
+        "    :ahnali_web_policy_ok",
+        "    :ahnali_web_try_start",
+        "    new-instance v3, Landroid/webkit/WebView;",
+        "    invoke-direct {v3, p0}, Landroid/webkit/WebView;-><init>(Landroid/content/Context;)V",
+        "    invoke-virtual {v3}, Landroid/webkit/WebView;->getSettings()Landroid/webkit/WebSettings;",
+        "    move-result-object v4",
+        "    if-eqz v4, :ahnali_web_runtime_error",
+        "    sget v5, Lcom/ahnali/runtime/WebHelper;->sJsEnabled:I",
+        "    invoke-virtual {v4, v5}, Landroid/webkit/WebSettings;->setJavaScriptEnabled(Z)V",
+        "    sget v6, Lcom/ahnali/runtime/WebHelper;->sDomStorage:I",
+        "    invoke-virtual {v4, v6}, Landroid/webkit/WebSettings;->setDomStorageEnabled(Z)V",
+        "    sget v7, Lcom/ahnali/runtime/WebHelper;->sAllowFileAccess:I",
+        "    invoke-virtual {v4, v7}, Landroid/webkit/WebSettings;->setAllowFileAccess(Z)V",
+        "    invoke-virtual {v3, p1}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V",
+        "    new-instance v5, Landroid/app/AlertDialog$Builder;",
+        "    invoke-direct {v5, p0}, Landroid/app/AlertDialog$Builder;-><init>(Landroid/content/Context;)V",
+        "    invoke-virtual {v5, v3}, Landroid/app/AlertDialog$Builder;->setView(Landroid/view/View;)Landroid/app/AlertDialog$Builder;",
+        "    move-result-object v5",
+        "    invoke-virtual {v5}, Landroid/app/AlertDialog$Builder;->show()Landroid/app/AlertDialog;",
+        "    move-result-object v6",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_web_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_web_try_start .. :ahnali_web_try_end} :ahnali_web_exception",
+        "    :ahnali_web_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_web_runtime_error",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_web_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
 def _emit_notification_create_channel_method() -> list[str]:
     return [
         ".method public static createChannel(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
@@ -354,6 +439,106 @@ def _emit_clipboard_get_text_method() -> list[str]:
         "    .catch Ljava/lang/Exception; {:ahnali_clip_get_try_start .. :ahnali_clip_get_try_end} :ahnali_clip_get_fallback",
         "    :ahnali_clip_get_fallback",
         "    return-object p1",
+        ".end method",
+    ]
+
+
+def _emit_share_text_method() -> list[str]:
+    return [
+        ".method public static shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1, p2}, Lcom/ahnali/runtime/ShareHelper;->shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_share_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_share_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_share_text_error_method() -> list[str]:
+    return [
+        ".method public static shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "    .locals 7",
+        "    if-eqz p0, :ahnali_share_invalid",
+        "    if-eqz p1, :ahnali_share_invalid",
+        "    if-eqz p2, :ahnali_share_invalid",
+        "    :ahnali_share_try_start",
+        "    new-instance v1, Landroid/content/Intent;",
+        '    const-string v2, "android.intent.action.SEND"',
+        "    invoke-direct {v1, v2}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+        '    const-string v3, "text/plain"',
+        "    invoke-virtual {v1, v3}, Landroid/content/Intent;->setType(Ljava/lang/String;)Landroid/content/Intent;",
+        '    const-string v4, "android.intent.extra.TEXT"',
+        "    invoke-virtual {v1, v4, p1}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+        "    invoke-static {v1, p2}, Landroid/content/Intent;->createChooser(Landroid/content/Intent;Ljava/lang/CharSequence;)Landroid/content/Intent;",
+        "    move-result-object v5",
+        "    invoke-virtual {p0, v5}, Landroid/app/Activity;->startActivity(Landroid/content/Intent;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_share_try_end",
+        "    .catch Landroid/content/ActivityNotFoundException; {:ahnali_share_try_start .. :ahnali_share_try_end} :ahnali_share_not_found",
+        "    .catch Ljava/lang/Exception; {:ahnali_share_try_start .. :ahnali_share_try_end} :ahnali_share_exception",
+        "    :ahnali_share_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_share_not_found",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_share_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_open_uri_method() -> list[str]:
+    return [
+        ".method public static openUri(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 2",
+        "    invoke-static {p0, p1}, Lcom/ahnali/runtime/ShareHelper;->openUriError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    move-result v0",
+        "    if-nez v0, :ahnali_open_uri_fail",
+        "    const/4 v1, 0x1",
+        "    return v1",
+        "    :ahnali_open_uri_fail",
+        "    const/4 v1, 0x0",
+        "    return v1",
+        ".end method",
+    ]
+
+
+def _emit_open_uri_error_method() -> list[str]:
+    return [
+        ".method public static openUriError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "    .locals 5",
+        "    if-eqz p0, :ahnali_open_uri_invalid",
+        "    if-eqz p1, :ahnali_open_uri_invalid",
+        "    :ahnali_open_uri_try_start",
+        "    new-instance v1, Landroid/content/Intent;",
+        '    const-string v2, "android.intent.action.VIEW"',
+        "    invoke-direct {v1, v2}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V",
+        "    invoke-static {p1}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;",
+        "    move-result-object v3",
+        "    invoke-virtual {v1, v3}, Landroid/content/Intent;->setData(Landroid/net/Uri;)Landroid/content/Intent;",
+        "    invoke-virtual {p0, v1}, Landroid/app/Activity;->startActivity(Landroid/content/Intent;)V",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        "    :ahnali_open_uri_try_end",
+        "    .catch Landroid/content/ActivityNotFoundException; {:ahnali_open_uri_try_start .. :ahnali_open_uri_try_end} :ahnali_open_uri_not_found",
+        "    .catch Ljava/lang/Exception; {:ahnali_open_uri_try_start .. :ahnali_open_uri_try_end} :ahnali_open_uri_exception",
+        "    :ahnali_open_uri_invalid",
+        "    const/4 v0, 0x1",
+        "    return v0",
+        "    :ahnali_open_uri_not_found",
+        "    const/4 v0, 0x3",
+        "    return v0",
+        "    :ahnali_open_uri_exception",
+        "    const/4 v0, 0x4",
+        "    return v0",
         ".end method",
     ]
 
@@ -1709,6 +1894,23 @@ def emit_capability_helper_smali(
         return "\n".join(lines)
 
     if (
+        class_desc == "Lcom/ahnali/runtime/WebHelper;"
+        and helper_method == "loadUrl"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+    ):
+        lines.insert(3, ".field private static sJsEnabled:I")
+        lines.insert(4, ".field private static sDomStorage:I")
+        lines.insert(5, ".field private static sAllowFileAccess:I")
+        lines.insert(6, ".field private static sAllowCleartext:I")
+        lines.insert(7, "")
+        lines.extend(_emit_web_set_policy_method())
+        lines.append("")
+        lines.extend(_emit_web_load_url_method())
+        lines.append("")
+        lines.extend(_emit_web_load_url_error_method())
+        return "\n".join(lines)
+
+    if (
         class_desc == "Lcom/ahnali/runtime/NotificationHelper;"
         and helper_method == "postNotification"
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I"
@@ -1728,6 +1930,20 @@ def emit_capability_helper_smali(
         lines.extend(_emit_clipboard_set_text_method())
         lines.append("")
         lines.extend(_emit_clipboard_get_text_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/ShareHelper;"
+        and helper_method == "shareText"
+        and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+    ):
+        lines.extend(_emit_share_text_method())
+        lines.append("")
+        lines.extend(_emit_share_text_error_method())
+        lines.append("")
+        lines.extend(_emit_open_uri_method())
+        lines.append("")
+        lines.extend(_emit_open_uri_error_method())
         return "\n".join(lines)
 
     if (

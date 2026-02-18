@@ -415,6 +415,7 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
         "Notifications",
         "Permissions",
         "Sensors",
+        "Sharing",
         "Storage",
         "URLLauncher",
         "Video",
@@ -424,9 +425,23 @@ def test_runtime_abi_capability_mapping_surface_is_frozen_v1():
 
 def test_runtime_abi_capability_mapping_alias_resolution_contract():
     bindings = resolve_runtime_bindings(
-        ["File Picker", "Network", "URL launcher", "FilePicker", "Networking", "URLLauncher"]
+        [
+            "File Picker",
+            "Network",
+            "URL launcher",
+            "Web",
+            "FilePicker",
+            "Networking",
+            "URLLauncher",
+            "WebView",
+        ]
     )
-    assert [binding.capability for binding in bindings] == ["FilePicker", "Networking", "URLLauncher"]
+    assert [binding.capability for binding in bindings] == [
+        "FilePicker",
+        "Networking",
+        "URLLauncher",
+        "WebView",
+    ]
 
 
 def test_runtime_abi_url_launcher_helper_binding_contract():
@@ -492,6 +507,27 @@ def test_runtime_abi_clipboard_helper_binding_contract():
     assert binding.mode == "helper_call"
     assert binding.helper_class_desc == "Lcom/ahnali/runtime/ClipboardHelper;"
     assert binding.helper_method == "setText"
+    assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
+
+
+def test_runtime_abi_sharing_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["Sharing"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/ShareHelper;"
+    assert binding.helper_method == "shareText"
+    assert (
+        binding.helper_sig
+        == "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+    )
+
+
+def test_runtime_abi_webview_helper_binding_contract():
+    mapping = default_capability_runtime_mapping()
+    binding = mapping["WebView"]
+    assert binding.mode == "helper_call"
+    assert binding.helper_class_desc == "Lcom/ahnali/runtime/WebHelper;"
+    assert binding.helper_method == "loadUrl"
     assert binding.helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
 
 

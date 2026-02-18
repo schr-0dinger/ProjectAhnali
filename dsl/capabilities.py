@@ -188,7 +188,14 @@ register_default_capability(
     "Video",
     ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
 )
-register_default_capability("WebView", ["android.permission.INTERNET"])
+register_default_capability(
+    "WebView",
+    ["android.permission.INTERNET"],
+    aliases=["Web"],
+    helper_class_desc="Lcom/ahnali/runtime/WebHelper;",
+    helper_method="loadUrl",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;)I",
+)
 register_default_capability(
     "Sensors",
     ["android.permission.BODY_SENSORS"],
@@ -251,6 +258,14 @@ register_default_capability(
     helper_sig="(Landroid/app/Activity;Ljava/lang/String;)I",
 )
 register_default_capability(
+    "Sharing",
+    [],
+    aliases=["Intents", "Share"],
+    helper_class_desc="Lcom/ahnali/runtime/ShareHelper;",
+    helper_method="shareText",
+    helper_sig="(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+)
+register_default_capability(
     "Maps",
     ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
 )
@@ -278,6 +293,7 @@ class _Caps:
     Permissions = "Permissions"
     Notifications = "Notifications"
     Clipboard = "Clipboard"
+    Sharing = "Sharing"
     Maps = "Maps"
     Location = "Location"
 

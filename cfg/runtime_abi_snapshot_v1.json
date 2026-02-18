@@ -203,6 +203,17 @@
       "source": "capability:Permissions"
     },
     {
+      "class_desc": "Lcom/ahnali/runtime/ShareHelper;",
+      "methods": [
+        "<init>()V",
+        "openUri(Landroid/app/Activity;Ljava/lang/String;)I",
+        "openUriError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "shareText(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I",
+        "shareTextError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)I"
+      ],
+      "source": "capability:Sharing"
+    },
+    {
       "class_desc": "Lcom/ahnali/runtime/StorageHelper;",
       "methods": [
         "<init>()V",
@@ -246,6 +257,16 @@
         "openUrl(Landroid/app/Activity;Ljava/lang/String;)I"
       ],
       "source": "capability:URLLauncher"
+    },
+    {
+      "class_desc": "Lcom/ahnali/runtime/WebHelper;",
+      "methods": [
+        "<init>()V",
+        "loadUrl(Landroid/app/Activity;Ljava/lang/String;)I",
+        "loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I",
+        "setPolicy(Landroid/app/Activity;IIII)I"
+      ],
+      "source": "capability:WebView"
     }
   ],
   "snapshot_schema": "runtime_abi_v1_helper_signatures"
