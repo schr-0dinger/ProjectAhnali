@@ -3,6 +3,8 @@
 Last consolidated: 2026-02-16  
 Consolidation basis: code reality + tests in current repository
 
+Rebaseline note (2026-03-10): the current v1 release target is the static AOT compiler/toolchain plus implemented deterministic helper-call capability slices. Motion backlog (`8.6`), advanced/system/security/debug backlog (`8.7`-`8.10`), JNI/native bridging, embedded Python, and Play-delivered dynamic feature ambitions are deferred beyond this v1 track unless backed by new code, tests, and release-plan changes.
+
 ---
 
 ## 0) Source Merge Index
@@ -35,7 +37,7 @@ Ahnali is not:
 
 ---
 
-## 2) Unified Architecture (Static + Hybrid)
+## 2) Unified Architecture (Static + Deferred Research)
 
 ### 2.1 Mode A: Static Mode (Default, Identity)
 
@@ -47,7 +49,7 @@ Implemented baseline:
 - ✅ No runtime interpreter
 - ✅ No reflection-based dispatch
 
-### 2.2 Mode B: Hybrid Mode (Optional Extension)
+### 2.2 Mode B: Hybrid Mode (Deferred Research Extension)
 
 Integrated architecture decision:
 - Hybrid is optional and capability-scoped.
@@ -56,14 +58,14 @@ Integrated architecture decision:
 
 Hybrid rollout status:
 - ✅ Phase 0 static foundation is in place.
-- Phase 1 native execution layer (NDK + JNI) is planned.
-- Phase 2 optional Python runtime plugin is planned.
+- Deferred beyond current v1: Phase 1 native execution layer (NDK + JNI).
+- Deferred beyond current v1: Phase 2 optional Python runtime plugin.
 
 ---
 
-## 3) Code Reality Snapshot (As of 2026-02-17)
+## 3) Code Reality Snapshot (As of 2026-03-10)
 
-- ✅ Test suite reality: `428 passed` (`PYTHONPATH=. pytest -q -rs`)
+- ✅ Test suite reality: `648 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
 - ✅ One-command flow exists: `build_install_run(...)`
 - ✅ Navigation stack exists
 - ✅ System back bridge exists (`onSystemBack` + wrapper `onBackPressed`)
@@ -540,7 +542,7 @@ Permissions:
 - ✅ request_permission
 - ✅ request_permissions
 - ✅ check_permission
-- ⚠️ runtime permission handling
+- ✅ runtime permission handling
 
 Audio:
 - ❌ MediaPlayer
@@ -595,8 +597,8 @@ Web:
 - ✅ cookie manager
 
 Notifications:
-- ❌ NotificationManager
-- ❌ channels
+- ✅ NotificationManager
+- ✅ channels
 - ❌ push notifications
 - ❌ foreground service notification
 
@@ -839,23 +841,28 @@ Phase status:
 
 ## 16) Immediate Unified Execution Plan
 
-This is the authoritative execution order for Program 5 and beyond.
+This is the authoritative active-v1 execution order after the static-core rebaseline.
 
 1. ✅ Program 5 closure pass: state/lifecycle traceability locked to tests/docs (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2. ✅ Program 11-A gate hardening before breadth: contract/CI guardrails are strict and blocking (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`, `tests/test_capability_mapping_contract.py`, `tests/test_docs_consistency.py`, `tests/test_capability_diagnostics_contract.py`).
 3. ✅ Program 6-A capability core tranche: runtime-permission + notifications/channels slices shipped under the ABI/test/doc pattern (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`, `docs/TrackC_Wave7_Permissions.md`, `docs/TrackC_Wave8_Notifications.md`).
-4. ⚠️ Program 6-B capability breadth tranche: Wave 9-18 baseline is complete (clipboard, sharing/intents including file-share/result surfaces, WebView/settings, JS bridge, file chooser/cookies, deep-linking, WorkManager/AlarmManager/JobScheduler). Remaining work is split into explicit completion tasks in `docs/Program6B_Task_Breakdown.md` (next immediate slice: Task B6 media tranche A).
-5. ⚠️ Program 7 motion completion (`8.6`): finish missing animator/transition/transform surfaces with deterministic ordering/fallback.
-6. ⚠️ Program 8 advanced/system/security/debug completion (`8.7`-`8.10`) with explicit policy constraints and release-mode tests.
-7. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled.
-8. ⚠️ Program 9 Milestone D: deterministic NDK/JNI bridge implementation and conformance tests.
-9. ⚠️ Program 10 Milestone E: optional bounded Python plugin with allowlisted capability wrappers.
-10. ⚠️ Program 11-B + 12-B final release hardening: strict runtime integration coverage + final traceability report/release gates.
+4. ⚠️ Program 6-B closure/freeze: Wave 9-18 breadth is complete (clipboard, sharing/intents including file-share/result surfaces, WebView/settings, JS bridge, file chooser/cookies, deep-linking, WorkManager/AlarmManager/JobScheduler). Remaining retained `8.5` inventory is frozen through explicit `deferred`/`blocked` scope-matrix status, with `docs/Program6B_Task_Breakdown.md` carrying the closure criteria.
+5. ⚠️ Program 12-A docs/api reference freeze: keep masterplan/README/ABI/capability docs continuously reconciled with code and `cfg/v1_scope_matrix.yaml`.
+6. ⚠️ Program 11-B + 12-B final static-v1 release hardening: preserve compiler/toolchain green status, benchmark gates, runtime ABI/capability mapping consistency, and final traceability report/release gates.
 
 Guardrail-first reactive unlock remains active throughout:
 - static-default mode unchanged
 - reactive surfaces remain explicit opt-in
 - no implicit runtime diff/recomposition in static mode
+
+---
+
+## 17) Deferred Beyond V1
+
+1. ⚠️ Program 7 motion backlog (`8.6`): deferred until the static compiler/toolchain product is frozen.
+2. ⚠️ Program 8 advanced/system/security/debug backlog (`8.7`-`8.10`): deferred beyond the current release train.
+3. ⚠️ Program 9 Milestone D: deterministic NDK/JNI bridge work is deferred to post-v1 research/prototyping.
+4. ⚠️ Program 10 Milestone E: optional bounded Python plugin work is deferred to post-v1 research/prototyping.
 
 ---
 
@@ -870,12 +877,12 @@ When updating roadmap/status:
 
 ---
 
-## Appendix A) Verbatim Import — Ahnali_Dual_Mode_Architecture.md
+## Appendix A) Verbatim Import — Ahnali_Dual_Mode_Architecture.md (Experimental / Post-v1)
 
 # Ahnali Architecture Plan --- Dual Mode (Static + Hybrid)
 
-Status: Architectural Definition\
-Phase Target: v1 Static Foundation → Stage 2 Hybrid Extension\
+Status: Experimental research appendix (post-v1)\
+Phase Target: post-v1 research after static foundation freeze\
 Scope: Android-only
 
 ------------------------------------------------------------------------
@@ -1392,6 +1399,8 @@ All animations and effects must be explicit and imperative.
 # Ahnali Implementation — Immediate Masterplan (Corrected & Locked)
 
 Last updated: 2026-02-10
+
+Status note (2026-03-10): historical pre-rebaseline appendix retained for context. The active v1 contract is the static compiler/toolchain plus implemented helper-call capability slices described earlier in this document.
 
 This document is a **corrected, implementation-ready refinement** of the Ahnali v7 masterplan.
 It resolves contradictions, tightens scope, and aligns the plan with the **non-negotiable decision**:

@@ -12,18 +12,21 @@ DEFAULT_MASTERPLAN = "Masterplan_All_In_One.md"
 DEFAULT_README = "README.md"
 DEFAULT_RUNTIME_ABI = "runtime_abi_v1.md"
 DEFAULT_CAP_MAPPING = "docs/capability_runtime_mapping_v1.md"
+DEFAULT_PROGRAM6B = "docs/Program6B_Task_Breakdown.md"
 
-_EXPECTED_PROGRAM_ORDER = [
+_EXPECTED_ACTIVE_PROGRAM_ORDER = [
     "program5",
     "program11a",
     "program6a",
     "program6b",
+    "program12a",
+    "program11b12b",
+]
+_EXPECTED_DEFERRED_PROGRAM_ORDER = [
     "program7",
     "program8",
-    "program12a",
     "program9",
     "program10",
-    "program11b12b",
 ]
 
 
@@ -81,10 +84,17 @@ def check_docs_consistency(
     readme_path: Path,
     runtime_abi_path: Path,
     capability_mapping_path: Path,
+    program6b_path: Path,
 ) -> tuple[bool, str]:
     missing = [
         str(p)
-        for p in (masterplan_path, readme_path, runtime_abi_path, capability_mapping_path)
+        for p in (
+            masterplan_path,
+            readme_path,
+            runtime_abi_path,
+            capability_mapping_path,
+            program6b_path,
+        )
         if not p.exists()
     ]
     if missing:
@@ -94,29 +104,50 @@ def check_docs_consistency(
     readme = readme_path.read_text(encoding="utf-8")
     runtime_abi = runtime_abi_path.read_text(encoding="utf-8")
     capability_mapping = capability_mapping_path.read_text(encoding="utf-8")
+    program6b = program6b_path.read_text(encoding="utf-8")
 
     errors: list[str] = []
 
-    mp_order = _extract_order_keys(
+    mp_active_order = _extract_order_keys(
         masterplan,
         header="## 16) Immediate Unified Execution Plan",
         item_prefixes=tuple(f"{i}." for i in range(1, 11)),
     )
-    rd_order = _extract_order_keys(
+    rd_active_order = _extract_order_keys(
         readme,
         header="## Immediate Plan (Next)",
         item_prefixes=tuple(f"{i})" for i in range(1, 11)),
     )
+    mp_deferred_order = _extract_order_keys(
+        masterplan,
+        header="## 17) Deferred Beyond V1",
+        item_prefixes=tuple(f"{i}." for i in range(1, 11)),
+    )
+    rd_deferred_order = _extract_order_keys(
+        readme,
+        header="## Deferred Beyond V1",
+        item_prefixes=tuple(f"{i})" for i in range(1, 11)),
+    )
 
-    if mp_order != _EXPECTED_PROGRAM_ORDER:
+    if mp_active_order != _EXPECTED_ACTIVE_PROGRAM_ORDER:
         errors.append(
-            "Masterplan immediate plan order mismatch. "
-            f"Expected {_EXPECTED_PROGRAM_ORDER}, got {mp_order}"
+            "Masterplan active v1 plan order mismatch. "
+            f"Expected {_EXPECTED_ACTIVE_PROGRAM_ORDER}, got {mp_active_order}"
         )
-    if rd_order != _EXPECTED_PROGRAM_ORDER:
+    if rd_active_order != _EXPECTED_ACTIVE_PROGRAM_ORDER:
         errors.append(
-            "README immediate plan order mismatch. "
-            f"Expected {_EXPECTED_PROGRAM_ORDER}, got {rd_order}"
+            "README active v1 plan order mismatch. "
+            f"Expected {_EXPECTED_ACTIVE_PROGRAM_ORDER}, got {rd_active_order}"
+        )
+    if mp_deferred_order != _EXPECTED_DEFERRED_PROGRAM_ORDER:
+        errors.append(
+            "Masterplan deferred plan order mismatch. "
+            f"Expected {_EXPECTED_DEFERRED_PROGRAM_ORDER}, got {mp_deferred_order}"
+        )
+    if rd_deferred_order != _EXPECTED_DEFERRED_PROGRAM_ORDER:
+        errors.append(
+            "README deferred plan order mismatch. "
+            f"Expected {_EXPECTED_DEFERRED_PROGRAM_ORDER}, got {rd_deferred_order}"
         )
 
     if "runtime_abi_v1.md" not in masterplan:
@@ -144,6 +175,14 @@ def check_docs_consistency(
         errors.append(
             "capability_runtime_mapping doc ABI version line must match code"
         )
+    if "cfg/v1_scope_matrix.yaml" not in program6b:
+        errors.append("Program6B task breakdown must reference cfg/v1_scope_matrix.yaml")
+    if "source of truth" not in program6b.lower():
+        errors.append("Program6B task breakdown must describe the scope matrix as the source of truth")
+    if "Deferred Beyond V1" not in readme:
+        errors.append("README must include a Deferred Beyond V1 section")
+    if "## 17) Deferred Beyond V1" not in masterplan:
+        errors.append("Masterplan must include a Deferred Beyond V1 section")
 
     if errors:
         return False, "Docs consistency errors: " + "; ".join(errors)
@@ -158,6 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--readme", default=DEFAULT_README)
     parser.add_argument("--runtime-abi", default=DEFAULT_RUNTIME_ABI)
     parser.add_argument("--capability-doc", default=DEFAULT_CAP_MAPPING)
+    parser.add_argument("--program6b-doc", default=DEFAULT_PROGRAM6B)
     args = parser.parse_args(argv)
 
     ok, message = check_docs_consistency(
@@ -165,6 +205,7 @@ def main(argv: list[str] | None = None) -> int:
         readme_path=Path(args.readme),
         runtime_abi_path=Path(args.runtime_abi),
         capability_mapping_path=Path(args.capability_doc),
+        program6b_path=Path(args.program6b_doc),
     )
     if not ok:
         emit_cli_error(message, code="DocsConsistencyError")

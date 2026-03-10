@@ -1,7 +1,7 @@
 # Ahnali Architecture Plan --- Dual Mode (Static + Hybrid)
 
-Status: Architectural Definition\
-Phase Target: v1 Static Foundation → Stage 2 Hybrid Extension\
+Status: Experimental research appendix (post-v1)\
+Phase Target: post-v1 research after static foundation freeze\
 Scope: Android-only
 
 ------------------------------------------------------------------------

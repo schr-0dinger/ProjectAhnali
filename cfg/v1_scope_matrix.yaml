@@ -10,8 +10,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.10",
-      "source_ref": "Masterplan_All_In_One.md:753",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:755",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -24,8 +24,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.10",
-      "source_ref": "Masterplan_All_In_One.md:754",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:756",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -38,8 +38,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.10",
-      "source_ref": "Masterplan_All_In_One.md:755",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:757",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -52,8 +52,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:569",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:571",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -66,8 +66,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:550",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:552",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -80,8 +80,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:551",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:553",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -94,8 +94,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:549",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:551",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -108,8 +108,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:642",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:644",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -122,8 +122,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:608",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:610",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -136,8 +136,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:637",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:639",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -150,8 +150,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:557",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:559",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -164,22 +164,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:562",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.5:channels",
-      "docs_required": [],
-      "id": "8.5:channels",
-      "label": "channels",
-      "lowering_target": "TBD",
-      "marker": "\u274c",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:599",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:564",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -192,8 +178,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:641",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:643",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -206,8 +192,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:628",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:630",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -220,8 +206,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:643",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:645",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -234,8 +220,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:588",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:590",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -248,8 +234,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:547",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:549",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -262,8 +248,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:612",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:614",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -276,8 +262,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:632",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:634",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -290,8 +276,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:614",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:616",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -304,8 +290,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:631",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:633",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -318,8 +304,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:565",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:567",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -332,8 +318,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:566",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:568",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -346,8 +332,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:601",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:603",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -360,8 +346,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:607",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:609",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -374,8 +360,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:578",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:580",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -388,8 +374,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:580",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:582",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -402,8 +388,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:635",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:637",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -416,8 +402,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:579",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:581",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -430,8 +416,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:570",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:572",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -444,8 +430,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:563",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:565",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -458,8 +444,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:650",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:652",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -472,8 +458,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:611",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:613",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -486,8 +472,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:572",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:574",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -500,8 +486,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:571",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:573",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -514,8 +500,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:638",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:640",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -528,8 +514,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:636",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:638",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -542,8 +528,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:546",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:548",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -556,8 +542,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:556",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:558",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -570,8 +556,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:558",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:560",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -584,8 +570,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:613",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:615",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -598,8 +584,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:552",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:554",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -612,22 +598,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:646",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.5:notificationmanager",
-      "docs_required": [],
-      "id": "8.5:notificationmanager",
-      "label": "NotificationManager",
-      "lowering_target": "TBD",
-      "marker": "\u274c",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:598",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:648",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -640,8 +612,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:584",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:586",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -654,8 +626,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:651",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:653",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -668,8 +640,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:573",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:575",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -682,8 +654,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:600",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:602",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -696,22 +668,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:585",
-      "status": "planned",
-      "tests_required": []
-    },
-    {
-      "api_symbol": "TBD::8.5:runtime-permission-handling",
-      "docs_required": [],
-      "id": "8.5:runtime-permission-handling",
-      "label": "runtime permission handling",
-      "lowering_target": "TBD",
-      "marker": "\u26a0\ufe0f",
-      "permissions": [],
-      "runtime_helper": "none",
-      "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:543",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:587",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -724,8 +682,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:615",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:617",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -738,8 +696,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:652",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:654",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -752,8 +710,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:548",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:550",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -766,8 +724,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:649",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:651",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -780,8 +738,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:574",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:576",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -794,8 +752,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:564",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:566",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -808,8 +766,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:559",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:561",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -822,8 +780,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:555",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:557",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -836,8 +794,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:653",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:655",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -850,8 +808,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.5",
-      "source_ref": "Masterplan_All_In_One.md:586",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:588",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -864,8 +822,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:665",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:667",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -878,8 +836,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:658",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:660",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -892,8 +850,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:664",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:666",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -906,8 +864,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:684",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:686",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -920,8 +878,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:697",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:699",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -934,8 +892,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:676",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:678",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -948,8 +906,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:675",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:677",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -962,8 +920,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:691",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:693",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -976,8 +934,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:659",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:661",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -990,8 +948,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:660",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:662",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1004,8 +962,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:689",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:691",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1018,8 +976,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:677",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:679",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1032,8 +990,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:672",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:674",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1046,8 +1004,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:688",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:690",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1060,8 +1018,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:683",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:685",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1074,8 +1032,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:669",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:671",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1088,8 +1046,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:682",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:684",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1102,8 +1060,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:670",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:672",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1116,8 +1074,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:671",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:673",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1130,8 +1088,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:661",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:663",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1144,8 +1102,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:662",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:664",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1158,8 +1116,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:687",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:689",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1172,8 +1130,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:695",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:697",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1186,8 +1144,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:696",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:698",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1200,8 +1158,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:668",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:670",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1214,8 +1172,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:692",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:694",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1228,8 +1186,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:690",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:692",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1242,8 +1200,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:706",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:708",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1256,8 +1214,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:663",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:665",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1270,8 +1228,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:678",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:680",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1284,8 +1242,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.6",
-      "source_ref": "Masterplan_All_In_One.md:679",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:681",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1298,8 +1256,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:714",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:716",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1312,8 +1270,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:712",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:714",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1326,8 +1284,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:713",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:715",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1340,8 +1298,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:711",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:713",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1354,8 +1312,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:715",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:717",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1368,8 +1326,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:724",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:726",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1382,8 +1340,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:721",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:723",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1396,8 +1354,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:719",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:721",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1410,8 +1368,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:718",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:720",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1424,8 +1382,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.7",
-      "source_ref": "Masterplan_All_In_One.md:720",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:722",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1438,8 +1396,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.8",
-      "source_ref": "Masterplan_All_In_One.md:731",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:733",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1452,8 +1410,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.8",
-      "source_ref": "Masterplan_All_In_One.md:732",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:734",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1466,8 +1424,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.8",
-      "source_ref": "Masterplan_All_In_One.md:730",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:732",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1480,8 +1438,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.9",
-      "source_ref": "Masterplan_All_In_One.md:745",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:747",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1494,8 +1452,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.9",
-      "source_ref": "Masterplan_All_In_One.md:746",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:748",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1508,8 +1466,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.9",
-      "source_ref": "Masterplan_All_In_One.md:748",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:750",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1522,8 +1480,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.9",
-      "source_ref": "Masterplan_All_In_One.md:744",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:746",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1536,8 +1494,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "8.9",
-      "source_ref": "Masterplan_All_In_One.md:747",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:749",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1550,8 +1508,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "Milestone-D",
-      "source_ref": "Masterplan_All_In_One.md:833",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:835",
+      "status": "deferred",
       "tests_required": []
     },
     {
@@ -1564,8 +1522,8 @@
       "permissions": [],
       "runtime_helper": "none",
       "section": "Milestone-E",
-      "source_ref": "Masterplan_All_In_One.md:836",
-      "status": "planned",
+      "source_ref": "Masterplan_All_In_One.md:838",
+      "status": "deferred",
       "tests_required": []
     }
   ],

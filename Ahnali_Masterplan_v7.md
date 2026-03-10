@@ -2,6 +2,8 @@
 
 Last updated: 2026-02-10
 
+Status note (2026-03-10): foundational historical document. For current release scope and code-backed status, prefer `README.md` and `Masterplan_All_In_One.md`.
+
 Ahnali is an ahead-of-time Android compiler that translates a restricted, Python-like DSL directly into Smali/Dalvik bytecode.
 
 There is:

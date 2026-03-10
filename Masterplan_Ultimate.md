@@ -1,5 +1,7 @@
 # Masterplan — Ultimate DSL Sugaring → Full Smali & API Coverage
 
+Status note (2026-03-10): historical expansion roadmap. It is no longer the authoritative v1 release contract; use `README.md` and `Masterplan_All_In_One.md` for the current static-v1 scope and deferred research split.
+
 **Scope:** This plan starts from the current state (Phase B complete: widgets + sugar helpers + signature mapping + click wiring + static state) and maps the path to a fully user‑friendly DSL, full smali opcode coverage (practical subset first, then complete), and broad Android API access.
 
 **Guiding goals**

@@ -2,6 +2,8 @@
 
 Last updated: 2026-02-10
 
+Status note (2026-03-10): historical pre-rebaseline planning document. The active v1 position is the static AOT compiler/toolchain plus implemented deterministic helper-call capability slices described in `README.md` and `Masterplan_All_In_One.md`. Optional runtime modules, Play dynamic features, JNI/native bridging, and embedded Python are deferred beyond the current v1 release track.
+
 This document is a **corrected, implementation-ready refinement** of the Ahnali v7 masterplan.
 It resolves contradictions, tightens scope, and aligns the plan with the **non-negotiable decision**:
 

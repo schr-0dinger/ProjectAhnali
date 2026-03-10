@@ -4,9 +4,9 @@ Ahnali is a Python DSL -> IR -> CFG -> SSA -> Typed SSA -> Dalvik IR -> Smali co
 This repository contains the compiler pipeline, validation gates, and tests for a
 phase-by-phase architecture-first build.
 
-Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, Ahnali ships a statically linked, capability-scoped support runtime: a small set of precompiled Smali helper classes that provide access to Android platform services (audio, sensors, storage, WebView, etc.). This runtime is not a framework engine but a link-time standard library, where only the capabilities referenced in user code are included in the final APK. As a result, Ahnali applications have deterministic behavior, minimal binary size, zero reflection, and native Android performance, while still exposing rich platform features through a strictly analyzable DSL.
+Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, the current v1 toolchain emits deterministic helper/runtime bridge classes and curated helper-call capability slices for Android platform services such as storage, networking, permissions, notifications, WebView, sharing, and background work. These bridges are compiler-selected helper surfaces, not a general framework engine, dynamic feature system, or embedded Python runtime. As a result, Ahnali applications keep deterministic behavior, analyzable capability boundaries, and native Android execution while staying aligned with the code that exists today.
 
-Last updated: 2026-02-18
+Last updated: 2026-03-10
 
 ## Goals
 
@@ -65,9 +65,10 @@ Active:
 - UI/compiler expansion through Phase 13 complete (events, input, accessibility, effects, animations, themes, scroll controls, static list view, lint hardening)
 - Packaging flow complete (`aapt2` + `zipalign` + `apksigner`)
 - Inline event attribute sugar is available and wired to existing event lowering
+- JNI/native bridge work, embedded Python, and Play-delivered dynamic feature ambitions are deferred beyond the current static-v1 release track
 
 Test status:
-- Last suite run: `588 passed` (`PYTHONPATH=. pytest -q -rs`)
+- Last suite run: `648 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
 
 ## Python Library Policy (Enforced)
 
@@ -198,18 +199,21 @@ Constraints:
 1) Program 5 closure pass completed: state/lifecycle traceability locked (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
 2) Program 11-A gate hardening completed: strict blocking guardrails are active for scope matrix, capability mapping/docs drift, docs consistency, ABI snapshot, reactive snapshot, and dependency policy (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`).
 3) Program 6-A capability core tranche completed: runtime permission + notifications/channels slices shipped with deterministic contracts and visible flows (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`).
-4) Program 6-B capability breadth tranche advanced across section `8.5`: Sharing/Intents/Clipboard/Web/Deep-link and background-work tranche now includes Wave 9 clipboard + Wave 10 sharing/intents + Wave 11 WebView + Wave 12 Web JS bridge + Wave 13 file chooser/cookie-manager + Wave 14 deep-link + Wave 15 WorkManager + Wave 16 AlarmManager + Wave 17 JobScheduler + Wave 18 sharing/intents completion helper-call slices (`tests/test_track_c_wave9_clipboard.py`, `tests/test_track_c_wave10_sharing_intents.py`, `tests/test_track_c_wave11_webview.py`, `tests/test_track_c_wave12_web_js_bridge.py`, `tests/test_track_c_wave13_web_file_cookie.py`, `tests/test_track_c_wave14_deep_linking.py`, `tests/test_track_c_wave15_workmanager.py`, `tests/test_track_c_wave16_alarmmanager.py`, `tests/test_track_c_wave17_jobscheduler.py`, `tests/test_track_c_wave18_sharing_completion.py`).
-5) Program 7 motion completion (`8.6`).
-6) Program 8 advanced/system/security/debug completion (`8.7`-`8.10`).
-7) Program 12-A docs/API reference freeze and continuous reconciliation.
-8) Program 9 Milestone D (NDK/JNI bridge).
-9) Program 10 Milestone E (optional bounded Python plugin).
-10) Program 11-B + 12-B final release hardening and traceability report.
+4) Program 6-B closure/freeze is the active breadth task: waves 9-18 are implemented, and the remaining retained `8.5` backlog is explicitly frozen or deferred in `cfg/v1_scope_matrix.yaml` / `docs/Program6B_Task_Breakdown.md`.
+5) Program 12-A docs/API reference freeze remains active: README/masterplan/ABI/capability docs must stay reconciled with code and scope status.
+6) Program 11-B + 12-B final static-v1 release hardening remains the release gate: preserve green compiler/toolchain tests, benchmark gates, and traceability.
 
 Guardrail-first reactive unlock remains active during all tranches:
 - static-default behavior unchanged
 - reactive is explicit opt-in only
 - no implicit runtime diff/recomposition in static mode
+
+## Deferred Beyond V1
+
+1) Program 7 motion backlog (`8.6`) is deferred until the static compiler product is frozen and the current helper-capability core is stable.
+2) Program 8 advanced/system/security/debug backlog (`8.7`-`8.10`) is deferred beyond the current release train.
+3) Program 9 Milestone D (NDK/JNI bridge) is deferred to post-v1 research/prototyping.
+4) Program 10 Milestone E (optional bounded Python plugin) is deferred to post-v1 research/prototyping.
 
 ## Completion Roadmap (Current)
 

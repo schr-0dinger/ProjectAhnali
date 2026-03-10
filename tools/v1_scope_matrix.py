@@ -18,6 +18,16 @@ DEFAULT_SCOPE_FLAGS = {
     "reactive_opt_in": True,
     "no_implicit_diff": True,
 }
+_REBASELINE_FROZEN_SECTIONS = {
+    "8.5",
+    "8.6",
+    "8.7",
+    "8.8",
+    "8.9",
+    "8.10",
+    "Milestone-D",
+    "Milestone-E",
+}
 
 _RE_SECTION = re.compile(r"^###\s+(8\.\d+)\s+")
 _RE_MARKER = re.compile(r"^\s*-\s*(⚠️|❌)\s*(.+?)\s*$")
@@ -124,13 +134,14 @@ def _extract_milestone_de_items(masterplan: Path) -> list[dict[str, Any]]:
 
 
 def _default_entry(item: dict[str, Any]) -> dict[str, Any]:
+    default_status = "deferred" if item["section"] in _REBASELINE_FROZEN_SECTIONS else "planned"
     return {
         "id": item["id"],
         "section": item["section"],
         "label": item["label"],
         "marker": item["marker"],
         "source_ref": item["source_ref"],
-        "status": "planned",
+        "status": default_status,
         "api_symbol": f"TBD::{item['id']}",
         "lowering_target": "TBD",
         "runtime_helper": "none",
@@ -325,6 +336,14 @@ def check_v1_scope_matrix(masterplan: Path, matrix_path: Path) -> tuple[bool, st
         status = actual_entry.get("status")
         if status not in allowed_status:
             return False, f"Entry {entry_id} has invalid status {status!r} (allowed: {sorted(allowed_status)})"
+        if (
+            actual_entry.get("section") in _REBASELINE_FROZEN_SECTIONS
+            and status in {"planned", "in_progress"}
+        ):
+            return False, (
+                f"Entry {entry_id} must not be {status!r} under the static-v1 rebaseline; "
+                "use deferred/blocked or remove it by promoting the masterplan marker to ✅"
+            )
         for list_key in ("permissions", "tests_required", "docs_required"):
             if not isinstance(actual_entry.get(list_key), list):
                 return False, f"Entry {entry_id} field '{list_key}' must be a list"
