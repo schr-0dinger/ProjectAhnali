@@ -5,7 +5,7 @@ tags: [ahnali, project, roadmap]
 # Roadmap
 
 > [!abstract] What's next
-> Close out the v1 release tracks, then decide what comes after.
+> Close out v1, then build the smart transpiler that competes with Kotlin.
 
 ## Active tracks
 
@@ -34,8 +34,21 @@ Keep everything aligned:
 | A: Friendly DSL | ✅ Done | Pythonic app DSL usable without Smali internals |
 | B: Feature-usable static foundation | ✅ Done | Navigation/state/event core, toolchain, styling |
 | C: Production static core | ⚠️ In progress | Release hardening, CI gating, docs finalization |
-| D: Native hybrid bridge | Deferred | NDK/JNI capability-scoped bridge |
-| E: Optional Python plugin | Deferred | Embedded Python over JNI, bounded by static UI invariants |
+| D: Smart transpiler foundation | 🔄 Planned | Feature detection + on-demand runtime injection |
+| E: Full Python support | 🔄 Planned | 95% Python syntax → native Android patterns |
+
+## The New Direction
+
+After v1 closes, we shift from a restricted DSL to a **smart transpiler with on-demand runtime injection**:
+
+1. **Analyze** Python code to detect used features
+2. **Select** only the runtime modules that are actually needed
+3. **Translate** Python to native Android patterns (not a Python interpreter)
+4. **Emit** Smali with minimal runtime overhead (5KB-35KB vs 10-15MB)
+
+This is how we compete with Kotlin: full Python syntax, native Android performance, zero configuration.
+
+See [[80 - Strategy/01 - Strategic Vision]] for the full vision and [[80 - Strategy/02 - Implementation Roadmap]] for the phase-by-phase plan.
 
 ## Post-v1 (if/when)
 
@@ -45,4 +58,6 @@ The deferred list is long: JNI bridge, embedded Python, media pipelines, maps, B
 
 - Current status: [[70 - Project/01 - Current Status]]
 - Contributing: [[70 - Project/03 - Contributing]]
+- Strategic vision: [[80 - Strategy/01 - Strategic Vision]]
+- Implementation roadmap: [[80 - Strategy/02 - Implementation Roadmap]]
 - Deferred features: [[60 - Architecture/04 - Deferred Features]]

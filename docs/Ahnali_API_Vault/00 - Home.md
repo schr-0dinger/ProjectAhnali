@@ -94,6 +94,13 @@ Platform services you can tap into from your handlers.
 - [[70 - Project/02 - Roadmap]] - What's next
 - [[70 - Project/03 - Contributing]] - How to help
 
+## Strategy
+
+The long-term vision: making Ahnali as powerful as Kotlin through smart transpilation with on-demand runtime injection.
+
+- [[80 - Strategy/01 - Strategic Vision]] - The goal, the approach, what we can replicate
+- [[80 - Strategy/02 - Implementation Roadmap]] - Phase-by-phase plan from v1 to production
+
 ---
 
 > [!info] About this vault

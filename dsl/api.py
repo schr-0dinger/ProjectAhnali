@@ -1910,6 +1910,15 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
             event_specs.append(part)
         elif isinstance(part, _LifecycleSpec):
             lifecycle_specs.append(part)
+        elif callable(part) and not isinstance(part, type):
+            # Raw function passed as a handler - parse and collect function defs
+            parsed = _parse_handler_ast(part)
+            for stmt in parsed:
+                if type(stmt).__name__ == '_StmtFunctionDef':
+                    # Store on the activity_spec for later retrieval
+                    if not hasattr(activity_spec, '_user_functions'):
+                        activity_spec._user_functions = []
+                    activity_spec._user_functions.append(stmt)
 
     state_spec = state_spec or State()
     ui_spec = ui_spec or _UISpec()
@@ -1962,6 +1971,11 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
         ctx._lint_warnings.append(
             "State values are global across Screens. Screen-local state is not yet supported."
         )
+    # Pass collected user-defined functions from raw handler functions
+    if hasattr(activity_spec, '_user_functions'):
+        ctx._user_functions = []
+        for fn_def in activity_spec._user_functions:
+            ctx._compile_function_def(fn_def)
     program = ctx.build_program(
         event_specs,
         resources=resources,

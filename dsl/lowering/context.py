@@ -57,6 +57,7 @@ from dsl.ast import (
     _ExprShareTextResult,
     _ExprReactiveGet,
     _ExprStateBackendGet,
+    _ExprCall,
     _ExprStateBackendExists,
     _ExprStorageGet,
     _ExprStorageExists,
@@ -131,6 +132,10 @@ from dsl.ast import (
     _StmtNotify,
     _StmtShareText,
     _StmtWhile,
+    _StmtForLoop,
+    _StmtTryExcept,
+    _StmtFunctionDef,
+    _StmtReturn,
 )
 from dsl.ir_helpers import (
     add_view,
@@ -2698,6 +2703,35 @@ class _PythonicContext(
                 )
             )
 
+        # Compile user-defined functions
+        user_fn_methods = []
+        for fn_name, fn_params, fn_param_types, fn_body, fn_return_type in getattr(self, "_user_functions", []):
+            # Set up parameter scope before compiling body
+            prev_locals = self._local_vars
+            prev_local_types = self._local_var_types
+            try:
+                self._local_vars = set(fn_params)
+                self._local_var_types = {p: t for p, t in zip(fn_params, fn_param_types)}
+                fn_stmts = self._compile_stmt_block(fn_body)
+            finally:
+                self._local_vars = prev_locals
+                self._local_var_types = prev_local_types
+            # Ensure function ends with return
+            if fn_stmts and not self._is_terminator(fn_stmts[-1]):
+                fn_stmts.append(ret())
+            elif not fn_stmts:
+                fn_stmts.append(ret())
+            user_fn_methods.append(
+                method(
+                    fn_name,
+                    params=fn_params,
+                    param_types=fn_param_types,
+                    return_type=fn_return_type,
+                    body=fn_stmts,
+                )
+            )
+        methods.extend(user_fn_methods)
+
         return program(
             methods,
             fields=fields,
@@ -3095,6 +3129,27 @@ class _PythonicContext(
             return self._compile_if_stmt(stmt)
         if isinstance(stmt, _StmtWhile):
             return self._compile_while_stmt(stmt)
+        if isinstance(stmt, _StmtForLoop):
+            out = self.lower_stmt(stmt.init_stmt)
+            out.extend(self.lower_stmt(stmt.while_loop_stmt))
+            return out
+        if isinstance(stmt, _StmtTryExcept):
+            # The CFG builder handles try/catch. We just pass the IR through.
+            from ir.stmt import TryCatch
+            return [TryCatch(
+                try_body=stmt.try_body,
+                except_body=stmt.except_body,
+                exception_type=stmt.exception_type,
+                handlers=[(stmt.exception_type, stmt.except_body)],
+            )]
+        if isinstance(stmt, _StmtFunctionDef):
+            return self._compile_function_def(stmt)
+        if isinstance(stmt, _StmtReturn):
+            return self._compile_return_stmt(stmt)
+        if isinstance(stmt, _StmtFunctionDef):
+            return self._compile_function_def(stmt)
+        if isinstance(stmt, _StmtReturn):
+            return self._compile_return_stmt(stmt)
         if isinstance(stmt, _StmtToast):
             return self._compile_toast_stmt(stmt)
         if isinstance(stmt, _StmtSnackbar):
@@ -5777,6 +5832,30 @@ class _PythonicContext(
                 key=stmt.value.key,
                 tmp_prefix="http_get_json_field_error_result",
             )
+        elif isinstance(stmt.value, _ExprCall):
+            # User-defined function call in assignment
+            fn_name = stmt.value.func_name
+            arg_stmts = []
+            arg_vars = []
+            for arg in stmt.value.args:
+                stmts, val = self._compile_int_expr(arg)
+                arg_stmts.extend(stmts)
+                arg_vars.append(val)
+            result = var(self._next_tmp(f"call_{fn_name}"))
+            prefix = [
+                *arg_stmts,
+                assign(
+                    result.name,
+                    call(
+                        fn_name,
+                        args=arg_vars,
+                        return_type="I",
+                        arg_types=["I"] * len(arg_vars),
+                        invoke_kind="static",
+                        owner="LTest;",
+                    ),
+                ),
+            ]
         elif isinstance(stmt.value, _ExprHttpGetRouteAsync):
             prefix, result = self._compile_http_get_route_async_call(
                 url=stmt.value.url,
@@ -5990,6 +6069,30 @@ class _PythonicContext(
                 *left_stmts,
                 *right_stmts,
                 assign(t, binary(expr.op, left_expr, right_expr)),
+            ], var(t)
+        if isinstance(expr, _ExprCall):
+            # User-defined function call
+            fn_name = expr.func_name
+            arg_stmts = []
+            arg_vars = []
+            for arg in expr.args:
+                stmts, val = self._compile_int_expr(arg)
+                arg_stmts.extend(stmts)
+                arg_vars.append(val)
+            t = self._next_tmp(f"call_{fn_name}")
+            return [
+                *arg_stmts,
+                assign(
+                    t,
+                    call(
+                        fn_name,
+                        args=arg_vars,
+                        return_type="I",
+                        arg_types=["I"] * len(arg_vars),
+                        invoke_kind="static",
+                        owner="LTest;",
+                    ),
+                ),
             ], var(t)
         raise RuntimeError(f"Unsupported expression in assignment: {expr}")
 
@@ -6869,6 +6972,33 @@ class _PythonicContext(
             )
         )
         return stmts
+
+    def _compile_function_def(self, stmt):
+        """Compile a user-defined function into a MethodIR and register it.
+
+        Function defs are collected during lowering and added to the program
+        in build_program.  This method returns an empty list because the
+        function body is compiled as a separate method, not inlined.
+        """
+        name = stmt.name
+        params = stmt.params
+        param_types = ["I"] * len(params)  # default all params to int
+
+        # Save function def for later registration in build_program
+        if not hasattr(self, "_user_functions"):
+            self._user_functions = []
+        self._user_functions.append((name, params, param_types, stmt.body, stmt.return_type))
+        return []
+
+    def _compile_return_stmt(self, stmt):
+        """Compile a return statement."""
+        from ir.stmt import Return
+        if stmt.value is None:
+            return [Return(None)]
+        # Compile the return value expression
+        prefix, result = self._compile_int_expr(stmt.value)
+        prefix.append(Return(result))
+        return prefix
 
 
 # -------------------------------

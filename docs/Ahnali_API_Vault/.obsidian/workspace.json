@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "30 - API Reference/11 - Animation DSL.md",
+                "file": "30 - API Reference/02 - Value Types and Units.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "11 - Animation DSL"
+              "title": "02 - Value Types and Units"
             }
           }
         ]
@@ -185,6 +185,8 @@
   },
   "active": "db0991bda6485541",
   "lastOpenFiles": [
+    "00 - Home.md",
+    "30 - API Reference/11 - Animation DSL.md",
     "30 - API Reference/10 - Navigation and Screens.md",
     "30 - API Reference/09 - Events and Handlers.md",
     "30 - API Reference/08 - Theme Style and Presets.md",
@@ -197,7 +199,6 @@
     "30 - API Reference/01 - App Model.md",
     "20 - Core Concepts/06 - Design Philosophy.md",
     "10 - Getting Started/02 - Your First App.md",
-    "00 - Home.md",
     "70 - Project/03 - Contributing.md",
     "20 - Core Concepts/01 - How Ahnali Works.md",
     "40 - Capabilities/01 - Overview.md",
@@ -209,7 +210,6 @@
     "60 - Architecture/02 - Runtime Model.md",
     "60 - Architecture/01 - Dual Mode Architecture.md",
     "50 - Tooling/05 - Python Library Policy.md",
-    "50 - Tooling/04 - CI Gates.md",
-    "50 - Tooling/03 - Benchmarking.md"
+    "50 - Tooling/04 - CI Gates.md"
   ]
 }

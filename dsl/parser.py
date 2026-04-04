@@ -9,6 +9,7 @@ from .ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprCall,
     _ExprHttpGetError,
     _ExprHttpAsyncError,
     _ExprHttpAsyncBody,
@@ -123,6 +124,10 @@ from .ast import (
     _StmtNotify,
     _StmtShareText,
     _StmtWhile,
+    _StmtForLoop,
+    _StmtTryExcept,
+    _StmtFunctionDef,
+    _StmtReturn,
 )
 
 
@@ -1225,7 +1230,151 @@ def _parse_stmt(stmt):
             _parse_expr(stmt.test),
             _parse_stmt_block(stmt.body),
         )
+    if isinstance(stmt, ast.For):
+        return _desugar_for_loop(stmt)
+    if isinstance(stmt, ast.Try):
+        return _parse_try_except(stmt)
+    if isinstance(stmt, ast.FunctionDef):
+        return _parse_function_def(stmt)
+    if isinstance(stmt, ast.Return):
+        return _parse_return_stmt(stmt)
     raise RuntimeError(f"Unsupported statement: {ast.dump(stmt)}")
+
+
+def _desugar_for_loop(stmt):
+    """Desugar 'for target in range(n): body' into a while loop.
+
+    Transforms:
+        for i in range(n):
+            body
+    Into:
+        i = 0
+        while i < n:
+            body
+            i = i + 1
+
+    Only supports 'for X in range(N)' where N is a constant integer.
+    """
+    if not isinstance(stmt.target, ast.Name):
+        raise RuntimeError("for loop target must be a simple name")
+    loop_var = stmt.target.id
+
+    if not isinstance(stmt.iter, ast.Call):
+        raise RuntimeError("for loop iter must be a range() call")
+    if not isinstance(stmt.iter.func, ast.Name) or stmt.iter.func.id != "range":
+        raise RuntimeError("for loop iter must be range()")
+    if len(stmt.iter.args) != 1:
+        raise RuntimeError("for loop range() must have exactly 1 argument (for i in range(n))")
+
+    limit_expr = stmt.iter.args[0]
+    if not isinstance(limit_expr, ast.Constant) or not isinstance(limit_expr.value, int):
+        raise RuntimeError("for loop range() limit must be a constant integer")
+    limit = limit_expr.value
+
+    # Build: i = 0
+    init_stmt = ast.Assign(
+        targets=[ast.Name(id=loop_var, ctx=ast.Store())],
+        value=ast.Constant(value=0),
+    )
+
+    # Build: while i < limit: body; i = i + 1
+    cond = ast.Compare(
+        left=ast.Name(id=loop_var, ctx=ast.Load()),
+        ops=[ast.Lt()],
+        comparators=[ast.Constant(value=limit)],
+    )
+    increment = ast.AugAssign(
+        target=ast.Name(id=loop_var, ctx=ast.Store()),
+        op=ast.Add(),
+        value=ast.Constant(value=1),
+    )
+    while_node = ast.While(
+        test=cond,
+        body=stmt.body + [increment],
+        orelse=[],
+    )
+
+    # Parse the desugared AST
+    init = _parse_stmt(init_stmt)
+    loop = _parse_stmt(while_node)
+    if init is None:
+        raise RuntimeError("Failed to parse for-loop initialization")
+    if loop is None:
+        raise RuntimeError("Failed to parse for-loop body")
+
+    # Return as a sequence: init followed by the while loop
+    return _StmtForLoop(init, loop)
+
+
+def _parse_try_except(stmt):
+    """Parse ast.Try into _StmtTryExcept.
+
+    Only supports a single except clause with no 'as' binding.
+    Finally blocks are not supported.
+    """
+    if not stmt.handlers:
+        raise RuntimeError("try statement must have at least one except clause")
+    if len(stmt.handlers) > 1:
+        raise RuntimeError("only a single except clause is supported")
+    if stmt.finalbody:
+        raise RuntimeError("finally blocks are not supported")
+    if stmt.orelse:
+        raise RuntimeError("else clauses on try are not supported")
+
+    handler = stmt.handlers[0]
+    if handler.name is not None:
+        raise RuntimeError("except ... as <name> is not supported; use a bare except")
+
+    # Determine exception type
+    if handler.type is None:
+        exc_type = "java/lang/Exception"  # catchall
+    elif isinstance(handler.type, ast.Name):
+        exc_type = handler.type.id
+    else:
+        raise RuntimeError("except clause must be a simple exception type name")
+
+    # Map Python exception names to Smali class descriptors
+    exc_type_map = {
+        "Exception": "Ljava/lang/Exception;",
+        "RuntimeError": "Ljava/lang/RuntimeException;",
+        "ValueError": "Ljava/lang/IllegalArgumentException;",
+        "TypeError": "Ljava/lang/ClassCastException;",
+        "IndexError": "Ljava/lang/IndexOutOfBoundsException;",
+        "KeyError": "Ljava/util/NoSuchElementException;",
+        "ZeroDivisionError": "Ljava/lang/ArithmeticException;",
+        "IOException": "Ljava/io/IOException;",
+    }
+    dalvik_type = exc_type_map.get(exc_type)
+    if dalvik_type is None:
+        # Assume it's already a Smali descriptor or wrap it
+        if exc_type.startswith("L") and exc_type.endswith(";"):
+            dalvik_type = exc_type
+        else:
+            dalvik_type = f"Ljava/lang/{exc_type};"
+
+    try_body = _parse_stmt_block(stmt.body)
+    except_body = _parse_stmt_block(handler.body)
+
+    return _StmtTryExcept(try_body, except_body, dalvik_type)
+
+
+def _parse_return_stmt(stmt):
+    """Parse ast.Return into _StmtReturn."""
+    if stmt.value is None:
+        return _StmtReturn(None)
+    return _StmtReturn(_parse_expr(stmt.value))
+
+
+def _parse_function_def(stmt):
+    """Parse ast.FunctionDef into _StmtFunctionDef.
+
+    All parameters default to int type. Return type is inferred from
+    the presence of return statements with values.
+    """
+    param_names = [arg.arg for arg in stmt.args.args]
+    body = _parse_stmt_block(stmt.body)
+    return_type = None
+    return _StmtFunctionDef(stmt.name, param_names, body, return_type)
 
 
 def _parse_stmt_block(stmts):
@@ -2034,6 +2183,10 @@ def _parse_expr(node):
             else:
                 raise RuntimeError("Unsupported f-string part")
         return _ExprFormat(parts)
+    # Generic function call (user-defined or unknown)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        args = [_parse_expr(a) for a in node.args]
+        return _ExprCall(node.func.id, args)
     raise RuntimeError(f"Unsupported expression: {ast.dump(node)}")
 
 

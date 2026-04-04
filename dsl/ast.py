@@ -64,6 +64,13 @@ class _ExprFormat:
         self.parts = parts
 
 
+class _ExprCall:
+    """Generic function call (user-defined or unknown builtin)."""
+    def __init__(self, func_name, args):
+        self.func_name = func_name
+        self.args = args
+
+
 class _ExprStorageGet:
     def __init__(self, key, default_value):
         self.key = key
@@ -777,6 +784,37 @@ class _StmtWhile:
     def __init__(self, cond, body):
         self.cond = cond
         self.body = body
+
+
+class _StmtForLoop:
+    """Desugared for-loop: init_stmt + while_loop_stmt."""
+    def __init__(self, init_stmt, while_loop_stmt):
+        self.init_stmt = init_stmt
+        self.while_loop_stmt = while_loop_stmt
+
+
+class _StmtTryExcept:
+    """try/except block. exception_type is the caught exception class name
+    (e.g. 'java/lang/Exception'), try_body and except_body are stmt lists."""
+    def __init__(self, try_body, except_body, exception_type="java/lang/Exception"):
+        self.try_body = try_body
+        self.except_body = except_body
+        self.exception_type = exception_type
+
+
+class _StmtFunctionDef:
+    """User-defined function. params is a list of (name, type_desc) tuples."""
+    def __init__(self, name, params, body, return_type=None):
+        self.name = name
+        self.params = params  # list of param names
+        self.body = body
+        self.return_type = return_type
+
+
+class _StmtReturn:
+    """Return from a function. value is None for void returns."""
+    def __init__(self, value=None):
+        self.value = value
 
 
 class _ExprRoot:
