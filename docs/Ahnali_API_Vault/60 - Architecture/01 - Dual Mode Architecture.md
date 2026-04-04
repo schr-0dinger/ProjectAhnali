@@ -26,15 +26,15 @@ Optional, capability-scoped, strictly bounded. The idea:
 Static UI (Smali) → Core Runtime (Smali) → JNI Bridge → libpython3.x.so → Restricted Python
 ```
 
-Core rule: **UI is always static.** Python may mutate state, trigger navigation, call approved capabilities, and perform computation — but it cannot create arbitrary views or destroy compiled structures.
+Core rule: **UI is always static.** Python may mutate state, trigger navigation, call approved capabilities, and perform computation - but it cannot create arbitrary views or destroy compiled structures.
 
 ## Hybrid rollout phases
 
-**Phase 0** (done): Static foundation — deterministic emission, navigation, capabilities, permissions, manifest wiring.
+**Phase 0** (done): Static foundation - deterministic emission, navigation, capabilities, permissions, manifest wiring.
 
-**Phase 1** (deferred): Native execution layer — NDK integration, JNI bridge, capability-scoped native calls.
+**Phase 1** (deferred): Native execution layer - NDK integration, JNI bridge, capability-scoped native calls.
 
-**Phase 2** (deferred): Optional Python runtime plugin — minimal CPython build, controlled bridge API, state mutation only, optional bounded dynamic regions.
+**Phase 2** (deferred): Optional Python runtime plugin - minimal CPython build, controlled bridge API, state mutation only, optional bounded dynamic regions.
 
 > [!important] Hybrid never replaces static
 > Static mode is the default identity. Hybrid is an optional plugin layer. Even if hybrid ships, static apps behave exactly the same way.
@@ -43,9 +43,9 @@ Core rule: **UI is always static.** Python may mutate state, trigger navigation,
 
 If hybrid ever ships, mutation would be bounded:
 
-**Level 1 — Pure state mutation**: Python can modify integers, update text, toggle visibility, trigger navigation. Structure remains static.
+**Level 1 - Pure state mutation**: Python can modify integers, update text, toggle visibility, trigger navigation. Structure remains static.
 
-**Level 2 — Bounded dynamic regions** (optional): Marked regions like `Column(id="task_list", mutable=True)` get a managed adapter. Items live inside a sandbox, can't override static IDs, can't modify parent structure.
+**Level 2 - Bounded dynamic regions** (optional): Marked regions like `Column(id="task_list", mutable=True)` get a managed adapter. Items live inside a sandbox, can't override static IDs, can't modify parent structure.
 
 ## Learn more
 

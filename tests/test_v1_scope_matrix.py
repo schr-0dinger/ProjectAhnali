@@ -6,14 +6,14 @@ from tools.v1_scope_matrix import build_v1_scope_matrix, check_v1_scope_matrix
 
 def test_v1_scope_matrix_matches_masterplan_contract():
     ok, message = check_v1_scope_matrix(
-        masterplan=Path("Masterplan_All_In_One.md"),
+        masterplan=Path("docs/Masterplan_All_In_One.md"),
         matrix_path=Path("cfg/v1_scope_matrix.yaml"),
     )
     assert ok, message
 
 
 def test_v1_scope_matrix_done_status_requires_docs_and_tests(tmp_path):
-    matrix = build_v1_scope_matrix(masterplan=Path("Masterplan_All_In_One.md"))
+    matrix = build_v1_scope_matrix(masterplan=Path("docs/Masterplan_All_In_One.md"))
     assert matrix["entries"]
     matrix["entries"][0]["status"] = "done"
     matrix["entries"][0]["tests_required"] = []
@@ -23,7 +23,7 @@ def test_v1_scope_matrix_done_status_requires_docs_and_tests(tmp_path):
     p.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     ok, message = check_v1_scope_matrix(
-        masterplan=Path("Masterplan_All_In_One.md"),
+        masterplan=Path("docs/Masterplan_All_In_One.md"),
         matrix_path=p,
     )
     assert not ok
@@ -31,7 +31,7 @@ def test_v1_scope_matrix_done_status_requires_docs_and_tests(tmp_path):
 
 
 def test_v1_scope_matrix_rebaseline_rejects_planned_status_for_frozen_scope(tmp_path):
-    matrix = build_v1_scope_matrix(masterplan=Path("Masterplan_All_In_One.md"))
+    matrix = build_v1_scope_matrix(masterplan=Path("docs/Masterplan_All_In_One.md"))
     assert matrix["entries"]
     matrix["entries"][0]["status"] = "planned"
 
@@ -39,7 +39,7 @@ def test_v1_scope_matrix_rebaseline_rejects_planned_status_for_frozen_scope(tmp_
     p.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     ok, message = check_v1_scope_matrix(
-        masterplan=Path("Masterplan_All_In_One.md"),
+        masterplan=Path("docs/Masterplan_All_In_One.md"),
         matrix_path=p,
     )
     assert not ok
@@ -47,14 +47,14 @@ def test_v1_scope_matrix_rebaseline_rejects_planned_status_for_frozen_scope(tmp_
 
 
 def test_v1_scope_matrix_enforces_guardrail_scope_flags(tmp_path):
-    matrix = build_v1_scope_matrix(masterplan=Path("Masterplan_All_In_One.md"))
+    matrix = build_v1_scope_matrix(masterplan=Path("docs/Masterplan_All_In_One.md"))
     matrix["scope_flags"]["reactive_opt_in"] = False
 
     p = tmp_path / "v1_scope_matrix.yaml"
     p.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     ok, message = check_v1_scope_matrix(
-        masterplan=Path("Masterplan_All_In_One.md"),
+        masterplan=Path("docs/Masterplan_All_In_One.md"),
         matrix_path=p,
     )
     assert not ok
@@ -62,7 +62,7 @@ def test_v1_scope_matrix_enforces_guardrail_scope_flags(tmp_path):
 
 
 def test_v1_scope_matrix_done_status_requires_pytest_discoverable_test_paths(tmp_path):
-    matrix = build_v1_scope_matrix(masterplan=Path("Masterplan_All_In_One.md"))
+    matrix = build_v1_scope_matrix(masterplan=Path("docs/Masterplan_All_In_One.md"))
     assert matrix["entries"]
     matrix["entries"][0]["status"] = "done"
     matrix["entries"][0]["tests_required"] = ["docs/not_a_test.md"]
@@ -72,7 +72,7 @@ def test_v1_scope_matrix_done_status_requires_pytest_discoverable_test_paths(tmp
     p.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     ok, message = check_v1_scope_matrix(
-        masterplan=Path("Masterplan_All_In_One.md"),
+        masterplan=Path("docs/Masterplan_All_In_One.md"),
         matrix_path=p,
     )
     assert not ok

@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, app-model, build]
 ---
 
-# 01 — App Model
+# 01 - App Model
 
 > [!abstract] What this covers
 > The top-level constructors that define your app: `app()`, `activity()`, `ui()`, `state()`, `app_config()`, `run()`, and `simple_activity()`. Also the module-level macros, screen rules, label resolution, and dependency policy.
@@ -15,7 +15,7 @@ Related: [[02 - Value Types and Units]] · [[06 - Structure Components]] · [[10
 
 ### `app(activity_spec)`
 
-Creates an `AppSpec` — the root object that the compiler consumes. You pass one or more `activity(...)` specs into it.
+Creates an `AppSpec` - the root object that the compiler consumes. You pass one or more `activity(...)` specs into it.
 
 ```python
 from dsl.api import app, activity
@@ -98,7 +98,7 @@ simple_activity("Hello World")
 
 ---
 
-## `app_config()` — Full Signature
+## `app_config()` - Full Signature
 
 ```python
 app_config(
@@ -185,17 +185,17 @@ The `dsl.api` module reads these constants from your app module if present. They
 
 If **any** `Screen(...)` appears in `ui(...)`, the compiler enforces:
 
-1. **All top-level `ui` items must be `Screen(...)`** — mixing screens and non-screens at the same level is rejected.
-2. **Screen names must be unique** — duplicates fail at compile time.
+1. **All top-level `ui` items must be `Screen(...)`** - mixing screens and non-screens at the same level is rejected.
+2. **Screen names must be unique** - duplicates fail at compile time.
 
 ```python
-# ✅ Valid — all top-level items are Screens
+# ✅ Valid - all top-level items are Screens
 ui(
     Screen("Home", text("Home", id="home_title")),
     Screen("Settings", text("Settings", id="settings_title"), transition="fade"),
 )
 
-# ❌ Invalid — mixing Screen and non-Screen
+# ❌ Invalid - mixing Screen and non-Screen
 ui(
     Screen("Home", text("Home")),
     text("Orphan"),  # rejected!
@@ -253,8 +253,8 @@ The build pipeline produces a signed APK through these steps:
 
 ## See Also
 
-- [[02 - Value Types and Units]] — dp, sp, colors, gradients
-- [[06 - Structure Components]] — Row, Column, Screen, and layout containers
-- [[08 - Theme Style and Presets]] — Theme, Style, and presets
-- [[10 - Navigation and Screens]] — Navigate, Back, Screen transitions
-- [[12 - Validation and Diagnostics]] — compile-time checks
+- [[02 - Value Types and Units]] - dp, sp, colors, gradients
+- [[06 - Structure Components]] - Row, Column, Screen, and layout containers
+- [[08 - Theme Style and Presets]] - Theme, Style, and presets
+- [[10 - Navigation and Screens]] - Navigate, Back, Screen transitions
+- [[12 - Validation and Diagnostics]] - compile-time checks

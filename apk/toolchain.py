@@ -59,14 +59,46 @@ def _related_class_descs(program_class_desc: str) -> tuple[str, str]:
     return (f"L{base}Res;", f"L{base}Handlers;")
 
 
+import re
+
+_CLASS_DESC_RE = re.compile(r'L([A-Za-z0-9_/$]+);')
+
+
 def _rewrite_class_descriptors(smali_text: str, desc_map: dict[str, str]) -> str:
-    out = smali_text
-    for old_desc in sorted(desc_map.keys(), key=len, reverse=True):
-        new_desc = desc_map[old_desc]
-        if old_desc == new_desc:
-            continue
-        out = out.replace(old_desc, new_desc)
-    return out
+    """Rewrite class descriptors in Smali text without corrupting string literals.
+
+    Only rewrites descriptors that appear in Smali directive context (type
+    signatures, field types, method signatures, invoke targets).  String
+    literals enclosed in double quotes are left untouched.
+    """
+    if not desc_map:
+        return smali_text
+
+    # Build a regex that matches any of the old descriptors.
+    # Sort by length descending so longer matches win.
+    escaped = sorted(desc_map.keys(), key=len, reverse=True)
+    pattern = re.compile(
+        '|'.join(re.escape(d) for d in escaped if d != desc_map[d])
+    )
+
+    lines = smali_text.split('\n')
+    out_lines = []
+    for line in lines:
+        # Skip string literal lines — don't rewrite descriptors inside quotes.
+        # A Smali string literal line looks like:
+        #   const-string v0, "some LTest; value"
+        # We detect this by checking if the line contains a quoted string
+        # and the descriptor appears inside the quotes.
+        if '"' in line:
+            # Split on quotes: parts[0] = before first quote, parts[1] = inside quotes, etc.
+            parts = line.split('"')
+            # Only rewrite descriptors in the non-quoted parts
+            for i in range(0, len(parts), 2):
+                parts[i] = pattern.sub(lambda m: desc_map[m.group(0)], parts[i])
+            out_lines.append('"'.join(parts))
+        else:
+            out_lines.append(pattern.sub(lambda m: desc_map[m.group(0)], line))
+    return '\n'.join(out_lines)
 
 
 def _activity_name_from_desc(desc: str, application_id: str) -> str:

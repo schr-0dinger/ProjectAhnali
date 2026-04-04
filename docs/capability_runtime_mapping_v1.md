@@ -1,6 +1,34 @@
 # Capability → Runtime Mapping v1
 
+> ABI version: `1.0.0`
+
 Frozen ABI. This is the contract between what you declare in the DSL and what helper class/method actually gets called at runtime.
+
+## The mapping
+
+| Capability | Mode | Helper Class | Primary Method | Permissions |
+|---|---|---|---|---|
+| `AlarmManager` | helper_call | `Lcom/ahnali/runtime/AlarmHelper;` | `scheduleAlarm(...)` | — |
+| `Audio` | permission_only | n/a | n/a | android.permission.RECORD_AUDIO |
+| `Camera` | permission_only | n/a | n/a | android.permission.CAMERA |
+| `Clipboard` | helper_call | `Lcom/ahnali/runtime/ClipboardHelper;` | `setText(...)` | — |
+| `Connectivity` | helper_call | `Lcom/ahnali/runtime/ConnectivityHelper;` | `isConnected(...)` | android.permission.ACCESS_NETWORK_STATE, android.permission.INTERNET |
+| `DeepLinking` | helper_call | `Lcom/ahnali/runtime/DeepLinkHelper;` | `getLaunchUri(...)` | — |
+| `FilePicker` | permission_only | n/a | n/a | android.permission.READ_EXTERNAL_STORAGE |
+| `JobScheduler` | helper_call | `Lcom/ahnali/runtime/JobHelper;` | `scheduleJob(...)` | — |
+| `Location` | helper_call | `Lcom/ahnali/runtime/LocationHelper;` | `isLocationEnabled(...)` | android.permission.ACCESS_FINE_LOCATION, android.permission.ACCESS_COARSE_LOCATION |
+| `Maps` | permission_only | n/a | n/a | android.permission.ACCESS_FINE_LOCATION, android.permission.ACCESS_COARSE_LOCATION |
+| `Microphone` | permission_only | n/a | n/a | android.permission.RECORD_AUDIO |
+| `Networking` | helper_call | `Lcom/ahnali/runtime/HttpHelper;` | `httpGet(...)` | android.permission.INTERNET |
+| `Notifications` | helper_call | `Lcom/ahnali/runtime/NotificationHelper;` | `postNotification(...)` | android.permission.POST_NOTIFICATIONS |
+| `Permissions` | helper_call | `Lcom/ahnali/runtime/PermissionHelper;` | `isGranted(...)` | — |
+| `Sensors` | permission_only | n/a | n/a | android.permission.BODY_SENSORS |
+| `Sharing` | helper_call | `Lcom/ahnali/runtime/ShareHelper;` | `shareText(...)` | — |
+| `Storage` | helper_call | `Lcom/ahnali/runtime/StorageHelper;` | `putString(...)` | android.permission.READ_EXTERNAL_STORAGE, android.permission.WRITE_EXTERNAL_STORAGE |
+| `URLLauncher` | helper_call | `Lcom/ahnali/runtime/UrlLauncherHelper;` | `openUrl(...)` | android.permission.INTERNET |
+| `Video` | permission_only | n/a | n/a | android.permission.CAMERA, android.permission.RECORD_AUDIO |
+| `WebView` | helper_call | `Lcom/ahnali/runtime/WebHelper;` | `loadUrl(...)` | android.permission.INTERNET |
+| `WorkManager` | helper_call | `Lcom/ahnali/runtime/WorkHelper;` | `enqueueWork(...)` | — |
 
 ## How it works
 
@@ -8,116 +36,11 @@ You declare a capability in your app config (`app_config(uses=[Caps.Networking])
 
 Some capabilities are `helper_call` — they map to actual runtime helper classes with methods. Others are `permission_only` — they just inject the right manifest permissions and don't generate helper code.
 
-## The mapping
-
-### Capabilities with helper classes
-
-**URLLauncher** → `UrlLauncherHelper`
-- `openUrl(Activity, String) → int`
-- Permissions: INTERNET
-
-**Connectivity** → `ConnectivityHelper`
-- `isConnected(Activity) → int`
-- Permissions: ACCESS_NETWORK_STATE, INTERNET
-
-**Storage** → `StorageHelper`
-- Base: `putString`, `getString`, `remove`, `exists`, `clear`
-- DataStore: `dataStorePutString`, `dataStoreGetString`, `dataStoreRemove`, `dataStoreExists`, `dataStoreClear`
-- File: `fileWriteString`, `fileReadString`, `fileRemove`, `fileExists`, `fileClear`
-- SQLite: `sqlitePutString`, `sqliteGetString`, `sqliteRemove`, `sqliteExists`, `sqliteClear`
-- Room: `roomPutString`, `roomGetString`, `roomRemove`, `roomExists`, `roomClear`
-- Encrypted: `encryptedPutString`, `encryptedGetString`, `encryptedRemove`, `encryptedExists`, `encryptedClear`
-- Permissions: READ/WRITE_EXTERNAL_STORAGE
-
-**Networking** → `HttpHelper`
-- Sync: `httpGet`, `httpGetStatus`, `httpGetError`
-- With timeout: `httpGetWithTimeout`, `httpGetStatusWithTimeout`, `httpGetErrorWithTimeout`
-- Full request: `httpRequestWithTimeout`, `httpRequestStatusWithTimeout`, `httpRequestErrorWithTimeout`
-- Retry: `httpGetRetry`
-- JSON: `httpGetJsonField`, `httpGetJsonFieldError`
-- Async: `nextAsyncToken`, `getCurrentAsyncToken`, `startAsync`, `startAsyncWithToken`, `cancelAsync`
-- Async state: `getAsyncProgress`, `getAsyncError`, `getAsyncStatus`, `getAsyncBody`
-- Async JSON: `getAsyncJsonField`, `getAsyncJsonFieldError`, `getAsyncJsonArrayLength`, `getAsyncJsonArrayLengthError`
-- Permissions: INTERNET
-
-**Location** → `LocationHelper`
-- `isLocationEnabled(Activity) → int`
-- Permissions: ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
-
-**Permissions** → `PermissionHelper`
-- `isGranted(Activity, String) → int`
-- No permissions needed (checks runtime grant state)
-
-**Notifications** → `NotificationHelper`
-- `createChannel(Activity, String, String) → int`
-- `postNotification(Activity, String, String, String) → int`
-- `postNotificationError(Activity, String, String, String) → int`
-- Permissions: POST_NOTIFICATIONS
-
-**Clipboard** → `ClipboardHelper`
-- `setText(Activity, String) → int`
-- `getText(Activity, String) → String`
-- No permissions needed
-
-**Sharing** → `ShareHelper`
-- `shareText(Activity, String, String) → int`
-- `shareFile(Activity, String, String, String) → int`
-- `openUri(Activity, String) → int`
-- Plus error variants for each
-- No permissions needed
-
-**WebView** → `WebHelper`
-- `setPolicy(Activity, ...) → int`
-- `loadUrl(Activity, String) → int`
-- `addJsBridge(Activity, String) → int`
-- `chooseFile(Activity, String) → int`
-- `setCookie(Activity, String, String) → int`
-- `getCookie(Activity, String, String) → String`
-- Plus error variants for each
-- Permissions: INTERNET
-
-**DeepLinking** → `DeepLinkHelper`
-- `getLaunchUri(Activity, String) → String`
-- `getLaunchUriError(Activity) → int`
-- No permissions needed
-
-**WorkManager** → `WorkHelper`
-- `enqueueWork(Activity, String, int) → int`
-- `cancelWork(Activity, String) → int`
-- `getWorkStatus(Activity, String) → int`
-- Plus error variants
-- No permissions needed
-
-**AlarmManager** → `AlarmHelper`
-- `scheduleAlarm(Activity, String, int) → int`
-- `cancelAlarm(Activity, String) → int`
-- `getAlarmStatus(Activity, String) → int`
-- Plus error variants
-- No permissions needed
-
-**JobScheduler** → `JobHelper`
-- `scheduleJob(Activity, int, int) → int`
-- `cancelJob(Activity, int) → int`
-- `getJobStatus(Activity, int) → int`
-- Plus error variants
-- No permissions needed
-
-### Permission-only capabilities
-
-These don't generate helper classes — they just inject manifest permissions:
-- **Camera** → CAMERA
-- **Microphone** → RECORD_AUDIO
-- **Audio** → RECORD_AUDIO
-- **Video** → CAMERA, RECORD_AUDIO
-- **Sensors** → BODY_SENSORS
-- **FilePicker** → READ_EXTERNAL_STORAGE
-- **Maps** → ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
-
 ## Where this lives in code
 
 - Registry: `dsl/capabilities.py`
-- ABI contract: `runtime_abi_v1.md` (now in `docs/`)
+- ABI contract: `docs/runtime_abi_v1.md`
 - Tests: `tests/test_capabilities.py`, `tests/test_runtime_abi_v1.py`
-- Snapshot: `cfg/runtime_abi_snapshot_v1.json`
+- Snapshot: `cfg/capability_mapping_snapshot_v1.json`
 
 If you're adding a new capability, you need to update the registry, add the helper class, update the snapshot, and write tests. The CI gates will catch you if you miss any of those.

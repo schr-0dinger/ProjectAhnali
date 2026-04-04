@@ -1,8 +1,14 @@
 # Ahnali Runtime ABI v1 Contract
 
+ABI version: `1.0.0`
+
+Code constant: `CAPABILITY_RUNTIME_ABI_VERSION = "1.0.0"` (in `dsl/capabilities.py`)
+
 Status: Frozen for v1  
 Effective date: 2026-02-16  
 Scope: Generated helper/runtime bridge classes emitted by the AOT toolchain.
+
+Related: `docs/capability_runtime_mapping_v1.md` - capability-to-runtime mapping
 
 This document defines the ABI contract for helper classes that connect generated app code to Android runtime callbacks. The frozen signature snapshot lives at `cfg/runtime_abi_snapshot_v1.json`.
 
@@ -61,7 +67,7 @@ Generated class (default `Lcom/ahnali/preview/MainActivity;`) must expose:
 - Return `1` = handled (suppresses super), `0` = not handled (calls super)
 
 **Optional lifecycle bridges** (emitted when target methods exist):
-- `onStart()V`, `onResume()V`, `onPause()V`, `onStop()V`, `onDestroy()V` — each calls `invoke-super` first, then the static lifecycle hook on `target_desc`.
+- `onStart()V`, `onResume()V`, `onPause()V`, `onStop()V`, `onDestroy()V` - each calls `invoke-super` first, then the static lifecycle hook on `target_desc`.
 
 **Target class must provide:** `main()V` or `main(Landroid/app/Activity;)V`, optional `onSystemBack()I`, optional lifecycle hooks.
 
@@ -138,7 +144,7 @@ Deprecation: any planned removal/rename must be announced in docs first and pres
 
 ## 8) Capability Helper ABI Reference
 
-All capability helpers follow the pattern: methods take `Landroid/app/Activity;` as the first argument and return `I` (status code) or `Ljava/lang/String;` (value with fallback). Return semantics are deterministic — `1` typically means success, `0` means failure, with specific error codes documented per helper.
+All capability helpers follow the pattern: methods take `Landroid/app/Activity;` as the first argument and return `I` (status code) or `Ljava/lang/String;` (value with fallback). Return semantics are deterministic - `1` typically means success, `0` means failure, with specific error codes documented per helper.
 
 ### 8.1 Wave 1: URLLauncher, Connectivity, Storage
 

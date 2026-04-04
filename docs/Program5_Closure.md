@@ -1,4 +1,4 @@
-# Program 5 — State and Lifecycle
+# Program 5 - State and Lifecycle
 
 This is closed. Here's what shipped and where you can verify it.
 
@@ -30,13 +30,14 @@ Simple. Predictable. No magic.
 ## Where to check
 
 Tests:
-- `tests/test_program5_state_backends.py` — parser, lowering, and ABI for all backends
-- `tests/test_program5_lifecycle.py` — lifecycle hook compilation and bridge emission
-- `tests/test_runtime_abi_v1.py` — ABI signature checks
-- `tests/test_runtime_abi_snapshot.py` — frozen signature stability
+- `tests/test_program5_state_backends.py` - parser, lowering, and ABI for all backends
+- `tests/test_program5_lifecycle.py` - lifecycle hook compilation and bridge emission
+- `tests/test_runtime_abi_v1.py` - ABI signature checks
+- `tests/test_runtime_abi_snapshot.py` - frozen signature stability
 
 Docs:
-- README — state backend and lifecycle contract sections
-- `capability_runtime_mapping_v1.md` — the mapping baseline the toolchain uses
+- `README.md` - state backend and lifecycle contract sections
+- `runtime_abi_v1.md` - ABI contract
+- `docs/capability_runtime_mapping_v1.md` - the mapping baseline the toolchain uses
 
 Program 5 is closed as long as those tests stay green and the docs stay in sync with the code.

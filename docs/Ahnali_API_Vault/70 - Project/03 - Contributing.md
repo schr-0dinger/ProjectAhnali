@@ -9,10 +9,10 @@ tags: [ahnali, project, contributing]
 
 ## What's most useful right now
 
-1. **Docs alignment** — if you spot something in the docs that doesn't match the code, fix it
-2. **Test coverage gaps** — run the suite, find what's not covered, add tests
-3. **Optimization backlog** — pick an item from [[60 - Architecture/03 - Optimization Backlog]] and implement it behind a flag
-4. **Widget surface completion** — Dropdown and PopupMenu text-typography surfaces are partial
+1. **Docs alignment** - if you spot something in the docs that doesn't match the code, fix it
+2. **Test coverage gaps** - run the suite, find what's not covered, add tests
+3. **Optimization backlog** - pick an item from [[60 - Architecture/03 - Optimization Backlog]] and implement it behind a flag
+4. **Widget surface completion** - Dropdown and PopupMenu text-typography surfaces are partial
 
 ## How to run things
 
@@ -29,11 +29,11 @@ PYTHONPATH=. python tools/python_library_policy.py
 
 ## Guidelines
 
-- **Correctness over features** — if your change breaks a test, it's not ready
-- **One thing per PR** — don't bundle unrelated changes
-- **Tests for everything** — new code needs tests
-- **Update docs** — if you change behavior, update the docs
-- **Follow the library policy** — no new dependencies without updating `cfg/python_library_policy.json`
+- **Correctness over features** - if your change breaks a test, it's not ready
+- **One thing per PR** - don't bundle unrelated changes
+- **Tests for everything** - new code needs tests
+- **Update docs** - if you change behavior, update the docs
+- **Follow the library policy** - no new dependencies without updating `cfg/python_library_policy.json`
 
 ## Where to look
 

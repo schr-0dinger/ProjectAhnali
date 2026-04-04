@@ -68,8 +68,8 @@ The project includes negative tests that verify the compiler correctly rejects i
 ## Device integration
 
 Some tests require a connected adb device:
-- `test_http_helper_device_integration.py` — runs HttpHelper on real device
-- Cold-start benchmark — boots emulator and measures startup time
+- `test_http_helper_device_integration.py` - runs HttpHelper on real device
+- Cold-start benchmark - boots emulator and measures startup time
 
 Skip these with `pytest -q --ignore=tests/test_http_helper_device_integration.py`.
 

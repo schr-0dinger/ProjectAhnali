@@ -26,7 +26,7 @@ tags: [ahnali, api, matrix, reference]
 | Component | Category | Groups | Specific attributes |
 |---|---|---|---|
 | `Text` | Content | A, B, C, D, E, F, G, I | `text` |
-| `View` | Generic visual | A, C, D, E, F, G, I | — |
+| `View` | Generic visual | A, C, D, E, F, G, I | - |
 | `Button` | Action | A, B, C, D, E, F, G, I | `text`, `icon` |
 | `RaisedButton` | Action variant | A, B, C, D, E, F, G, I | `text` |
 | `FlatButton` | Action variant | A, B, C, D, E, F, G, I | `text` |

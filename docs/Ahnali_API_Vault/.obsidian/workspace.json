@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "20 - Core Concepts/03 - Static vs Reactive Mode.md",
+                "file": "30 - API Reference/11 - Animation DSL.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - Static vs Reactive Mode"
+              "title": "11 - Animation DSL"
             }
           }
         ]
@@ -185,9 +185,24 @@
   },
   "active": "db0991bda6485541",
   "lastOpenFiles": [
+    "30 - API Reference/10 - Navigation and Screens.md",
+    "30 - API Reference/09 - Events and Handlers.md",
+    "30 - API Reference/08 - Theme Style and Presets.md",
+    "30 - API Reference/07 - Feedback and Utility.md",
+    "30 - API Reference/06 - Input and Selection.md",
+    "30 - API Reference/05 - Content and Display.md",
+    "30 - API Reference/04 - Structure Components.md",
+    "30 - API Reference/03 - Shared Attributes.md",
+    "30 - API Reference/02 - Value Types and Units.md",
+    "30 - API Reference/01 - App Model.md",
+    "20 - Core Concepts/06 - Design Philosophy.md",
+    "10 - Getting Started/02 - Your First App.md",
     "00 - Home.md",
-    "10 - Getting Started/03 - Project Setup.md",
     "70 - Project/03 - Contributing.md",
+    "20 - Core Concepts/01 - How Ahnali Works.md",
+    "40 - Capabilities/01 - Overview.md",
+    "20 - Core Concepts/03 - Static vs Reactive Mode.md",
+    "10 - Getting Started/03 - Project Setup.md",
     "70 - Project/02 - Roadmap.md",
     "60 - Architecture/04 - Deferred Features.md",
     "60 - Architecture/03 - Optimization Backlog.md",
@@ -195,21 +210,6 @@
     "60 - Architecture/01 - Dual Mode Architecture.md",
     "50 - Tooling/05 - Python Library Policy.md",
     "50 - Tooling/04 - CI Gates.md",
-    "50 - Tooling/03 - Benchmarking.md",
-    "50 - Tooling/02 - Testing.md",
-    "50 - Tooling/01 - Build and Package.md",
-    "20 - Core Concepts/01 - How Ahnali Works.md",
-    "40 - Capabilities/12 - Runtime ABI.md",
-    "40 - Capabilities/11 - Background Work.md",
-    "40 - Capabilities/10 - Deep Linking.md",
-    "40 - Capabilities/09 - Location.md",
-    "40 - Capabilities/08 - Clipboard.md",
-    "40 - Capabilities/07 - Sharing and Intents.md",
-    "40 - Capabilities/06 - WebView.md",
-    "40 - Capabilities/05 - Notifications.md",
-    "40 - Capabilities/04 - Permissions.md",
-    "40 - Capabilities/03 - Storage.md",
-    "40 - Capabilities/02 - Networking.md",
-    "40 - Capabilities/01 - Overview.md"
+    "50 - Tooling/03 - Benchmarking.md"
   ]
 }

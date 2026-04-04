@@ -1,4 +1,4 @@
-# UI Surface Expansion — Where We Are
+# UI Surface Expansion - Where We Are
 
 This is the tracker for UI depth and polish. The rules are simple: everything stays AOT-compiled, deterministic, and static. No reactive runtime, no implicit diffing, no dynamic widget trees. Animations are explicit and imperative.
 
@@ -7,7 +7,7 @@ This is the tracker for UI depth and polish. The rules are simple: everything st
 Every phase has to respect these:
 - Named handlers only, statically registered
 - Compile-time ID validation on everything
-- Deterministic lowering — no guessing at runtime
+- Deterministic lowering - no guessing at runtime
 - Lint errors for unsupported widget/style combos
 - Focused tests plus at least one integration smoke per phase
 
@@ -17,7 +17,7 @@ Every phase has to respect these:
 Font family, weight, style, letter spacing, line height, text alignment, all-caps, max lines, ellipsize. All lowered to the right TextView APIs. Covers Text, Button family, Radio/Checkbox/Switch. Still need to hit Dropdown and PopupMenu text surfaces.
 
 ### Phase 2: Control Tinting
-Tint, thumb tint, track tint, progress tint, button tint — all wired to the right Android APIs across Slider, ProgressBar, Switch, Checkbox/Radio, and Button.
+Tint, thumb tint, track tint, progress tint, button tint - all wired to the right Android APIs across Slider, ProgressBar, Switch, Checkbox/Radio, and Button.
 
 ### Phase 3: ColorStateList DSL
 `ColorState(default, pressed, disabled, selected, focused)` with deterministic state ordering. Works on text color, tint, and progress fields. Background tint uses default-color fallback with a lint warning for now.
@@ -38,7 +38,7 @@ Elevation, pressed elevation, text shadow (color, radius, dx/dy). Covers Card, B
 Opacity, borders (width, color, per-corner radius), gradient backgrounds, ripple, clip-to-outline, clip-children, blur (API 31+ with compile-time guard), static transforms (rotation, scale, translation).
 
 ### Phase 9: Explicit Animations
-`animate(id, ...)` with helpers for fade, rotate, scale, translate, elevation. Composition via `sequence()` and `parallel()`. Navigation transitions (fade, slide in four directions). All imperative — no state-bound or diff-based animation.
+`animate(id, ...)` with helpers for fade, rotate, scale, translate, elevation. Composition via `sequence()` and `parallel()`. Navigation transitions (fade, slide in four directions). All imperative - no state-bound or diff-based animation.
 
 ### Phase 10: Theme Expansion
 Added input, selector, progress, icon, container, and appbar theme channels. Precedence is enforced: inline > style > theme > defaults.
@@ -66,4 +66,4 @@ Not started yet. When we get here, we're looking at:
 
 ## What we're not doing
 
-No reactive hooks. No CSS cascade engine. No dynamic theme switching in v1. No shader DSL. No runtime layout diffing. These aren't up for debate — they'd break the deterministic model.
+No reactive hooks. No CSS cascade engine. No dynamic theme switching in v1. No shader DSL. No runtime layout diffing. These aren't up for debate - they'd break the deterministic model.

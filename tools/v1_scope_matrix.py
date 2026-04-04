@@ -11,7 +11,7 @@ from typing import Any
 from dsl.runtime.diagnostics import emit_cli_error, emit_cli_info
 
 SCHEMA_VERSION = "v1_scope_matrix/1"
-DEFAULT_MASTERPLAN = "Masterplan_All_In_One.md"
+DEFAULT_MASTERPLAN = "docs/Masterplan_All_In_One.md"
 DEFAULT_MATRIX = "cfg/v1_scope_matrix.yaml"
 DEFAULT_SCOPE_FLAGS = {
     "static_default": True,
@@ -25,11 +25,17 @@ _REBASELINE_FROZEN_SECTIONS = {
     "8.8",
     "8.9",
     "8.10",
+    "9.5",
+    "9.6",
+    "9.7",
+    "9.8",
+    "9.9",
+    "9.10",
     "Milestone-D",
     "Milestone-E",
 }
 
-_RE_SECTION = re.compile(r"^###\s+(8\.\d+)\s+")
+_RE_SECTION = re.compile(r"^###\s+(8\.\d+|9\.\d+)\s+")
 _RE_MARKER = re.compile(r"^\s*-\s*(⚠️|❌)\s*(.+?)\s*$")
 _RE_MILESTONE = re.compile(r"^###\s+Milestone\s+([A-Z]):")
 
@@ -49,14 +55,14 @@ def _extract_inventory_window(lines: list[str]) -> tuple[int, int]:
     start = -1
     end = -1
     for i, raw in enumerate(lines):
-        if raw.startswith("## 8) Ahnali API Master Inventory"):
+        if raw.startswith("## 9) API Master Inventory") or raw.startswith("## 8) Ahnali API Master Inventory"):
             start = i
             continue
-        if start >= 0 and raw.startswith("## 13)"):
+        if start >= 0 and (raw.startswith("## 13)") or raw.startswith("## 10)")):
             end = i
             break
     if start < 0 or end < 0:
-        raise RuntimeError("Unable to locate API inventory window (## 8 ... ## 13) in masterplan")
+        raise RuntimeError("Unable to locate API inventory window in masterplan")
     return start, end
 
 

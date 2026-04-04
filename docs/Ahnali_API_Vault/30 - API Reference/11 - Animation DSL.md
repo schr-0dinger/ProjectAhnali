@@ -5,7 +5,7 @@ tags: [ahnali, api, animation]
 # Animation DSL
 
 > [!abstract] Explicit and imperative
-> All animations in Ahnali are explicit — you say what animates, how, and when. No state-bound implicit animations, no diff-based recomposition.
+> All animations in Ahnali are explicit - you say what animates, how, and when. No state-bound implicit animations, no diff-based recomposition.
 
 ## Basic animations
 
@@ -60,9 +60,9 @@ sequence([
 
 Every animation accepts:
 
-- `duration` — milliseconds
-- `delay` — milliseconds before starting
-- `interpolator` — easing curve (`linear`, `accelerate`, `decelerate`, `accelerate_decelerate`, `bounce`, `overshoot`, `anticipate`, `anticipate_overshoot`)
+- `duration` - milliseconds
+- `delay` - milliseconds before starting
+- `interpolator` - easing curve (`linear`, `accelerate`, `decelerate`, `accelerate_decelerate`, `bounce`, `overshoot`, `anticipate`, `anticipate_overshoot`)
 
 ## Navigation transitions
 
@@ -81,9 +81,9 @@ Supported transitions: `fade`, `slide_left`, `slide_right`, `slide_up`, `slide_d
 
 Animations compile to:
 
-- **`ViewPropertyAnimator`** — simple single-property animations
-- **`ObjectAnimator`** — multi-property and custom property animations
-- **`AnimatorSet`** — composition (sequence/parallel)
+- **`ViewPropertyAnimator`** - simple single-property animations
+- **`ObjectAnimator`** - multi-property and custom property animations
+- **`AnimatorSet`** - composition (sequence/parallel)
 
 Everything is imperative. The compiler generates the animator setup code, wires it to the right widget by ID, and emits it into the handler.
 

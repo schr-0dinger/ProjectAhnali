@@ -9,27 +9,27 @@ tags: [ahnali, architecture, optimization, backlog]
 
 ## High priority
 
-- **Unused resource detection** — find and flag resources that nothing references
-- **Unused permission detection** — catch permissions declared but never used
-- **APK size diff reporting** — show what changed between builds
-- **Dead code elimination hardening** — remove unused functions and state variables
+- **Unused resource detection** - find and flag resources that nothing references
+- **Unused permission detection** - catch permissions declared but never used
+- **APK size diff reporting** - show what changed between builds
+- **Dead code elimination hardening** - remove unused functions and state variables
 
 ## Medium priority
 
-- **Image optimization** — PNG → WebP, strip metadata, auto-generate density buckets
-- **Resource deduplication** — merge duplicate layouts, deduplicate repeated strings
-- **Dependency analysis** — detect unused classes, flag conflicting versions, suggest lighter alternatives
-- **Manifest optimization** — remove redundant features, warn about exported components
+- **Image optimization** - PNG → WebP, strip metadata, auto-generate density buckets
+- **Resource deduplication** - merge duplicate layouts, deduplicate repeated strings
+- **Dependency analysis** - detect unused classes, flag conflicting versions, suggest lighter alternatives
+- **Manifest optimization** - remove redundant features, warn about exported components
 
 ## Lower priority
 
-- **Asset optimization** — video re-encoding, audio format conversion
-- **Code-level optimization** — constant folding, branch pruning, function inlining
-- **Native layer optimization** — strip debug symbols, enable LTO
-- **Performance static analysis** — detect blocking network calls on main thread, flag expensive operations in UI callbacks
-- **Security checks** — detect hardcoded secrets, warn about insecure HTTP, flag weak crypto
-- **Build-time enhancements** — deterministic build hashing, reproducible artifacts, version stamping
-- **Developer experience** — lint for anti-patterns, auto-format DSL, visual UI tree map
+- **Asset optimization** - video re-encoding, audio format conversion
+- **Code-level optimization** - constant folding, branch pruning, function inlining
+- **Native layer optimization** - strip debug symbols, enable LTO
+- **Performance static analysis** - detect blocking network calls on main thread, flag expensive operations in UI callbacks
+- **Security checks** - detect hardcoded secrets, warn about insecure HTTP, flag weak crypto
+- **Build-time enhancements** - deterministic build hashing, reproducible artifacts, version stamping
+- **Developer experience** - lint for anti-patterns, auto-format DSL, visual UI tree map
 
 ## The rule
 

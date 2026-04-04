@@ -9,7 +9,7 @@ tags: [ahnali, getting-started, setup]
 
 ## Python
 
-3.10 or newer. Create a venv if you want — the project doesn't care either way.
+3.10 or newer. Create a venv if you want - the project doesn't care either way.
 
 ```bash
 python -m venv .venv
@@ -23,10 +23,10 @@ Those three are the only external dependencies. `rich` for nicer output, `httpx`
 
 You need the Android SDK with these tools on your PATH:
 
-- `aapt2` — resource compilation and APK packaging
-- `zipalign` — APK alignment
-- `apksigner` — APK signing
-- `adb` — device communication
+- `aapt2` - resource compilation and APK packaging
+- `zipalign` - APK alignment
+- `apksigner` - APK signing
+- `adb` - device communication
 
 If you have Android Studio installed, these are in `$ANDROID_HOME/build-tools/<version>/`. Add that to your PATH.
 
@@ -42,7 +42,7 @@ export D8_JAR=/path/to/d8.jar
 ```
 
 > [!tip] Smali jar without Main-Class manifest
-> If your smali jar doesn't have a `Main-Class` manifest entry, the toolchain falls back to running it via classpath with explicit main class. It just works — you don't need to configure anything.
+> If your smali jar doesn't have a `Main-Class` manifest entry, the toolchain falls back to running it via classpath with explicit main class. It just works - you don't need to configure anything.
 
 ## Verify your setup
 
@@ -73,16 +73,16 @@ app_config(
 Once you're set up, here's what you're working with:
 
 ```
-dsl/        — DSL constructs, widgets, lowering
-ir/         — Intermediate representation
-cfg/        — Control flow graph
-ssa/        — SSA construction
-dalvik/     — Dalvik IR
-passes/     — Compiler passes (liveness, regalloc, DCE)
-emit/       — Smali emission
-tests/      — 156 test files
-tools/      — Build tooling, benchmarks, CI helpers
-docs/       — This vault
+dsl/        - DSL constructs, widgets, lowering
+ir/         - Intermediate representation
+cfg/        - Control flow graph
+ssa/        - SSA construction
+dalvik/     - Dalvik IR
+passes/     - Compiler passes (liveness, regalloc, DCE)
+emit/       - Smali emission
+tests/      - 156 test files
+tools/      - Build tooling, benchmarks, CI helpers
+docs/       - This vault
 ```
 
 ## Next steps

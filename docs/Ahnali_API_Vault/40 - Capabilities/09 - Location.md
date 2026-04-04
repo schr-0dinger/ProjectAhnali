@@ -19,7 +19,7 @@ enabled = is_location_enabled()
 All aliases map to `LocationHelper.isLocationEnabled(Activity) → int`. Returns `1` if the location provider is enabled, `0` otherwise.
 
 > [!note] What this doesn't do
-> This checks whether location is enabled on the device — it doesn't request location permissions or fetch GPS coordinates. For permission checks, use [[40 - Capabilities/04 - Permissions]]. For actual location data, you'd need FusedLocationProvider (not yet implemented).
+> This checks whether location is enabled on the device - it doesn't request location permissions or fetch GPS coordinates. For permission checks, use [[40 - Capabilities/04 - Permissions]]. For actual location data, you'd need FusedLocationProvider (not yet implemented).
 
 ## Capability
 

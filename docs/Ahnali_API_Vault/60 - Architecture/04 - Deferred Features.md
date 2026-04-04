@@ -10,7 +10,7 @@ tags: [ahnali, architecture, deferred, roadmap]
 ## Deferred beyond v1
 
 ### Motion backlog
-Animation primitives exist (Phase 9 is done), but the broader motion backlog — advanced animation composition, transition APIs, shared element transitions — is deferred.
+Animation primitives exist (Phase 9 is done), but the broader motion backlog - advanced animation composition, transition APIs, shared element transitions - is deferred.
 
 ### Advanced/system/security/debug
 - Canvas drawing (drawRect, drawCircle, drawPath, drawBitmap)

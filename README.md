@@ -90,6 +90,28 @@ cfg/        - Config files: ABI snapshots, benchmark baselines, scope matrix
 
 JNI/native bridges, embedded Python, camera/audio/video pipelines, maps, Bluetooth, biometrics - all deferred. The focus right now is locking down the static compiler and the capability surfaces that are already implemented. There's a masterplan in `docs/` if you want to see where things are headed.
 
+## Immediate Plan (Next)
+
+1) ✅ **Program 5** - State and lifecycle hooks (closed).
+2) ✅ **Program 11-A** - Docs/API reference freeze (closed).
+3) ✅ **Program 6-A** - Capability depth (closed).
+4) ⚠️ **Program 6-B** - Capability breadth closure/freeze (in progress).
+5) ⚠️ **Program 12-A** - Docs consistency gate (in progress).
+6) ⚠️ **Program 11-B + 12-B** - Final static-v1 release hardening (in progress).
+
+## Deferred Beyond V1
+
+1) ⚠️ **Program 7** - Motion backlog: deferred until static compiler/toolchain is frozen.
+2) ⚠️ **Program 8** - Advanced/system/security/debug backlog: deferred beyond current release train.
+3) ⚠️ **Program 9 / Milestone D** - Deterministic NDK/JNI bridge: deferred to post-v1.
+4) ⚠️ **Program 10 / Milestone E** - Optional bounded Python plugin: deferred to post-v1.
+
+## ABI and Capability Contracts
+
+- Runtime ABI: `docs/runtime_abi_v1.md`
+- Capability mapping: `docs/capability_runtime_mapping_v1.md`
+- Both are frozen for v1. CI checks for drift on every push.
+
 ## Python dependencies
 
 Minimal by design. `rich` for nicer output, `httpx` for the HTTP helpers, `pytest` for tests. That's it. No reactive frameworks, no DI containers, no web frameworks. There's a policy file (`cfg/python_library_policy.json`) and a CI gate that enforces it.

@@ -5,7 +5,7 @@ tags: [ahnali, capabilities, webview, web]
 # WebView
 
 > [!abstract] Web content in your app
-> Load URLs, set policy, register JS bridges, handle file choosers, and manage cookies — all through deterministic helper calls.
+> Load URLs, set policy, register JS bridges, handle file choosers, and manage cookies - all through deterministic helper calls.
 
 ## Loading URLs
 

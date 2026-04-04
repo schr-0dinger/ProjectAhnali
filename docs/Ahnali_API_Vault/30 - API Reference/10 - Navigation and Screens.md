@@ -36,7 +36,7 @@ app(
 > [!warning] Screen rules
 > - If **any** `Screen(...)` is used, **every** top-level item in `ui(...)` must be a screen
 > - You can't mix screens and regular widgets at the same level
-> - Screen names must be unique — the compiler checks this
+> - Screen names must be unique - the compiler checks this
 
 ## Navigation operations
 
@@ -49,17 +49,17 @@ app(
 | `ClearStack()` | Pop everything, then navigate to a new screen |
 
 > [!tip] When to use Replace
-> Use `Replace` when the user shouldn't be able to go back — like after a login screen or a splash screen.
+> Use `Replace` when the user shouldn't be able to go back - like after a login screen or a splash screen.
 
 ## Transitions
 
 Screens support a `transition` parameter:
 
-- `fade` — crossfade
-- `slide_left` — push from right
-- `slide_right` — push from left
-- `slide_up` — push from bottom
-- `slide_down` — push from top
+- `fade` - crossfade
+- `slide_left` - push from right
+- `slide_right` - push from left
+- `slide_up` - push from bottom
+- `slide_down` - push from top
 
 ```python
 Screen("Details",
@@ -68,7 +68,7 @@ Screen("Details",
 )
 ```
 
-Transitions lower to `ViewPropertyAnimator` and `ObjectAnimator` under the hood. They're explicit and compile-time — no runtime transition engine.
+Transitions lower to `ViewPropertyAnimator` and `ObjectAnimator` under the hood. They're explicit and compile-time - no runtime transition engine.
 
 ## System back button
 

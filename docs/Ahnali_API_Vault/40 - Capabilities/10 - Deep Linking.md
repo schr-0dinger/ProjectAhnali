@@ -31,7 +31,7 @@ Maps to `DeepLinkHelper.getLaunchUriError(Activity) → int`.
 app_config(uses=[Caps.DeepLinking])
 ```
 
-Aliases: `Caps.DeepLink`, `Caps.Deep Links`. No manifest permissions needed — deep link handling is configured through intent filters in the manifest.
+Aliases: `Caps.DeepLink`, `Caps.Deep Links`. No manifest permissions needed - deep link handling is configured through intent filters in the manifest.
 
 ## Learn more
 

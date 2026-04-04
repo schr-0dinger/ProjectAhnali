@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, values, units, colors, gradients]
 ---
 
-# 02 — Value Types and Units
+# 02 - Value Types and Units
 
 > [!abstract] What this covers
 > The building blocks you use everywhere: `dp()`, `sp()`, `px()`, `percent()`, `fill()`, `wrap()`, `size()`, spacing formats, color values, `ColorState()`, `Gradient()`, and boolean-like fields.
@@ -24,7 +24,7 @@ margin=dp(8)
 
 ### `sp(value)`
 
-Scale-independent pixels. **Use this for text sizing** — it respects the user's system font scale preference.
+Scale-independent pixels. **Use this for text sizing** - it respects the user's system font scale preference.
 
 ```python
 text_size=sp(16)
@@ -35,7 +35,7 @@ text_size=sp(16)
 
 ### `px(value)`
 
-Raw pixels. Use sparingly — only when you need exact pixel control.
+Raw pixels. Use sparingly - only when you need exact pixel control.
 
 ```python
 border_width=px(1)
@@ -50,7 +50,7 @@ Percent helper for weighted layout conversion.
 > - Percent **height** is supported only in vertical `Column`
 
 ```python
-# Inside a Row — percent of parent width
+# Inside a Row - percent of parent width
 Row(
     text("Left", width=percent(30)),
     text("Right", width=percent(70)),
@@ -63,11 +63,11 @@ Row(
 
 ### `fill()`
 
-Returns `"match_parent"` — the widget expands to fill its parent.
+Returns `"match_parent"` - the widget expands to fill its parent.
 
 ### `wrap()`
 
-Returns `"wrap"` — the widget sizes to its content.
+Returns `"wrap"` - the widget sizes to its content.
 
 ### `size(width, height)`
 
@@ -202,10 +202,10 @@ gradient("#FF111111", "#FF444444", "top_to_bottom", kind="linear")
 
 | Value | Aliases |
 |---|---|
-| `left_to_right` | — |
-| `right_to_left` | — |
-| `top_to_bottom` | — |
-| `bottom_to_top` | — |
+| `left_to_right` | - |
+| `right_to_left` | - |
+| `top_to_bottom` | - |
+| `bottom_to_top` | - |
 | `tl_br` | `top_left_bottom_right` |
 | `tr_bl` | `top_right_bottom_left` |
 | `bl_tr` | `bottom_left_top_right` |
@@ -252,6 +252,6 @@ Many config flags require strict booleans. The compiler validates these and reje
 
 ## See Also
 
-- [[03 - Shared Attributes]] — attribute groups A through I
-- [[08 - Theme Style and Presets]] — Theme, palette, and style resolution
-- [[12 - Validation and Diagnostics]] — compile-time type checks
+- [[03 - Shared Attributes]] - attribute groups A through I
+- [[08 - Theme Style and Presets]] - Theme, palette, and style resolution
+- [[12 - Validation and Diagnostics]] - compile-time type checks

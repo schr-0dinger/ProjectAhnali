@@ -237,7 +237,7 @@ def eliminate_dead_code(dalvik_blocks):
                         is_dead = True
                         changed = True
 
-                # Move: CONSERVATIVE — keep if dst OR src is live
+                # Move: CONSERVATIVE - keep if dst OR src is live
                 elif isinstance(instr, DMove):
                     dst = _ssa_of(instr.dst)
                     src = _ssa_of(instr.src)

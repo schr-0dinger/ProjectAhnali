@@ -9,7 +9,7 @@ tags: [ahnali, core, overview]
 
 ## The mental model
 
-Think of Ahnali as a compiler, not a framework. You're not importing a library and calling its functions — you're writing a description of your app in a restricted Python dialect, and the compiler turns that description into native Android bytecode.
+Think of Ahnali as a compiler, not a framework. You're not importing a library and calling its functions - you're writing a description of your app in a restricted Python dialect, and the compiler turns that description into native Android bytecode.
 
 ```
 Your Python DSL
@@ -25,19 +25,19 @@ Your Android device
 
 ## What makes this different
 
-Most Python-to-Android tools embed a Python runtime in your APK and interpret your code on the device. Ahnali doesn't do that. Your Python code is consumed entirely at compile time. The resulting APK contains zero Python — just Smali that talks directly to the Android framework.
+Most Python-to-Android tools embed a Python runtime in your APK and interpret your code on the device. Ahnali doesn't do that. Your Python code is consumed entirely at compile time. The resulting APK contains zero Python - just Smali that talks directly to the Android framework.
 
 This means:
-- **Small APKs** — no embedded interpreter
-- **Native performance** — it's just Dalvik bytecode
-- **Full static analysis** — the compiler can validate everything before you ship
-- **No runtime surprises** — if it compiles, it behaves the way the compiler says it will
+- **Small APKs** - no embedded interpreter
+- **Native performance** - it's just Dalvik bytecode
+- **Full static analysis** - the compiler can validate everything before you ship
+- **No runtime surprises** - if it compiles, it behaves the way the compiler says it will
 
 ## Two modes
 
-**Static mode** (default): Everything is resolved at compile time. UI structure, navigation graph, state wiring, event handlers — all compiled in. This is Ahnali's identity.
+**Static mode** (default): Everything is resolved at compile time. UI structure, navigation graph, state wiring, event handlers - all compiled in. This is Ahnali's identity.
 
-**Reactive mode** (opt-in): You can opt into reactive bindings (`observable`, `bind_text`, `set_observable`) for cases where you need UI to respond to state changes. But this is explicit — you have to ask for it, and it doesn't change how static apps behave.
+**Reactive mode** (opt-in): You can opt into reactive bindings (`observable`, `bind_text`, `set_observable`) for cases where you need UI to respond to state changes. But this is explicit - you have to ask for it, and it doesn't change how static apps behave.
 
 > [!note] Reactive doesn't mean dynamic
 > Even in reactive mode, the UI tree is static. What changes is how data flows to widgets. There's no runtime diffing engine or dynamic widget construction.
@@ -52,14 +52,14 @@ If you don't declare a capability, you can't use it. The compiler catches this a
 
 Under the hood, your code goes through:
 
-1. **DSL parsing** — your Python constructs become an IR
-2. **CFG construction** — control flow graph with basic blocks
-3. **SSA construction** — dominance, phi insertion, renaming
-4. **Type inference** — everything gets typed
-5. **SSA optimization** — constant propagation, copy propagation, coalescing
-6. **Dalvik lowering** — IR becomes Dalvik instructions
-7. **Register allocation** — liveness analysis, linear scan, spilling
-8. **Smali emission** — verified IR becomes Smali text
+1. **DSL parsing** - your Python constructs become an IR
+2. **CFG construction** - control flow graph with basic blocks
+3. **SSA construction** - dominance, phi insertion, renaming
+4. **Type inference** - everything gets typed
+5. **SSA optimization** - constant propagation, copy propagation, coalescing
+6. **Dalvik lowering** - IR becomes Dalvik instructions
+7. **Register allocation** - liveness analysis, linear scan, spilling
+8. **Smali emission** - verified IR becomes Smali text
 
 Each phase validates its output. If something's wrong, the pipeline stops. No phase skips ahead.
 

@@ -24,10 +24,10 @@ app(
 )
 ```
 
-`state(count=0)` declares a static integer field on the generated class. The handler reads and writes it directly. No runtime state engine — just a field on a class.
+`state(count=0)` declares a static integer field on the generated class. The handler reads and writes it directly. No runtime state engine - just a field on a class.
 
 > [!note] Current limitation
-> State values must be integer literals at compile time. No strings, no objects, no computed initial values. This is intentional — keeping it simple keeps it analyzable.
+> State values must be integer literals at compile time. No strings, no objects, no computed initial values. This is intentional - keeping it simple keeps it analyzable.
 
 ## Lifecycle hooks
 

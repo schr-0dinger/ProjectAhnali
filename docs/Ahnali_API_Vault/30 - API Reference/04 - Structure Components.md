@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, components, structure, layout, containers]
 ---
 
-# 04 — Structure Components
+# 04 - Structure Components
 
 > [!abstract] What this covers
 > Layout containers, semantic wrappers, scroll surfaces, paging/navigation surfaces, and `Screen` with transitions. These are the bones of your UI tree.
@@ -44,7 +44,7 @@ Supports: `align`, `arrangement`, `weight_sum`.
 
 ### `Relative(*items, id="relative", ...)`
 
-RelativeLayout — children position themselves relative to siblings or parent using `relative=[(verb, target), ...]`.
+RelativeLayout - children position themselves relative to siblings or parent using `relative=[(verb, target), ...]`.
 
 ```python
 Relative(
@@ -58,7 +58,7 @@ Relative(
 
 ### `Constraint(*items, id="constraint", ...)`
 
-ConstraintLayout — children use `constraints={...}` dicts for flexible, performant layouts.
+ConstraintLayout - children use `constraints={...}` dicts for flexible, performant layouts.
 
 ```python
 Constraint(
@@ -77,7 +77,7 @@ Constraint(
 
 ### `Frame(*items, id="frame", ...)`
 
-FrameLayout — children stack on top of each other. Last child draws on top.
+FrameLayout - children stack on top of each other. Last child draws on top.
 
 ```python
 Frame(
@@ -88,7 +88,7 @@ Frame(
 
 ### `CoordinatorLayout(*items, id="coordinator_layout", ...)`
 
-CoordinatorLayout — supports coordinated motion between child views (e.g., collapsing app bars).
+CoordinatorLayout - supports coordinated motion between child views (e.g., collapsing app bars).
 
 ---
 
@@ -126,7 +126,7 @@ Scroll container that supports nested scrolling (e.g., inside a CoordinatorLayou
 > Each scroll container requires **exactly one direct child**. Wrap multiple children in a `Column` or `Row` first.
 
 ```python
-# ✅ Correct — single Column child
+# ✅ Correct - single Column child
 ScrollView(
     Column(
         text("Line 1"),
@@ -135,7 +135,7 @@ ScrollView(
     ),
 )
 
-# ❌ Wrong — multiple direct children
+# ❌ Wrong - multiple direct children
 ScrollView(
     text("Line 1"),
     text("Line 2"),  # rejected!
@@ -249,6 +249,6 @@ See [[10 - Navigation and Screens]] for navigation stack semantics and operation
 
 ## See Also
 
-- [[03 - Shared Attributes]] — groups A through I
-- [[10 - Navigation and Screens]] — Navigate, Back, Replace, PopToRoot, ClearStack
-- [[13 - Component Attribute Matrix]] — full component-to-group mapping
+- [[03 - Shared Attributes]] - groups A through I
+- [[10 - Navigation and Screens]] - Navigate, Back, Replace, PopToRoot, ClearStack
+- [[13 - Component Attribute Matrix]] - full component-to-group mapping

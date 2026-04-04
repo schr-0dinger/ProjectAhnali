@@ -21,7 +21,7 @@ Ahnali is an ahead-of-time Android compiler. It takes a restricted Python-like D
 
 ### Mode A: Static (default, identity)
 
-Everything compiles ahead of time — UI, navigation, state wiring, event handlers. No runtime interpreter, no reflection-based dispatch. This is the only mode that ships in v1.
+Everything compiles ahead of time - UI, navigation, state wiring, event handlers. No runtime interpreter, no reflection-based dispatch. This is the only mode that ships in v1.
 
 ### Mode B: Hybrid (deferred research)
 
@@ -56,7 +56,7 @@ Named function handler parsing with compile-time AST analysis. Supported: assign
 
 ### Expanded event handlers
 
-`on_change`, `on_text_change`, `on_item_selected`, `on_menu_item_selected`, `on_focus_change` — all with named handlers and compile-time ID validation.
+`on_change`, `on_text_change`, `on_item_selected`, `on_menu_item_selected`, `on_focus_change` - all with named handlers and compile-time ID validation.
 
 ---
 
@@ -75,8 +75,8 @@ Single-activity multi-screen model with stack semantics (`Navigate`/`Back`/`Repl
 Layout sizing helpers (match/wrap/fill/numeric), padding/margin lowering, text color/background/size/radius. Theme channel merge order: `inline > style > theme > default`.
 
 **Wave A completed:**
-- Phase 1 Typography v1: font_family, font_weight, font_style, letter_spacing, line_height, text_alignment, all_caps, max_lines, ellipsize — all lowered to TextView APIs
-- Phase 2 Control Tinting v1: tint, thumb_tint, track_tint, progress_tint, button_tint — all lowered to corresponding widget tint APIs
+- Phase 1 Typography v1: font_family, font_weight, font_style, letter_spacing, line_height, text_alignment, all_caps, max_lines, ellipsize - all lowered to TextView APIs
+- Phase 2 Control Tinting v1: tint, thumb_tint, track_tint, progress_tint, button_tint - all lowered to corresponding widget tint APIs
 - Phase 3 ColorStateList DSL: `ColorState(default, pressed, disabled, selected, focused)` with deterministic ordering, lowered to `ColorStateList`
 
 See `docs/UI_Surface_Expansion_TODO.md` for the full phase-by-phase tracker (Phases 1–13, all complete).
@@ -101,7 +101,7 @@ Capability registry (`Caps`, `Perms`, registry resolution). Explicit capability-
 | 2 | Networking | `HttpHelper` | `httpGet`, `httpGetStatus`, `httpGetError`, `httpGetRetry`, `httpGetJsonField`, `httpGetJsonFieldError` |
 | 3 | Async route dispatch | `HttpHelper` + support classes | `http_get_route_async`, `http_async_cancel`/`progress`/`error`/`status`/`body` with token-scoped state |
 | 4 | Multi-request async networking | `HttpHelper` | Token-indexed async state, request-option routing (`method`/`headers`/`body`), typed async JSON adapters |
-| 5 | Visible integration flow | — | End-to-end: storage + async networking + connectivity with deterministic fallback |
+| 5 | Visible integration flow | - | End-to-end: storage + async networking + connectivity with deterministic fallback |
 | 6 | Location | `LocationHelper` | `isLocationEnabled` |
 | 7 | Permissions | `PermissionHelper` | `isGranted` |
 | 8 | Notifications | `NotificationHelper` | `createChannel`, `postNotification`, `postNotificationError` |
@@ -174,19 +174,148 @@ Lifecycle: on_start, on_resume, on_pause, on_stop, on_destroy.
 
 ### 9.7–9.10 Deferred Categories
 
-**Advanced Graphics (8.7):** Canvas draw ops, Paint, hardware acceleration — all ❌.
+**Advanced Graphics (8.7):** Canvas draw ops, Paint, hardware acceleration - all ❌.
 
 **System/App Control (8.8):** exit_app ✅, restart_app/clear_cache/clear_data ❌. Build config (package, version, min_sdk, target_sdk, debuggable, keystore) ✅.
 
-**Security/Privacy (8.9):** secure flag, block screenshots, encryption, secure preferences, network security config — all ❌.
+**Security/Privacy (8.9):** secure flag, block screenshots, encryption, secure preferences, network security config - all ❌.
 
 **Testing/Debug (8.10):** log ✅, debug overlay/performance metrics/trace sections ❌.
+
+---
+
+## 9) API Master Inventory
+
+This is the growth envelope under Ahnali AOT deterministic constraints. Not everything ships in v1. Status: ✅ implemented, ⚠️ planned, ❌ not implemented.
+
+### 9.1 Structure (UI Tree and Layout)
+
+Screen, Activity (single-activity), Column, Row, Container, Card, View, Relative, Constraint, ScrollView, HorizontalScrollView, FrameLayout, ListView (static adapter), GridView (static adapter), RecyclerView (static model), ViewPager (static pages), TabLayout, NavigationBar, NavigationRail, DrawerLayout, BottomNavigationView, Toolbar, AppBar, CoordinatorLayout, NestedScrollView, Fragment container (static host path).
+
+Modifiers: width/height, match/wrap/fill, percent, weight, margin, padding, gravity, layout_gravity, constraints, relative rules, alignment, orientation, z-index.
+
+### 9.2 Style (Visual and Appearance)
+
+Typography: text_color, text_size, font_family, font_weight, font_style, letter_spacing, line_height, text_alignment, max_lines, ellipsize, all_caps, hint_color, highlight_color, text_shadow.
+
+Color/background: background_color, gradient (linear/radial/sweep), border_width/color/radius (per-corner), ripple_color, opacity, elevation, clip_to_outline, clip_children.
+
+Stateful styling: ColorState (default/pressed/disabled/selected/focused), background/text/progress/thumb/track/button tint.
+
+Image: scaleType, crop, centerInside, adjustViewBounds, tint, alpha, matrix transform.
+
+### 9.3 Interaction (Event Surface)
+
+Click/touch: on_click, on_long_click, on_double_tap, on_touch, on_swipe, on_drag, on_drop, on_scroll, on_fling.
+
+Input: on_text_change, on_editor_action, on_focus_change, on_key, on_change (Switch/Checkbox/Radio/Slider/RadioGroup), on_slider_change, on_item_selected, on_menu_item_selected.
+
+Navigation: Navigate, Back, Replace, PopToRoot, ClearStack.
+
+Gestures: pinch, zoom, rotate, drag, scale gesture detector.
+
+### 9.4 State (Deterministic App Data)
+
+Global state: `state()`, static fields (integer/boolean), numeric operations, comparisons, branching.
+
+Persistence: SharedPreferences, DataStore, file storage (internal/external), SQLite, Room (if statically supported), encrypted storage.
+
+Lifecycle: on_start, on_resume, on_pause, on_stop, on_destroy.
+
+### 9.5 Capability (Platform Services)
+
+- ✅ permissions (request/check/runtime handling)
+- ✅ HTTP requests (deterministic helper surface: sync/route/retry/async)
+- ✅ ConnectivityManager
+- ✅ WebView (+ WebSettings, JS bridge, file chooser, cookie manager)
+- ✅ NotificationManager + channels
+- ✅ WorkManager
+- ✅ AlarmManager
+- ✅ JobScheduler
+- ✅ URL launching
+- ✅ share text/file
+- ✅ open external app
+- ✅ deep linking
+- ✅ custom URI schemes
+- ✅ clipboard (copy/paste)
+- ❌ audio/video/camera/sensors (accelerometer, gyroscope, etc.)
+- ❌ FusedLocationProvider/GPS/geofencing
+- ❌ OkHttp/Retrofit/WebSockets/DownloadManager
+- ❌ push notifications
+- ❌ foreground services/BroadcastReceiver
+- ❌ MediaStore/file picker/SAF
+- ❌ biometrics
+- ❌ maps
+- ❌ Bluetooth
+- ❌ NFC
+- ❌ system UI control (status bar, immersive mode, etc.)
+
+### 9.6 Motion (Animation and Effects)
+
+- ⚠️ animate, fade_in/out, rotate, scale, translate, animate_elevation
+- ⚠️ alpha animation
+- ⚠️ sequence/parallel/repeat/reverse
+- ⚠️ interpolators
+- ⚠️ ViewPropertyAnimator (duration/delay/interpolator)
+- ⚠️ ObjectAnimator (property/multi-property)
+- ⚠️ AnimatorSet
+- ⚠️ screen enter/exit/back navigation animations
+- ⚠️ fade/slide transitions
+- ⚠️ transform matrix
+- ✅ blur (API 31+ with compile-time min-sdk guard)
+- ✅ elevation shadow
+- ✅ text shadow
+- ✅ ripple
+- ✅ opacity
+- ✅ gradient
+- ❌ withEndAction/withStartAction
+- ❌ scene/layout/explode/shared element transitions
+
+### 9.7 Advanced Graphics
+
+- ❌ Canvas draw ops
+- ❌ Paint
+- ❌ hardware acceleration
+
+### 9.8 System/App Control
+
+- ✅ exit_app
+- ❌ restart_app
+- ❌ clear_cache
+- ❌ clear_data
+
+### 9.9 Security/Privacy
+
+- ❌ secure flag
+- ❌ block screenshots
+- ❌ encryption
+- ❌ secure preferences
+- ❌ network security config
+
+### 9.10 Testing/Debug
+
+- ✅ log
+- ❌ debug overlay
+- ❌ performance metrics
+- ❌ trace sections
 
 ---
 
 ## 10) Dependency and Plugin Model
 
 Plugin registry with core and optional plugins. Dependency collection for required AAR artifacts. ConstraintLayout dependency wiring. Optional Material plugin dependency collection.
+
+## 11) Toolchain and Packaging
+
+aapt2 resource compilation, d8 dex conversion, zipalign, apksigner. AAR dependency resolution and manifest merge. Benchmark harness (APK size + cold-start). CI gates for ABI drift, capability mapping, docs consistency, scope matrix, library policy.
+
+## 12) Optimization Backlog
+
+Resource shrinking, image optimization (WebP/AVIF), dependency analysis, dead code elimination hardening, constant folding, branch pruning, function inlining, native layer optimization, security checks, build-time enhancements. See `docs/Ahnali_Optimization_Backlog.md`.
+
+## 13) Locked Non-Goals
+
+No reactive runtime in static mode. No implicit diff/recomposition. No dynamic widget construction. No runtime UI tree builder. No reflection-based dispatch. No embedded Python interpreter. No Gradle. No Java/Kotlin source generation.
 
 AAR resolve hooks via `libs/aar_resolved.json`, AAR classes merge path via d8, resource merge + symbol extraction. Transitive AAR inference (manifest-resolved closure path) complete.
 
@@ -252,26 +381,20 @@ Guardrail-first reactive unlock remains active throughout: static-default mode u
 
 ---
 
-## 16) Deferred Beyond V1
+## 16) Immediate Unified Execution Plan
 
-1. ⚠️ **Program 7** — Motion backlog (`8.6`): deferred until static compiler/toolchain is frozen.
-2. ⚠️ **Program 8** — Advanced/system/security/debug backlog (`8.7`–`8.10`): deferred beyond current release train.
-3. ⚠️ **Program 9 / Milestone D** — Deterministic NDK/JNI bridge: deferred to post-v1 research/prototyping.
-4. ⚠️ **Program 10 / Milestone E** — Optional bounded Python plugin: deferred to post-v1 research/prototyping.
+1. ✅ **Program 5** - State and lifecycle hooks (closed).
+2. ✅ **Program 11-A** - Docs/API reference freeze (closed).
+3. ✅ **Program 6-A** - Capability depth (closed).
+4. ⚠️ **Program 6-B** - Capability breadth closure/freeze (in progress).
+5. ⚠️ **Program 12-A** - Docs consistency gate (in progress).
+6. ⚠️ **Program 11-B + 12-B** - Final static-v1 release hardening (in progress).
 
 ---
 
-## 17) Source of Truth Policy
+## 17) Deferred Beyond V1
 
-This file is the canonical all-in-one masterplan. Related docs:
-
-- `docs/runtime_abi_v1.md` — Runtime ABI contract for helper classes
-- `docs/capability_runtime_mapping_v1.md` — Capability-to-runtime mapping
-- `docs/Ahnali_Optimization_Backlog.md` — Optimization backlog
-- `docs/UI_Surface_Expansion_TODO.md` — UI surface expansion tracker
-- `docs/Ahnali_Dual_Mode_Architecture.md` — Dual-mode research (post-v1)
-- `docs/Masterplan_Ultimate.md` — Historical expansion roadmap
-- `docs/Ahnali_Masterplan_v7.md` — Foundational historical document
-- `docs/Ahnali_implement_immediate_plan.md` — Historical pre-rebaseline plan
-
-When updating roadmap/status: add ✅ only when confirmed by code/tests, keep pending items unmarked, update test reality snapshot with exact command/result.
+1. ⚠️ **Program 7** - Motion backlog (`8.6`): deferred until static compiler/toolchain is frozen.
+2. ⚠️ **Program 8** - Advanced/system/security/debug backlog (`8.7`–`8.10`): deferred beyond current release train.
+3. ⚠️ **Program 9 / Milestone D** - Deterministic NDK/JNI bridge: deferred to post-v1 research/prototyping.
+4. ⚠️ **Program 10 / Milestone E** - Optional bounded Python plugin: deferred to post-v1 research/prototyping.

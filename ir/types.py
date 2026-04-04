@@ -3,7 +3,9 @@ from enum import Enum, auto
 
 class AhnaliType(Enum):
     INT = auto()
+    LONG = auto()
     FLOAT = auto()
+    DOUBLE = auto()
     BOOL = auto()
     STRING = auto()
     OBJECT = auto()

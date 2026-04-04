@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, feedback, utility, toast, snackbar, dialog]
 ---
 
-# 07 — Feedback and Utility
+# 07 - Feedback and Utility
 
 > [!abstract] What this covers
 > Runtime helper APIs for quick feedback: `toast`, `snackbar`, `simple_dialog`, and `exit_app`. These are typically called inside event handlers.
@@ -86,5 +86,5 @@ button("Quit", id="quit_btn", on_click=exit_app())
 
 ## See Also
 
-- [[09 - Events and Handlers]] — handler DSL, supported statements
-- [[08 - Feedback and Utility Components]] — full capability handler reference (HTTP, WebView, storage, notifications)
+- [[09 - Events and Handlers]] - handler DSL, supported statements
+- [[08 - Feedback and Utility Components]] - full capability handler reference (HTTP, WebView, storage, notifications)

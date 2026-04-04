@@ -27,7 +27,7 @@ tags: [ahnali, tooling, ci, github-actions]
 
 ## What happens when a gate fails
 
-The PR gets a red X. No merge until it's green. There's no "merge anyway" override — if CI says no, it's no.
+The PR gets a red X. No merge until it's green. There's no "merge anyway" override - if CI says no, it's no.
 
 ## Artifacts
 

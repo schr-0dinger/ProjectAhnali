@@ -10,11 +10,11 @@ Single-screen demo that wires up the Wave 1 helpers together:
 
 ## What the user sees
 
-- **Save URL** — stores a URL, updates status text.
-- **Load URL** — reads stored URL, shows it in preview text.
-- **Clear URL** — removes stored URL, updates preview/status text.
-- **Check Connectivity** — calls connectivity helper, updates status text.
-- **Open URL** — launches browser, updates status text.
+- **Save URL** - stores a URL, updates status text.
+- **Load URL** - reads stored URL, shows it in preview text.
+- **Clear URL** - removes stored URL, updates preview/status text.
+- **Check Connectivity** - calls connectivity helper, updates status text.
+- **Open URL** - launches browser, updates status text.
 
 ## Conformance test
 

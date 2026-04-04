@@ -31,18 +31,18 @@ Two things happen:
 
 **Helper call** capabilities map to runtime classes with methods you can call from handlers. These are the ones you'll use most:
 
-- [[40 - Capabilities/02 - Networking]] — HTTP requests
-- [[40 - Capabilities/03 - Storage]] — Key-value storage
-- [[40 - Capabilities/04 - Permissions]] — Runtime permission checks
-- [[40 - Capabilities/05 - Notifications]] — Push notifications
-- [[40 - Capabilities/06 - WebView]] — Web content
-- [[40 - Capabilities/07 - Sharing and Intents]] — Share text/files
-- [[40 - Capabilities/08 - Clipboard]] — Copy/paste
-- [[40 - Capabilities/09 - Location]] — Location provider
-- [[40 - Capabilities/10 - Deep Linking]] — Launch URIs
-- [[40 - Capabilities/11 - Background Work]] — WorkManager, AlarmManager, JobScheduler
+- [[40 - Capabilities/02 - Networking]] - HTTP requests
+- [[40 - Capabilities/03 - Storage]] - Key-value storage
+- [[40 - Capabilities/04 - Permissions]] - Runtime permission checks
+- [[40 - Capabilities/05 - Notifications]] - Push notifications
+- [[40 - Capabilities/06 - WebView]] - Web content
+- [[40 - Capabilities/07 - Sharing and Intents]] - Share text/files
+- [[40 - Capabilities/08 - Clipboard]] - Copy/paste
+- [[40 - Capabilities/09 - Location]] - Location provider
+- [[40 - Capabilities/10 - Deep Linking]] - Launch URIs
+- [[40 - Capabilities/11 - Background Work]] - WorkManager, AlarmManager, JobScheduler
 
-**Permission only** capabilities just inject manifest permissions — no helper class:
+**Permission only** capabilities just inject manifest permissions - no helper class:
 
 - `Caps.Camera` → CAMERA
 - `Caps.Microphone` → RECORD_AUDIO

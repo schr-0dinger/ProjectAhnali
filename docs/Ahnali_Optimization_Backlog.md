@@ -1,6 +1,6 @@
 # Optimization Backlog
 
-Things we want to add eventually. None of this is enabled by default — every optimization needs to be gated behind a flag and backed by tests before it ships.
+Things we want to add eventually. None of this is enabled by default - every optimization needs to be gated behind a flag and backed by tests before it ships.
 
 ## Assets
 

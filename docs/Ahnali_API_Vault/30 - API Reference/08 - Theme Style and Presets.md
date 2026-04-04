@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, theme, style, presets, color-state, gradient]
 ---
 
-# 08 — Theme, Style, and Presets
+# 08 - Theme, Style, and Presets
 
 > [!abstract] What this covers
 > `Theme` with palette and channels, `Style` objects, `ColorState`, `Gradient`, built-in presets, and the resolution order.
@@ -196,7 +196,7 @@ In this example:
 
 ## See Also
 
-- [[02 - Value Types and Units]] — ColorState, Gradient, color formats
-- [[03 - Shared Attributes]] — all style-able fields by group
-- [[09 - Events and Handlers]] — applying styles to interactive widgets
-- [[12 - Validation and Diagnostics]] — style compatibility checks
+- [[02 - Value Types and Units]] - ColorState, Gradient, color formats
+- [[03 - Shared Attributes]] - all style-able fields by group
+- [[09 - Events and Handlers]] - applying styles to interactive widgets
+- [[12 - Validation and Diagnostics]] - style compatibility checks

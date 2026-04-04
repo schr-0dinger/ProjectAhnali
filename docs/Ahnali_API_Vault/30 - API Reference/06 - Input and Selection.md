@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, components, input, selection, forms]
 ---
 
-# 06 — Input and Selection
+# 06 - Input and Selection
 
 > [!abstract] What this covers
 > All interactive input widgets: `TextField`, `Checkbox`, `Radio`, `Switch`, `Slider`, `RadioGroup`, `DropdownButton`, `PopupMenuButton`, `ProgressBar`, `ListView`, `GridView`, and `RecyclerView`.
@@ -251,7 +251,7 @@ grid_view(
 
 ## See Also
 
-- [[03 - Shared Attributes]] — groups A through I
-- [[09 - Events and Handlers]] — on_change, on_item_selected, on_menu_item_selected
-- [[12 - Validation and Diagnostics]] — input validation, data validation
-- [[13 - Component Attribute Matrix]] — full component-to-group mapping
+- [[03 - Shared Attributes]] - groups A through I
+- [[09 - Events and Handlers]] - on_change, on_item_selected, on_menu_item_selected
+- [[12 - Validation and Diagnostics]] - input validation, data validation
+- [[13 - Component Attribute Matrix]] - full component-to-group mapping

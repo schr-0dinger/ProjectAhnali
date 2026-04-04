@@ -39,7 +39,7 @@ error = open_external_error(uri)
 app_config(uses=[Caps.Sharing])
 ```
 
-Aliases: `Caps.Intents`, `Caps.Share`. No manifest permissions needed — the share sheet and intent system handle access control.
+Aliases: `Caps.Intents`, `Caps.Share`. No manifest permissions needed - the share sheet and intent system handle access control.
 
 ## Learn more
 

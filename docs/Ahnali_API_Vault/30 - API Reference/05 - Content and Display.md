@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, components, content, display, text, button, image]
 ---
 
-# 05 — Content and Display
+# 05 - Content and Display
 
 > [!abstract] What this covers
 > The widgets that show things on screen: `Text`, `View`, the Button family, `AppBar`, `Icon`, `Image`, and `Divider`.
@@ -43,7 +43,7 @@ View(*, id="view", ..., style=None)
 view(*, id="view", ..., style=None)
 ```
 
-Classification: generic `View`. A blank visual element — useful for spacers, dividers, or custom backgrounds.
+Classification: generic `View`. A blank visual element - useful for spacers, dividers, or custom backgrounds.
 
 ```python
 # Spacer
@@ -188,10 +188,10 @@ image(...)  # lowercase alias
 |---|---|---|
 | `src` | `str` \| `int` | Drawable name or int resource ID |
 | `scale_type` | `str` | See scale types below |
-| `crop` | — | Shorthand for `center_crop` |
-| `center_inside` | — | Shorthand for `center_inside` |
+| `crop` | - | Shorthand for `center_crop` |
+| `center_inside` | - | Shorthand for `center_inside` |
 | `adjust_view_bounds` | `bool` | Adjust bounds to match image aspect ratio |
-| `image_alpha` | `int` | `[0, 255]` — image-specific alpha (separate from widget `opacity`) |
+| `image_alpha` | `int` | `[0, 255]` - image-specific alpha (separate from widget `opacity`) |
 | `image_matrix` | `list` | 9-number affine matrix |
 
 ### `scale_type` Values
@@ -239,7 +239,7 @@ divider(color="#FFE2E8F0", thickness=dp(1))
 
 ## See Also
 
-- [[03 - Shared Attributes]] — groups A through I
-- [[04 - Structure Components]] — layout containers
-- [[06 - Input and Selection]] — TextField, Checkbox, Slider, etc.
-- [[13 - Component Attribute Matrix]] — full component-to-group mapping
+- [[03 - Shared Attributes]] - groups A through I
+- [[04 - Structure Components]] - layout containers
+- [[06 - Input and Selection]] - TextField, Checkbox, Slider, etc.
+- [[13 - Component Attribute Matrix]] - full component-to-group mapping

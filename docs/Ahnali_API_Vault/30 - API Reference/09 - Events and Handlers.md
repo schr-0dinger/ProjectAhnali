@@ -2,7 +2,7 @@
 tags: [ahnali, api-reference, events, handlers, decorators, inline]
 ---
 
-# 09 — Events and Handlers
+# 09 - Events and Handlers
 
 > [!abstract] What this covers
 > All event decorators, inline event attributes, target type constraints, and the handler action statements available inside event handlers.
@@ -191,8 +191,8 @@ See [[20 - Core Concepts/02 - Compiler Pipeline]] for how handlers flow through 
 
 ## See Also
 
-- [[07 - Feedback and Utility]] — toast, snackbar, dialog, exit_app
-- [[10 - Navigation and Screens]] — Navigate, Back, Replace, PopToRoot, ClearStack
-- [[11 - Animation DSL]] — animate, sequence, parallel
-- [[12 - Validation and Diagnostics]] — event binding validation
-- [[13 - Component Attribute Matrix]] — which components support inline events
+- [[07 - Feedback and Utility]] - toast, snackbar, dialog, exit_app
+- [[10 - Navigation and Screens]] - Navigate, Back, Replace, PopToRoot, ClearStack
+- [[11 - Animation DSL]] - animate, sequence, parallel
+- [[12 - Validation and Diagnostics]] - event binding validation
+- [[13 - Component Attribute Matrix]] - which components support inline events

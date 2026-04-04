@@ -4,11 +4,11 @@ Keep the Python side lean. Every external dependency needs a reason to exist, an
 
 ## What's allowed
 
-- **rich** — nicer terminal output for diagnostics. Used through `dsl.runtime.diagnostics`, never imported directly in compiler code.
-- **httpx** — HTTP helper wrappers. Same wrapper rule.
-- **tenacity** (optional) — retry/backoff for the HTTP wrappers. Only pulled in when you actually need retries.
-- **pydantic** (optional) — strict validation for typed models. Again, wrapper-only.
-- **pytest** — tests only. Stays in `tests/`.
+- **rich** - nicer terminal output for diagnostics. Used through `dsl.runtime.diagnostics`, never imported directly in compiler code.
+- **httpx** - HTTP helper wrappers. Same wrapper rule.
+- **tenacity** (optional) - retry/backoff for the HTTP wrappers. Only pulled in when you actually need retries.
+- **pydantic** (optional) - strict validation for typed models. Again, wrapper-only.
+- **pytest** - tests only. Stays in `tests/`.
 
 ## Standard library
 
@@ -34,7 +34,7 @@ Nothing from the parser, lowering, or static compilation paths touches a third-p
 
 ## Determinism
 
-Static mode is always the default. Reactive mode is opt-in. Retry behavior has to be explicit — fixed or exponential, your choice, but it's declared, not hidden.
+Static mode is always the default. Reactive mode is opt-in. Retry behavior has to be explicit - fixed or exponential, your choice, but it's declared, not hidden.
 
 ## Enforcement
 

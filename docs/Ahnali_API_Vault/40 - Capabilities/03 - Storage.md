@@ -5,7 +5,7 @@ tags: [ahnali, capabilities, storage, persistence]
 # Storage
 
 > [!abstract] Six backends, one contract
-> SharedPreferences, DataStore, File, SQLite, Room, and encrypted storage — all following the same put/get/exists/remove/clear pattern.
+> SharedPreferences, DataStore, File, SQLite, Room, and encrypted storage - all following the same put/get/exists/remove/clear pattern.
 
 ## The contract
 
@@ -63,7 +63,7 @@ sqlite_remove("key")
 sqlite_clear()
 ```
 
-Static-safe surface — no raw SQL queries, just key/value operations.
+Static-safe surface - no raw SQL queries, just key/value operations.
 
 ## Room
 

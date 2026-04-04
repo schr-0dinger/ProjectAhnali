@@ -25,11 +25,11 @@ error = http_get_error("https://api.example.com/data")     # 0 = success
 ```
 
 Error codes:
-- `0` — success
-- `1` — invalid input
-- `2` — transport/runtime exception
-- `3` — non-200 status
-- `4` — empty body
+- `0` - success
+- `1` - invalid input
+- `2` - transport/runtime exception
+- `3` - non-200 status
+- `4` - empty body
 
 ## Retry
 
@@ -49,8 +49,8 @@ err = http_get_json_field_error("https://api.example.com/user", "name")
 ```
 
 Error codes extend the base set:
-- `5` — malformed payload
-- `6` — missing key (or null value)
+- `5` - malformed payload
+- `6` - missing key (or null value)
 
 ## Routed handlers
 
@@ -119,8 +119,8 @@ http_async_json_array_length(token, fallback=0)
 ```
 
 Async error codes extend the base set:
-- `7` — cancelled
-- `8` — stale/unknown token
+- `7` - cancelled
+- `8` - stale/unknown token
 
 ## Capability
 

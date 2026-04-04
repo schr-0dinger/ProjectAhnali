@@ -18,7 +18,7 @@ Waves 9-18 are done. The remaining work is housekeeping:
 
 ### Program 12-A: Docs freeze
 Keep everything aligned:
-- README, masterplan, ABI docs, capability mapping — all reconciled with code
+- README, masterplan, ABI docs, capability mapping - all reconciled with code
 - Gate: `tools/docs_consistency.py` passes
 
 ### Program 11-B + 12-B: Final release hardening
@@ -39,7 +39,7 @@ Keep everything aligned:
 
 ## Post-v1 (if/when)
 
-The deferred list is long: JNI bridge, embedded Python, media pipelines, maps, Bluetooth, biometrics, canvas drawing, security hardening. Nothing is committed — these are research directions, not promises.
+The deferred list is long: JNI bridge, embedded Python, media pipelines, maps, Bluetooth, biometrics, canvas drawing, security hardening. Nothing is committed - these are research directions, not promises.
 
 ## Learn more
 

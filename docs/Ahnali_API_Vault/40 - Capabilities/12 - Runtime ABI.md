@@ -5,7 +5,7 @@ tags: [ahnali, capabilities, abi, runtime, contract]
 # Runtime ABI
 
 > [!abstract] The frozen contract
-> Every helper class, every method signature — locked for v1. CI checks for drift on every push.
+> Every helper class, every method signature - locked for v1. CI checks for drift on every push.
 
 ## What the ABI covers
 
@@ -39,7 +39,7 @@ The generated Activity (default: `Lcom/ahnali/preview/MainActivity;`) exposes:
 
 - `constructor <init>()V`
 - `onCreate(Landroid/os/Bundle;)V`
-- Optional `onBackPressed()V` — calls `onSystemBack()I`, return `1` to suppress default, `0` to allow it
+- Optional `onBackPressed()V` - calls `onSystemBack()I`, return `1` to suppress default, `0` to allow it
 - Optional lifecycle bridges: `onStart()V`, `onResume()V`, `onPause()V`, `onStop()V`, `onDestroy()V`
 
 Lifecycle ordering: `invoke-super` first, then static hook.
@@ -130,7 +130,7 @@ ABI version: `1.0.0`. Frozen for v1. The snapshot file is `cfg/runtime_abi_snaps
 
 - ABI tests: `tests/test_runtime_abi_v1.py`
 - Snapshot drift check: `tests/test_runtime_abi_snapshot.py`
-- CI gate: `.github/workflows/ci.yml` — fails on signature drift
+- CI gate: `.github/workflows/ci.yml` - fails on signature drift
 
 ## Learn more
 

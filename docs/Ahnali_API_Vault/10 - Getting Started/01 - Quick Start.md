@@ -80,7 +80,7 @@ app_spec.run()
 PYTHONPATH=. pytest -q
 ```
 
-You should see **648 passing**. If anything fails, something's broken — don't ignore it.
+You should see **648 passing**. If anything fails, something's broken - don't ignore it.
 
 ## What's next
 
@@ -89,4 +89,4 @@ You should see **648 passing**. If anything fails, something's broken — don't 
 - Understand how the compiler works: [[20 - Core Concepts/01 - How Ahnali Works]]
 
 > [!tip] Connected device?
-> `app_spec.run()` needs an adb device in `device` state. Run `adb devices` to check. If nothing's connected, you can still compile — just use `app_spec.build()` instead of `.run()`.
+> `app_spec.run()` needs an adb device in `device` state. Run `adb devices` to check. If nothing's connected, you can still compile - just use `app_spec.build()` instead of `.run()`.

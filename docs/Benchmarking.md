@@ -44,7 +44,7 @@ Right now the size baseline is locked in `cfg/benchmark_baseline.json` and enfor
 
 `.github/workflows/ci.yml` runs two benchmark jobs:
 
-- **benchmark-size** — automatic on push/PR, fails if APK or dex exceeds the cap
-- **benchmark-cold-start** — manual dispatch only, boots an emulator and checks startup time
+- **benchmark-size** - automatic on push/PR, fails if APK or dex exceeds the cap
+- **benchmark-cold-start** - manual dispatch only, boots an emulator and checks startup time
 
 Both dump JSON reports into `build/benchmark/`.

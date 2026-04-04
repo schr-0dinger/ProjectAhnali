@@ -8,9 +8,9 @@ from pathlib import Path
 from dsl.capabilities import CAPABILITY_RUNTIME_ABI_VERSION
 from dsl.runtime.diagnostics import emit_cli_error, emit_cli_info
 
-DEFAULT_MASTERPLAN = "Masterplan_All_In_One.md"
+DEFAULT_MASTERPLAN = "docs/Masterplan_All_In_One.md"
 DEFAULT_README = "README.md"
-DEFAULT_RUNTIME_ABI = "runtime_abi_v1.md"
+DEFAULT_RUNTIME_ABI = "docs/runtime_abi_v1.md"
 DEFAULT_CAP_MAPPING = "docs/capability_runtime_mapping_v1.md"
 DEFAULT_PROGRAM6B = "docs/Program6B_Task_Breakdown.md"
 

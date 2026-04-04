@@ -11,7 +11,7 @@ tags: [ahnali, philosophy, design]
 
 If a phase can't validate its output, the pipeline stops. No "good enough" passes. No "we'll fix it later." Every transformation has verification gates, and those gates are blocking.
 
-This means the compiler is slower to grow — each new feature needs tests, validation, and integration work. But it also means when something compiles, you can trust it.
+This means the compiler is slower to grow - each new feature needs tests, validation, and integration work. But it also means when something compiles, you can trust it.
 
 ## One-way lowering only
 
@@ -33,9 +33,9 @@ This makes the codebase bigger than a monolithic compiler would be. It also make
 
 ## Static by default
 
-Everything is resolved at compile time. UI structure, navigation, state, event handlers, capability calls — all compiled in. The resulting APK has no interpreter, no runtime UI tree builder, no dynamic dispatch.
+Everything is resolved at compile time. UI structure, navigation, state, event handlers, capability calls - all compiled in. The resulting APK has no interpreter, no runtime UI tree builder, no dynamic dispatch.
 
-Reactive mode exists, but you have to explicitly ask for it. And even then, the UI tree is static — only the data flow changes.
+Reactive mode exists, but you have to explicitly ask for it. And even then, the UI tree is static - only the data flow changes.
 
 ## No shortcuts
 
@@ -45,7 +45,7 @@ Nothing goes straight from DSL to Smali. Every transformation earns its place in
 
 **Good:** When your app compiles, it works the way the compiler says it will. No runtime surprises. Small APKs. Native performance.
 
-**Trade-off:** The DSL is restricted. You can't do everything you could in Kotlin. Some things that are easy in Kotlin require more explicit code in Ahnali. This is intentional — the restriction is what makes static analysis possible.
+**Trade-off:** The DSL is restricted. You can't do everything you could in Kotlin. Some things that are easy in Kotlin require more explicit code in Ahnali. This is intentional - the restriction is what makes static analysis possible.
 
 ## Learn more
 

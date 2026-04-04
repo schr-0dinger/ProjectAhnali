@@ -6,50 +6,50 @@ Reference for every widget in the DSL, what it maps to at runtime, and how to st
 
 ### Containers
 
-`Row(*items)` — horizontal LinearLayout.
-`Column(*items)` — vertical LinearLayout.
-`Container(*items)` — generic container.
-`Card(*items)` — container with rounded corners and elevation.
-`Relative(*items)` — RelativeLayout.
-`Constraint(*items)` — ConstraintLayout.
-`FrameLayout(*items)` — FrameLayout.
-`ScrollView(child)` — single child, enforced at compile time.
-`HorizontalScrollView(child)` — same, horizontal.
+`Row(*items)` - horizontal LinearLayout.
+`Column(*items)` - vertical LinearLayout.
+`Container(*items)` - generic container.
+`Card(*items)` - container with rounded corners and elevation.
+`Relative(*items)` - RelativeLayout.
+`Constraint(*items)` - ConstraintLayout.
+`FrameLayout(*items)` - FrameLayout.
+`ScrollView(child)` - single child, enforced at compile time.
+`HorizontalScrollView(child)` - same, horizontal.
 
 ### Inputs
 
-`Text(text, id=...)` — TextView.
-`Button(text, id=...)` — Button.
-`TextField(text="", id=..., hint=...)` — EditText.
-`Checkbox(text, id=..., checked=False)` — CheckBox.
-`Radio(text, id=..., checked=False)` — RadioButton.
-`RadioGroup(*items, id=...)` — RadioGroup.
-`Switch(text, id=..., checked=False)` — Switch.
-`Slider(id=..., value=0, min=0, max=100)` — SeekBar.
-`DropdownButton(id=..., items=...)` — Spinner.
-`PopupMenuButton(text="Menu", id=..., items=...)` — Button with popup menu.
-`Image(id=..., src=...)` — ImageView.
-`ProgressBar(id=..., indeterminate=False)` — ProgressBar.
+`Text(text, id=...)` - TextView.
+`Button(text, id=...)` - Button.
+`TextField(text="", id=..., hint=...)` - EditText.
+`Checkbox(text, id=..., checked=False)` - CheckBox.
+`Radio(text, id=..., checked=False)` - RadioButton.
+`RadioGroup(*items, id=...)` - RadioGroup.
+`Switch(text, id=..., checked=False)` - Switch.
+`Slider(id=..., value=0, min=0, max=100)` - SeekBar.
+`DropdownButton(id=..., items=...)` - Spinner.
+`PopupMenuButton(text="Menu", id=..., items=...)` - Button with popup menu.
+`Image(id=..., src=...)` - ImageView.
+`ProgressBar(id=..., indeterminate=False)` - ProgressBar.
 
 ### Structural
 
-`AppBar(title, id=...)` — Toolbar.
-`FloatingActionButton(text="+", id=...)` — ImageButton fallback.
-`RaisedButton(text, id=...)` — Button.
-`FlatButton(text, id=...)` — Button.
-`IconButton(icon_text="*", id=...)` — ImageButton.
-`ButtonBar(*items, id=...)` — horizontal LinearLayout of buttons.
-`ListView(items=[...], item_layout=...)` — static RecyclerView adapter.
+`AppBar(title, id=...)` - Toolbar.
+`FloatingActionButton(text="+", id=...)` - ImageButton fallback.
+`RaisedButton(text, id=...)` - Button.
+`FlatButton(text, id=...)` - Button.
+`IconButton(icon_text="*", id=...)` - ImageButton.
+`ButtonBar(*items, id=...)` - horizontal LinearLayout of buttons.
+`ListView(items=[...], item_layout=...)` - static RecyclerView adapter.
 
 ## Layout
 
 Every widget takes these:
 
-- `layout` — `(width, height)` where each can be an int (px), `"match"`, `"wrap"`, or `"fill"`.
-- `padding` / `margin` — `(left, top, right, bottom)` in pixels.
-- `gravity` / `layout_gravity` — raw Android gravity ints.
-- `weight` — LinearLayout weight.
-- `percent` — for ConstraintLayout/Relative.
+- `layout` - `(width, height)` where each can be an int (px), `"match"`, `"wrap"`, or `"fill"`.
+- `padding` / `margin` - `(left, top, right, bottom)` in pixels.
+- `gravity` / `layout_gravity` - raw Android gravity ints.
+- `weight` - LinearLayout weight.
+- `percent` - for ConstraintLayout/Relative.
 
 ## Styling
 
@@ -99,12 +99,12 @@ p.Card()
 
 ## Events
 
-- `on_click` — Button, FAB, raised/flat/icon buttons, popup menu trigger
-- `on_change` — Switch, Checkbox, Radio, Slider, RadioGroup
-- `on_text_change` — TextField
-- `on_item_selected` — Dropdown
-- `on_menu_item_selected` — PopupMenu
-- `on_focus_change` — any focusable widget
+- `on_click` - Button, FAB, raised/flat/icon buttons, popup menu trigger
+- `on_change` - Switch, Checkbox, Radio, Slider, RadioGroup
+- `on_text_change` - TextField
+- `on_item_selected` - Dropdown
+- `on_menu_item_selected` - PopupMenu
+- `on_focus_change` - any focusable widget
 
 All handlers are named functions. No lambdas, no dynamic registration.
 
@@ -112,10 +112,10 @@ All handlers are named functions. No lambdas, no dynamic registration.
 
 Inside event handlers:
 
-- `toast("message")` — android.widget.Toast
-- `snackbar("message")` — Toast fallback until Material is bundled
-- `simple_dialog("Title", "Message")` — AlertDialog.Builder
-- `log("message")` — android.util.Log
+- `toast("message")` - android.widget.Toast
+- `snackbar("message")` - Toast fallback until Material is bundled
+- `simple_dialog("Title", "Message")` - AlertDialog.Builder
+- `log("message")` - android.util.Log
 
 ## Runtime class mapping
 

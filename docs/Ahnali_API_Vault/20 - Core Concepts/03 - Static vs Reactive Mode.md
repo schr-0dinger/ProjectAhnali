@@ -11,11 +11,11 @@ tags: [ahnali, modes, static, reactive]
 
 This is what Ahnali is. Everything is resolved at compile time:
 
-- UI structure — which widgets exist, where they are, how they're styled
-- Navigation graph — which screens exist, how they connect, what transitions they use
-- Event handlers — what happens when you tap a button
-- State wiring — which fields exist, how they're read and written
-- Capability calls — which platform services are used
+- UI structure - which widgets exist, where they are, how they're styled
+- Navigation graph - which screens exist, how they connect, what transitions they use
+- Event handlers - what happens when you tap a button
+- State wiring - which fields exist, how they're read and written
+- Capability calls - which platform services are used
 
 The resulting APK has no interpreter, no runtime UI tree builder, no dynamic dispatch. It's just Smali that talks to Android.
 
@@ -30,7 +30,7 @@ app(
 
 ## Reactive mode (opt-in)
 
-Sometimes you need the UI to respond to state changes without writing explicit `widget.text = ...` assignments. Reactive mode gives you that — but you have to explicitly ask for it.
+Sometimes you need the UI to respond to state changes without writing explicit `widget.text = ...` assignments. Reactive mode gives you that - but you have to explicitly ask for it.
 
 ```python
 app(
@@ -47,11 +47,11 @@ app(
 ```
 
 What reactive gives you:
-- `observable(name, value)` — declare a reactive variable
-- `set_observable(name, value)` — update it
-- `bind_text(widget_id, observable_name)` — wire a widget's text to an observable
-- `derived(name, fn)` — computed values
-- `listen(name, handler)` — react to changes
+- `observable(name, value)` - declare a reactive variable
+- `set_observable(name, value)` - update it
+- `bind_text(widget_id, observable_name)` - wire a widget's text to an observable
+- `derived(name, fn)` - computed values
+- `listen(name, handler)` - react to changes
 
 > [!important] What reactive does NOT do
 > - No dynamic widget creation or destruction

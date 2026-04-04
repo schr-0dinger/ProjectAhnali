@@ -10,12 +10,12 @@ Single-screen demo combining Wave 2 networking response routing with Wave 1 stor
 
 ## What the user sees
 
-- **Save URL** — stores homepage URL, updates status text.
-- **Load URL** — reads stored homepage URL with deterministic storage fallback, updates preview/status text.
-- **Probe Route** — runs network routing:
+- **Save URL** - stores homepage URL, updates status text.
+- **Load URL** - reads stored homepage URL with deterministic storage fallback, updates preview/status text.
+- **Probe Route** - runs network routing:
   - success branch updates status text to success message
   - fallback branch updates preview/status text with deterministic fallback values
-- **Open URL** — launches browser, updates status text.
+- **Open URL** - launches browser, updates status text.
 
 ## Deterministic fallback branch
 

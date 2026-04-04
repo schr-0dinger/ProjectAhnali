@@ -5,9 +5,9 @@ from tools.docs_consistency import check_docs_consistency
 
 def test_docs_consistency_passes_on_repo_docs():
     ok, message = check_docs_consistency(
-        masterplan_path=Path("Masterplan_All_In_One.md"),
+        masterplan_path=Path("docs/Masterplan_All_In_One.md"),
         readme_path=Path("README.md"),
-        runtime_abi_path=Path("runtime_abi_v1.md"),
+        runtime_abi_path=Path("docs/runtime_abi_v1.md"),
         capability_mapping_path=Path("docs/capability_runtime_mapping_v1.md"),
         program6b_path=Path("docs/Program6B_Task_Breakdown.md"),
     )
@@ -21,9 +21,9 @@ def test_docs_consistency_detects_readme_plan_order_drift(tmp_path):
     readme_path.write_text(readme_text, encoding="utf-8")
 
     ok, message = check_docs_consistency(
-        masterplan_path=Path("Masterplan_All_In_One.md"),
+        masterplan_path=Path("docs/Masterplan_All_In_One.md"),
         readme_path=readme_path,
-        runtime_abi_path=Path("runtime_abi_v1.md"),
+        runtime_abi_path=Path("docs/runtime_abi_v1.md"),
         capability_mapping_path=Path("docs/capability_runtime_mapping_v1.md"),
         program6b_path=Path("docs/Program6B_Task_Breakdown.md"),
     )
@@ -38,9 +38,9 @@ def test_docs_consistency_detects_program6b_source_of_truth_drift(tmp_path):
     program6b_path.write_text(text, encoding="utf-8")
 
     ok, message = check_docs_consistency(
-        masterplan_path=Path("Masterplan_All_In_One.md"),
+        masterplan_path=Path("docs/Masterplan_All_In_One.md"),
         readme_path=Path("README.md"),
-        runtime_abi_path=Path("runtime_abi_v1.md"),
+        runtime_abi_path=Path("docs/runtime_abi_v1.md"),
         capability_mapping_path=Path("docs/capability_runtime_mapping_v1.md"),
         program6b_path=program6b_path,
     )

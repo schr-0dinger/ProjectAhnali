@@ -73,11 +73,11 @@ The message always includes:
 
 Warnings don't block compilation but you should pay attention:
 
-- **Blur below API 31** — blur is skipped, fallback is used
-- **Background ColorState** — currently uses default color with lint warning
-- **Style overlap** — inline and theme channel both set the same field
-- **Dropdown text surface** — typography support is partial
-- **Popup menu item text** — typography support is partial
+- **Blur below API 31** - blur is skipped, fallback is used
+- **Background ColorState** - currently uses default color with lint warning
+- **Style overlap** - inline and theme channel both set the same field
+- **Dropdown text surface** - typography support is partial
+- **Popup menu item text** - typography support is partial
 
 ## Lint hardening (Phase 13)
 

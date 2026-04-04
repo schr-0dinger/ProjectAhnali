@@ -9,7 +9,7 @@ tags: [ahnali, architecture, runtime]
 
 ## Core runtime (always linked)
 
-Delivered inside `base.apk`. Always present. Small — roughly 50-100 KB.
+Delivered inside `base.apk`. Always present. Small - roughly 50-100 KB.
 
 Responsibilities:
 - Screen stack manager
@@ -30,12 +30,12 @@ This is Ahnali's identity layer.
 
 ## Capability modules (conditionally linked)
 
-These aren't plugins — they're conditionally linked libraries. Included only if referenced by the DSL.
+These aren't plugins - they're conditionally linked libraries. Included only if referenced by the DSL.
 
 Examples:
-- `Lcom/ahnali/runtime/HttpHelper;` — networking
-- `Lcom/ahnali/runtime/StorageHelper;` — storage
-- `Lcom/ahnali/runtime/NotificationHelper;` — notifications
+- `Lcom/ahnali/runtime/HttpHelper;` - networking
+- `Lcom/ahnali/runtime/StorageHelper;` - storage
+- `Lcom/ahnali/runtime/NotificationHelper;` - notifications
 
 Properties:
 - Ahead-of-time compiled
@@ -61,7 +61,7 @@ public class XxxHelper {
 }
 ```
 
-The compiler generates these classes during the packaging phase. They're Smali, not Java — but the structure is the same.
+The compiler generates these classes during the packaging phase. They're Smali, not Java - but the structure is the same.
 
 ## Learn more
 

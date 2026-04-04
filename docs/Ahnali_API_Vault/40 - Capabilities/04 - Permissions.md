@@ -5,7 +5,7 @@ tags: [ahnali, capabilities, permissions]
 # Permissions
 
 > [!abstract] Runtime permission checks
-> Check if a permission is granted, request permissions, and handle the results — all at the DSL level.
+> Check if a permission is granted, request permissions, and handle the results - all at the DSL level.
 
 ## Checking permissions
 
@@ -15,7 +15,7 @@ granted = has_permission("android.permission.CAMERA")
 granted = check_permission("android.permission.CAMERA")
 ```
 
-All three are aliases — they map to `Lcom/ahnali/runtime/PermissionHelper;->isGranted(Activity, String) → int`.
+All three are aliases - they map to `Lcom/ahnali/runtime/PermissionHelper;->isGranted(Activity, String) → int`.
 
 Returns `1` if granted, `0` if denied.
 
@@ -34,7 +34,7 @@ These trigger the Android runtime permission dialog. The result flows through th
 app_config(uses=[Caps.Permissions])
 ```
 
-No manifest permissions are injected by this capability itself — it just links the helper class that checks runtime grant state.
+No manifest permissions are injected by this capability itself - it just links the helper class that checks runtime grant state.
 
 > [!tip] Permission-only capabilities
 > Some capabilities like `Caps.Camera` or `Caps.Location` inject manifest permissions but don't have helper classes. Use `Caps.Permissions` when you need to check grant state at runtime.

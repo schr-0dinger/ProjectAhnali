@@ -53,7 +53,7 @@ Your DSL constructs (`text`, `button`, `on_click`, `state`, etc.) get converted 
 
 ### CFG construction
 
-The IR gets broken into basic blocks — straight-line code segments with single entry and exit points. Branches (if/while) create edges between blocks.
+The IR gets broken into basic blocks - straight-line code segments with single entry and exit points. Branches (if/while) create edges between blocks.
 
 ### Dominance analysis
 
@@ -82,9 +82,9 @@ Types are checked against method signatures, call arguments, and return values. 
 ### SSA optimization
 
 Three passes:
-- **Constant propagation** — replace variables with known constant values
-- **Copy propagation** — replace `x = y` with direct use of `y`
-- **Coalescing** — merge redundant copies across phi and non-phi moves
+- **Constant propagation** - replace variables with known constant values
+- **Copy propagation** - replace `x = y` with direct use of `y`
+- **Coalescing** - merge redundant copies across phi and non-phi moves
 
 These can be enabled with `alpha_pipeline(..., ssa_opt={"enable_folding": True})`.
 
@@ -115,7 +115,7 @@ Linear scan allocation assigns Dalvik virtual registers to live ranges. When the
 
 ### Smali emission
 
-The final step: verified, register-allocated Dalvik IR becomes Smali text. The emitter doesn't make decisions — it prints what the IR says.
+The final step: verified, register-allocated Dalvik IR becomes Smali text. The emitter doesn't make decisions - it prints what the IR says.
 
 ## Verification gates
 

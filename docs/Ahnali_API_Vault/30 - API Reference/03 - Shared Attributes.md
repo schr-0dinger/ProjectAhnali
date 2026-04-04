@@ -2,10 +2,10 @@
 tags: [ahnali, api-reference, attributes, shared, style]
 ---
 
-# 03 — Shared Attributes
+# 03 - Shared Attributes
 
 > [!abstract] What this covers
-> Every shared attribute grouped by concern (A through I). These groups are reused across components — see [[13 - Component Attribute Matrix]] for the full component-to-group mapping.
+> Every shared attribute grouped by concern (A through I). These groups are reused across components - see [[13 - Component Attribute Matrix]] for the full component-to-group mapping.
 
 Related: [[02 - Value Types and Units]] · [[13 - Component Attribute Matrix]]
 
@@ -41,10 +41,10 @@ ui(
 | Attribute | Type | Description |
 |---|---|---|
 | `id` | `str` | Unique widget identifier |
-| `layout` | `str` \| `tuple` | Shorthand for `(width, height)` — accepts `"match"`, `"wrap"`, or tuple |
-| `width` / `height` | size value | Individual dimension — see [[02 - Value Types and Units]] |
-| `padding` | spacing | Inner spacing — single, pair, or quad |
-| `margin` | spacing | Outer spacing — single, pair, or quad |
+| `layout` | `str` \| `tuple` | Shorthand for `(width, height)` - accepts `"match"`, `"wrap"`, or tuple |
+| `width` / `height` | size value | Individual dimension - see [[02 - Value Types and Units]] |
+| `padding` | spacing | Inner spacing - single, pair, or quad |
+| `margin` | spacing | Outer spacing - single, pair, or quad |
 | `gravity` | `str` \| `int` | Content alignment within the widget |
 | `layout_gravity` | `str` \| `int` | Widget alignment within its parent |
 | `weight` | `int` | Flex weight in Row/Column |
@@ -125,7 +125,7 @@ constraints={
 | Attribute | Type | Description |
 |---|---|---|
 | `text_color` | color | Text color |
-| `text_size` | `sp(...)` | Font size — **must use `sp()`** |
+| `text_size` | `sp(...)` | Font size - **must use `sp()`** |
 | `font_family` | `str` | Font family name |
 | `font_weight` | `str` \| `int` | Weight: `normal`, `bold`, or numeric |
 | `font_style` | `str` | `normal`, `italic`, `oblique` |
@@ -207,7 +207,7 @@ important_for_accessibility="yes"
 | `border_color` | color | Border color |
 | `border_radius` | size | Corner radius |
 | `ripple_color` | color | Ripple effect color |
-| `blur_radius` | `float` | Blur radius — **API 31+ only** |
+| `blur_radius` | `float` | Blur radius - **API 31+ only** |
 | `rotation` | `float` | Rotation in degrees |
 | `scale_x` / `scale_y` | `float` | Scale factors |
 | `translation_x` / `translation_y` | size | Translation offsets |
@@ -278,15 +278,15 @@ checkbox("Remember me", id="remember", on_change=log("changed"))
 > [!warning] Inline + explicit conflict
 > If you bind both an inline attribute and an explicit event spec (e.g., `on_click(target_id, ...)`) to the same widget, the compiler rejects it as a duplicate binding. See [[09 - Events and Handlers]].
 
-Extended explicit decorators (`on_touch`, `on_swipe`, `on_drag`, etc.) exist beyond these inline attrs — see [[09 - Events and Handlers]].
+Extended explicit decorators (`on_touch`, `on_swipe`, `on_drag`, etc.) exist beyond these inline attrs - see [[09 - Events and Handlers]].
 
 ---
 
 ## See Also
 
-- [[02 - Value Types and Units]] — dp, sp, colors, gradients
-- [[05 - Content and Display]] — Text, Button, Image components
-- [[06 - Input and Selection]] — TextField, Checkbox, Slider components
-- [[08 - Theme Style and Presets]] — Theme, Style, and precedence
-- [[09 - Events and Handlers]] — full event decorator system
-- [[13 - Component Attribute Matrix]] — which groups each component supports
+- [[02 - Value Types and Units]] - dp, sp, colors, gradients
+- [[05 - Content and Display]] - Text, Button, Image components
+- [[06 - Input and Selection]] - TextField, Checkbox, Slider components
+- [[08 - Theme Style and Presets]] - Theme, Style, and precedence
+- [[09 - Events and Handlers]] - full event decorator system
+- [[13 - Component Attribute Matrix]] - which groups each component supports

@@ -10,6 +10,11 @@ DSL.
 """
 
 from .ast import *
+from .ast import (
+    _ExprHttpGetRetry,
+    _ExprHttpGetJsonField,
+    _ExprHttpGetJsonFieldError,
+)
 from .ir_helpers import *
 from .ir_helpers import toast as _ir_toast
 from .lowering.context import _PythonicContext
@@ -1850,7 +1855,7 @@ def _resolve_plugins(activity_spec: _ActivitySpec, caller_module: str | None):
     if caller_module:
         try:
             mod = importlib.import_module(caller_module)
-        except Exception:
+        except ModuleNotFoundError:
             mod = None
         if mod is not None and hasattr(mod, "APP_PLUGINS"):
             value = getattr(mod, "APP_PLUGINS")
@@ -1932,7 +1937,7 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     if caller_module:
         try:
             mod = importlib.import_module(caller_module)
-        except Exception:
+        except ModuleNotFoundError:
             mod = None
         if mod is not None and hasattr(mod, "APP_LABEL"):
             resources["app_name"] = str(getattr(mod, "APP_LABEL"))
@@ -2076,7 +2081,7 @@ def _extract_app_config(activity_spec: _ActivitySpec, caller_module: str | None)
     if caller_module:
         try:
             mod = importlib.import_module(caller_module)
-        except Exception:
+        except ModuleNotFoundError:
             mod = None
         if mod is not None:
             macro = getattr(mod, "APP_CONFIG", None)

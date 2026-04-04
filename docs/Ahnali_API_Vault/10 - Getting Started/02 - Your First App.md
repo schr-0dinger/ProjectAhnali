@@ -5,7 +5,7 @@ tags: [ahnali, getting-started, tutorial]
 # Your First App
 
 > [!abstract] What we're building
-> A counter app with two screens, navigation, and persistent state. Nothing fancy — it covers the essentials.
+> A counter app with two screens, navigation, and persistent state. Nothing fancy - it covers the essentials.
 
 ## Step 1: The basics
 
@@ -35,7 +35,7 @@ app_spec.run()
 ```
 
 > [!note] How state works
-> `state(count=0)` declares a compile-time integer field. The handler `count = count + 1` reads and writes that field. Everything is resolved at compile time — there's no runtime state engine sitting in your app.
+> `state(count=0)` declares a compile-time integer field. The handler `count = count + 1` reads and writes that field. Everything is resolved at compile time - there's no runtime state engine sitting in your app.
 
 ## Step 2: Add theming
 

@@ -71,7 +71,7 @@ job_status_error(job_id=0)
 ```
 
 > [!warning] API level guard
-> JobScheduler has API-level requirements. The compiler emits a guard check — if the device's API level is too low, the helper returns an error code deterministically.
+> JobScheduler has API-level requirements. The compiler emits a guard check - if the device's API level is too low, the helper returns an error code deterministically.
 
 ## Capabilities
 

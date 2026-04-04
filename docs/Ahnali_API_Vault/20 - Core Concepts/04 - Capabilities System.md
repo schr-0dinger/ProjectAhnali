@@ -28,8 +28,8 @@ app(
 
 Two things happen here:
 
-1. **Manifest permissions** — `INTERNET` gets injected into the AndroidManifest.xml
-2. **Helper class linking** — `Lcom/ahnali/runtime/HttpHelper;` gets compiled into your app
+1. **Manifest permissions** - `INTERNET` gets injected into the AndroidManifest.xml
+2. **Helper class linking** - `Lcom/ahnali/runtime/HttpHelper;` gets compiled into your app
 
 If you try to call `http_get` without `Caps.Networking`, the compiler stops you with a clear error:
 
@@ -41,10 +41,10 @@ If you try to call `http_get` without `Caps.Networking`, the compiler stops you 
 
 Capabilities fall into two categories:
 
-**Helper call** — maps to a runtime helper class with methods:
+**Helper call** - maps to a runtime helper class with methods:
 - Networking, Storage, URL Launcher, Connectivity, Location, Permissions, Notifications, Clipboard, Sharing, WebView, Deep Linking, WorkManager, AlarmManager, JobScheduler
 
-**Permission only** — just injects manifest permissions, no helper class:
+**Permission only** - just injects manifest permissions, no helper class:
 - Camera, Microphone, Audio, Video, Sensors, FilePicker, Maps
 
 ## The helper contract

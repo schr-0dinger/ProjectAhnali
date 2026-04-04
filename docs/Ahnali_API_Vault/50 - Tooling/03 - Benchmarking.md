@@ -48,8 +48,8 @@ The baseline is locked in `cfg/benchmark_baseline.json`.
 
 ## CI enforcement
 
-- **Size gate** — runs on every push/PR, fails if APK or dex exceeds the cap
-- **Cold-start gate** — manual dispatch only (needs an emulator), fails if startup exceeds the threshold
+- **Size gate** - runs on every push/PR, fails if APK or dex exceeds the cap
+- **Cold-start gate** - manual dispatch only (needs an emulator), fails if startup exceeds the threshold
 
 Both dump JSON reports into `build/benchmark/`.
 

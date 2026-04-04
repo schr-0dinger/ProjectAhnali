@@ -237,6 +237,7 @@ from dsl.widgets import (
     _UIView,
 )
 from dsl.lowering.attr_registry import ATTR_METHODS
+from dsl.lowering.renderers import render_widget
 
 
 _STATE_BACKEND_METHODS = {
@@ -2150,12 +2151,22 @@ class _PythonicContext(
         # State fields
         self._validate_state_keys()
         for name, value in self.state_spec.values.items():
-            if not isinstance(value, int) or isinstance(value, bool):
+            if isinstance(value, bool):
+                fields.append(static_field(name, "Z"))
+                body.append(static_set(name, "Z", const(1 if value else 0)))
+            elif isinstance(value, int):
+                fields.append(static_field(name, "I"))
+                body.append(static_set(name, "I", const(value)))
+            elif isinstance(value, str):
+                key = self._add_string_resource(f"state_{name}", value)
+                load, expr = self._load_string_expr(key, ctx_expr=var("ctx"), prefix=f"state_{name}")
+                body.extend(load)
+                fields.append(static_field(name, "Ljava/lang/String;"))
+                body.append(static_set(name, "Ljava/lang/String;", expr))
+            else:
                 raise RuntimeError(
-                    f"State '{name}' must be an integer literal, got {value!r} ({type(value).__name__})"
+                    f"State '{name}' must be an int, bool, or str literal, got {value!r} ({type(value).__name__})"
                 )
-            fields.append(static_field(name, "I"))
-            body.append(static_set(name, "I", const(value)))
 
         # Navigation stack init (after screens are built)
         if self._screens:
@@ -2772,7 +2783,7 @@ class _PythonicContext(
             self._resource_color_ids[key] = 0x7F050000 + len(self._resource_color_ids)
         return key
 
-    def _add_dimen_resource(self, name_hint: str, value: int | float | Dp | Px | Sp, unit: str = "px") -> str:
+    def _add_dimen_resource(self, name_hint: str, value: int | float | Dp | Px | Sp | Percent, unit: str = "px") -> str:
         if isinstance(value, Dp):
             unit = "dp"
             value = value.value
@@ -2782,6 +2793,15 @@ class _PythonicContext(
         elif isinstance(value, Px):
             unit = "px"
             value = value.value
+        elif isinstance(value, Percent):
+            # Percent can't be represented as a raw dimension in Android XML.
+            # It needs layout_weight (LinearLayout) or constraint percent
+            # (ConstraintLayout). Reject with a clear message.
+            raise RuntimeError(
+                f"Percent unit type is not supported as a raw dimension in '{name_hint}'. "
+                f"Use layout weight (weight=...) in LinearLayout or constraint percentages "
+                f"(constraint_start_to_start_of, constraint_width_percent, etc.) instead."
+            )
         normalized = float(value) if isinstance(value, float) else int(value)
         key = self._resource_key(name_hint, f"{normalized}:{unit}")
         if isinstance(normalized, float):
@@ -3011,1201 +3031,7 @@ class _PythonicContext(
         return [item for _, item in indexed]
 
     def _render_ui_core(self, item, parent_id):
-        body = []
-        if isinstance(item, _UIAppBar):
-            if item.inline:
-                item.id = self._register_view(item.id, "app_bar")
-            title_key = self._add_string_resource("app_name", item.text)
-            title_load, title_expr = self._load_string_expr(title_key, ctx_expr=var("ctx"), prefix="app_name")
-            body.extend(title_load)
-            body.append(
-                call_stmt(
-                    "setTitle",
-                    args=[var("ctx"), title_expr],
-                    return_type=None,
-                    invoke_kind="virtual",
-                    owner="Landroid/app/Activity;",
-                )
-            )
-            # Default behavior is title-only to avoid duplicated bars.
-            if item.inline:
-                palette = self.theme_spec.palette
-                body.extend(
-                    [
-                        assign(item.id, new("Landroid/widget/Toolbar;", args=[var("ctx")])),
-                    ]
-                )
-                body.extend(
-                    self._set_text_from_resource(
-                        item.id,
-                        item.text,
-                        "Landroid/widget/Toolbar;",
-                        f"{item.id}_title",
-                        ctx_expr=var("ctx"),
-                        method_name="setTitle",
-                    )
-                )
-                text_color_value = item.text_color
-                if text_color_value is None and getattr(item, "style", None):
-                    text_color_value = item.style.text_color
-                if isinstance(text_color_value, ColorState):
-                    text_color_value = _parse_color(text_color_value.default, palette)
-                else:
-                    text_color_value = _parse_color(text_color_value, palette)
-                if text_color_value is not None:
-                    color_key = self._add_color_resource(f"{item.id}_title", text_color_value)
-                    color_load, color_expr = self._load_color_expr(color_key, ctx_expr=var("ctx"), prefix=f"{item.id}_title")
-                    body.extend(color_load)
-                    body.append(
-                        call_stmt(
-                            "setTitleTextColor",
-                            args=[var(item.id), color_expr],
-                            return_type=None,
-                            arg_types=["I"],
-                            invoke_kind="virtual",
-                            owner="Landroid/widget/Toolbar;",
-                        )
-                    )
-                body.extend(self._apply_view_layout(item, parent_id))
-                body.append(add_view(var(parent_id), var(item.id)))
-                body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIDivider):
-            item.id = self._register_view(item.id, "divider")
-            body.extend([assign(item.id, new("Landroid/view/View;", args=[var("ctx")]))])
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIImage):
-            item.id = self._register_view(item.id, "image")
-            body.extend([assign(item.id, new("Landroid/widget/ImageView;", args=[var("ctx")]))])
-            body.extend(self._set_image_source(item.id, item.src))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIProgressBar):
-            item.id = self._register_view(item.id, "progress_bar")
-            min_value = int(item.min)
-            max_value = int(item.max)
-            span = max(max_value - min_value, 0)
-            progress = int(item.value) - min_value
-            if progress < 0:
-                progress = 0
-            if progress > span:
-                progress = span
-            # ProgressBar default style is spinner. Use the horizontal style
-            # constructor for determinate bars so value/max are visually shown.
-            if item.indeterminate:
-                progress_ctor = new("Landroid/widget/ProgressBar;", args=[var("ctx")])
-            else:
-                progress_ctor = new(
-                    "Landroid/widget/ProgressBar;",
-                    args=[var("ctx"), const(0), const(0x1010078)],
-                    arg_types=[
-                        "Landroid/content/Context;",
-                        "Landroid/util/AttributeSet;",
-                        "I",
-                    ],
-                )
-            body.extend(
-                [
-                    assign(item.id, progress_ctor),
-                    call_stmt(
-                        "setIndeterminate",
-                        args=[var(item.id), const(1 if item.indeterminate else 0)],
-                        return_type=None,
-                        arg_types=["Z"],
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/ProgressBar;",
-                    ),
-                ]
-            )
-            if not item.indeterminate:
-                body.extend(
-                    [
-                        call_stmt(
-                            "setMax",
-                            args=[var(item.id), const(span)],
-                            return_type=None,
-                            invoke_kind="virtual",
-                            owner="Landroid/widget/ProgressBar;",
-                        ),
-                        call_stmt(
-                            "setProgress",
-                            args=[var(item.id), const(progress)],
-                            return_type=None,
-                            invoke_kind="virtual",
-                            owner="Landroid/widget/ProgressBar;",
-                        ),
-                    ]
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIFloatingActionButton):
-            item.id = self._register_view(item.id, "fab")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")])),
-                ]
-            )
-            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIRaisedButton):
-            item.id = self._register_view(item.id, "raised_button")
-            body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIFlatButton):
-            item.id = self._register_view(item.id, "flat_button")
-            body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIIconButton):
-            item.id = self._register_view(item.id, "icon_button")
-            body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UITextField):
-            item.id = self._register_view(item.id, "text_field")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/EditText;", args=[var("ctx")])),
-                ]
-            )
-            body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/EditText;", f"{item.id}_text", ctx_expr=var("ctx")))
-            if item.hint:
-                hint_key = self._add_string_resource(f"{item.id}_hint", item.hint)
-                hint_load, hint_expr = self._load_string_expr(hint_key, ctx_expr=var("ctx"), prefix=f"{item.id}_hint")
-                body.extend(hint_load)
-                body.append(
-                    call_stmt(
-                        "setHint",
-                        args=[var(item.id), hint_expr],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/EditText;",
-                    )
-                )
-            body.extend(self._build_text_field_input_config_stmts(item))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UICheckbox):
-            item.id = self._register_view(item.id, "checkbox")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/CheckBox;", args=[var("ctx")])),
-                    call_stmt(
-                        "setChecked",
-                        args=[var(item.id), const(1 if item.checked else 0)],
-                        return_type=None,
-                        arg_types=["Z"],
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/CheckBox;",
-                    ),
-                ]
-            )
-            body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/CheckBox;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIRadio):
-            item.id = self._register_view(item.id, "radio")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/RadioButton;", args=[var("ctx")])),
-                ]
-            )
-            # RadioGroup tracks checked ids; id must be assigned before checked state is set.
-            body.extend(self._capture_view_static(item.id))
-            body.append(
-                call_stmt(
-                    "setChecked",
-                    args=[var(item.id), const(1 if item.checked else 0)],
-                    return_type=None,
-                    arg_types=["Z"],
-                    invoke_kind="virtual",
-                    owner="Landroid/widget/RadioButton;",
-                )
-            )
-            body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/RadioButton;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-        elif isinstance(item, _UISwitch):
-            item.id = self._register_view(item.id, "switch")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/Switch;", args=[var("ctx")])),
-                    call_stmt(
-                        "setChecked",
-                        args=[var(item.id), const(1 if item.checked else 0)],
-                        return_type=None,
-                        arg_types=["Z"],
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/Switch;",
-                    ),
-                ]
-            )
-            body.extend(self._set_text_from_resource(item.id, item.text or "", "Landroid/widget/Switch;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UISlider):
-            item.id = self._register_view(item.id, "slider")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/SeekBar;", args=[var("ctx")])),
-                    call_stmt(
-                        "setMax",
-                        args=[var(item.id), const(int(item.max) - int(item.min))],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/SeekBar;",
-                    ),
-                    call_stmt(
-                        "setProgress",
-                        args=[var(item.id), const(int(item.value) - int(item.min))],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/SeekBar;",
-                    ),
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIDropdownButton):
-            item.id = self._register_view(item.id, "dropdown")
-            if item.layout is None:
-                item.layout = ("wrap", "wrap")
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/Spinner;", args=[var("ctx")])),
-                    assign(
-                        f"adapter_{item.id}",
-                        new(
-                            "Landroid/widget/ArrayAdapter;",
-                            args=[var("ctx"), const(17367048)],
-                        ),
-                    ),
-                ]
-            )
-            for val in item.items:
-                item_key = self._add_string_resource(f"{item.id}_item", str(val))
-                item_load, item_expr = self._load_string_expr(item_key, ctx_expr=var("ctx"), prefix=f"{item.id}_item")
-                body.extend(item_load)
-                body.append(
-                    call_stmt(
-                        "add",
-                        args=[var(f"adapter_{item.id}"), item_expr],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/ArrayAdapter;",
-                    )
-                )
-            body.extend(
-                [
-                    call_stmt(
-                        "setDropDownViewResource",
-                        args=[var(f"adapter_{item.id}"), const(17367049)],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/ArrayAdapter;",
-                    ),
-                    call_stmt(
-                        "setAdapter",
-                        args=[var(item.id), var(f"adapter_{item.id}")],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/Spinner;",
-                    ),
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIListView):
-            item.id = self._register_view(item.id, "list_view")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            item_layout_res = int(item.item_layout_res)
-            if item_layout_res != 0x1090003:
-                raise RuntimeError(
-                    f"ListView '{item.id}' item_layout={item_layout_res} is not yet supported by "
-                    "the deterministic adapter path; use simple_list_item_1."
-                )
-            adapter_name = f"adapter_{item.id}"
-            items_array_name = f"items_{item.id}"
-            adapter_class_desc = f"Lcom/ahnali/preview/AhnaliListAdapter_{item.id};"
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/ListView;", args=[var("ctx")])),
-                    assign(
-                        items_array_name,
-                        new_array(const(len(item.items)), "Ljava/lang/String;"),
-                    ),
-                ]
-            )
-            for idx, val in enumerate(item.items):
-                item_key = self._add_string_resource(f"{item.id}_item", str(val))
-                item_load, item_expr = self._load_string_expr(
-                    item_key,
-                    ctx_expr=var("ctx"),
-                    prefix=f"{item.id}_item",
-                )
-                body.extend(item_load)
-                body.append(
-                    array_set(
-                        var(items_array_name),
-                        const(idx),
-                        "Ljava/lang/String;",
-                        item_expr,
-                    )
-                )
-            body.extend(
-                [
-                    assign(
-                        adapter_name,
-                        new(
-                            adapter_class_desc,
-                            args=[var("ctx"), var(items_array_name)],
-                            arg_types=["Landroid/content/Context;", "[Ljava/lang/String;"],
-                        ),
-                    ),
-                    call_stmt(
-                        "setAdapter",
-                        args=[var(item.id), var(adapter_name)],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/ListView;",
-                    ),
-                ]
-            )
-            self._queue_support_class(
-                adapter_class_desc,
-                str(item_layout_res),
-                "LTest;",
-                "list_adapter",
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIGridView):
-            item.id = self._register_view(item.id, "grid_view")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            item_layout_res = int(item.item_layout_res)
-            if item_layout_res != 0x1090003:
-                raise RuntimeError(
-                    f"GridView '{item.id}' item_layout={item_layout_res} is not yet supported by "
-                    "the deterministic adapter path; use simple_list_item_1."
-                )
-            adapter_name = f"adapter_{item.id}"
-            items_array_name = f"items_{item.id}"
-            adapter_class_desc = f"Lcom/ahnali/preview/AhnaliListAdapter_{item.id};"
-            body.extend(
-                [
-                    assign(item.id, new("Landroid/widget/GridView;", args=[var("ctx")])),
-                    call_stmt(
-                        "setNumColumns",
-                        args=[var(item.id), const(int(item.num_columns))],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/GridView;",
-                    ),
-                    assign(
-                        items_array_name,
-                        new_array(const(len(item.items)), "Ljava/lang/String;"),
-                    ),
-                ]
-            )
-            for idx, val in enumerate(item.items):
-                item_key = self._add_string_resource(f"{item.id}_item", str(val))
-                item_load, item_expr = self._load_string_expr(
-                    item_key,
-                    ctx_expr=var("ctx"),
-                    prefix=f"{item.id}_item",
-                )
-                body.extend(item_load)
-                body.append(
-                    array_set(
-                        var(items_array_name),
-                        const(idx),
-                        "Ljava/lang/String;",
-                        item_expr,
-                    )
-                )
-            body.extend(
-                [
-                    assign(
-                        adapter_name,
-                        new(
-                            adapter_class_desc,
-                            args=[var("ctx"), var(items_array_name)],
-                            arg_types=["Landroid/content/Context;", "[Ljava/lang/String;"],
-                        ),
-                    ),
-                    call_stmt(
-                        "setAdapter",
-                        args=[var(item.id), var(adapter_name)],
-                        return_type=None,
-                        invoke_kind="virtual",
-                        owner="Landroid/widget/GridView;",
-                    ),
-                ]
-            )
-            self._queue_support_class(
-                adapter_class_desc,
-                str(item_layout_res),
-                "LTest;",
-                "list_adapter",
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIRecyclerView):
-            item.id = self._register_view(item.id, "recycler_view")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            lm_name = f"lm_{item.id}"
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new("Landroidx/recyclerview/widget/RecyclerView;", args=[var("ctx")]),
-                    ),
-                    assign(
-                        lm_name,
-                        new(
-                            "Landroidx/recyclerview/widget/LinearLayoutManager;",
-                            args=[var("ctx")],
-                        ),
-                    ),
-                    call_stmt(
-                        "setLayoutManager",
-                        args=[var(item.id), var(lm_name)],
-                        return_type=None,
-                        arg_types=["Landroidx/recyclerview/widget/RecyclerView$LayoutManager;"],
-                        invoke_kind="virtual",
-                        owner="Landroidx/recyclerview/widget/RecyclerView;",
-                    ),
-                ]
-            )
-            for idx, val in enumerate(item.items):
-                row_id = self._register_view(f"__{item.id}_row_{idx + 1}", "text")
-                body.append(
-                    assign(
-                        row_id,
-                        new("Landroid/widget/TextView;", args=[var("ctx")]),
-                    )
-                )
-                body.extend(
-                    self._set_text_from_resource(
-                        row_id,
-                        str(val),
-                        "Landroid/widget/TextView;",
-                        f"{row_id}_text",
-                        ctx_expr=var("ctx"),
-                    )
-                )
-                body.append(add_view(var(item.id), var(row_id)))
-                body.extend(self._capture_view_static(row_id))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIButtonBar):
-            item.id = self._register_view(item.id, "row")
-            self._container_orientation[item.id] = "horizontal"
-            body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
-            if item.weight_sum is not None:
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="weight_sum",
-                        raw_value=item.weight_sum,
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIPopupMenuButton):
-            item.id = self._register_view(item.id, "popup_button")
-            self._popup_button_items[item.id] = [str(v) for v in (item.items or [])]
-            body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIRadioGroup):
-            item.id = self._register_view(item.id, "radio_group")
-            orientation = "horizontal" if item.orientation == "horizontal" else "vertical"
-            self._container_orientation[item.id] = orientation
-            body.extend([assign(item.id, new("Landroid/widget/RadioGroup;", args=[var("ctx")]))])
-            body.append(
-                call_stmt(
-                    "setOrientation",
-                    args=[var(item.id), const(0 if orientation == "horizontal" else 1)],
-                    return_type=None,
-                    invoke_kind="virtual",
-                    owner="Landroid/widget/LinearLayout;",
-                )
-            )
-            if item.weight_sum is not None:
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="weight_sum",
-                        raw_value=item.weight_sum,
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIContainer):
-            item.id = self._register_view(item.id, "container")
-            self._container_orientation[item.id] = "vertical"
-            body.extend(linear_layout(item.id, var("ctx"), "vertical"))
-            if item.weight_sum is not None:
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="weight_sum",
-                        raw_value=item.weight_sum,
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIScrollView):
-            if len(item.items) != 1:
-                raise RuntimeError(
-                    f"ScrollView requires exactly one direct child; got {len(item.items)}."
-                )
-            item.id = self._register_view(item.id, "scroll_view")
-            body.extend(
-                [assign(item.id, new("Landroid/widget/ScrollView;", args=[var("ctx")]))]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIHorizontalScrollView):
-            if len(item.items) != 1:
-                raise RuntimeError(
-                    "HorizontalScrollView requires exactly one direct child; "
-                    f"got {len(item.items)}."
-                )
-            item.id = self._register_view(item.id, "horizontal_scroll_view")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new("Landroid/widget/HorizontalScrollView;", args=[var("ctx")]),
-                    )
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UINestedScrollView):
-            if len(item.items) != 1:
-                raise RuntimeError(
-                    "NestedScrollView requires exactly one direct child; "
-                    f"got {len(item.items)}."
-                )
-            item.id = self._register_view(item.id, "nested_scroll_view")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new("Landroidx/core/widget/NestedScrollView;", args=[var("ctx")]),
-                    )
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIViewPager):
-            item.id = self._register_view(item.id, "view_pager")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new("Landroidx/viewpager/widget/ViewPager;", args=[var("ctx")]),
-                    ),
-                ]
-            )
-            for idx, page_item in enumerate(item.items):
-                page_root_id = self._register_view(
-                    f"__{item.id}_page_{idx + 1}",
-                    "column",
-                )
-                body.extend(linear_layout(page_root_id, var("ctx"), "vertical"))
-                self._container_orientation[page_root_id] = "vertical"
-                page_lp = f"lp_{page_root_id}"
-                body.append(
-                    assign(
-                        page_lp,
-                        new(
-                            "Landroidx/viewpager/widget/ViewPager$LayoutParams;",
-                            args=[const(-1), const(-1)],
-                            arg_types=["I", "I"],
-                        ),
-                    )
-                )
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=page_root_id,
-                        attr_name="layout_params",
-                        raw_value=var(page_lp),
-                    )
-                )
-                body.append(add_view(var(item.id), var(page_root_id)))
-                body.extend(self._capture_view_static(page_root_id))
-                body.extend(self._build_ui_items(page_root_id, (page_item,)))
-            body.append(
-                call_stmt(
-                    "setCurrentItem",
-                    args=[var(item.id), const(int(item.initial_page))],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Landroidx/viewpager/widget/ViewPager;",
-                )
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UITabLayout):
-            item.id = self._register_view(item.id, "tab_layout")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new("Lcom/google/android/material/tabs/TabLayout;", args=[var("ctx")]),
-                    ),
-                ]
-            )
-            for idx, label in enumerate(item.tabs):
-                tab_key = self._add_string_resource(f"{item.id}_tab_{idx}", label)
-                tab_load, tab_expr = self._load_string_expr(
-                    tab_key,
-                    ctx_expr=var("ctx"),
-                    prefix=f"{item.id}_tab_{idx}",
-                )
-                tab_name = f"{item.id}_tab_{idx}"
-                body.extend(tab_load)
-                body.append(
-                    assign(
-                        tab_name,
-                        call(
-                            "newTab",
-                            args=[var(item.id)],
-                            return_type="Lcom/google/android/material/tabs/TabLayout$Tab;",
-                            arg_types=[],
-                            invoke_kind="virtual",
-                            owner="Lcom/google/android/material/tabs/TabLayout;",
-                        ),
-                    )
-                )
-                body.append(
-                    assign(
-                        tab_name,
-                        call(
-                            "setText",
-                            args=[var(tab_name), tab_expr],
-                            return_type="Lcom/google/android/material/tabs/TabLayout$Tab;",
-                            arg_types=["Ljava/lang/CharSequence;"],
-                            invoke_kind="virtual",
-                            owner="Lcom/google/android/material/tabs/TabLayout$Tab;",
-                        ),
-                    )
-                )
-                body.append(
-                    call_stmt(
-                        "addTab",
-                        args=[
-                            var(item.id),
-                            var(tab_name),
-                            const(1 if idx == item.selected_index else 0),
-                        ],
-                        return_type=None,
-                        arg_types=["Lcom/google/android/material/tabs/TabLayout$Tab;", "Z"],
-                        invoke_kind="virtual",
-                        owner="Lcom/google/android/material/tabs/TabLayout;",
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIBottomNavigationView):
-            item.id = self._register_view(item.id, "bottom_navigation_view")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new(
-                            "Lcom/google/android/material/bottomnavigation/BottomNavigationView;",
-                            args=[var("ctx")],
-                        ),
-                    ),
-                ]
-            )
-            menu_name = f"menu_{item.id}"
-            body.append(
-                assign(
-                    menu_name,
-                    call(
-                        "getMenu",
-                        args=[var(item.id)],
-                        return_type="Landroid/view/Menu;",
-                        arg_types=[],
-                        invoke_kind="virtual",
-                        owner="Lcom/google/android/material/bottomnavigation/BottomNavigationView;",
-                    ),
-                )
-            )
-            for idx, label in enumerate(item.items):
-                item_key = self._add_string_resource(f"{item.id}_item_{idx}", label)
-                item_load, item_expr = self._load_string_expr(
-                    item_key,
-                    ctx_expr=var("ctx"),
-                    prefix=f"{item.id}_item_{idx}",
-                )
-                menu_item_name = f"{item.id}_menu_item_{idx}"
-                menu_item_id = 1000 + idx
-                body.extend(item_load)
-                body.append(
-                    assign(
-                        menu_item_name,
-                        call(
-                            "add",
-                            args=[
-                                var(menu_name),
-                                const(0),
-                                const(menu_item_id),
-                                const(idx),
-                                item_expr,
-                            ],
-                            return_type="Landroid/view/MenuItem;",
-                            arg_types=["I", "I", "I", "Ljava/lang/CharSequence;"],
-                            invoke_kind="interface",
-                            owner="Landroid/view/Menu;",
-                        ),
-                    )
-                )
-                if idx == item.selected_index:
-                    body.append(
-                        assign(
-                            menu_item_name,
-                            call(
-                                "setChecked",
-                                args=[var(menu_item_name), const(1)],
-                                return_type="Landroid/view/MenuItem;",
-                                arg_types=["Z"],
-                                invoke_kind="interface",
-                                owner="Landroid/view/MenuItem;",
-                            ),
-                        ),
-                    )
-            body.append(
-                call_stmt(
-                    "setSelectedItemId",
-                    args=[var(item.id), const(1000 + item.selected_index)],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Lcom/google/android/material/bottomnavigation/BottomNavigationView;",
-                )
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UINavigationBar):
-            item.id = self._register_view(item.id, "navigation_bar")
-            if item.layout is None:
-                item.layout = ("match_parent", "wrap")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new(
-                            "Lcom/google/android/material/bottomnavigation/BottomNavigationView;",
-                            args=[var("ctx")],
-                        ),
-                    ),
-                ]
-            )
-            menu_name = f"menu_{item.id}"
-            body.append(
-                assign(
-                    menu_name,
-                    call(
-                        "getMenu",
-                        args=[var(item.id)],
-                        return_type="Landroid/view/Menu;",
-                        arg_types=[],
-                        invoke_kind="virtual",
-                        owner="Lcom/google/android/material/bottomnavigation/BottomNavigationView;",
-                    ),
-                )
-            )
-            for idx, label in enumerate(item.items):
-                item_key = self._add_string_resource(f"{item.id}_item_{idx}", label)
-                item_load, item_expr = self._load_string_expr(
-                    item_key,
-                    ctx_expr=var("ctx"),
-                    prefix=f"{item.id}_item_{idx}",
-                )
-                menu_item_name = f"{item.id}_menu_item_{idx}"
-                menu_item_id = 2000 + idx
-                body.extend(item_load)
-                body.append(
-                    assign(
-                        menu_item_name,
-                        call(
-                            "add",
-                            args=[
-                                var(menu_name),
-                                const(0),
-                                const(menu_item_id),
-                                const(idx),
-                                item_expr,
-                            ],
-                            return_type="Landroid/view/MenuItem;",
-                            arg_types=["I", "I", "I", "Ljava/lang/CharSequence;"],
-                            invoke_kind="interface",
-                            owner="Landroid/view/Menu;",
-                        ),
-                    )
-                )
-                if idx == item.selected_index:
-                    body.append(
-                        assign(
-                            menu_item_name,
-                            call(
-                                "setChecked",
-                                args=[var(menu_item_name), const(1)],
-                                return_type="Landroid/view/MenuItem;",
-                                arg_types=["Z"],
-                                invoke_kind="interface",
-                                owner="Landroid/view/MenuItem;",
-                            ),
-                        ),
-                    )
-            body.append(
-                call_stmt(
-                    "setSelectedItemId",
-                    args=[var(item.id), const(2000 + item.selected_index)],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Lcom/google/android/material/bottomnavigation/BottomNavigationView;",
-                )
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UINavigationRail):
-            item.id = self._register_view(item.id, "navigation_rail")
-            if item.layout is None:
-                item.layout = ("wrap", "match_parent")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new(
-                            "Lcom/google/android/material/navigationrail/NavigationRailView;",
-                            args=[var("ctx")],
-                        ),
-                    ),
-                ]
-            )
-            menu_name = f"menu_{item.id}"
-            body.append(
-                assign(
-                    menu_name,
-                    call(
-                        "getMenu",
-                        args=[var(item.id)],
-                        return_type="Landroid/view/Menu;",
-                        arg_types=[],
-                        invoke_kind="virtual",
-                        owner="Lcom/google/android/material/navigationrail/NavigationRailView;",
-                    ),
-                )
-            )
-            for idx, label in enumerate(item.items):
-                item_key = self._add_string_resource(f"{item.id}_item_{idx}", label)
-                item_load, item_expr = self._load_string_expr(
-                    item_key,
-                    ctx_expr=var("ctx"),
-                    prefix=f"{item.id}_item_{idx}",
-                )
-                menu_item_name = f"{item.id}_menu_item_{idx}"
-                menu_item_id = 3000 + idx
-                body.extend(item_load)
-                body.append(
-                    assign(
-                        menu_item_name,
-                        call(
-                            "add",
-                            args=[
-                                var(menu_name),
-                                const(0),
-                                const(menu_item_id),
-                                const(idx),
-                                item_expr,
-                            ],
-                            return_type="Landroid/view/MenuItem;",
-                            arg_types=["I", "I", "I", "Ljava/lang/CharSequence;"],
-                            invoke_kind="interface",
-                            owner="Landroid/view/Menu;",
-                        ),
-                    )
-                )
-                if idx == item.selected_index:
-                    body.append(
-                        assign(
-                            menu_item_name,
-                            call(
-                                "setChecked",
-                                args=[var(menu_item_name), const(1)],
-                                return_type="Landroid/view/MenuItem;",
-                                arg_types=["Z"],
-                                invoke_kind="interface",
-                                owner="Landroid/view/MenuItem;",
-                            ),
-                        ),
-                    )
-            body.append(
-                call_stmt(
-                    "setSelectedItemId",
-                    args=[var(item.id), const(3000 + item.selected_index)],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Lcom/google/android/material/navigationrail/NavigationRailView;",
-                )
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UICoordinatorLayout):
-            item.id = self._register_view(item.id, "coordinator_layout")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new(
-                            "Landroidx/coordinatorlayout/widget/CoordinatorLayout;",
-                            args=[var("ctx")],
-                        ),
-                    )
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIDrawerLayout):
-            item.id = self._register_view(item.id, "drawer_layout")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new(
-                            "Landroidx/drawerlayout/widget/DrawerLayout;",
-                            args=[var("ctx")],
-                        ),
-                    )
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIFragmentContainer):
-            item.id = self._register_view(item.id, "fragment_container")
-            if item.layout is None:
-                item.layout = ("match_parent", "match_parent")
-            body.extend(
-                [
-                    assign(
-                        item.id,
-                        new(
-                            "Landroidx/fragment/app/FragmentContainerView;",
-                            args=[var("ctx")],
-                        ),
-                    ),
-                ]
-            )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UICard):
-            item.id = self._register_view(item.id, "card")
-            self._container_orientation[item.id] = "vertical"
-            body.extend(linear_layout(item.id, var("ctx"), "vertical"))
-            if item.weight_sum is not None:
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="weight_sum",
-                        raw_value=item.weight_sum,
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIRow):
-            item.id = self._register_view(item.id, "row")
-            self._container_orientation[item.id] = "horizontal"
-            body.extend(linear_layout(item.id, var("ctx"), "horizontal"))
-            if item.weight_sum is not None:
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="weight_sum",
-                        raw_value=item.weight_sum,
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIColumn):
-            item.id = self._register_view(item.id, "column")
-            self._container_orientation[item.id] = "vertical"
-            body.extend(linear_layout(item.id, var("ctx"), "vertical"))
-            if item.weight_sum is not None:
-                body.extend(
-                    self._emit_attr_call(
-                        view_id=item.id,
-                        attr_name="weight_sum",
-                        raw_value=item.weight_sum,
-                    )
-                )
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIRelative):
-            item.id = self._register_view(item.id, "relative")
-            body.extend(relative_layout(item.id, var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIConstraint):
-            item.id = self._register_view(item.id, "constraint")
-            body.extend(constraint_layout(item.id, var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIFrame):
-            item.id = self._register_view(item.id, "frame")
-            body.extend(frame_layout(item.id, var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            body.extend(self._build_ui_items(item.id, item.items))
-        elif isinstance(item, _UIScreen):
-            item.id = self._register_view(item.id, "screen")
-            self._screen_map[item.name] = item.id
-            self._screens.append((item.name, item.id))
-            self._screen_transitions[item.name] = self._normalize_screen_transition(
-                getattr(item, "transition", None)
-            )
-            self._container_orientation[item.id] = "vertical"
-            body.extend(relative_layout(item.id, var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            # Default visibility: first screen visible, others gone.
-            vis = 0 if len(self._screens) == 1 else 8
-            body.append(
-                call_stmt(
-                    "setVisibility",
-                    args=[var(item.id), const(vis)],
-                    return_type=None,
-                    arg_types=["I"],
-                    invoke_kind="virtual",
-                    owner="Landroid/view/View;",
-                )
-            )
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-            prev_screen = self._current_screen
-            self._current_screen = item.name
-            try:
-                screen_root = _UIColumn(
-                    *item.items,
-                    id=f"{item.id}_root",
-                    layout=("match_parent", "match_parent"),
-                )
-                screen_root.id = self._register_view(screen_root.id, "column")
-                self._container_orientation[screen_root.id] = "vertical"
-                body.extend(linear_layout(screen_root.id, var("ctx"), "vertical"))
-                body.extend(self._apply_view_layout(screen_root, item.id))
-                body.append(add_view(var(item.id), var(screen_root.id)))
-                body.extend(self._capture_view_static(screen_root.id))
-                body.extend(self._build_ui_items(screen_root.id, screen_root.items))
-            finally:
-                self._current_screen = prev_screen
-        elif isinstance(item, _UIIcon):
-            item.id = self._register_view(item.id, "icon")
-            body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/TextView;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIView):
-            item.id = self._register_view(item.id, "view")
-            body.extend([assign(item.id, new("Landroid/view/View;", args=[var("ctx")]))])
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIText):
-            item.id = self._register_view(item.id, "text")
-            body.extend([assign(item.id, new("Landroid/widget/TextView;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, item.text, "Landroid/widget/TextView;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        elif isinstance(item, _UIButton):
-            item.id = self._register_view(item.id, "button")
-            body.extend([assign(item.id, new("Landroid/widget/Button;", args=[var("ctx")]))])
-            body.extend(self._set_text_from_resource(item.id, self._button_label(item), "Landroid/widget/Button;", f"{item.id}_text", ctx_expr=var("ctx")))
-            body.extend(self._apply_view_layout(item, parent_id))
-            body.append(add_view(var(parent_id), var(item.id)))
-            body.extend(self._capture_view_static(item.id))
-        else:
-            raise RuntimeError(f"Unsupported UI item: {item}")
-        return body
+        return render_widget(self, item, parent_id)
 
     def _compile_stmts(self, stmts):
         prev_locals = self._local_vars
@@ -4214,11 +3040,30 @@ class _PythonicContext(
             self._local_vars = set()
             self._local_var_types = {}
             out = self._compile_stmt_block(stmts)
-            out.append(ret())
+            # Only append return-void if the block doesn't already end with
+            # a terminator (return, navigate, back, replace, throw, etc.).
+            if out and not self._is_terminator(out[-1]):
+                out.append(ret())
             return out
         finally:
             self._local_vars = prev_locals
             self._local_var_types = prev_local_types
+
+    def _is_terminator(self, instr):
+        """Check if *instr* is a control-flow terminator."""
+        from ir.stmt import Return, CallStmt
+        from ir.expr import Call
+        from dalvik.ir import DReturn, DReturnVoid, DGoto, DThrow, DIf, DIfZ
+        if isinstance(instr, (Return, DReturn, DReturnVoid, DGoto, DThrow)):
+            return True
+        # Navigate, Back, Replace, PopToRoot, ClearStack all lower to
+        # static method calls that act as terminators.
+        if isinstance(instr, CallStmt) and isinstance(instr.expr, Call):
+            return instr.expr.func_name in (
+                "navigateTo", "navigateBack", "navigateReplace",
+                "navigatePopToRoot", "navigateClearStack",
+            )
+        return False
 
     def _compile_stmt_block(self, stmts):
         out = []
@@ -4374,7 +3219,51 @@ class _PythonicContext(
             return self._compile_replace_stmt(stmt)
         if isinstance(stmt, _StmtRequestPermissions):
             return self._compile_request_permissions_stmt(stmt)
+        # Expression objects used as statements (result discarded).
+        # This happens when helper functions like http_get_retry() are called
+        # directly in handler lists rather than through the parser.
+        from dsl.ast import _ExprHttpGetRetry, _ExprHttpGetJsonField, _ExprHttpGetJsonFieldError
+        if isinstance(stmt, (_ExprHttpGetRetry, _ExprHttpGetJsonField, _ExprHttpGetJsonFieldError)):
+            return self._compile_expr_as_stmt(stmt)
         raise RuntimeError(f"Unsupported statement: {stmt}")
+
+    def _compile_expr_as_stmt(self, expr):
+        """Compile an expression as a statement, discarding the result."""
+        from ir.expr import Call, Const
+        from dsl.ast import _ExprHttpGetRetry, _ExprHttpGetJsonField, _ExprHttpGetJsonFieldError
+        if isinstance(expr, _ExprHttpGetRetry):
+            out, _ = self._compile_http_get_retry_call(
+                url=expr.url,
+                retries=expr.retries,
+                backoff_ms=expr.backoff_ms,
+                default_value=expr.default_value,
+                tmp_prefix="http_get_retry_ignored",
+            )
+            return out
+        if isinstance(expr, _ExprHttpGetJsonField):
+            out, _ = self._compile_http_get_json_field_call(
+                url=expr.url,
+                key=expr.key,
+                fallback=expr.fallback,
+                tmp_prefix="http_get_json_field_ignored",
+            )
+            return out
+        if isinstance(expr, _ExprHttpGetJsonFieldError):
+            out, _ = self._compile_http_get_json_field_error_call(
+                url=expr.url,
+                key=expr.key,
+                tmp_prefix="http_get_json_field_error_ignored",
+            )
+            return out
+        # For other expressions (calls, etc.), compile and discard.
+        if isinstance(expr, Call):
+            tmp = self._next_tmp("call_result")
+            return [
+                assign(tmp, expr),
+            ]
+        # Fallback: compile as int expression and discard
+        prefix, _ = self._compile_int_expr(expr)
+        return prefix
 
     def _compile_exit_app_stmt(self, stmt):
         return [

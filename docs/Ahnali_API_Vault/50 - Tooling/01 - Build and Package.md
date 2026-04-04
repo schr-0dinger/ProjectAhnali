@@ -5,7 +5,7 @@ tags: [ahnali, tooling, build, packaging]
 # Build and Package
 
 > [!abstract] From Smali to signed APK
-> The toolchain chains together aapt2, d8, zipalign, and apksigner. You call `build()` or `run()` — it handles the rest.
+> The toolchain chains together aapt2, d8, zipalign, and apksigner. You call `build()` or `run()` - it handles the rest.
 
 ## The pipeline
 

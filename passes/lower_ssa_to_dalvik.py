@@ -64,6 +64,12 @@ def _is_wide_ssa(ssa):
 
 
 def apply_spills(dalvik_blocks, intervals):
+    """Insert spill load/store instructions for values that didn't fit in registers.
+
+    Wide types (long/double) occupy two consecutive virtual registers.  The
+    spill load for a wide value must use DMoveWide so the emitter knows to
+    generate move-wide/16 instead of move/16.
+    """
     spill_map = {i.value: i for i in intervals if i.spilled}
 
     for block in dalvik_blocks.values():
@@ -80,7 +86,9 @@ def apply_spills(dalvik_blocks, intervals):
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
                         if _is_wide_ssa(d.ssa):
-                            new_instrs.append(DSpillLoad(tmp, spill_val))
+                            # Wide values need move-wide, not move.
+                            tmp.reg = slot
+                            new_instrs.append(DMoveWide(tmp, spill_val))
                         else:
                             new_instrs.append(DSpillLoad(tmp, spill_val))
                         setattr(instr, field, tmp)
@@ -93,7 +101,11 @@ def apply_spills(dalvik_blocks, intervals):
                         spill_val = DValue(d.ssa)
                         spill_val.reg = slot
                         tmp = DValue(d.ssa)
-                        new_instrs.append(DSpillLoad(tmp, spill_val))
+                        if _is_wide_ssa(d.ssa):
+                            tmp.reg = slot
+                            new_instrs.append(DMoveWide(tmp, spill_val))
+                        else:
+                            new_instrs.append(DSpillLoad(tmp, spill_val))
                         new_args.append(tmp)
                     else:
                         new_args.append(d)
