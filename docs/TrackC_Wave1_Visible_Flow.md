@@ -1,20 +1,20 @@
-# Track C Wave 1 Visible App Flow
+# Track C Wave 1: Visible App Flow
 
-Status: Closed for Wave 1  
+Status: Closed for Wave 1
 Date: 2026-02-17
 
-This flow demonstrates one screen that uses the core Wave 1 capability helpers together:
+Single-screen demo that wires up the Wave 1 helpers together:
 - `URLLauncher` via `open_url(...)`
 - `Connectivity` via `check_connectivity()`
 - `Storage` via `storage_put(...)`, `storage_get(...)`, `storage_remove(...)`
 
-## User-visible behavior
+## What the user sees
 
-- **Save URL** stores a URL and updates status text.
-- **Load URL** reads stored URL and shows it in preview text.
-- **Clear URL** removes stored URL and updates preview/status text.
-- **Check Connectivity** performs connectivity helper call and updates status text.
-- **Open URL** launches browser and updates status text.
+- **Save URL** — stores a URL, updates status text.
+- **Load URL** — reads stored URL, shows it in preview text.
+- **Clear URL** — removes stored URL, updates preview/status text.
+- **Check Connectivity** — calls connectivity helper, updates status text.
+- **Open URL** — launches browser, updates status text.
 
 ## Conformance test
 

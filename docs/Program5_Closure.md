@@ -1,68 +1,42 @@
-# Program 5 Closure (State + Lifecycle)
+# Program 5 — State and Lifecycle
 
-Status: Closed (code/tests/docs evidence)
+This is closed. Here's what shipped and where you can verify it.
 
-This document closes Program 5 by linking shipped behavior to deterministic contracts and conformance tests.
+## What shipped
 
-## Scope Closed
+**Lifecycle hooks:** `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`. When you define these, the compiler emits a wrapper bridge that calls `invoke-super` first, then your static handler. No surprises.
 
-1. Lifecycle hooks
-- `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
-- Wrapper lifecycle bridges emit deterministic forwarding when hooks are present.
+**State backends:** Six deterministic storage surfaces, all following the same contract:
 
-2. Deterministic state backends
-- SharedPreferences helper surface (`storage_put/get/remove/exists/clear`)
-- DataStore helper surface (`datastore_*`)
-- File helper surface (`file_*`)
-- SQLite helper surface (`sqlite_*`)
-- Room helper surface (`room_*`)
-- Encrypted helper surface (`encrypted_storage_*`, aliases `secure_storage_*`)
+| Backend | DSL prefix |
+|---|---|
+| SharedPreferences | `storage_*` |
+| DataStore | `datastore_*` |
+| File | `file_*` |
+| SQLite | `sqlite_*` |
+| Room | `room_*` |
+| Encrypted | `encrypted_storage_*` / `secure_storage_*` |
 
-## Deterministic Contract Summary
+Each one supports `put`, `get`, `exists`, `remove`, `clear`.
 
-1. `*_put/remove/clear`
-- Return `1` on success.
-- Return `0` on invalid input or caught exception.
+## The contract
 
-2. `*_get`
-- Return stored value when present.
-- Return fallback argument when missing/error.
+- `*_put`, `*_remove`, `*_clear` return `1` on success, `0` on bad input or caught exception.
+- `*_get` returns the stored value, or the fallback you passed in if the key is missing.
+- `*_exists` returns `1` if the key is there, `0` otherwise.
 
-3. `*_exists`
-- Return `1` when key exists.
-- Return `0` otherwise.
+Simple. Predictable. No magic.
 
-4. Lifecycle bridge ordering
-- Wrapper calls `invoke-super` first, then static lifecycle hook.
+## Where to check
 
-## Evidence (Tests)
+Tests:
+- `tests/test_program5_state_backends.py` — parser, lowering, and ABI for all backends
+- `tests/test_program5_lifecycle.py` — lifecycle hook compilation and bridge emission
+- `tests/test_runtime_abi_v1.py` — ABI signature checks
+- `tests/test_runtime_abi_snapshot.py` — frozen signature stability
 
-1. `tests/test_program5_state_backends.py`
-- Verifies parser/lowering + helper-call ABI for all deterministic backends.
+Docs:
+- README — state backend and lifecycle contract sections
+- `capability_runtime_mapping_v1.md` — the mapping baseline the toolchain uses
 
-2. `tests/test_program5_lifecycle.py`
-- Verifies lifecycle hook compilation and wrapper lifecycle bridge emission.
-
-3. `tests/test_runtime_abi_v1.py`
-- Verifies lifecycle bridge ABI signatures and helper contract expectations.
-
-4. `tests/test_runtime_abi_snapshot.py`
-- Verifies frozen helper signature surface remains stable.
-
-## Evidence (Docs/Contracts)
-
-1. `README.md`
-- Program 5 state backend and lifecycle contract sections.
-
-2. `runtime_abi_v1.md`
-- Lifecycle bridge ABI and helper contract references.
-
-3. `docs/capability_runtime_mapping_v1.md`
-- Capability/helper mapping baseline used by toolchain binding checks.
-
-## Closure Gate
-
-Program 5 is considered closed when:
-- tests above remain green,
-- ABI snapshot checks remain green,
-- docs listed above stay aligned with code reality.
+Program 5 is closed as long as those tests stay green and the docs stay in sync with the code.

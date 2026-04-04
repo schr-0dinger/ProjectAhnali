@@ -1,11 +1,11 @@
-# Track C Wave 7 Permissions Capability
+# Track C Wave 7: Permissions Capability
 
-Status: Completed  
+Status: Completed
 Date: 2026-02-17
 
-Wave 7 closes the `Permissions` capability slice as a deterministic helper-call surface and adds a visible integration flow combining permissions + storage + URL launch fallback routing.
+Closes the `Permissions` capability slice as a deterministic helper-call surface. Visible integration flow combines permissions + storage + URL launch fallback routing.
 
-## Delivered
+## What shipped
 
 - New helper-call capability binding:
   - `Caps.Permissions` -> `Lcom/ahnali/runtime/PermissionHelper;->isGranted(Landroid/app/Activity;Ljava/lang/String;)I`
@@ -21,10 +21,10 @@ Wave 7 closes the `Permissions` capability slice as a deterministic helper-call 
   - `tests/test_track_c_wave7_visible_flow.py` combines `Permissions + Storage + URLLauncher`
   - deterministic fallback branch uses explicit storage fallback strings
 
-## Deterministic Contract
+## Return contract
 
-- Return `1` when the requested permission is granted.
-- Return `0` when:
+- Returns `1` when the requested permission is granted.
+- Returns `0` when:
   - activity context is null
   - permission string is null
   - permission is denied

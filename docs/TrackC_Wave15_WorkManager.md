@@ -1,10 +1,9 @@
 # Track C Wave 15: WorkManager Deterministic Slice (Program 6-B)
 
-Status: Complete  
+Status: Complete
 Date: 2026-02-18
 
-This wave adds a deterministic background-work helper surface for WorkManager-style
-enqueue/cancel/status routing under capability guardrails.
+Adds a deterministic background-work helper surface for WorkManager-style enqueue/cancel/status routing under capability guardrails.
 
 ## Contract
 
@@ -25,7 +24,7 @@ enqueue/cancel/status routing under capability guardrails.
 - `work_status(name)`
 - `work_error(name)`
 
-## Deterministic Error Contract
+## Error contract
 
 - `enqueueWorkError`: `0` success, `1` invalid args/context, `2` invalid delay, `3` exception.
 - `cancelWorkError`: `0` success, `1` invalid args/context, `2` unknown work, `3` exception.
@@ -34,7 +33,4 @@ enqueue/cancel/status routing under capability guardrails.
 ## Conformance
 
 - `tests/test_track_c_wave15_workmanager.py`
-- Runtime mapping/ABI guards:
-  - `tests/test_capabilities.py`
-  - `tests/test_runtime_abi_v1.py`
-  - `tests/test_runtime_abi_snapshot.py`
+- Runtime mapping/ABI guards: `tests/test_capabilities.py`, `tests/test_runtime_abi_v1.py`, `tests/test_runtime_abi_snapshot.py`

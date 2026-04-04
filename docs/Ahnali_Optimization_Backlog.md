@@ -1,148 +1,112 @@
-# Ahnali Optimization Backlog (Future Plan)
+# Optimization Backlog
 
-Status: Planned backlog (not implemented by default)
-Scope: Build-time optimization, static analysis, packaging intelligence, and architecture hygiene.
+Things we want to add eventually. None of this is enabled by default — every optimization needs to be gated behind a flag and backed by tests before it ships.
 
-## 1) Asset Optimization
+## Assets
 
-### Images
-- [ ] PNG -> WebP (lossy/lossless)
-- [ ] PNG -> AVIF
-- [ ] Auto strip metadata (EXIF, ICC profiles)
-- [ ] Remove unused alpha channel
-- [ ] Downscale oversized images
-- [ ] Auto-generate density buckets (mdpi -> xxxhdpi)
-- [ ] Deduplicate identical images
-- [ ] Detect unused images
-- [ ] Optimize nine-patch images
-- [ ] Convert SVG -> VectorDrawable
-- [ ] Auto-generate mipmaps
+**Images:**
+- PNG → WebP/AVIF conversion
+- Strip metadata (EXIF, ICC profiles)
+- Remove unused alpha channels
+- Downscale images that are bigger than they need to be
+- Auto-generate density buckets (mdpi through xxxhdpi)
+- Deduplicate identical images
+- Nine-patch optimization
+- SVG → VectorDrawable conversion
+- Auto-generate mipmaps
 
-### Video
-- [ ] Re-encode large videos
-- [ ] Downscale resolution
-- [ ] Reduce bitrate
-- [ ] Convert to efficient codec
-- [ ] Remove audio if unused
+**Video:**
+- Re-encode oversized videos
+- Downscale resolution, reduce bitrate
+- Strip audio tracks from videos that don't need them
 
-### Audio
-- [ ] Convert WAV -> AAC/Opus
-- [ ] Normalize volume
-- [ ] Reduce bitrate
-- [ ] Trim silence
-- [ ] Strip metadata
+**Audio:**
+- WAV → AAC/Opus
+- Normalize volume, reduce bitrate
+- Trim silence, strip metadata
 
-## 2) Resource Optimization
+## Resources
 
-- [ ] Remove unused resources
-- [ ] Inline small resources
-- [ ] Merge duplicate layouts
-- [ ] Flatten nested layout hierarchies
-- [ ] Detect deep view nesting
-- [ ] Suggest constraint optimizations
-- [ ] Optimize string tables
-- [ ] Deduplicate repeated strings
-- [ ] Auto-enable resource shrinking flags
+- Remove unused resources
+- Inline small resource files
+- Merge duplicate layouts
+- Flatten deeply nested view hierarchies
+- Detect and warn about deep nesting
+- Optimize string tables, deduplicate repeated strings
+- Auto-enable resource shrinking
 
-## 3) Code-Level Optimization (DSL -> Smali)
+## Code-level (DSL → Smali)
 
-- [ ] Dead code elimination hardening
-- [ ] Remove unused functions
-- [ ] Remove unused state variables
-- [ ] Inline small functions
-- [ ] Constant folding expansion
-- [ ] Branch pruning
-- [ ] Unreachable code detection
-- [ ] Detect redundant recomposition triggers
-- [ ] Optimize state diff checks
-- [ ] Merge identical event handlers
+- Harden dead code elimination
+- Remove unused functions and state variables
+- Inline small functions
+- Constant folding
+- Branch pruning, unreachable code detection
+- Merge identical event handlers
 
-## 4) Dependency Optimization (AAR/JAR)
+## Dependencies (AAR/JAR)
 
-- [ ] Detect unused classes
-- [ ] Remove unused methods
-- [ ] Detect duplicate libraries
-- [ ] Warn about conflicting versions
-- [ ] Shrink dependency graph
-- [ ] Detect heavy transitive dependencies
-- [ ] Suggest lighter alternatives
+- Detect unused classes and methods
+- Flag duplicate or conflicting library versions
+- Warn about heavy transitive dependencies and suggest lighter alternatives
 
-## 5) Manifest Optimization
+## Manifest
 
-- [ ] Remove unused permissions
-- [ ] Detect over-privileged configuration
-- [ ] Auto-remove redundant features
-- [ ] Optimize minSdk/targetSdk hints
-- [ ] Detect missing required permissions
-- [ ] Merge duplicate intent filters
-- [ ] Warn about exported components
+- Remove unused permissions
+- Detect over-privileged configs
+- Warn about exported components
+- Merge duplicate intent filters
+- Suggest minSdk/targetSdk adjustments
 
-## 6) Native Layer Optimization (If Used)
+## Native layer (if/when we use it)
 
-- [ ] Strip debug symbols from `.so`
-- [ ] Enable LTO
-- [ ] Remove unused exported symbols
-- [ ] Validate ABI completeness
-- [ ] Detect unsafe panics
-- [ ] Optimize compilation flags
-- [ ] Compress native libraries
-- [ ] Check for architecture mismatches
+- Strip debug symbols from .so files
+- Enable LTO
+- Validate ABI completeness
+- Check for architecture mismatches
 
-## 7) Performance Static Analysis
+## Performance static analysis
 
-- [ ] Detect blocking network calls on main thread
-- [ ] Detect large object allocations in loops
-- [ ] Detect repeated expensive calls in UI cycle
-- [ ] Detect excessive state updates
-- [ ] Detect inefficient list binding patterns
-- [ ] Warn about heavy work inside UI callbacks
-- [ ] Detect missing background dispatch
+- Block network calls on main thread
+- Flag expensive operations inside loops or UI callbacks
+- Detect excessive state updates
+- Warn about inefficient list binding patterns
 
-## 8) Security Optimization
+## Security
 
-- [ ] Detect hardcoded secrets
-- [ ] Warn about insecure HTTP
-- [ ] Check weak crypto usage
-- [ ] Scan for debug flags left enabled
-- [ ] Strip debug logs in release builds
-- [ ] Detect unsafe file permissions
-- [ ] Warn about exported services
+- Detect hardcoded secrets
+- Warn about insecure HTTP endpoints
+- Flag weak crypto usage
+- Strip debug logs in release builds
+- Warn about exported services and unsafe file permissions
 
-## 9) Build-Time Enhancements
+## Build-time
 
-- [ ] Deterministic build hashing
-- [ ] Reproducible build artifacts
-- [ ] Asset fingerprinting
-- [ ] Version stamping
-- [ ] Auto semantic version increment
-- [ ] Auto changelog generation
-- [ ] APK size diff reporting
-- [ ] Build-time benchmarking
+- Deterministic build hashing
+- Reproducible artifacts
+- Version stamping
+- APK size diff reporting between builds
+- Build-time benchmarking
 
-## 10) App Architecture Optimization
+## Architecture
 
-- [ ] Detect circular navigation flows
-- [ ] Detect unreachable screens
-- [ ] Detect duplicate navigation routes
-- [ ] Detect state bloat
-- [ ] Suggest state scoping improvements
-- [ ] Validate event handler consistency
+- Detect circular navigation flows
+- Find unreachable screens
+- Flag state bloat
+- Suggest better state scoping
 
-## 11) Packaging Optimization
+## Packaging
 
-- [ ] Enable resource shrinking automatically
-- [ ] Enable code shrinking rules
-- [ ] Compress dex files
-- [ ] Optimize class ordering
-- [ ] Multi-dex splitting if needed
-- [ ] Generate minimal proguard config
+- Auto-enable resource/code shrinking
+- Optimize dex file ordering
+- Multi-dex splitting when needed
+- Generate minimal proguard rules
 
-## 12) Developer Experience Enhancements
+## Developer experience
 
-- [ ] Lint for anti-patterns
-- [ ] Suggest better DSL constructs
-- [ ] Auto-format DSL
-- [ ] Enforce style guidelines
-- [ ] Detect complexity hotspots
-- [ ] Generate visual UI tree map
-- [ ] Build performance profiling report
+- Lint for anti-patterns
+- Suggest better DSL constructs
+- Auto-format DSL code
+- Detect complexity hotspots
+- Visual UI tree map
+- Build performance profiling reports

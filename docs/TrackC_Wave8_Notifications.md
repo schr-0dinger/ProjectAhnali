@@ -1,8 +1,8 @@
-# Track C Wave 8: Notifications + Channels (Visible Flow)
+# Track C Wave 8: Notifications + Channels
 
 Status: Completed on 2026-02-18
 
-This wave adds a second Program 6-A capability slice focused on deterministic notification delivery.
+Adds notification delivery with deterministic error surfaces under `Caps.Notifications`.
 
 ## Capability + ABI
 
@@ -13,7 +13,7 @@ This wave adds a second Program 6-A capability slice focused on deterministic no
   - `postNotification(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`
   - `postNotificationError(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I`
 
-Deterministic error-code contract (`postNotificationError`):
+Error codes from `postNotificationError`:
 - `0`: success
 - `1`: invalid args
 - `2`: permission denied (`POST_NOTIFICATIONS`, SDK >= 33)
@@ -34,26 +34,17 @@ Deterministic error-code contract (`postNotificationError`):
 
 ## Conformance tests
 
-- Capability/lowering/toolchain/parser:
-  - `tests/test_track_c_wave8_notifications.py`
-- Visible deterministic fallback flow:
-  - `tests/test_track_c_wave8_visible_flow.py`
-- ABI snapshot surface:
-  - `tests/test_runtime_abi_snapshot.py`
-  - `cfg/runtime_abi_snapshot_v1.json`
-- Mapping contract + docs drift:
-  - `tests/test_capability_mapping_contract.py`
-  - `cfg/capability_mapping_snapshot_v1.json`
+- Capability/lowering/toolchain/parser: `tests/test_track_c_wave8_notifications.py`
+- Visible deterministic fallback flow: `tests/test_track_c_wave8_visible_flow.py`
+- ABI snapshot surface: `tests/test_runtime_abi_snapshot.py`, `cfg/runtime_abi_snapshot_v1.json`
+- Mapping contract + docs drift: `tests/test_capability_mapping_contract.py`, `cfg/capability_mapping_snapshot_v1.json`
 
-## Visible flow summary
+## Visible flow
 
-The wave-8 visible flow compiles an app that:
+The compiled app:
 1. Creates a notification channel.
 2. Attempts notification delivery through `notify_error(...)`.
 3. Routes success to URL launch and success labels.
 4. Routes failure to storage-backed deterministic fallback text.
 
-References:
-- `tests/test_track_c_wave8_visible_flow.py`
-- `docs/capability_runtime_mapping_v1.md`
-- `runtime_abi_v1.md`
+References: `tests/test_track_c_wave8_visible_flow.py`, `docs/capability_runtime_mapping_v1.md`, `runtime_abi_v1.md`

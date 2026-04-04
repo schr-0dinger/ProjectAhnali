@@ -1,10 +1,9 @@
 # Track C Wave 16: AlarmManager Deterministic Slice (Program 6-B)
 
-Status: Complete  
+Status: Complete
 Date: 2026-02-18
 
-This wave adds deterministic AlarmManager-style scheduling APIs with strict parser
-validation and explicit status/error surfaces.
+Adds deterministic AlarmManager-style scheduling APIs with strict parser validation and explicit status/error surfaces.
 
 ## Contract
 
@@ -25,7 +24,7 @@ validation and explicit status/error surfaces.
 - `alarm_status(name)`
 - `alarm_error(name)`
 
-## Deterministic Error Contract
+## Error contract
 
 - `scheduleAlarmError`: `0` success, `1` invalid args/context, `2` invalid trigger, `3` exception.
 - `cancelAlarmError`: `0` success, `1` invalid args/context, `2` unknown alarm, `3` exception.
@@ -34,7 +33,4 @@ validation and explicit status/error surfaces.
 ## Conformance
 
 - `tests/test_track_c_wave16_alarmmanager.py`
-- Runtime mapping/ABI guards:
-  - `tests/test_capabilities.py`
-  - `tests/test_runtime_abi_v1.py`
-  - `tests/test_runtime_abi_snapshot.py`
+- Runtime mapping/ABI guards: `tests/test_capabilities.py`, `tests/test_runtime_abi_v1.py`, `tests/test_runtime_abi_snapshot.py`

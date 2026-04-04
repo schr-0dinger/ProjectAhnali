@@ -1,11 +1,11 @@
-# Track C Wave 6 Location Capability
+# Track C Wave 6: Location Capability
 
-Status: Completed  
+Status: Completed
 Date: 2026-02-17
 
-Wave 6 extends capability expansion with a deterministic `Location` helper-call surface and a visible integration flow that combines location + networking + storage.
+Adds a deterministic `Location` helper-call surface and a visible integration flow combining location + networking + storage.
 
-## Delivered
+## What shipped
 
 - New helper-call capability binding:
   - `Caps.Location` -> `Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(Landroid/app/Activity;)I`
@@ -21,10 +21,10 @@ Wave 6 extends capability expansion with a deterministic `Location` helper-call 
   - `tests/test_track_c_wave6_visible_flow.py` combines `Location + Networking + Storage`
   - deterministic fallback branch uses explicit storage/body fallback strings
 
-## Deterministic Contract
+## Return contract
 
-- Return `1` when location provider is enabled (`gps` or `network`).
-- Return `0` when:
+- Returns `1` when location provider is enabled (`gps` or `network`).
+- Returns `0` when:
   - activity context is null
   - location manager is unavailable
   - provider checks fail

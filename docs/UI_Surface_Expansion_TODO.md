@@ -1,329 +1,69 @@
-# Ahnali UI Surface Expansion TODO (v1)
-
-Last updated: 2026-02-13
-
-Goal:
-- Expand UI depth and polish while preserving:
-- Ahead-of-time compilation
-- Deterministic smali emission
-- No reactive runtime
-- No implicit property diffing
-- No dynamic widget trees
-
-All animations and effects must be explicit and imperative.
-
-## Global Constraints (Apply to Every Phase)
-
-- [x] Keep handlers named and statically registered (no lambdas/dynamic callbacks).
-- [x] Keep compile-time ID validation for all widget/event references.
-- [x] Keep deterministic lowering only (no runtime behavior inference).
-- [x] Add compile-time lint for unsupported widget/style combinations.
-- [x] Add focused lowering tests and at least one integration smoke test per phase.
-
-## Phase 1: Typography v1
-
-### DSL and Style Surface (`dsl/widgets.py`)
-- [x] Add `font_family` to `Style`.
-- [x] Add `font_weight` to `Style`.
-- [x] Add `font_style` to `Style`.
-- [x] Add `letter_spacing` to `Style`.
-- [x] Add `line_height` to `Style`.
-- [x] Add `text_alignment` to `Style`.
-- [x] Add `all_caps` to `Style`.
-- [x] Add `max_lines` to `Style`.
-- [x] Add `ellipsize` to `Style`.
-
-### Lowering (`dsl/lowering/attr_registry.py`, `dsl/lowering/context.py`)
-- [x] Lower `font_*` to `setTypeface`.
-- [x] Lower `letter_spacing` to `setLetterSpacing`.
-- [x] Lower `line_height` to `setLineSpacing`.
-- [x] Lower `text_alignment` to `setTextAlignment`.
-- [x] Lower `all_caps` to `setAllCaps`.
-- [x] Lower `max_lines` to `setMaxLines`.
-- [x] Lower `ellipsize` to `setEllipsize`.
-
-### Coverage
-- [x] Text
-- [x] Button family
-- [x] Radio / Checkbox / Switch
-- [ ] Dropdown text surface
-- [ ] Popup menu item text surface
-
-## Phase 2: Control Tinting v1
-
-### DSL and Style Surface (`dsl/widgets.py`)
-- [x] Add `tint`.
-- [x] Add `thumb_tint`.
-- [x] Add `track_tint`.
-- [x] Add `progress_tint`.
-- [x] Add `button_tint`.
-
-### Lowering (`dsl/lowering/context.py`)
-- [x] Slider: `setThumbTintList`.
-- [x] Slider: `setProgressTintList`.
-- [x] Slider: `setProgressBackgroundTintList`.
-- [x] ProgressBar: `setProgressTintList`.
-- [x] ProgressBar: `setIndeterminateTintList`.
-- [x] Switch: `setThumbTintList`.
-- [x] Switch: `setTrackTintList`.
-- [x] Checkbox/Radio: `setButtonTintList`.
-- [x] Button: `setBackgroundTintList`.
-
-## Phase 3: ColorStateList DSL
-
-### DSL (`dsl/widgets.py` or `dsl/colors.py`)
-- [x] Add `ColorState(default=..., pressed=..., disabled=..., selected=..., focused=...)`.
-- [x] Validate allowed keys: `default`, `pressed`, `disabled`, `selected`, `focused`.
-- [x] Deterministic state ordering for emitted arrays.
-
-### Lowering (`dsl/lowering/context.py`)
-- [x] Convert `ColorState` to `ColorStateList`.
-- [x] Support `ColorState` in `text_color`.
-- [x] Support `ColorState` in `background`/tint channels (background currently uses default-color fallback + lint warning).
-- [x] Support `ColorState` in progress/tint fields.
-
-## Phase 4: Event Surface Expansion
-
-### DSL API (`dsl/app.py`, `dsl/widgets.py`)
-- [x] Add `on_change`.
-- [x] Add `on_text_change`.
-- [x] Add `on_item_selected`.
-- [x] Add `on_menu_item_selected`.
-- [x] Add `on_focus_change`.
-
-### Lowering (`dsl/lowering/context.py`, support listener classes)
-- [x] Slider -> `OnSeekBarChangeListener`.
-- [x] Switch/Checkbox -> `OnCheckedChangeListener`.
-- [x] RadioGroup -> `OnCheckedChangeListener`.
-- [x] TextField -> `TextWatcher`.
-- [x] Dropdown -> `OnItemSelectedListener`.
-- [x] PopupMenu -> `OnMenuItemClickListener`.
-
-### Constraints
-- [x] Named handlers only.
-- [x] Compile-time ID validation.
-- [x] No dynamic registration at runtime.
-
-## Phase 5: Input Configuration
-
-### DSL (`dsl/widgets.py`)
-- [x] Add TextField fields: `input_type`, `ime_options`, `max_length`, `single_line`, `password`, `auto_capitalize`, `numeric_only`.
-
-### Lowering (`dsl/lowering/context.py`)
-- [x] `setInputType`.
-- [x] `setImeOptions`.
-- [x] `setFilters`.
-- [x] `setSingleLine`.
-- [x] `setTransformationMethod`.
-
-## Phase 6: Accessibility
-
-### DSL (`dsl/widgets.py`)
-- [x] Add `content_description`.
-- [x] Add `important_for_accessibility`.
-- [x] Add `accessibility_label` alias.
-
-### Lowering (`dsl/lowering/context.py`)
-- [x] `setContentDescription`.
-- [x] `setImportantForAccessibility`.
-
-## Phase 7: Elevation and Shadow
-
-### DSL (`dsl/widgets.py`)
-- [x] Add `elevation`.
-- [x] Add `pressed_elevation`.
-- [x] Add `text_shadow_color`.
-- [x] Add `text_shadow_radius`.
-- [x] Add `text_shadow_dx`.
-- [x] Add `text_shadow_dy`.
-
-### Lowering (`dsl/lowering/context.py`)
-- [x] `setElevation`.
-- [x] Text-only `setShadowLayer`.
-- [x] Optional pressed elevation animation path (explicit only).
-
-### Coverage
-- [x] Card
-- [x] Button
-- [x] Container
-- [x] AppBar
-- [x] Text
-
-## Phase 8: Visual Effects Pack v1
-
-### 8.1 Opacity
-- [x] Add `opacity`.
-- [x] Lower to `setAlpha`.
-
-### 8.2 Border
-- [x] Add `border_width`.
-- [x] Add `border_color`.
-- [x] Add `border_radius` (allow per-corner model).
-- [x] Lower via `GradientDrawable` stroke.
-
-### 8.3 Gradient Background
-- [x] Add `Gradient(start, end, direction)`.
-- [x] Lower to `GradientDrawable` gradients.
-
-### 8.4 Ripple
-- [x] Add `ripple_color`.
-- [x] Lower to `RippleDrawable`.
-
-### 8.5 Clip and Outline
-- [x] Add `clip_to_outline`.
-- [x] Add `clip_children`.
-- [x] Lower to `setClipToOutline` / `setClipChildren`.
-
-### 8.6 Blur (API 31+)
-- [x] Add `blur_radius`.
-- [x] Lower to `RenderEffect.createBlurEffect`.
-- [x] Warn at compile time when `min_sdk < 31`.
-
-### 8.7 Static Transforms
-- [x] Add `rotation`.
-- [x] Add `scale_x`.
-- [x] Add `scale_y`.
-- [x] Add `translation_x`.
-- [x] Add `translation_y`.
-- [x] Lower to corresponding view setters.
-
-## Phase 9: Explicit Animation DSL (Imperative Only)
-
-### DSL (`dsl/app.py` or `dsl/animation.py`)
-- [x] Add `animate(id, ...)`.
-- [x] Add helpers: `fade_in`, `fade_out`, `rotate`, `scale`, `translate`, `animate_elevation`.
-- [x] Add composition helpers: `sequence(...)`, `parallel(...)`.
-
-### Supported Properties
-- [x] `rotate`
-- [x] `scale`
-- [x] `scale_x`
-- [x] `scale_y`
-- [x] `translate_x`
-- [x] `translate_y`
-- [x] `alpha`
-- [x] `elevation`
-
-### Common Params
-- [x] `duration`
-- [x] `delay`
-- [x] `interpolator`
-
-### Lowering
-- [x] `ViewPropertyAnimator`.
-- [x] `ObjectAnimator`.
-- [x] `AnimatorSet`.
-
-### Navigation Transitions
-- [x] Add `Screen(..., transition=...)`.
-- [x] Support `fade`, `slide_left`, `slide_right`, `slide_up`, `slide_down`.
-- [x] Lower to predefined animator methods.
-
-### Forbidden (must stay forbidden)
-- [x] No state-bound implicit animations.
-- [x] No diff-based recomposition.
-- [x] No reactive animation runtime.
-
-## Phase 10: Theme Expansion
-
-### Theme Channels (`dsl/widgets.py`)
-- [x] Add `input`.
-- [x] Add `selector`.
-- [x] Add `progress`.
-- [x] Add `icon`.
-- [x] Add `container`.
-- [x] Add `appbar`.
-
-### Resolution Order
-- [x] Enforce `inline attrs > style= > Theme channel > widget defaults`.
-- [x] Add lint/tests for deterministic precedence.
-
-## Phase 11: Scroll Controls
-
-### DSL and Validation
-- [x] Add `ScrollView`.
-- [x] Add `HorizontalScrollView`.
-- [x] Enforce single direct child at compile time.
-
-### Lowering
-- [x] Emit corresponding widget constructors and layout wiring.
-
-## Phase 12: RecyclerView (Static v1)
-
-### DSL
-- [x] Add `ListView(items=[...], item_layout=...)` static-only shape.
-
-### Lowering
-- [x] Deterministic adapter generation.
-- [x] Stable view holder + bind logic.
-- [x] Compile-time-only dataset (no runtime diffing).
-
-## Phase 13: Validation and Linting
-
-### Compile-time Checks
-- [x] Style field incompatible with widget.
-- [x] Invalid state keys.
-- [x] Unsupported event binding target.
-- [x] Duplicate IDs.
-- [x] Animation target ID not found.
-- [x] Blur below API 31.
-- [x] Invalid gradient config.
-
-### Diagnostics
-- [x] Error messages with widget id and field name.
-- [x] Warnings for degraded fallback behavior.
-
-## Phase 14: Material Plugin Backlog (Pending)
-
-### Input
-- [ ] Number field specialization.
-- [ ] Rating control.
-- [ ] Select variants beyond basic dropdown.
-- [ ] Transfer list.
-- [ ] Toggle button group.
-
-### Data Display
-- [ ] Avatar.
-- [ ] Badge.
-- [ ] Chip and chip group.
-- [ ] List.
-- [ ] Table.
-- [ ] Tooltip.
-- [ ] Material icon pack helpers.
-- [ ] Typography presets.
-
-### Feedback
-- [ ] Material alert surface.
-- [ ] Backdrop.
-- [ ] Material dialog surface (replace platform fallback path).
-- [ ] Skeleton loading states.
-
-### Surfaces
-- [ ] Accordion / expansion panel.
-- [ ] Paper surface primitive.
-
-### Navigation
-- [ ] Bottom navigation.
-- [ ] Breadcrumbs.
-- [ ] Drawer.
-- [ ] Link surface.
-- [ ] Pagination.
-- [ ] Speed dial.
-- [ ] Stepper.
-- [ ] Tabs.
-
-## Non-Goals (Locked)
-
-- [ ] No reactive hooks.
-- [ ] No CSS-style cascade engine.
-- [ ] No dynamic theme switching in v1.
-- [ ] No shader DSL in v1.
-- [ ] No runtime layout diffing/recomposition.
-
-## Execution Order (Recommended)
-
-- [ ] Wave A: Phases 1, 2, 3 (style primitives + state colors).
-- [x] Wave B: Phases 4, 5, 6 (events + input + accessibility).
-- [x] Wave C: Phases 7, 8 (visual polish primitives).
-- [x] Wave D: Phase 9 (explicit animation layer).
-- [x] Wave E: Phases 10, 11, 12, 13 (theme expansion + containers + validation hardening).
+# UI Surface Expansion — Where We Are
+
+This is the tracker for UI depth and polish. The rules are simple: everything stays AOT-compiled, deterministic, and static. No reactive runtime, no implicit diffing, no dynamic widget trees. Animations are explicit and imperative.
+
+## Ground rules
+
+Every phase has to respect these:
+- Named handlers only, statically registered
+- Compile-time ID validation on everything
+- Deterministic lowering — no guessing at runtime
+- Lint errors for unsupported widget/style combos
+- Focused tests plus at least one integration smoke per phase
+
+## What's done
+
+### Phase 1: Typography
+Font family, weight, style, letter spacing, line height, text alignment, all-caps, max lines, ellipsize. All lowered to the right TextView APIs. Covers Text, Button family, Radio/Checkbox/Switch. Still need to hit Dropdown and PopupMenu text surfaces.
+
+### Phase 2: Control Tinting
+Tint, thumb tint, track tint, progress tint, button tint — all wired to the right Android APIs across Slider, ProgressBar, Switch, Checkbox/Radio, and Button.
+
+### Phase 3: ColorStateList DSL
+`ColorState(default, pressed, disabled, selected, focused)` with deterministic state ordering. Works on text color, tint, and progress fields. Background tint uses default-color fallback with a lint warning for now.
+
+### Phase 4: Events
+Added `on_change`, `on_text_change`, `on_item_selected`, `on_menu_item_selected`, `on_focus_change`. Each maps to the right Android listener (OnSeekBarChangeListener, TextWatcher, OnItemSelectedListener, etc).
+
+### Phase 5: Input Configuration
+TextField got `input_type`, `ime_options`, `max_length`, `single_line`, `password`, `auto_capitalize`, `numeric_only`. All lowered correctly.
+
+### Phase 6: Accessibility
+`content_description` and `important_for_accessibility` on all widgets.
+
+### Phase 7: Elevation and Shadow
+Elevation, pressed elevation, text shadow (color, radius, dx/dy). Covers Card, Button, Container, AppBar, Text.
+
+### Phase 8: Visual Effects
+Opacity, borders (width, color, per-corner radius), gradient backgrounds, ripple, clip-to-outline, clip-children, blur (API 31+ with compile-time guard), static transforms (rotation, scale, translation).
+
+### Phase 9: Explicit Animations
+`animate(id, ...)` with helpers for fade, rotate, scale, translate, elevation. Composition via `sequence()` and `parallel()`. Navigation transitions (fade, slide in four directions). All imperative — no state-bound or diff-based animation.
+
+### Phase 10: Theme Expansion
+Added input, selector, progress, icon, container, and appbar theme channels. Precedence is enforced: inline > style > theme > defaults.
+
+### Phase 11: Scroll Controls
+ScrollView and HorizontalScrollView with single-child enforcement.
+
+### Phase 12: Static List View
+`ListView(items=[...], item_layout=...)` with deterministic adapter generation. No runtime diffing.
+
+### Phase 13: Validation and Linting
+Checks for incompatible style fields, invalid state keys, unsupported event bindings, duplicate IDs, missing animation targets, blur below API 31, bad gradient configs. Error messages include widget ID and field name.
+
+## What's next (Phase 14: Material Plugin)
+
+Not started yet. When we get here, we're looking at:
+
+**Input:** number fields, rating controls, chip groups, toggle button groups, transfer lists.
+
+**Data display:** avatars, badges, chips, tables, tooltips, typography presets.
+
+**Feedback:** Material alerts, backdrops, proper Material dialogs (replace the platform fallback), skeleton loaders.
+
+**Navigation:** bottom nav, breadcrumbs, drawers, pagination, speed dial, steppers, tabs.
+
+## What we're not doing
+
+No reactive hooks. No CSS cascade engine. No dynamic theme switching in v1. No shader DSL. No runtime layout diffing. These aren't up for debate — they'd break the deterministic model.

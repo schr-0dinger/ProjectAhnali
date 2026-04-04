@@ -1,9 +1,9 @@
-# Track C Wave 3 Visible Flow
+# Track C Wave 3: Visible Flow
 
-Status: Completed  
+Status: Completed
 Date: 2026-02-17
 
-This flow validates a visible end-to-end tokened async networking route with deterministic fallback behavior.
+End-to-end tokened async networking route with deterministic fallback behavior.
 
 ## Flow
 
@@ -17,11 +17,9 @@ This flow validates a visible end-to-end tokened async networking route with det
    - renders fallback body (`offline`)
    - launches help URL via `open_url(...)`
 
-## Determinism
+## Why token scoping matters
 
-- Token-scoped helper calls prevent stale worker state from being treated as current.
-- Failure/cancel branches are deterministic via explicit async error codes.
-- `http_async_body(token, fallback)` guarantees a stable fallback string when no valid payload is available.
+Token-scoped helper calls prevent stale worker state from being treated as current. Failure/cancel branches are deterministic via explicit async error codes. `http_async_body(token, fallback)` guarantees a stable fallback string when no valid payload is available.
 
 ## Conformance
 

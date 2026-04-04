@@ -1,10 +1,10 @@
-# Ahnali Benchmarking (Track B)
+# Benchmarking
 
-This repository provides a benchmark harness for deterministic APK size reporting and optional cold-start timing checks.
+We track two things: APK size and cold-start time. Both have hard caps, and CI will block a PR if you blow past them.
 
-## Local Usage
+## Running locally
 
-Run size-only benchmark (no adb device required):
+Size check only (no device needed):
 
 ```bash
 PYTHONPATH=. python tools/benchmark_apk.py \
@@ -15,7 +15,7 @@ PYTHONPATH=. python tools/benchmark_apk.py \
   --skip-cold-start
 ```
 
-Run size + cold-start benchmark (adb device/emulator required):
+Size + cold-start (need an adb device or emulator):
 
 ```bash
 PYTHONPATH=. python tools/benchmark_apk.py \
@@ -27,28 +27,24 @@ PYTHONPATH=. python tools/benchmark_apk.py \
   --cold-start-iterations 3
 ```
 
-If `smali` is not on `PATH`, set `SMALI_JAR=/path/to/smali.jar`.
+If `smali` isn't on your PATH, point `SMALI_JAR` at the jar.
 
-## Thresholds
+## What gets checked
 
-Threshold configuration lives in `cfg/benchmark_thresholds.json`.
+The thresholds file (`cfg/benchmark_thresholds.json`) defines the caps:
 
-Current checks:
-- signed APK size cap (`max_signed_apk_bytes`)
-- classes.dex size cap (`max_classes_dex_bytes`)
-- cold-start median cap (`max_cold_start_total_ms`)
-- optional regression caps when baseline metrics are available
+- Max signed APK size
+- Max classes.dex size
+- Max cold-start median time
+- Regression limits when a baseline exists
 
-Current rollout mode:
-- Size baseline is locked in `cfg/benchmark_baseline.json` and enforced in CI.
-- Signed APK regression cap is active (`max_signed_apk_regression_bytes`).
-- Cold-start gate is strict on manual CI dispatch (`workflow_dispatch`) and uses committed baseline reference.
+Right now the size baseline is locked in `cfg/benchmark_baseline.json` and enforced on every push/PR. Cold-start only runs on manual CI dispatch since it needs an emulator.
 
-## CI Gates
+## CI
 
-Workflow: `.github/workflows/ci.yml`
+`.github/workflows/ci.yml` runs two benchmark jobs:
 
-- `benchmark-size`: runs on push/PR; enforces deterministic size thresholds.
-- `benchmark-cold-start`: manual dispatch only for now; boots emulator and enforces cold-start threshold.
+- **benchmark-size** — automatic on push/PR, fails if APK or dex exceeds the cap
+- **benchmark-cold-start** — manual dispatch only, boots an emulator and checks startup time
 
-Each benchmark job uploads JSON artifacts under `build/benchmark/`.
+Both dump JSON reports into `build/benchmark/`.

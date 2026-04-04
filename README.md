@@ -1,624 +1,99 @@
-# Project Ahnali
+# Ahnali
 
-Ahnali is a Python DSL -> IR -> CFG -> SSA -> Typed SSA -> Dalvik IR -> Smali compiler.
-This repository contains the compiler pipeline, validation gates, and tests for a
-phase-by-phase architecture-first build.
+A Python-to-Android compiler. You write Python, it emits Smali, you get an APK. No Java, no Kotlin, no Gradle - just a straight shot from DSL to Dalvik bytecode.
 
-Ahnali is an ahead-of-time (AOT) compiler that translates a restricted, declarative, Python-like DSL into Dalvik bytecode. All UI structure, layout, navigation, and state wiring are statically compiled features, resolved entirely at compile time with no runtime interpretation. Alongside this, the current v1 toolchain emits deterministic helper/runtime bridge classes and curated helper-call capability slices for Android platform services such as storage, networking, permissions, notifications, WebView, sharing, and background work. These bridges are compiler-selected helper surfaces, not a general framework engine, dynamic feature system, or embedded Python runtime. As a result, Ahnali applications keep deterministic behavior, analyzable capability boundaries, and native Android execution while staying aligned with the code that exists today.
+## What it actually does
+
+```python
+from dsl.app import app, activity, ui, text, button, on_click, state
+
+app(
+    activity("Main",
+        state("counter", 0),
+        ui(
+            text("Count: 0", id="label"),
+            button("Tap me", id="btn"),
+        ),
+        on_click("btn", [
+            # increment counter, update label
+        ]),
+    ),
+)
+```
+
+This compiles to Smali, gets packaged with `aapt2`, signed, and you have a working APK. The whole UI, navigation, state, and event handling is resolved at compile time. There's no interpreter sitting in your app at runtime figuring out what a button means.
+
+## How the compiler works
+
+```
+Python DSL → IR → CFG → SSA → Typed SSA → Dalvik IR → Smali → APK
+```
+
+Each step is its own phase. Nothing skips ahead. Every phase has validation that blocks if something's wrong. The Smali emitter doesn't try to be clever - it just prints what the verified IR tells it to.
+
+The pipeline handles:
+- Control flow (if/while)
+- Arithmetic and comparisons
+- Typed calls and returns
+- Exception handling (try/catch/throw)
+- Register allocation with spilling
+- Dead code elimination
+- Constant/copy propagation
+- CFG simplification
+
+## What you can build right now
+
+**UI:** 30+ widgets - text, buttons, inputs, checkboxes, sliders, dropdowns, images, progress bars, scroll views, list views, cards, app bars, drawers, tab layouts. Typography, theming, gradients, borders, ripples, shadows, opacity, and explicit animations.
+
+**Platform stuff:** networking (sync + async with retries), storage (SharedPreferences, DataStore, SQLite, Room, encrypted), permissions, notifications, clipboard, sharing/intents, WebView with JS bridge, deep links, background work (WorkManager, AlarmManager, JobScheduler), location.
+
+**State & lifecycle:** static state, lifecycle hooks (on_start through on_destroy), navigation stack with push/pop/replace.
+
+There's also an opt-in reactive mode if you need it, but static is the default and reactive doesn't change how static apps behave.
+
+## Running tests
+
+```
+PYTHONPATH=. pytest
+```
+
+Current: 648 passing, 3 skipped.
+
+## Building an APK
+
+The toolchain chains together `aapt2`, `d8`, `zipalign`, and `apksigner`. There's a `build_install_run()` helper in the codebase that does the full flow. You'll need the Android SDK on your PATH for the packaging steps.
+
+## Project structure
+
+```
+dsl/        - Frontend: widgets, DSL constructs, lowering to IR
+ir/         - Intermediate representation (expr, stmt, method, program)
+cfg/        - Control flow graph construction and validation
+ssa/        - SSA construction and verification
+dalvik/     - Dalvik IR, blocks, method representation
+passes/     - Compiler passes: liveness, regalloc, DCE, SSA opts
+emit/       - Smali emission
+tests/      - Everything test-related (156 files)
+tools/      - Build tooling, benchmark harness, CI helpers
+docs/       - All documentation
+cfg/        - Config files: ABI snapshots, benchmark baselines, scope matrix
+```
+
+## Design decisions I stand by
+
+- **Correctness over features.** A phase that can't validate its output doesn't pass. No exceptions.
+- **No shortcuts.** Nothing goes straight from DSL to Smali. Every transformation has to earn its place in the pipeline.
+- **Dumb emission.** The Smali emitter doesn't make decisions. It prints what the IR says. If the IR is wrong, an earlier phase should've caught it.
+- **Static by default.** Everything is resolved at compile time. Reactive mode exists but you have to explicitly ask for it.
+
+## What's not happening (at least not yet)
+
+JNI/native bridges, embedded Python, camera/audio/video pipelines, maps, Bluetooth, biometrics - all deferred. The focus right now is locking down the static compiler and the capability surfaces that are already implemented. There's a masterplan in `docs/` if you want to see where things are headed.
+
+## Python dependencies
+
+Minimal by design. `rich` for nicer output, `httpx` for the HTTP helpers, `pytest` for tests. That's it. No reactive frameworks, no DI containers, no web frameworks. There's a policy file (`cfg/python_library_policy.json`) and a CI gate that enforces it.
+
+---
 
 Last updated: 2026-03-10
-
-## Goals
-
-- Correctness first. Every phase is verified and enforced.
-- One-way lowering only. No back-mutation of earlier phases.
-- Dumb emission. Smali emission only prints verified IR.
-- Phase discipline. Each phase has a single responsibility.
-
-## Repository Layout
-
-- dsl/                Frontend DSL helpers (program/method/expr/stmt builders)
-- ir/                 Frontend IR (expr, stmt, method, program, types)
-- cfg/                Control flow graph (builder, dominance, frontier, validate)
-- ssa/                SSA construction + verification
-- dalvik/             Dalvik IR + blocks + methods
-- passes/             Compiler passes (lowering, liveness, regalloc, DCE, SSA opts)
-- emit/               Smali emission
-- tests/              Unit and integration tests
-
-## Current Pipeline (Authoritative)
-
-DSL
--> CFG
--> Dominance
--> Phi insertion
--> SSA rename
--> SSA verify
--> Type inference
--> Type verify
--> SSA optimizations (Epsilon-2)
--> Dalvik lowering
--> Dead code elimination
--> CFG simplification (Epsilon-3)
--> Liveness
--> Linear scan allocation
--> Spilling
--> Smali emission
-
-## Status Summary
-
-Phases completed:
-- Alpha: CFG + dominance + SSA + verification
-- Beta: structured control flow (if/while)
-- Gamma: relational branches (Compare)
-- Delta: arithmetic SSA + lowering
-- Omega-1: typed SSA inference + verification
-- Omega-2: exception-capable CFG (structural)
-- Zeta-0/1/2/3: regalloc, liveness, linear scan, spilling
-- Epsilon-1: DCE
-- Eta-2: typed calls and returns
-- Eta-3: try/catch + throw + smali emission
-- Epsilon-2: SSA constant/copy propagation + coalescing
-- Epsilon-3: CFG simplification (redundant goto removal, block merging)
-
-Active:
-- UI/compiler expansion through Phase 13 complete (events, input, accessibility, effects, animations, themes, scroll controls, static list view, lint hardening)
-- Packaging flow complete (`aapt2` + `zipalign` + `apksigner`)
-- Inline event attribute sugar is available and wired to existing event lowering
-- JNI/native bridge work, embedded Python, and Play-delivered dynamic feature ambitions are deferred beyond the current static-v1 release track
-
-Test status:
-- Last suite run: `648 passed, 3 skipped` (`PYTHONPATH=. pytest -q -rs`)
-
-## Python Library Policy (Enforced)
-
-- Allowed external libs (purpose-justified): `rich`, `httpx`, optional `tenacity`, optional `pydantic`.
-- Test-only external lib: `pytest` (restricted to `tests/`).
-- Required stdlib foundations: `dataclasses`, `asyncio`.
-- Disallowed heavy libs: reactive engines, full DI frameworks, web frameworks, large ORMs, symbolic math libs.
-- External libraries are wrapper-only and must not be imported directly in core parser/lowering static paths.
-- CLI diagnostics now use `dsl.runtime.diagnostics` automatically, with Rich formatting when available and deterministic plain-text fallback otherwise.
-- Policy files and gates:
-  - `cfg/python_library_policy.json`
-  - `tools/python_library_policy.py`
-  - CI step `Check Python library policy` in `.github/workflows/ci.yml`
-  - Detailed policy: `docs/Python_Library_Policy.md`
-
-## DSL Surface (Current)
-
-From dsl/app.py:
-
-- program([...])
-- method(name, params=[], param_types=[], return_type=None, body=[])
-- assign(name, expr)
-- call(name, args, return_type, arg_types, invoke_kind="static", owner="LTest;")
-- call_stmt(name, args, return_type=None, arg_types=[], ...)
-- ret(value=None)
-- if_(cond, then, else_)
-- while_(cond, body)
-- binary(op, left, right)
-- compare(op, left, right)
-- try_catch(try_body, except_body=None, exception_type=None, handlers=None)
-- throw(value)
-
-## IR Surface (Current)
-
-Expressions:
-- Const(value)
-- Var(name)
-- BinaryOp(op, left, right)
-- Compare(op, left, right)
-- Call(func, args, return_type, arg_types, invoke_kind, owner)
-
-Statements:
-- Assign(name, expr)
-- Return(value)
-- CallStmt(Call(...))
-- TryCatch(try_body, except_body, exception_type, handlers)
-- Throw(value)
-
-Methods / Program:
-- MethodIR(name, params, body, return_type, param_types)
-- ProgramIR(methods)
-
-## Verification Gates
-
-- CFG validation (structural correctness)
-- SSA correctness (single def, dominance, phi legality)
-- Typed SSA enforcement where required
-- Call signature checks (arity and void/non-void rules)
-- Return type checks (method signature vs return values)
-- Try/catch structural validation (non-empty try, descriptor types, catchall ordering)
-- Throw validation (must be OBJECT)
-
-## Eta-2 Details (Calls + Returns)
-
-Implemented:
-- Typed Call in IR
-- Typed Call lowering to Dalvik DInvoke
-- Smali invoke-* emission with signatures
-- Return lowering to DReturn
-- Return type verification
-- DSL method signatures and call helpers
-- Negative tests for invalid signatures
-- Param binding into SSA
-
-Constraints:
-- Call must provide return_type for non-void
-- arg_types length must match args
-- void call cannot assign
-- non-void call must assign
-- param_types length must match params
-
-## Eta-3 Details (try/catch + throw)
-
-Implemented:
-- TryCatch IR and DSL
-- Exceptional edges in CFG builder
-- .catch/.catchall Smali emission
-- Throw IR and lowering to DThrow
-- Validation for empty try blocks
-- Validation for exception type descriptors
-- Multi-handler ordering (catchall last)
-
-Constraints:
-- try_body must be non-empty
-- exception_type must be Smali descriptor: L...;
-- catchall must be last
-- throw value must be OBJECT type
-
-## Epsilon-2 Details (SSA optimizations)
-
-Implemented:
-- Constant propagation
-- Copy propagation
-- Optional constant folding (flagged)
-- Coalescing across phi + non-phi moves
-- Aggressive copy removal (rewrite + delete)
-
-Flags:
-- alpha_pipeline(..., ssa_opt={"enable_folding": True})
-
-## Epsilon-3 Details (CFG simplification)
-
-Implemented:
-- Redundant goto elimination
-- Empty block removal with single successor
-- Block merging into single predecessor (safe)
-- Dalvik branch/goto target retargeting during CFG rewrites
-- Smali label emission filtering for unreferenced empty blocks
-- Label-integrity regression tests (all branch/catch references resolve to defined labels)
-
-Constraints:
-- Do not simplify entry/exit blocks
-- Do not simplify blocks in try regions
-- Do not cross exceptional edges
-
-## Immediate Plan (Next)
-
-1) Program 5 closure pass completed: state/lifecycle traceability locked (`docs/Program5_Closure.md`, `tests/test_program5_closure.py`).
-2) Program 11-A gate hardening completed: strict blocking guardrails are active for scope matrix, capability mapping/docs drift, docs consistency, ABI snapshot, reactive snapshot, and dependency policy (`tools/v1_scope_matrix.py`, `tools/capability_mapping_contract.py`, `tools/docs_consistency.py`, `.github/workflows/ci.yml`).
-3) Program 6-A capability core tranche completed: runtime permission + notifications/channels slices shipped with deterministic contracts and visible flows (`tests/test_track_c_wave7_permissions.py`, `tests/test_track_c_wave8_notifications.py`).
-4) Program 6-B closure/freeze is the active breadth task: waves 9-18 are implemented, and the remaining retained `8.5` backlog is explicitly frozen or deferred in `cfg/v1_scope_matrix.yaml` / `docs/Program6B_Task_Breakdown.md`.
-5) Program 12-A docs/API reference freeze remains active: README/masterplan/ABI/capability docs must stay reconciled with code and scope status.
-6) Program 11-B + 12-B final static-v1 release hardening remains the release gate: preserve green compiler/toolchain tests, benchmark gates, and traceability.
-
-Guardrail-first reactive unlock remains active during all tranches:
-- static-default behavior unchanged
-- reactive is explicit opt-in only
-- no implicit runtime diff/recomposition in static mode
-
-## Deferred Beyond V1
-
-1) Program 7 motion backlog (`8.6`) is deferred until the static compiler product is frozen and the current helper-capability core is stable.
-2) Program 8 advanced/system/security/debug backlog (`8.7`-`8.10`) is deferred beyond the current release train.
-3) Program 9 Milestone D (NDK/JNI bridge) is deferred to post-v1 research/prototyping.
-4) Program 10 Milestone E (optional bounded Python plugin) is deferred to post-v1 research/prototyping.
-
-## Completion Roadmap (Current)
-
-### Track A: Runtime Capability ABI
-
-Status:
-- ✅ Completed (2026-02-16)
-
-Objectives:
-- Lock stable runtime helper ABI for capability-scoped module linking.
-
-Work items:
-- ✅ Define runtime helper class/interface contracts and versioning rules (`runtime_abi_v1.md`).
-- ✅ Add ABI compatibility tests (compile-time and runtime smoke for helper and mapping contracts).
-- ✅ Document capability-to-runtime mapping in docs (`docs/capability_runtime_mapping_v1.md`).
-- ✅ Freeze helper class/method ABI surface in generated snapshot (`cfg/runtime_abi_snapshot_v1.json`) with check tool (`tools/runtime_abi_snapshot.py`) and CI gate (`.github/workflows/ci.yml`).
-
-Exit criteria:
-- ✅ ABI contract frozen for v1.
-- ✅ New capabilities can be added without breaking existing apps (guarded by ABI tests).
-- ✅ ABI signature drift fails fast in CI via snapshot check.
-
-### Track B: Benchmark Automation
-
-Status:
-- ✅ Completed (2026-02-16; size strict on PR/push, cold-start strict on manual dispatch)
-
-Objectives:
-- Make performance/size regressions visible and blocking.
-
-Work items:
-- ✅ Add deterministic APK size reporting in CI (`tools/benchmark_apk.py`, `.github/workflows/ci.yml` size gate).
-- ✅ Add cold-start benchmark harness and threshold checks (`tools/benchmark_apk.py` + manual CI emulator gate).
-- ✅ Track size regressions with committed baseline + threshold caps (`cfg/benchmark_baseline.json`, `cfg/benchmark_thresholds.json`).
-
-Exit criteria:
-- ✅ Benchmark gates are automated and enforced according to policy.
-- ✅ Size gate is strict on PR/push; cold-start gate is strict on manual dispatch.
-
-### Track C: Capability Expansion
-
-Status:
-- ⚠️ In progress (Wave 1 closed on 2026-02-17; Wave 2 completed on 2026-02-17 with networking response/routing/retry/typed-JSON and visible integration flow; Wave 3 completed tokened async route/cancellation/progress/payload/timeout-retry + visible flow on 2026-02-17; Wave 4 request-option transport hardening + race stress coverage completed on 2026-02-17; Wave 5 visible integration flow completed on 2026-02-17; Wave 6 location helper-call capability + visible integration flow completed on 2026-02-17; Wave 7 permissions helper-call capability + visible integration flow completed on 2026-02-17; Wave 8 notifications/channels helper-call capability + visible integration flow completed on 2026-02-18; Wave 9 clipboard helper-call capability + visible integration flow completed on 2026-02-18; Wave 10 sharing/intents helper-call capability + visible integration flow completed on 2026-02-18; Wave 11 WebView/settings policy helper-call capability + visible integration flow completed on 2026-02-18; Wave 12 Web JS bridge policy-constrained helper-call capability + visible integration flow completed on 2026-02-18; Wave 13 Web file chooser/cookie-manager helper-call capability + visible integration flow completed on 2026-02-18; Wave 14 deep-link helper-call capability + visible integration flow completed on 2026-02-18; Wave 15 WorkManager helper-call capability + visible integration flow completed on 2026-02-18; Wave 16 AlarmManager helper-call capability completed on 2026-02-18; Wave 17 JobScheduler helper-call capability + visible integration flow completed on 2026-02-18; Wave 18 sharing/intents completion with file-share/result surfaces + visible flow completed on 2026-02-18)
-
-Objectives:
-- Enable practical app logic beyond static UI/state.
-
-Work items:
-- ✅ Add initial helper-call capability primitives:
-  - `URLLauncher` → `Lcom/ahnali/runtime/UrlLauncherHelper;->openUrl(...)I`
-  - `Connectivity` → `Lcom/ahnali/runtime/ConnectivityHelper;->isConnected(...)I`
-  - `Storage` → `Lcom/ahnali/runtime/StorageHelper;->putString(...)I` + `getString(...)Ljava/lang/String;` + `remove(...)I` + `exists(...)I` + `clear(...)I`
-- ✅ Start Wave 2 networking primitive:
-  - `Networking` → `Lcom/ahnali/runtime/HttpHelper;->httpGet(...)Ljava/lang/String;` via `http_get(...)`
-- ✅ Add networking response surface:
-  - `http_get_status(...)` → `httpGetStatus(...)I`
-  - `http_get_error(...)` → `httpGetError(...)I`
-  - `http_get_route(url, "success_btn", "failure_btn", fallback)` for success/failure handler wiring
-- ✅ Add deterministic retry/backoff primitive:
-  - `http_get_retry(url, retries, backoff_ms, fallback)` → `httpGetRetry(...)Ljava/lang/String;`
-- ✅ Add typed JSON field networking helpers:
-  - `http_get_json_field(url, key, fallback)` → `httpGetJsonField(...)Ljava/lang/String;`
-  - `http_get_json_field_error(url, key)` → `httpGetJsonFieldError(...)I`
-- ✅ Start Wave 3 async route primitive:
-  - `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id, retries, timeout_ms)` → tokened background route worker + UI-thread callback dispatch
-- ✅ Add Wave 3 tokened async primitives:
-  - `http_async_cancel(token)` → token-scoped cancellation request
-  - `http_async_progress(token)` → token-scoped deterministic progress surface (`0..100`)
-  - `http_async_error(token)` → token-scoped deterministic async error surface
-  - `http_async_status(token)` → token-scoped completion status surface
-  - `http_async_body(token, fallback)` → token-scoped completion body surface
-- ✅ Add Wave 3 async progress callback wiring:
-  - optional `progress_target_id` in `http_get_route_async(...)` posts UI-thread progress callbacks
-- ✅ Add Wave 3 async completion payload routing:
-  - success/failure handlers can read deterministic token-scoped `status/body/error`
-- ✅ Add Wave 3 timeout/retry controls in async worker:
-  - optional `retries` + `timeout_ms` arguments in `http_get_route_async(...)`
-- ✅ Add Wave 4 multi-request token runtime state:
-  - token-indexed async stores for cancellation/progress/error/status/body in `HttpHelper`
-- ✅ Add Wave 4 request-option wiring for async route:
-  - optional `method` + `headers` + `body` arguments in `http_get_route_async(...)`
-  - worker routes through `httpRequest*WithTimeout(...)` helper ABI
-- ✅ Add Wave 4 typed async JSON adapters:
-  - `http_async_json_field(token, key, fallback)`
-  - `http_async_json_field_error(token, key)`
-  - `http_async_json_array_length(token, fallback)`
-- ✅ Harden Wave 4 request-option transport semantics:
-  - deterministic method normalization (`GET` default; `GET`/`POST` accepted; others invalid)
-  - newline-delimited header parsing/application (`Key: Value`; malformed lines ignored)
-  - explicit POST UTF-8 body transport path (`setDoOutput`, fixed-length streaming, output-stream write)
-- ✅ Add Wave 4 concurrent cancellation/race stress coverage for tokened async surfaces.
-- ✅ Close Wave 1 with visible app flow compile coverage (`tests/test_track_c_wave1_visible_flow.py`)
-- ✅ Document visible Wave 1 app flow (`docs/TrackC_Wave1_Visible_Flow.md`)
-- ✅ Add Wave 2 visible capability integration flow (`tests/test_track_c_wave2_visible_flow.py`)
-- ✅ Document visible Wave 2 app flow (`docs/TrackC_Wave2_Visible_Flow.md`)
-- ✅ Document Wave 3 async route contract (`docs/TrackC_Wave3_Async_Route.md`)
-- ✅ Add Wave 3 visible tokened async capability flow (`tests/test_track_c_wave3_visible_flow.py`)
-- ✅ Document Wave 3 visible tokened flow (`docs/TrackC_Wave3_Visible_Flow.md`)
-- ✅ Document Wave 4 async concurrency/request-options contract (`docs/TrackC_Wave4_Async_Concurrency.md`)
-- ✅ Add Wave 5 visible integration flow combining networking + storage + connectivity with deterministic fallback UI routing (`tests/test_track_c_wave5_visible_flow.py`)
-- ✅ Document Wave 5 visible flow (`docs/TrackC_Wave5_Visible_Flow.md`)
-- ✅ Add Wave 6 location capability helper-call primitive:
-  - `Location` → `Lcom/ahnali/runtime/LocationHelper;->isLocationEnabled(...)I`
-  - DSL surfaces: `location_enabled()`, `is_location_enabled()`, `check_location()`
-- ✅ Add Wave 6 visible integration flow combining location + networking + storage with deterministic fallback routing (`tests/test_track_c_wave6_visible_flow.py`)
-- ✅ Document Wave 6 location contract + flow (`docs/TrackC_Wave6_Location.md`)
-- ✅ Add Wave 7 permissions capability helper-call primitive:
-  - `Permissions` → `Lcom/ahnali/runtime/PermissionHelper;->isGranted(...)I`
-  - DSL surfaces: `permission_granted()`, `has_permission()`, `check_permission()`, `permission_check()`
-- ✅ Add Wave 7 visible integration flow combining permissions + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave7_visible_flow.py`)
-- ✅ Document Wave 7 permissions contract + flow (`docs/TrackC_Wave7_Permissions.md`)
-- ✅ Add Wave 8 notifications/channels capability helper-call primitive:
-  - `Notifications` → `Lcom/ahnali/runtime/NotificationHelper;->postNotification(...)I`
-  - DSL surfaces: `create_notification_channel()`, `notify()`, `notify_result()`, `notify_error()`
-- ✅ Add Wave 8 visible integration flow combining notifications + storage + URL launcher with deterministic fallback routing (`tests/test_track_c_wave8_visible_flow.py`)
-- ✅ Document Wave 8 notifications/channels contract + flow (`docs/TrackC_Wave8_Notifications.md`)
-- ✅ Add Wave 9 clipboard capability helper-call primitive:
-  - `Clipboard` → `Lcom/ahnali/runtime/ClipboardHelper;->setText(...)I`
-  - DSL surfaces: `clipboard_set()`, `set_clipboard()`, `clipboard_get()`, `get_clipboard()`
-- ✅ Add Wave 9 visible integration flow combining clipboard + notifications + URL launcher with deterministic fallback routing (`tests/test_track_c_wave9_visible_flow.py`)
-- ✅ Document Wave 9 clipboard contract + flow (`docs/TrackC_Wave9_Clipboard.md`)
-- ✅ Add Wave 10 sharing/intents capability helper-call primitive:
-  - `Sharing` → `Lcom/ahnali/runtime/ShareHelper;->shareText(...)I`
-  - DSL surfaces: `share_text()`, `share_text_result()`, `share_text_error()`, `open_external()`, `open_external_error()`
-- ✅ Add Wave 10 visible integration flow combining sharing + clipboard with deterministic fallback routing (`tests/test_track_c_wave10_visible_flow.py`)
-- ✅ Document Wave 10 sharing/intents contract + flow (`docs/TrackC_Wave10_Sharing_Intents.md`)
-- ✅ Add Wave 11 WebView/settings policy capability helper-call primitive:
-  - `WebView` → `Lcom/ahnali/runtime/WebHelper;->loadUrl(...)I`
-  - DSL surfaces: `web_set_policy()`, `web_policy()`, `web_load()`, `web_load_result()`, `web_load_error()`
-- ✅ Add Wave 11 visible integration flow combining WebView policy routing + sharing fallback (`tests/test_track_c_wave11_visible_flow.py`)
-- ✅ Document Wave 11 WebView/settings policy contract + flow (`docs/TrackC_Wave11_WebView.md`)
-- ✅ Add Wave 12 Web JS bridge policy-constrained capability helper-call primitive:
-  - `WebView` → `Lcom/ahnali/runtime/WebHelper;->addJsBridge(...)I`
-  - DSL surfaces: `web_add_js_bridge()`, `web_register_js_bridge()`, `web_add_js_bridge_result()`, `web_add_js_bridge_error()`
-- ✅ Add Wave 12 visible integration flow combining JS bridge policy routing + sharing fallback (`tests/test_track_c_wave12_visible_flow.py`)
-- ✅ Document Wave 12 Web JS bridge contract + flow (`docs/TrackC_Wave12_Web_JS_Bridge.md`)
-- ✅ Add Wave 13 file chooser/cookie-manager capability helper-call primitive:
-  - `WebView` → `Lcom/ahnali/runtime/WebHelper;->chooseFile(...)I`, `setCookie(...)I`, `getCookie(...)Ljava/lang/String;`
-  - DSL surfaces: `web_choose_file()`, `web_choose_file_result()`, `web_choose_file_error()`, `web_cookie_set()`, `web_cookie_set_result()`, `web_cookie_set_error()`, `web_cookie_get()`, `web_cookie_get_error()`
-- ✅ Add Wave 13 visible integration flow combining file chooser/cookie routing + sharing fallback (`tests/test_track_c_wave13_visible_flow.py`)
-- ✅ Document Wave 13 file chooser/cookie-manager contract + flow (`docs/TrackC_Wave13_Web_FileChooser_Cookies.md`)
-- ✅ Add Wave 14 deep-link capability helper-call primitive:
-  - `DeepLinking` → `Lcom/ahnali/runtime/DeepLinkHelper;->getLaunchUri(...)Ljava/lang/String;`, `getLaunchUriError(...)I`
-  - DSL surfaces: `deep_link_get()`, `get_deep_link()`, `deep_link_error()`, `get_deep_link_error()`
-- ✅ Add Wave 14 visible integration flow combining deep-link route + deterministic URL fallback (`tests/test_track_c_wave14_visible_flow.py`)
-- ✅ Document Wave 14 deep-link contract + flow (`docs/TrackC_Wave14_DeepLinking.md`)
-- ✅ Add Wave 15 WorkManager capability helper-call primitive:
-  - `WorkManager` → `Lcom/ahnali/runtime/WorkHelper;->enqueueWork(...)I`
-  - DSL surfaces: `work_enqueue()`, `work_cancel()`, `work_status()`, `work_error()`
-- ✅ Document Wave 15 WorkManager contract + flow (`docs/TrackC_Wave15_WorkManager.md`)
-- ✅ Add Wave 16 AlarmManager capability helper-call primitive:
-  - `AlarmManager` → `Lcom/ahnali/runtime/AlarmHelper;->scheduleAlarm(...)I`
-  - DSL surfaces: `alarm_schedule()`, `alarm_cancel()`, `alarm_status()`, `alarm_error()`
-- ✅ Document Wave 16 AlarmManager contract + flow (`docs/TrackC_Wave16_AlarmManager.md`)
-- ✅ Add Wave 17 JobScheduler capability helper-call primitive:
-  - `JobScheduler` → `Lcom/ahnali/runtime/JobHelper;->scheduleJob(...)I`
-  - DSL surfaces: `job_schedule()`, `job_cancel()`, `job_status()`, `job_error()`
-- ✅ Add Wave 17 visible integration flow combining WorkManager + AlarmManager + JobScheduler with deterministic URL fallback (`tests/test_track_c_wave17_visible_flow.py`)
-- ✅ Document Wave 17 JobScheduler contract + flow (`docs/TrackC_Wave17_JobScheduler.md`)
-- ✅ Add Wave 18 sharing/intents completion helper-call primitive:
-  - `Sharing` → `Lcom/ahnali/runtime/ShareHelper;->shareFile(...)I`
-  - DSL surfaces: `share_file()`, `share_file_result()`, `share_file_error()`, `open_external_result()`
-- ✅ Add Wave 18 visible integration flow combining file-share + open-external deterministic fallback routing (`tests/test_track_c_wave18_visible_flow.py`)
-- ✅ Document Wave 18 sharing/intents completion contract + flow (`docs/TrackC_Wave18_Sharing_File.md`)
-- ✅ Add capability-scoped storage introspection primitives (`storage_exists`, `storage_clear`).
-- ✅ Complete Program 5 state surfaces:
-  - lifecycle hooks: `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy`
-  - deterministic state backends: `datastore_*`, `file_*`, `sqlite_*`, `room_*`, `encrypted_storage_*`/`secure_storage_*`
-- Continue adding capability-scoped primitives beyond networking/storage/location/permissions/notifications/clipboard/sharing/webview/js-bridge/file-chooser/cookie-manager/deep-link/background-work.
-
-Exit criteria:
-- At least one end-to-end app flow using capabilities compiles, installs, and runs with deterministic output.
-- ✅ Wave 2 networking response/retry conformance is enforced by `tests/test_track_c_wave2_http_get.py`.
-- ✅ Wave 2 visible capability integration flow conformance is enforced by `tests/test_track_c_wave2_visible_flow.py`.
-- ✅ Wave 3 async route dispatch conformance is enforced by `tests/test_track_c_wave3_async_route.py`.
-- ✅ Wave 3 visible tokened async flow conformance is enforced by `tests/test_track_c_wave3_visible_flow.py`.
-- ✅ Wave 4 async concurrency/request-options/typed-adapter/transport/race conformance is enforced by `tests/test_track_c_wave4_async_networking.py`.
-- ✅ Wave 4 device integration conformance is enforced by `tests/test_http_helper_device_integration.py` (requires `adb` device in `device` state).
-- ✅ Wave 5 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave5_visible_flow.py`.
-- ✅ Wave 6 location capability conformance is enforced by `tests/test_track_c_wave6_location.py`.
-- ✅ Wave 6 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave6_visible_flow.py`.
-- ✅ Wave 7 permissions capability conformance is enforced by `tests/test_track_c_wave7_permissions.py`.
-- ✅ Wave 7 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave7_visible_flow.py`.
-- ✅ Wave 8 notifications/channels capability conformance is enforced by `tests/test_track_c_wave8_notifications.py`.
-- ✅ Wave 8 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave8_visible_flow.py`.
-- ✅ Wave 9 clipboard capability conformance is enforced by `tests/test_track_c_wave9_clipboard.py`.
-- ✅ Wave 9 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave9_visible_flow.py`.
-- ✅ Wave 10 sharing/intents capability conformance is enforced by `tests/test_track_c_wave10_sharing_intents.py`.
-- ✅ Wave 10 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave10_visible_flow.py`.
-- ✅ Wave 11 WebView/settings policy capability conformance is enforced by `tests/test_track_c_wave11_webview.py`.
-- ✅ Wave 11 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave11_visible_flow.py`.
-- ✅ Wave 12 Web JS bridge policy-constrained capability conformance is enforced by `tests/test_track_c_wave12_web_js_bridge.py`.
-- ✅ Wave 12 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave12_visible_flow.py`.
-- ✅ Wave 13 Web file chooser/cookie-manager capability conformance is enforced by `tests/test_track_c_wave13_web_file_cookie.py`.
-- ✅ Wave 13 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave13_visible_flow.py`.
-- ✅ Wave 14 deep-link capability conformance is enforced by `tests/test_track_c_wave14_deep_linking.py`.
-- ✅ Wave 14 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave14_visible_flow.py`.
-- ✅ Wave 15 WorkManager capability conformance is enforced by `tests/test_track_c_wave15_workmanager.py`.
-- ✅ Wave 16 AlarmManager capability conformance is enforced by `tests/test_track_c_wave16_alarmmanager.py`.
-- ✅ Wave 17 JobScheduler capability conformance is enforced by `tests/test_track_c_wave17_jobscheduler.py`.
-- ✅ Wave 17 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave17_visible_flow.py`.
-- ✅ Wave 18 sharing/intents completion capability conformance is enforced by `tests/test_track_c_wave18_sharing_completion.py`.
-- ✅ Wave 18 visible deterministic fallback flow conformance is enforced by `tests/test_track_c_wave18_visible_flow.py`.
-
-Capability diagnostics (standard format):
-- `[CapabilityError] <api_name> requires Caps.<Capability>. Fix: add app_config(uses=[Caps.<Capability>]) to activity(...).`
-
-How to fix examples:
-- URL launcher:
-```python
-app(
-    activity(
-        "MainActivity",
-        app_config(uses=[Caps.URLLauncher]),
-        ...
-    )
-)
-```
-- Connectivity:
-```python
-app(
-    activity(
-        "MainActivity",
-        app_config(uses=[Caps.Connectivity]),
-        ...
-    )
-)
-```
-- Storage:
-```python
-app(
-    activity(
-        "MainActivity",
-        app_config(uses=[Caps.Storage]),
-        ...
-    )
-)
-```
-- Networking (`http_get`):
-```python
-app(
-    activity(
-        "MainActivity",
-        app_config(uses=[Caps.Networking]),
-        ...
-    )
-)
-```
-- Permissions (`check_permission` / `permission_granted`):
-```python
-app(
-    activity(
-        "MainActivity",
-        app_config(uses=[Caps.Permissions]),
-        ...
-    )
-)
-```
-
-Reactive mode guardrails (v0):
-- Default mode is `static` (unchanged behavior for existing apps).
-- Reactive DSL is explicit opt-in only: `app_config(mode="reactive")`.
-- No implicit runtime UI diff/recomposition engine is used.
-- Reactive updates are explicit through `observable`, `set_observable`, `derived`, `listen`, and `bind_text`.
-
-Reactive mode diagnostics (standard format):
-- `[ReactiveModeError] <api_name> requires reactive mode. Fix: set app_config(mode='reactive') in activity(...).`
-
-Reactive mode quickstart:
-```python
-app(
-    activity(
-        "MainActivity",
-        app_config(mode="reactive"),
-        ui(
-            text("Status", id="status_label"),
-            button("Run", id="run_btn"),
-        ),
-        on_click("run_btn", [
-            observable("greeting", "hello"),
-            bind_text("status_label", "greeting"),
-            set_observable("greeting", "world"),
-        ]),
-    )
-)
-```
-
-Networking response contract:
-- `http_get(...)` returns response body, else fallback string.
-- `http_get_status(...)` returns HTTP status, else `-1`.
-- `http_get_error(...)` returns deterministic error code:
-  - `0` success
-  - `1` invalid input
-  - `2` transport/runtime exception
-  - `3` non-200 status
-  - `4` empty body
-- `http_get_retry(...)` performs deterministic retries:
-  - attempts = `max(0, retries) + 1`
-  - backoff = fixed `max(0, backoff_ms)` milliseconds between failed attempts
-  - success condition = `http_get_error(...) == 0`
-  - returns response body on first success, otherwise fallback
-- `http_get_json_field(...)` returns extracted JSON field string, else fallback string.
-- `http_get_json_field_error(...)` returns deterministic extraction error code:
-  - `0` success
-  - `1` invalid input
-  - `2` transport/runtime exception
-  - `3` non-200 status
-  - `4` empty body
-  - `5` malformed payload
-  - `6` missing key (or null value)
-- `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_target_id="", retries=0, timeout_ms=8000, method="GET", headers="", body="")` dispatches tokened network route checks in a background thread and posts success/failure/progress handlers to the UI thread.
-  - request option transport semantics:
-    - `method`: null/empty defaults to `GET`; `GET`/`POST` are accepted (case-insensitive); others map to deterministic invalid-input surfaces.
-    - `headers`: newline-delimited `Key: Value` entries are parsed and applied via request properties; malformed lines are ignored deterministically.
-    - `body`: only applied for `POST`, encoded as UTF-8 bytes and written through output stream.
-- `http_async_cancel(token)` requests token-scoped cancellation for async networking work.
-- `http_async_progress(token)` returns token-scoped deterministic progress (`0..100`).
-- `http_async_error(token)` returns token-scoped deterministic async error code:
-  - `0` success
-  - `1` invalid input
-  - `2` transport/runtime exception
-  - `3` non-200 status
-  - `4` empty body
-  - `7` cancelled
-  - `8` stale/unknown token
-- `http_async_status(token)` returns token-scoped completion status (`-1` on stale/unknown token).
-- `http_async_body(token, fallback)` returns token-scoped completion body, else deterministic fallback.
-- `http_async_json_field(token, key, fallback)` returns token-scoped JSON field string, else deterministic fallback.
-- `http_async_json_field_error(token, key)` returns deterministic token-scoped JSON field extraction error code (`0,1,2,3,4,5,6,7,8`).
-- `http_async_json_array_length(token, fallback)` returns token-scoped JSON array length, else deterministic fallback.
-
-Storage introspection contract:
-- `storage_exists("key")` returns `1` when key exists, else `0`.
-- `storage_clear()` clears all app storage keys for this helper namespace and returns `1` on success, else `0`.
-
-Program 5 state backend contract:
-- DataStore:
-  - `datastore_put/get/exists/remove/clear`
-- File storage (deterministic key/value surface):
-  - `file_write/read/exists/remove/clear`
-- SQLite static-safe surface:
-  - `sqlite_put/get/exists/remove/clear`
-- Room static-safe surface:
-  - `room_put/get/exists/remove/clear`
-- Encrypted storage surface:
-  - `encrypted_storage_put/get/exists/remove/clear`
-  - aliases: `secure_storage_put/get/exists/remove/clear`
-- Deterministic behavior model:
-  - `*_put/remove/clear` return `1` on success, `0` on invalid input or caught exception.
-  - `*_get` returns stored value, else fallback argument.
-  - `*_exists` returns `1` when key exists, else `0`.
-
-Lifecycle hook contract:
-- `on_start`, `on_resume`, `on_pause`, `on_stop`, `on_destroy` compile to static lifecycle methods on generated target class.
-- Wrapper bridge emits corresponding Activity lifecycle methods when hooks are present and forwards to static handlers.
-
-Known limits (current networking surface):
-- Retry policy is fixed-backoff without jitter.
-
-### Track D: Optimization and Build Intelligence
-
-Objectives:
-- Add static optimization/lint/security/performance intelligence without violating deterministic AOT constraints.
-
-Work items:
-- Execute optimization backlog tracks (assets, resources, code-level, dependencies, manifest, native, perf static analysis, security, packaging, DX).
-- Prioritize high-impact/low-risk items first (unused resource/permission detection, size diff reporting, build benchmarking).
-- Keep each optimization behind explicit flags until behavior is stable.
-
-Exit criteria:
-- Optimization passes are deterministic, test-covered, and measurable via CI reports.
-- No regressions in build reproducibility or runtime correctness.
-
-## How to Run Tests
-
-- python -m pytest
-
-## Benchmark Harness
-
-- Local usage and CI details: `docs/Benchmarking.md`
-- Size-only gate (no adb device):
-  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --baseline-file cfg/benchmark_baseline.json --report-file build/benchmark/size_report.json --api 34 --skip-cold-start`
-- Cold-start gate (adb device/emulator required):
-  - `PYTHONPATH=. python tools/benchmark_apk.py --threshold-file cfg/benchmark_thresholds.json --baseline-file cfg/benchmark_baseline.json --report-file build/benchmark/cold_start_report.json --api 34 --require-cold-start --cold-start-iterations 3`
-
-## Example: Multi-Method Program
-
-```python
-from dsl.app import program, method, assign, call, const, ret
-from ir.types import AhnaliType
-
-prog = program([
-    method("foo", return_type=AhnaliType.INT, body=[ret(const(1))]),
-    method("main", return_type=None, body=[
-        assign("y", call("foo", args=[], return_type=AhnaliType.INT, arg_types=[]))
-    ])
-])
-
-result = alpha_pipeline(prog)
-print(result["smali_class"])
-```
-
-## Philosophy Summary
-
-- Correctness over features
-- No direct DSL -> Smali shortcuts
-- Verification is mandatory and blocking
-- Emission is dumb by design

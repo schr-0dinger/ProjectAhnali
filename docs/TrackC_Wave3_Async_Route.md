@@ -1,9 +1,11 @@
-# Track C Wave 3 Async Route
+# Track C Wave 3: Async Route
 
-Status: Completed  
+Status: Completed
 Date: 2026-02-17
 
-Wave 3 delivers tokened non-blocking route dispatch with deterministic cancellation/progress/payload surfaces:
+Tokened non-blocking route dispatch with deterministic cancellation, progress, and payload surfaces.
+
+Core APIs:
 - `http_get_route_async(url, "success_btn", "failure_btn", fallback, progress_btn, retries, timeout_ms)`
 - `http_async_cancel(token)`
 - `http_async_progress(token)`
@@ -13,10 +15,10 @@ Wave 3 delivers tokened non-blocking route dispatch with deterministic cancellat
 
 ## Contract
 
-- Valid only inside `@on_click(...)` handlers.
+- Only valid inside `@on_click(...)` handlers.
 - Requires `Caps.Networking`.
 - Route dispatch allocates a token and runs in a background worker thread.
-- Success/failure/progress callbacks are posted on UI thread via `Activity.runOnUiThread(...)`.
+- Success/failure/progress callbacks are posted on the UI thread via `Activity.runOnUiThread(...)`.
 - Async state is token-scoped and deterministic (`cancel/progress/error/status/body`).
 - Worker supports deterministic retry count (`retries`) and timeout control (`timeout_ms`, clamped to default when non-positive).
 
@@ -55,4 +57,4 @@ Wave 3 delivers tokened non-blocking route dispatch with deterministic cancellat
 
 ## Follow-up
 
-- Wave 4 async concurrency/request-options/typed-adapter extension is documented in `docs/TrackC_Wave4_Async_Concurrency.md`.
+Wave 4 (async concurrency, request options, typed adapters): `docs/TrackC_Wave4_Async_Concurrency.md`.

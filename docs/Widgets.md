@@ -1,167 +1,161 @@
 # Widgets and Styling
 
-This document lists the Pythonic DSL widgets and styling options.
+Reference for every widget in the DSL, what it maps to at runtime, and how to style things.
 
-## Core Widgets
+## Widgets
 
-`State(**kwargs)`  
-Defines app state variables.
+### Containers
 
-`Text(text, *, id="label", layout=None, padding=None, margin=None, gravity=None, text_color=None, background=None, text_size=None, radius=None, style=None)`  
-Text view widget.
+`Row(*items)` — horizontal LinearLayout.
+`Column(*items)` — vertical LinearLayout.
+`Container(*items)` — generic container.
+`Card(*items)` — container with rounded corners and elevation.
+`Relative(*items)` — RelativeLayout.
+`Constraint(*items)` — ConstraintLayout.
+`FrameLayout(*items)` — FrameLayout.
+`ScrollView(child)` — single child, enforced at compile time.
+`HorizontalScrollView(child)` — same, horizontal.
 
-`Button(text, *, id="button", layout=None, padding=None, margin=None, gravity=None, text_color=None, background=None, text_size=None, radius=None, style=None)`  
-Button widget.
+### Inputs
 
-`Row(*items, id="row", layout=None, padding=None, margin=None, gravity=None, background=None, radius=None, style=None)`  
-Horizontal container (LinearLayout).
+`Text(text, id=...)` — TextView.
+`Button(text, id=...)` — Button.
+`TextField(text="", id=..., hint=...)` — EditText.
+`Checkbox(text, id=..., checked=False)` — CheckBox.
+`Radio(text, id=..., checked=False)` — RadioButton.
+`RadioGroup(*items, id=...)` — RadioGroup.
+`Switch(text, id=..., checked=False)` — Switch.
+`Slider(id=..., value=0, min=0, max=100)` — SeekBar.
+`DropdownButton(id=..., items=...)` — Spinner.
+`PopupMenuButton(text="Menu", id=..., items=...)` — Button with popup menu.
+`Image(id=..., src=...)` — ImageView.
+`ProgressBar(id=..., indeterminate=False)` — ProgressBar.
 
-`Column(*items, id="column", layout=None, padding=None, margin=None, gravity=None, background=None, radius=None, style=None)`  
-Vertical container (LinearLayout).
+### Structural
 
-`AppBar(title, id="appbar", ...)`  
-App bar widget. Current runtime class: `android.widget.Toolbar` (framework fallback).
+`AppBar(title, id=...)` — Toolbar.
+`FloatingActionButton(text="+", id=...)` — ImageButton fallback.
+`RaisedButton(text, id=...)` — Button.
+`FlatButton(text, id=...)` — Button.
+`IconButton(icon_text="*", id=...)` — ImageButton.
+`ButtonBar(*items, id=...)` — horizontal LinearLayout of buttons.
+`ListView(items=[...], item_layout=...)` — static RecyclerView adapter.
 
-`FloatingActionButton(text="+", id="fab", ...)`  
-Floating action button widget. Current runtime class: `android.widget.ImageButton` (framework fallback).
+## Layout
 
-`RaisedButton(text, id="raised_btn", ...)`  
-Raised button widget. Current runtime class: `android.widget.Button` (framework fallback).
+Every widget takes these:
 
-`FlatButton(text, id="flat_btn", ...)`  
-Flat button widget. Current runtime class: `android.widget.Button` (framework fallback).
-
-`IconButton(icon_text="*", id="icon_btn", ...)`  
-Icon button widget. Current runtime class: `android.widget.ImageButton` (framework fallback).
-
-`TextField(text="", id="input", hint=None, ...)`  
-Text input widget. Runtime class: `android.widget.EditText`.
-
-`Checkbox(text="", id="checkbox", checked=False, ...)`  
-Checkbox widget. Runtime class: `android.widget.CheckBox`.
-
-`Radio(text="", id="radio", checked=False, ...)`  
-Radio widget. Runtime class: `android.widget.RadioButton`.
-
-`Switch(text="", id="switch", checked=False, ...)`  
-Switch widget. Runtime class: `android.widget.Switch`.
-
-`Slider(id="slider", value=0, min=0, max=100, ...)`  
-Slider widget. Runtime class: `android.widget.SeekBar` (framework fallback).
-
-`DropdownButton(id="dropdown", items=None, ...)`  
-Dropdown widget. Runtime class: `android.widget.Button` (fallback).
-
-`ButtonBar(*items, id="button_bar", ...)`  
-Button row widget. Runtime class: horizontal `LinearLayout`.
-
-`PopupMenuButton(text="Menu", id="popup", items=None, ...)`  
-Popup menu trigger widget. Current runtime class: `android.widget.Button` (menu behavior fallback).
-
-## Layout Helpers
-
-`layout`  
-Tuple `(width, height)` where each value can be an `int` or one of:
-`"match"`, `"match_parent"`, `"fill"`, `"wrap"`, `"wrap_content"`.
-
-`padding` / `margin`  
-Tuples `(left, top, right, bottom)` in pixels.
-
-`gravity`  
-Raw Android gravity int (e.g. `17` for center).
+- `layout` — `(width, height)` where each can be an int (px), `"match"`, `"wrap"`, or `"fill"`.
+- `padding` / `margin` — `(left, top, right, bottom)` in pixels.
+- `gravity` / `layout_gravity` — raw Android gravity ints.
+- `weight` — LinearLayout weight.
+- `percent` — for ConstraintLayout/Relative.
 
 ## Styling
 
-`text_color`, `background`  
-Accept int ARGB or hex strings `"#RRGGBB"` / `"#AARRGGBB"` or palette keys.
+Colors accept int ARGB, hex strings (`"#RRGGBB"` / `"#AARRGGBB"`), or palette key references.
 
-`text_size`  
-Float/number in sp.
+Common style fields:
+- `text_color`, `text_size` (sp), `background`, `radius` (corners)
+- `font_family`, `font_weight`, `font_style`, `letter_spacing`, `line_height`
+- `text_alignment`, `max_lines`, `ellipsize`, `all_caps`
+- `tint`, `thumb_tint`, `track_tint`, `progress_tint`, `button_tint`
+- `elevation`, `opacity`, `border_width`, `border_color`, `border_radius`
+- `ripple_color`, `clip_to_outline`, `blur_radius` (API 31+)
+- `rotation`, `scale_x`, `scale_y`, `translation_x`, `translation_y`
+- `content_description`, `important_for_accessibility`
 
-`radius`  
-Float/number used for rounded corners (GradientDrawable).
+### ColorState
 
-### Style
+For stateful colors:
 
-`Style(...)`  
-Reusable style object. Any field can be provided:
-`layout`, `padding`, `margin`, `gravity`, `text_color`, `background`, `text_size`, `radius`.
+```python
+ColorState(default="#000000", pressed="#333333", disabled="#999999")
+```
+
+Works on text_color, tint, background, and progress fields.
 
 ### Theme
 
-`Theme(palette=..., text=Style(...), button=Style(...), row=Style(...), column=Style(...))`  
-Applies default styles per widget type. `palette` is a dict of color names to hex strings or ints.
+```python
+Theme(
+    palette={"primary": "#2196F3", "bg": "#FAFAFA"},
+    text=Style(text_color="primary", text_size=16),
+    button=Style(text_color="white", radius=16),
+)
+```
+
+Resolution order: inline attrs > style= > theme channel > widget defaults.
 
 ### Presets
 
-`presets(palette=None)`  
-Helper with built-in style presets:
+```python
+p = presets()
+p.PrimaryButton()
+p.DangerButton()
+p.MutedText()
+p.Card()
+```
 
-- `PrimaryButton(**overrides)`
-- `DangerButton(**overrides)`
-- `MutedText(**overrides)`
-- `Card(**overrides)`
+## Events
 
-## Handler Actions
+- `on_click` — Button, FAB, raised/flat/icon buttons, popup menu trigger
+- `on_change` — Switch, Checkbox, Radio, Slider, RadioGroup
+- `on_text_change` — TextField
+- `on_item_selected` — Dropdown
+- `on_menu_item_selected` — PopupMenu
+- `on_focus_change` — any focusable widget
 
-Use in `@on_click` handlers:
+All handlers are named functions. No lambdas, no dynamic registration.
 
-- `toast("message", duration=0)`  
-  Runtime: `android.widget.Toast`.
-- `snackbar("message", duration=0)`  
-  Runtime fallback: `Toast` until Material dependency is bundled.
-- `simple_dialog("Title", "Message")`  
-  Runtime: `android.app.AlertDialog$Builder`.
+## Handler actions
 
-## Mapping Status
+Inside event handlers:
 
-Requested Material widgets are exposed in DSL now. Current runtime uses framework-safe fallbacks where needed:
+- `toast("message")` — android.widget.Toast
+- `snackbar("message")` — Toast fallback until Material is bundled
+- `simple_dialog("Title", "Message")` — AlertDialog.Builder
+- `log("message")` — android.util.Log
 
-| DSL Widget | Current Runtime Class |
-| --- | --- |
-| AppBar | `android.widget.Toolbar` |
-| FloatingActionButton | `android.widget.ImageButton` |
-| RaisedButton | `android.widget.Button` |
-| FlatButton | `android.widget.Button` |
-| IconButton | `android.widget.ImageButton` |
-| TextField | `android.widget.EditText` |
-| Checkbox | `android.widget.CheckBox` |
-| Radio | `android.widget.RadioButton` |
-| Switch | `android.widget.Switch` |
-| Slider | `android.widget.SeekBar` |
-| SimpleDialog | `android.app.AlertDialog$Builder` |
-| PopupMenuButton | `android.widget.Button` |
-| DropdownButton | `android.widget.Button` |
-| ButtonBar | `android.widget.LinearLayout` |
-| Toast | `android.widget.Toast` |
-| Snackbar | `Toast` fallback |
+## Runtime class mapping
 
-## Plugins
-
-The core runtime stays minimal. Optional functionality lives in plugins.
-
-- Set `APP_PLUGINS = ["plugin_a"]` in your app module
-
-Material support is a plugin (`material`) and is not enabled by default.
-
-To force a specific widget to use core rendering even when a plugin is enabled:
-
-- `core(Text("..."))`
+| DSL Widget | Runtime Class |
+|---|---|
+| Text | TextView |
+| Button | Button |
+| AppBar | Toolbar |
+| FloatingActionButton | ImageButton |
+| RaisedButton | Button |
+| FlatButton | Button |
+| IconButton | ImageButton |
+| TextField | EditText |
+| Checkbox | CheckBox |
+| Radio | RadioButton |
+| Switch | Switch |
+| Slider | SeekBar |
+| DropdownButton | Spinner |
+| Image | ImageView |
+| ProgressBar | ProgressBar |
+| PopupMenuButton | Button |
+| SimpleDialog | AlertDialog.Builder |
+| Snackbar | Toast (fallback) |
 
 ## Colors
 
-`from dsl.colors import colors` provides named hex strings:
+```python
+from dsl.colors import colors
 
-- `colors.blue_600`, `colors.blue_500`
-- `colors.emerald_500`, `colors.red_500`
-- `colors.slate_900`, `colors.slate_700`, `colors.slate_500`
-- `colors.zinc_100`, `colors.zinc_200`
-- `colors.white`, `colors.black`
+colors.blue_600
+colors.emerald_500
+colors.slate_900
+colors.zinc_100
+# ... etc
+```
 
 ## Example
 
 ```python
-from dsl.widgets import State, Text, Button, Row, Column, Theme, Style, presets
+from dsl.widgets import Text, Button, Row, Column, Theme, Style, presets
 from dsl.colors import colors
 from dsl.app import app, activity, ui
 
@@ -173,28 +167,15 @@ app_spec = app(
                 "bg": colors.zinc_100,
                 "card": colors.white,
                 "primary": colors.blue_600,
-                "text": colors.slate_900,
-                "muted": colors.slate_500,
-                "on_primary": colors.white,
             },
-            text=Style(text_color="text", text_size=16),
-            button=Style(text_color="on_primary", text_size=16, radius=16),
-            row=Style(background="card", radius=20),
-            column=Style(background="card", radius=14),
+            text=Style(text_color="bg", text_size=16),
+            button=Style(text_color="white", text_size=16, radius=16),
         ),
-        State(count=0, step=2),
         ui(
             Text("Count: 0", id="label", padding=(24, 24, 24, 24)),
             Row(
                 Button("+", id="inc", style=presets().PrimaryButton()),
                 Button("-", id="dec", style=presets().DangerButton()),
-                id="actions",
-                style=presets().Card(padding=(8, 8, 8, 8)),
-            ),
-            Column(
-                Text("Hello", id="text", text_color="muted"),
-                id="footer",
-                style=presets().Card(padding=(16, 8, 16, 8)),
             ),
         ),
     )

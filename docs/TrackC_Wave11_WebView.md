@@ -2,7 +2,7 @@
 
 Status: Completed on 2026-02-18
 
-This wave starts the Web tranche in Program 6-B with deterministic WebView loading and explicit policy controls.
+Starts the Web tranche in Program 6-B with deterministic WebView loading and explicit policy controls.
 
 ## Capability + ABI
 
@@ -13,7 +13,7 @@ This wave starts the Web tranche in Program 6-B with deterministic WebView loadi
   - `loadUrl(Landroid/app/Activity;Ljava/lang/String;)I`
   - `loadUrlError(Landroid/app/Activity;Ljava/lang/String;)I`
 
-Deterministic contract:
+Contract:
 - `setPolicy(...)` returns `1` on policy update applied, `0` on null activity context.
 - `loadUrl(...)` returns `1` on success, `0` on any failure.
 - `loadUrlError(...)` returns explicit error codes:
@@ -34,24 +34,15 @@ Deterministic contract:
 
 ## Conformance tests
 
-- Capability/lowering/parser/toolchain:
-  - `tests/test_track_c_wave11_webview.py`
-- Visible deterministic flow:
-  - `tests/test_track_c_wave11_visible_flow.py`
-- ABI and mapping snapshot coverage:
-  - `tests/test_runtime_abi_v1.py`
-  - `tests/test_runtime_abi_snapshot.py`
-  - `cfg/runtime_abi_snapshot_v1.json`
-  - `cfg/capability_mapping_snapshot_v1.json`
+- Capability/lowering/parser/toolchain: `tests/test_track_c_wave11_webview.py`
+- Visible deterministic flow: `tests/test_track_c_wave11_visible_flow.py`
+- ABI and mapping snapshot coverage: `tests/test_runtime_abi_v1.py`, `tests/test_runtime_abi_snapshot.py`, `cfg/runtime_abi_snapshot_v1.json`, `cfg/capability_mapping_snapshot_v1.json`
 
-## Visible flow summary
+## Visible flow
 
-The Wave 11 flow compiles an app that:
+The compiled app:
 1. Applies deterministic Web policy settings.
 2. Attempts a cleartext web load and reads deterministic error surface.
 3. Routes success/failure into visible UI labels and deterministic fallback intent path.
 
-References:
-- `tests/test_track_c_wave11_visible_flow.py`
-- `docs/capability_runtime_mapping_v1.md`
-- `runtime_abi_v1.md`
+References: `tests/test_track_c_wave11_visible_flow.py`, `docs/capability_runtime_mapping_v1.md`, `runtime_abi_v1.md`

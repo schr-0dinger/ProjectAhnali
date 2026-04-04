@@ -1,10 +1,9 @@
 # Track C Wave 18: Sharing/Intents Completion (Program 6-B Task B5)
 
-Status: Complete  
+Status: Complete
 Date: 2026-02-18
 
-This wave closes the remaining sharing/intents gap by adding deterministic file-share
-surfaces and explicit open-external result/error expression paths.
+Closes the remaining sharing/intents gap by adding deterministic file-share surfaces and explicit open-external result/error expression paths.
 
 ## Contract
 
@@ -28,7 +27,7 @@ Existing helper methods retained:
   - `open_external_result(uri)`
   - `open_uri_result(uri)` (alias)
 
-## Deterministic Error Contract
+## Error contract
 
 - `shareFile`: `1` success, `0` failure.
 - `shareFileError`: `0` success, `1` invalid args/context, `3` no handler/activity not found, `4` exception.
@@ -38,6 +37,4 @@ Existing helper methods retained:
 
 - `tests/test_track_c_wave18_sharing_completion.py`
 - `tests/test_track_c_wave18_visible_flow.py`
-- Cross-contract gates:
-  - `tests/test_runtime_abi_snapshot.py`
-  - `tests/test_capability_diagnostics_contract.py`
+- Cross-contract gates: `tests/test_runtime_abi_snapshot.py`, `tests/test_capability_diagnostics_contract.py`

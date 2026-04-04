@@ -1,9 +1,9 @@
-# Track C Wave 5 Visible Flow
+# Track C Wave 5: Visible Flow
 
-Status: Completed  
+Status: Completed
 Date: 2026-02-17
 
-This flow validates one visible end-to-end scenario that combines storage, async networking, and connectivity checks while preserving deterministic fallback behavior.
+End-to-end scenario combining storage, async networking, and connectivity checks with deterministic fallback behavior.
 
 ## Flow
 
@@ -21,7 +21,7 @@ This flow validates one visible end-to-end scenario that combines storage, async
    - `http_async_body(async_token, "offline-payload")`
    - Cancellation code `7` resolves to cached fallback; non-cancel failures resolve to body fallback.
 
-## Determinism
+## Why determinism holds
 
 - Network fallback body is fixed by explicit `offline-payload` fallback argument.
 - Cache fallback is fixed by explicit `storage_get(..., "cached-offline")`.

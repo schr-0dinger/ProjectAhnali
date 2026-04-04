@@ -1,11 +1,11 @@
-# Track C Wave 4 Async Concurrency + Request Options
+# Track C Wave 4: Async Concurrency + Request Options
 
-Status: Completed (core ABI slice + transport/race hardening)  
+Status: Completed (core ABI slice + transport/race hardening)
 Date: 2026-02-17
 
-This wave extends async networking with concurrent token surfaces, request-option wiring, and typed async JSON adapters.
+Extends async networking with concurrent token surfaces, request-option wiring, and typed async JSON adapters.
 
-## Delivered
+## What shipped
 
 - Multi-request tokened async state in `HttpHelper` (token-indexed cancel/progress/error/status/body stores).
 - Async request-option worker wiring:
@@ -23,7 +23,7 @@ This wave extends async networking with concurrent token surfaces, request-optio
   - repeated token cancellation checkpoints in async worker path
   - token-store stress assertions for token-scoped get/put guard behavior
 
-## ABI Additions
+## ABI additions
 
 - Request-option helper calls:
   - `httpRequestWithTimeout(...)`
@@ -38,10 +38,9 @@ This wave extends async networking with concurrent token surfaces, request-optio
   - `getAsyncJsonArrayLength(...)`
   - `getAsyncJsonArrayLengthError(...)`
 
-## Deterministic Error Surfaces
+## Error codes
 
-- Async networking errors keep explicit code mapping (`0,1,2,3,4,7,8`).
-- JSON adapter error surfaces preserve deterministic mapping for malformed payload (`5`) and missing key (`6`).
+Async networking errors keep the explicit code mapping (`0,1,2,3,4,7,8`). JSON adapter error surfaces preserve deterministic mapping for malformed payload (`5`) and missing key (`6`).
 
 ## Conformance
 

@@ -1,52 +1,41 @@
-# Python Library Policy (Static-First, Reactive-Optional)
+# Python Library Policy
 
-Status: Enforced in CI
+Keep the Python side lean. Every external dependency needs a reason to exist, and it needs to stay out of the core compilation path.
 
-This policy keeps Python-side dependencies minimal and purpose-justified while preserving Ahnali determinism.
+## What's allowed
 
-## Allowed External Libraries
+- **rich** — nicer terminal output for diagnostics. Used through `dsl.runtime.diagnostics`, never imported directly in compiler code.
+- **httpx** — HTTP helper wrappers. Same wrapper rule.
+- **tenacity** (optional) — retry/backoff for the HTTP wrappers. Only pulled in when you actually need retries.
+- **pydantic** (optional) — strict validation for typed models. Again, wrapper-only.
+- **pytest** — tests only. Stays in `tests/`.
 
-- `rich`: structured diagnostics rendering.
-- `httpx`: sync/async HTTP helper wrappers.
-- `tenacity` (optional): explicit retry/backoff orchestration for HTTP wrappers.
-- `pydantic` (optional): strict validation path for typed route/config models.
-- `pytest` (test-only): allowed only under `tests/`.
+## Standard library
 
-## Required Standard Library Foundations
+We lean on `dataclasses` for typed models and `asyncio` for lifecycle-scoped async work. That's it for required stdlib.
 
-- `dataclasses`: typed route/config models.
-- `asyncio`: lifecycle-scoped async primitives.
+## What's not allowed
 
-## Disallowed Heavy Libraries
+Nothing that pulls in a runtime engine or framework. Specifically:
+- Reactive engines (rx, reactivex)
+- DI frameworks (injector, dependency_injector)
+- Web frameworks (fastapi, flask, django)
+- Big ORMs (sqlalchemy, peewee, tortoise)
+- Symbolic math (sympy)
 
-- Reactive engines (`rx`, `reactivex`)
-- Full DI frameworks (`injector`, `dependency_injector`)
-- Web frameworks (`fastapi`, `flask`, `django`)
-- Large ORMs (`sqlalchemy`, `peewee`, `tortoise`)
-- Symbolic math libs (`sympy`)
+## The wrapper rule
 
-## Wrapper Boundary Rule
+Third-party libs get imported from wrapper modules only:
+- `dsl.runtime.diagnostics` for rich
+- `dsl.runtime.http_client` for httpx/tenacity
+- `dsl.runtime.models` for pydantic
 
-External libraries must be imported only from explicit wrapper modules:
+Nothing from the parser, lowering, or static compilation paths touches a third-party import directly. The CLI goes through `dsl.runtime.diagnostics` so you get Rich formatting when it's installed and plain text when it's not.
 
-- `dsl.runtime.diagnostics` for `rich`
-- `dsl.runtime.http_client` for `httpx`/`tenacity`
-- `dsl.runtime.models` for `pydantic`
+## Determinism
 
-No direct third-party imports are allowed in DSL lowering, parser, or static-mode compilation paths.
+Static mode is always the default. Reactive mode is opt-in. Retry behavior has to be explicit — fixed or exponential, your choice, but it's declared, not hidden.
 
-CLI entry points are expected to emit diagnostics through `dsl.runtime.diagnostics`
-so Rich formatting is used automatically when installed.
+## Enforcement
 
-## Determinism Constraints
-
-- Static mode remains default.
-- Reactive mode is explicit opt-in.
-- No hidden observers or implicit runtime mutation in static mode.
-- Retry behavior must be explicit and policy-driven (`fixed` or `exponential`).
-
-## CI Enforcement
-
-- Policy file: `cfg/python_library_policy.json`
-- Checker: `tools/python_library_policy.py`
-- CI gate: `.github/workflows/ci.yml` step `Check Python library policy`
+The policy lives in `cfg/python_library_policy.json`. The checker is `tools/python_library_policy.py`. CI runs it on every push under the "Check Python library policy" step. If you add a dependency without updating the policy file, CI catches it.
