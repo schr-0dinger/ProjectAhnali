@@ -7366,6 +7366,10 @@ class _PythonicContext(
                     ),
                 ),
             ], var(t)
+        if isinstance(expr, _ExprStarred):
+            raise RuntimeError(
+                "Starred expressions (*args, **kwargs) are not yet supported in this bounded scope."
+            )
         if isinstance(expr, _ExprAwait):
             raise RuntimeError(
                 "await expressions are not yet supported in this bounded scope. "
