@@ -1,0 +1,66 @@
+{
+  "name": "Ahnali",
+  "scopeName": "source.ahnali",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#builtins"
+    },
+    {
+      "include": "#dsl"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#numbers"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "match": "\\b(def|if|elif|else|for|while|try|except|finally|with|return|yield|raise|pass|break|continue|class|import|from|as|async|await)\\b",
+      "name": "keyword.control.ahnali"
+    },
+    "builtins": {
+      "match": "\\b(print|len|str|int|float|list|dict|set|tuple|range|enumerate|zip|type|isinstance|getattr|setattr|hasattr|delattr|super)\\b",
+      "name": "support.function.builtin.ahnali"
+    },
+    "dsl": {
+      "patterns": [
+        {
+          "match": "\\b(app|activity|ui|state|navigation|stack|push|pop|replace|on_click|on_long_click|on_change)\\b",
+          "name": "entity.name.function.ahnali"
+        },
+        {
+          "match": "\\b(text|button|image|input|checkbox|slider|dropdown|progress|spinner|list|scroll|card|drawer|toolbar|tab|fab)\\b",
+          "name": "entity.name.type.ahnali"
+        },
+        {
+          "match": "\\b(align|left|right|center|top|bottom|middle|start|end|horizontal|vertical|wrap|fill|wrap_content|match_parent)\\b",
+          "name": "constant.other.ahnali"
+        }
+      ]
+    },
+    "strings": {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.ahnali",
+      "patterns": [
+        {"match": "\\\\.", "name": "constant.character.escape.ahnali"}
+      ]
+    },
+    "comments": {
+      "match": "#.*$",
+      "name": "comment.line.ahnali"
+    },
+    "numbers": {
+      "match": "\\b(\\d+\\.?\\d*|0x[0-9a-fA-F]+)\\b",
+      "name": "constant.numeric.ahnali"
+    }
+  }
+}

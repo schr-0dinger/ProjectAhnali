@@ -4,7 +4,8 @@
     "rich",
     "httpx",
     "tenacity",
-    "pydantic"
+    "pydantic",
+    "click"
   ],
   "test_only_external_roots": [
     "pytest"

@@ -1,0 +1,31 @@
+{
+  "name": "ahnali",
+  "displayName": "Ahnali",
+  "description": "Syntax highlighting for Ahnali Python-to-Android DSL",
+  "version": "0.1.0",
+  "publisher": "ahnali",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ahnali",
+        "aliases": ["Ahnali", "ahnali"],
+        "extensions": [".ahnali", ".py"],
+        "filenames": ["app.py"],
+        "firstLine": "^from dsl\\.app import"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ahnali",
+        "scopeName": "source.ahnali",
+        "path": "./syntaxes/ahnali.tmLanguage.json"
+      }
+    ]
+  }
+}

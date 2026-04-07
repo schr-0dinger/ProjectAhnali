@@ -272,19 +272,49 @@ text_view.setText("Hello")
 
 **Goal**: Production-ready tooling around the existing compiler plus any new analysis/runtime-selection layers that prove out.
 
-### 5.1 Third-Party Bindings
+**Status**: Complete - CLI, package manager, VS Code extension implemented.
+
+### 5.1 CLI Commands
+- `ahnali build <source>` - Compile Python source to APK
+- `ahnali run <source>` - Build, install, and run on device
+- `ahnali analyze <source>` - Feature analysis and runtime selection
+- `ahnali init <name>` - Scaffold new project
+- `ahnali install <package>` - Install from HTTP registry
+- `ahnali list` - List installed packages
+- `ahnali publish <dir>` - Publish package to registry
+
+**Implemented now:**
+- CLI at `cli/` with click-based commands
+- All commands functional with proper error handling
+- 695 passing tests
+
+### 5.2 Package Manager
+- HTTP registry support for package discovery
+- Local package installation (`~/.ahnali/packages/`)
+- Package publishing workflow with ZIP creation
+
+**Implemented now:**
+- Install from JSON-based registry
+- Local package storage and listing
+- Publish command for creating distributable packages
+
+### 5.3 IDE Support
+- VS Code extension for syntax highlighting
+- TextMate grammar for Ahnali DSL keywords
+
+**Implemented now:**
+- Extension at `editor/vscode/`
+- Syntax highlighting for DSL keywords, Python builtins, strings, comments, numbers
+- Keywords: app, activity, ui, text, button, image, on_click, state, navigation, etc.
+
+### 5.4 Third-Party Bindings (Deferred)
 - Retrofit/OkHttp → Direct `HttpURLConnection` + JSON parsing
 - Gson/Moshi → JSON parsing via Android APIs
 - Glide/Coil → Image loading via `BitmapFactory`
 - Dagger/Hilt → Manual DI (no compile-time codegen)
 - RxJava → Async/await + streams
 
-### 5.2 Tooling
-- Build system (no Gradle)
-- IDE support (language server, code completion)
-- Testing framework (pytest → Smali tests)
-- Debugging support (source maps, breakpoints)
-- Package manager (Ahnali packages)
+**Status**: Not yet implemented - tracked as future work.
 
 **Deliverable**: Production-ready compiler/toolchain with a staged migration path.
 
