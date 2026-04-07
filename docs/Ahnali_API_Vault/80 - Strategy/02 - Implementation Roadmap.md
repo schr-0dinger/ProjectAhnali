@@ -278,11 +278,13 @@ text_view.setText("Hello")
   - `python.advanced.decorators` for @decorator syntax
   - `python.advanced.context_managers` for with statement
   - `python.advanced.varargs` for *args/**kwargs in function definitions
-- Clear diagnostic errors when these features are encountered at lowering: "with statement is not yet supported in this bounded scope"
+- Runtime helper classes emitted in Smali:
+  - `DecoratorRuntime.wrap()` for function wrapping
+  - `ContextManagerRuntime.enter/exit` for context protocol
+  - `VarargsRuntime.pack()` for varargs handling
 - AST nodes added: `_StmtWith`, `_ExprStarred`, `_ExprArguments`
-- 701 passing tests (695 baseline + 6 new Phase 4.3 tests)
-
-**Deliverable**: More expressive support with clearer feasibility than a blanket syntax-percentage target.
+- Clear diagnostic errors when these features are encountered at lowering
+- 708 passing tests
 
 ## Phase 5: Ecosystem (Months 13-18)
 

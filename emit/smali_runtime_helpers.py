@@ -203,6 +203,82 @@ def _emit_reflection_get_text_method() -> list[str]:
     ]
 
 
+def _emit_decorator_runtime_methods() -> list[str]:
+    return [
+        ".method public static wrap(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_decorator_null",
+        "    if-eqz p1, :ahnali_decorator_null",
+        "    move-object v0, p0",
+        "    return-object v0",
+        "    :ahnali_decorator_null",
+        "    const/4 v0, 0x0",
+        "    return-object v0",
+        ".end method",
+    ]
+
+
+def _emit_context_manager_runtime_methods() -> list[str]:
+    return [
+        ".method public static enter(Ljava/lang/Object;)Ljava/lang/Object;",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_cm_null",
+        "    if-eqz p1, :ahnali_cm_null",
+        "    move-object v0, p0",
+        "    return-object v0",
+        "    :ahnali_cm_null",
+        "    const/4 v0, 0x0",
+        "    return-object v0",
+        ".end method",
+        "",
+        ".method public static exit(Ljava/lang/Object;)V",
+        "    .locals 0",
+        "    return-void",
+        ".end method",
+    ]
+
+
+def _emit_varargs_runtime_methods() -> list[str]:
+    return [
+        ".method public static pack([Ljava/lang/Object;)[Ljava/lang/Object;",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_varargs_empty",
+        "    move-object v0, p0",
+        "    return-object v0",
+        "    :ahnali_varargs_empty",
+        "    const/4 v0, 0x0",
+        "    return-object v0",
+        ".end method",
+    ]
+
+
+def _emit_inheritance_runtime_methods() -> list[str]:
+    return [
+        ".method public static init()V",
+        "    .locals 0",
+        "    return-void",
+        ".end method",
+    ]
+
+
+def _emit_descriptor_runtime_methods() -> list[str]:
+    return [
+        ".method public static init()V",
+        "    .locals 0",
+        "    return-void",
+        ".end method",
+    ]
+
+
+def _emit_metaclass_runtime_methods() -> list[str]:
+    return [
+        ".method public static init()V",
+        "    .locals 0",
+        "    return-void",
+        ".end method",
+    ]
+
+
 def _emit_list_wrapper_runtime_methods() -> list[str]:
     return [
         ".method public static create()Ljava/util/ArrayList;",
@@ -537,6 +613,54 @@ def emit_capability_helper_smali(
         and helper_sig == "(I)[Ljava/lang/Object;"
     ):
         lines.extend(_emit_tuple_wrapper_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/DecoratorRuntime;"
+        and helper_method == "wrap"
+        and helper_sig == "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
+    ):
+        lines.extend(_emit_decorator_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/ContextManagerRuntime;"
+        and helper_method == "enter"
+        and helper_sig == "(Ljava/lang/Object;)Ljava/lang/Object;"
+    ):
+        lines.extend(_emit_context_manager_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/VarargsRuntime;"
+        and helper_method == "pack"
+        and helper_sig == "([Ljava/lang/Object;)[Ljava/lang/Object;"
+    ):
+        lines.extend(_emit_varargs_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/InheritanceRuntime;"
+        and helper_method == "init"
+        and helper_sig == "()V"
+    ):
+        lines.extend(_emit_inheritance_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/DescriptorRuntime;"
+        and helper_method == "init"
+        and helper_sig == "()V"
+    ):
+        lines.extend(_emit_descriptor_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/MetaclassRuntime;"
+        and helper_method == "init"
+        and helper_sig == "()V"
+    ):
+        lines.extend(_emit_metaclass_runtime_methods())
         return "\n".join(lines)
 
     if (
