@@ -5,6 +5,7 @@ from typing import Any
 
 from ir.expr import Var
 
+from dsl.android.bindings import get_android_binding
 from dsl.android.resources import _parse_color
 from dsl.ast import (
     _ExprBinary,
@@ -12,6 +13,7 @@ from dsl.ast import (
     _ExprCompare,
     _ExprConst,
     _ExprFormat,
+    _ExprDictLiteral,
     _ExprHttpGetError,
     _ExprHttpAsyncBody,
     _ExprHttpAsyncJsonArrayLength,
@@ -58,6 +60,9 @@ from dsl.ast import (
     _ExprReactiveGet,
     _ExprStateBackendGet,
     _ExprCall,
+    _ExprListLiteral,
+    _ExprSetLiteral,
+    _ExprTupleLiteral,
     _ExprStateBackendExists,
     _ExprStorageGet,
     _ExprStorageExists,
@@ -88,6 +93,7 @@ from dsl.ast import (
     _StmtAlarmSchedule,
     _StmtJobCancel,
     _StmtJobSchedule,
+    _StmtAndroidStartActivity,
     _StmtCreateNotificationChannel,
     _StmtOpenExternal,
     _StmtShareFile,
@@ -3174,6 +3180,8 @@ class _PythonicContext(
             return self._compile_share_file_stmt(stmt)
         if isinstance(stmt, _StmtOpenExternal):
             return self._compile_open_external_stmt(stmt)
+        if isinstance(stmt, _StmtAndroidStartActivity):
+            return self._compile_android_start_activity_stmt(stmt)
         if isinstance(stmt, _StmtWorkEnqueue):
             return self._compile_work_enqueue_stmt(stmt)
         if isinstance(stmt, _StmtWorkCancel):
@@ -5597,7 +5605,16 @@ class _PythonicContext(
         name = stmt.target.name
 
         value_type = "I"
-        if isinstance(stmt.value, (_ExprConst, _ExprSymbol, _ExprBinary)):
+        if isinstance(stmt.value, _ExprConst) and isinstance(stmt.value.value, str):
+            prefix, result = [], const(stmt.value.value)
+            value_type = "Ljava/lang/String;"
+        elif (
+            isinstance(stmt.value, _ExprSymbol)
+            and stmt.value.name in self._local_var_types
+        ):
+            prefix, result = [], var(stmt.value.name)
+            value_type = self._local_var_types[stmt.value.name]
+        elif isinstance(stmt.value, (_ExprConst, _ExprSymbol, _ExprBinary)):
             prefix, result = self._compile_int_expr(stmt.value)
         elif isinstance(stmt.value, _ExprReactiveGet):
             prefix, result = self._compile_reactive_get_call(
@@ -5832,6 +5849,97 @@ class _PythonicContext(
                 key=stmt.value.key,
                 tmp_prefix="http_get_json_field_error_result",
             )
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "getattr":
+            prefix, result = self._compile_supported_getattr_call(
+                stmt.value,
+                tmp_prefix="getattr_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif self._is_supported_string_method_call(stmt.value):
+            prefix, result = self._compile_supported_string_method_call(
+                stmt.value,
+                tmp_prefix="string_method_result",
+            )
+            value_type = (
+                "Ljava/util/ArrayList;"
+                if stmt.value.func_name == "method:split"
+                else "Ljava/lang/String;"
+            )
+        elif isinstance(stmt.value, _ExprListLiteral):
+            prefix, result = self._compile_list_literal(
+                stmt.value,
+                tmp_prefix="list_literal",
+            )
+            value_type = "Ljava/util/ArrayList;"
+        elif isinstance(stmt.value, _ExprDictLiteral):
+            prefix, result = self._compile_dict_literal(
+                stmt.value,
+                tmp_prefix="dict_literal",
+            )
+            value_type = "Ljava/util/HashMap;"
+        elif isinstance(stmt.value, _ExprSetLiteral):
+            prefix, result = self._compile_set_literal(
+                stmt.value,
+                tmp_prefix="set_literal",
+            )
+            value_type = "Ljava/util/HashSet;"
+        elif isinstance(stmt.value, _ExprTupleLiteral):
+            prefix, result = self._compile_tuple_literal(
+                stmt.value,
+                tmp_prefix="tuple_literal",
+            )
+            value_type = "[Ljava/lang/Object;"
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "str":
+            prefix, result = self._compile_supported_str_call(
+                stmt.value,
+                tmp_prefix="str_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "int":
+            prefix, result = self._compile_supported_int_call(
+                stmt.value,
+                tmp_prefix="int_result",
+            )
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "float":
+            prefix, result = self._compile_supported_float_call(
+                stmt.value,
+                tmp_prefix="float_result",
+            )
+            value_type = "F"
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "type":
+            prefix, result = self._compile_supported_type_call(
+                stmt.value,
+                tmp_prefix="type_result",
+            )
+            value_type = "Ljava/lang/String;"
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "isinstance":
+            prefix, result = self._compile_supported_isinstance_call(
+                stmt.value,
+                tmp_prefix="isinstance_result",
+            )
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "len":
+            prefix, result = self._compile_supported_len_call(
+                stmt.value,
+                tmp_prefix="len_result",
+            )
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "android_uri_parse":
+            prefix, result = self._compile_android_uri_parse_call(
+                stmt.value,
+                tmp_prefix="android_uri_result",
+            )
+            value_type = "Landroid/net/Uri;"
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "android_intent_view":
+            prefix, result = self._compile_android_intent_view_call(
+                stmt.value,
+                tmp_prefix="android_intent_view_result",
+            )
+            value_type = "Landroid/content/Intent;"
+        elif isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "android_intent_chooser":
+            prefix, result = self._compile_android_intent_chooser_call(
+                stmt.value,
+                tmp_prefix="android_intent_chooser_result",
+            )
+            value_type = "Landroid/content/Intent;"
         elif isinstance(stmt.value, _ExprCall):
             # User-defined function call in assignment
             fn_name = stmt.value.func_name
@@ -5933,7 +6041,8 @@ class _PythonicContext(
                 "http_get_retry(...), http_get_json_field(...), http_get_json_field_error(...), "
                 "http_get_route_async(...), http_async_progress(...), http_async_error(...), "
                 "http_async_status(...), http_async_body(...), http_async_json_field(...), "
-                "http_async_json_field_error(...), or http_async_json_array_length(...)."
+                "http_async_json_field_error(...), http_async_json_array_length(...), "
+                "android_uri_parse(...), android_intent_view(...), or android_intent_chooser(...)."
             )
 
         if name in self.state_spec.values:
@@ -5962,6 +6071,1154 @@ class _PythonicContext(
         self._local_var_types[name] = value_type
         local_expr = result.name if isinstance(result, Var) else result
         return [*prefix, assign(name, local_expr)]
+
+    def _compile_supported_uri_binding_expr(self, expr, *, tmp_prefix: str):
+        if isinstance(expr, _ExprSymbol):
+            if expr.name in self._local_vars and self._local_var_types.get(expr.name) == "Landroid/net/Uri;":
+                return [], var(expr.name)
+            raise RuntimeError(
+                f"Uri expression references unsupported symbol '{expr.name}'. "
+                "Supported Uri symbols must be locals assigned from android_uri_parse(...)."
+            )
+        if isinstance(expr, _ExprCall) and expr.func_name == "android_uri_parse":
+            return self._compile_android_uri_parse_call(expr, tmp_prefix=tmp_prefix)
+        raise RuntimeError(
+            "Unsupported Uri expression. Supported forms are android_uri_parse(string_expr) "
+            "or a local symbol previously assigned from android_uri_parse(...)."
+        )
+
+    def _compile_supported_intent_binding_expr(self, expr, *, tmp_prefix: str):
+        if isinstance(expr, _ExprSymbol):
+            if expr.name in self._local_vars and self._local_var_types.get(expr.name) == "Landroid/content/Intent;":
+                return [], var(expr.name)
+            raise RuntimeError(
+                f"Intent expression references unsupported symbol '{expr.name}'. "
+                "Supported Intent symbols must be locals assigned from android_intent_view(...) "
+                "or android_intent_chooser(...)."
+            )
+        if isinstance(expr, _ExprCall) and expr.func_name == "android_intent_view":
+            return self._compile_android_intent_view_call(expr, tmp_prefix=tmp_prefix)
+        if isinstance(expr, _ExprCall) and expr.func_name == "android_intent_chooser":
+            return self._compile_android_intent_chooser_call(expr, tmp_prefix=tmp_prefix)
+        raise RuntimeError(
+            "Unsupported Intent expression. Supported forms are android_intent_view(uri_expr), "
+            "android_intent_chooser(intent_expr, title_expr), or a local symbol previously assigned from them."
+        )
+
+    def _compile_android_uri_parse_call(self, expr, *, tmp_prefix: str):
+        spec = get_android_binding("android_uri_parse")
+        if spec is None or not isinstance(expr, _ExprCall) or expr.func_name != spec.name:
+            raise RuntimeError("Internal error: expected android_uri_parse(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError(
+                "android_uri_parse expects exactly 1 argument. "
+                "Usage: android_uri_parse(string_expr)"
+            )
+        url_stmts, url_expr = self._compile_supported_string_expr(
+            expr.args[0],
+            tmp_prefix=f"{tmp_prefix}_arg",
+        )
+        result_name = self._next_tmp(tmp_prefix)
+        return [
+            *url_stmts,
+            assign(
+                result_name,
+                call(
+                    spec.member_name,
+                    args=[url_expr],
+                    return_type=spec.return_type,
+                    arg_types=list(spec.arg_types),
+                    invoke_kind=spec.invoke_kind,
+                    owner=spec.owner_desc,
+                ),
+            ),
+        ], var(result_name)
+
+    def _compile_android_intent_view_call(self, expr, *, tmp_prefix: str):
+        spec = get_android_binding("android_intent_view")
+        if spec is None or not isinstance(expr, _ExprCall) or expr.func_name != spec.name:
+            raise RuntimeError("Internal error: expected android_intent_view(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError(
+                "android_intent_view expects exactly 1 argument. "
+                "Usage: android_intent_view(uri_expr)"
+            )
+        uri_stmts, uri_expr = self._compile_supported_uri_binding_expr(
+            expr.args[0],
+            tmp_prefix=f"{tmp_prefix}_uri",
+        )
+        result_name = self._next_tmp(tmp_prefix)
+        return [
+            *uri_stmts,
+            assign(
+                result_name,
+                new(
+                    spec.owner_desc,
+                    args=[const("android.intent.action.VIEW")],
+                    arg_types=["Ljava/lang/String;"],
+                ),
+            ),
+            assign(
+                result_name,
+                call(
+                    "setData",
+                    args=[var(result_name), uri_expr],
+                    return_type=spec.return_type,
+                    arg_types=["Landroid/net/Uri;"],
+                    invoke_kind="virtual",
+                    owner=spec.owner_desc,
+                ),
+            ),
+        ], var(result_name)
+
+    def _compile_android_intent_chooser_call(self, expr, *, tmp_prefix: str):
+        spec = get_android_binding("android_intent_chooser")
+        if spec is None or not isinstance(expr, _ExprCall) or expr.func_name != spec.name:
+            raise RuntimeError("Internal error: expected android_intent_chooser(...) call")
+        if len(expr.args) != 2:
+            raise RuntimeError(
+                "android_intent_chooser expects exactly 2 arguments. "
+                "Usage: android_intent_chooser(intent_expr, title_expr)"
+            )
+        intent_stmts, intent_expr = self._compile_supported_intent_binding_expr(
+            expr.args[0],
+            tmp_prefix=f"{tmp_prefix}_intent",
+        )
+        title_stmts, title_expr = self._compile_supported_string_expr(
+            expr.args[1],
+            tmp_prefix=f"{tmp_prefix}_title",
+        )
+        result_name = self._next_tmp(tmp_prefix)
+        return [
+            *intent_stmts,
+            *title_stmts,
+            assign(
+                result_name,
+                call(
+                    spec.member_name,
+                    args=[intent_expr, title_expr],
+                    return_type=spec.return_type,
+                    arg_types=list(spec.arg_types),
+                    invoke_kind=spec.invoke_kind,
+                    owner=spec.owner_desc,
+                ),
+            ),
+        ], var(result_name)
+
+    def _compile_android_start_activity_stmt(self, stmt):
+        spec = get_android_binding("android_start_activity")
+        if spec is None:
+            raise RuntimeError("Internal error: missing android_start_activity binding")
+        intent_stmts, intent_expr = self._compile_supported_intent_binding_expr(
+            stmt.intent,
+            tmp_prefix="android_start_activity_intent",
+        )
+        ctx_name = self._next_tmp("android_start_activity_ctx")
+        return [
+            *intent_stmts,
+            assign(ctx_name, static_get("app_ctx", "Landroid/app/Activity;")),
+            call_stmt(
+                spec.member_name,
+                args=[var(ctx_name), intent_expr],
+                return_type=spec.return_type,
+                arg_types=list(spec.arg_types),
+                invoke_kind=spec.invoke_kind,
+                owner=spec.owner_desc,
+            ),
+        ]
+
+    def _compile_supported_getattr_call(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprCall) or expr.func_name != "getattr":
+            raise RuntimeError("Internal error: expected getattr(...) call")
+        if len(expr.args) != 2:
+            raise RuntimeError(
+                "getattr currently supports exactly 2 arguments in Ahnali. "
+                "Supported form: getattr(widget_symbol, 'text')"
+            )
+
+        target_expr, attr_expr = expr.args
+        if not isinstance(target_expr, _ExprSymbol):
+            raise RuntimeError(
+                "getattr first argument must be a widget symbol. "
+                "Supported form: getattr(widget_symbol, 'text')"
+            )
+        if not isinstance(attr_expr, _ExprConst) or not isinstance(attr_expr.value, str):
+            raise RuntimeError(
+                "getattr second argument must be a constant string. "
+                "Supported form: getattr(widget_symbol, 'text')"
+            )
+
+        target_id = target_expr.name
+        attr_name = attr_expr.value.strip()
+        if attr_name != "text":
+            raise RuntimeError(
+                f"getattr({target_id}, {attr_name!r}) is not supported. "
+                "Only getattr(widget_symbol, 'text') is supported right now."
+            )
+        if target_id not in self.view_fields:
+            raise RuntimeError(
+                f"getattr target '{target_id}' is not a known widget id. "
+                "Only ui() widget symbols are supported."
+            )
+
+        view_desc = self._view_desc(self.view_types.get(target_id, "text"))
+        if view_desc != "Landroid/widget/TextView;":
+            raise RuntimeError(
+                f"getattr({target_id}, 'text') requires a text-capable view lowered as TextView; "
+                f"got {view_desc}."
+            )
+        view_field = self.view_fields[target_id]
+        result_name = self._next_tmp(tmp_prefix)
+        return [
+            assign("v", static_get(view_field, view_desc)),
+            assign(
+                result_name,
+                call(
+                    "getText",
+                    args=[var("v")],
+                    return_type="Ljava/lang/String;",
+                    arg_types=[view_desc],
+                    invoke_kind="static",
+                    owner="Lcom/ahnali/runtime/ReflectionRuntime;",
+                ),
+            ),
+        ], var(result_name)
+
+    def _compile_list_literal(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprListLiteral):
+            raise RuntimeError("Internal error: expected list literal")
+        list_tmp = self._next_tmp(tmp_prefix)
+        out = [
+            assign(
+                list_tmp,
+                call(
+                    "create",
+                    args=[],
+                    return_type="Ljava/util/ArrayList;",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner="Lcom/ahnali/runtime/ListWrapperRuntime;",
+                ),
+            )
+        ]
+        for idx, element in enumerate(expr.elements):
+            if not isinstance(element, _ExprConst):
+                raise RuntimeError(
+                    "List literals currently support constant string/int elements only."
+                )
+            if isinstance(element.value, str):
+                out.append(
+                    call_stmt(
+                        "addString",
+                        args=[var(list_tmp), const(element.value)],
+                        return_type=None,
+                        arg_types=["Ljava/util/ArrayList;", "Ljava/lang/String;"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/ListWrapperRuntime;",
+                    )
+                )
+                continue
+            if isinstance(element.value, int) and not isinstance(element.value, bool):
+                out.append(
+                    call_stmt(
+                        "addInt",
+                        args=[var(list_tmp), const(int(element.value))],
+                        return_type=None,
+                        arg_types=["Ljava/util/ArrayList;", "I"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/ListWrapperRuntime;",
+                    )
+                )
+                continue
+            raise RuntimeError(
+                f"List literal element at index {idx} must be a constant string or int; "
+                f"got {element.value!r} ({type(element.value).__name__})."
+            )
+        return out, var(list_tmp)
+
+    def _compile_dict_literal(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprDictLiteral):
+            raise RuntimeError("Internal error: expected dict literal")
+        dict_tmp = self._next_tmp(tmp_prefix)
+        out = [
+            assign(
+                dict_tmp,
+                call(
+                    "create",
+                    args=[],
+                    return_type="Ljava/util/HashMap;",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner="Lcom/ahnali/runtime/DictWrapperRuntime;",
+                ),
+            )
+        ]
+        for idx, (key_expr, value_expr) in enumerate(expr.entries):
+            if not isinstance(key_expr, _ExprConst) or not isinstance(key_expr.value, str):
+                raise RuntimeError(
+                    "Dict literals currently support constant string keys only."
+                )
+            if not isinstance(value_expr, _ExprConst):
+                raise RuntimeError(
+                    "Dict literals currently support constant string/int values only."
+                )
+            if isinstance(value_expr.value, str):
+                out.append(
+                    call_stmt(
+                        "putString",
+                        args=[var(dict_tmp), const(key_expr.value), const(value_expr.value)],
+                        return_type=None,
+                        arg_types=[
+                            "Ljava/util/HashMap;",
+                            "Ljava/lang/String;",
+                            "Ljava/lang/String;",
+                        ],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/DictWrapperRuntime;",
+                    )
+                )
+                continue
+            if isinstance(value_expr.value, int) and not isinstance(value_expr.value, bool):
+                out.append(
+                    call_stmt(
+                        "putInt",
+                        args=[var(dict_tmp), const(key_expr.value), const(int(value_expr.value))],
+                        return_type=None,
+                        arg_types=[
+                            "Ljava/util/HashMap;",
+                            "Ljava/lang/String;",
+                            "I",
+                        ],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/DictWrapperRuntime;",
+                    )
+                )
+                continue
+            raise RuntimeError(
+                f"Dict literal entry at index {idx} must have a constant string key and constant string/int value; "
+                f"got key={key_expr.value!r}, value={value_expr.value!r}."
+            )
+        return out, var(dict_tmp)
+
+    def _compile_set_literal(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprSetLiteral):
+            raise RuntimeError("Internal error: expected set literal")
+        set_tmp = self._next_tmp(tmp_prefix)
+        out = [
+            assign(
+                set_tmp,
+                call(
+                    "create",
+                    args=[],
+                    return_type="Ljava/util/HashSet;",
+                    arg_types=[],
+                    invoke_kind="static",
+                    owner="Lcom/ahnali/runtime/SetWrapperRuntime;",
+                ),
+            )
+        ]
+        for idx, element in enumerate(expr.elements):
+            if not isinstance(element, _ExprConst):
+                raise RuntimeError(
+                    "Set literals currently support constant string/int elements only."
+                )
+            if isinstance(element.value, str):
+                out.append(
+                    call_stmt(
+                        "addString",
+                        args=[var(set_tmp), const(element.value)],
+                        return_type=None,
+                        arg_types=["Ljava/util/HashSet;", "Ljava/lang/String;"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/SetWrapperRuntime;",
+                    )
+                )
+                continue
+            if isinstance(element.value, int) and not isinstance(element.value, bool):
+                out.append(
+                    call_stmt(
+                        "addInt",
+                        args=[var(set_tmp), const(int(element.value))],
+                        return_type=None,
+                        arg_types=["Ljava/util/HashSet;", "I"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/SetWrapperRuntime;",
+                    )
+                )
+                continue
+            raise RuntimeError(
+                f"Set literal element at index {idx} must be a constant string or int; "
+                f"got {element.value!r} ({type(element.value).__name__})."
+            )
+        return out, var(set_tmp)
+
+    def _compile_tuple_literal(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprTupleLiteral):
+            raise RuntimeError("Internal error: expected tuple literal")
+        tuple_tmp = self._next_tmp(tmp_prefix)
+        out = [
+            assign(
+                tuple_tmp,
+                call(
+                    "create",
+                    args=[const(len(expr.elements))],
+                    return_type="[Ljava/lang/Object;",
+                    arg_types=["I"],
+                    invoke_kind="static",
+                    owner="Lcom/ahnali/runtime/TupleWrapperRuntime;",
+                ),
+            )
+        ]
+        for idx, element in enumerate(expr.elements):
+            if not isinstance(element, _ExprConst):
+                raise RuntimeError(
+                    "Tuple literals currently support constant string/int elements only."
+                )
+            if isinstance(element.value, str):
+                out.append(
+                    call_stmt(
+                        "setString",
+                        args=[var(tuple_tmp), const(idx), const(element.value)],
+                        return_type=None,
+                        arg_types=["[Ljava/lang/Object;", "I", "Ljava/lang/String;"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/TupleWrapperRuntime;",
+                    )
+                )
+                continue
+            if isinstance(element.value, int) and not isinstance(element.value, bool):
+                out.append(
+                    call_stmt(
+                        "setInt",
+                        args=[var(tuple_tmp), const(idx), const(int(element.value))],
+                        return_type=None,
+                        arg_types=["[Ljava/lang/Object;", "I", "I"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/TupleWrapperRuntime;",
+                    )
+                )
+                continue
+            raise RuntimeError(
+                f"Tuple literal element at index {idx} must be a constant string or int; "
+                f"got {element.value!r} ({type(element.value).__name__})."
+            )
+        return out, var(tuple_tmp)
+
+    def _compile_supported_len_call(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprCall) or expr.func_name != "len":
+            raise RuntimeError("Internal error: expected len(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError(
+                "len currently supports exactly 1 argument in Ahnali."
+            )
+        target = expr.args[0]
+        if not isinstance(target, _ExprSymbol):
+            raise RuntimeError(
+                "len currently supports local collection symbols only. "
+                "Supported form: len(collection_symbol)"
+            )
+        local_type = self._local_var_types.get(target.name)
+        if local_type == "Ljava/util/ArrayList;":
+            owner = "Lcom/ahnali/runtime/ListWrapperRuntime;"
+            arg_type = "Ljava/util/ArrayList;"
+        elif local_type == "Ljava/util/HashMap;":
+            owner = "Lcom/ahnali/runtime/DictWrapperRuntime;"
+            arg_type = "Ljava/util/HashMap;"
+        elif local_type == "Ljava/util/HashSet;":
+            owner = "Lcom/ahnali/runtime/SetWrapperRuntime;"
+            arg_type = "Ljava/util/HashSet;"
+        elif local_type == "[Ljava/lang/Object;":
+            owner = "Lcom/ahnali/runtime/TupleWrapperRuntime;"
+            arg_type = "[Ljava/lang/Object;"
+        else:
+            raise RuntimeError(
+                f"len({target.name}) is not supported for type {local_type or 'unknown'}. "
+                "Supported form: len(collection_symbol) where collection_symbol was assigned from a supported literal."
+            )
+        result_name = self._next_tmp(tmp_prefix)
+        return [
+            assign(
+                result_name,
+                call(
+                    "size",
+                    args=[var(target.name)],
+                    return_type="I",
+                    arg_types=[arg_type],
+                    invoke_kind="static",
+                    owner=owner,
+                ),
+            )
+        ], var(result_name)
+
+    def _is_supported_string_method_call(self, expr):
+        return (
+            isinstance(expr, _ExprCall)
+            and isinstance(expr.func_name, str)
+            and expr.func_name.startswith("method:")
+            and expr.func_name.split(":", 1)[1] in {"strip", "replace", "lower", "upper", "split", "join"}
+        )
+
+    def _compile_supported_string_expr(self, expr, *, tmp_prefix: str):
+        if isinstance(expr, _ExprConst):
+            if isinstance(expr.value, str):
+                return [], const(expr.value)
+            raise RuntimeError("Only constant strings are supported in this string context.")
+        if isinstance(expr, _ExprSymbol):
+            if expr.name in self._local_vars and self._local_var_types.get(expr.name) == "Ljava/lang/String;":
+                return [], var(expr.name)
+            raise RuntimeError(
+                f"String expression references unsupported symbol '{expr.name}'. "
+                "Supported string symbols must be local variables with string type."
+            )
+        if isinstance(expr, _ExprCall):
+            if expr.func_name in {"str", "type", "getattr"}:
+                if expr.func_name == "str":
+                    return self._compile_supported_str_call(expr, tmp_prefix=tmp_prefix)
+                if expr.func_name == "type":
+                    return self._compile_supported_type_call(expr, tmp_prefix=tmp_prefix)
+                return self._compile_supported_getattr_call(expr, tmp_prefix=tmp_prefix)
+            if self._is_supported_string_method_call(expr) and expr.func_name != "method:split":
+                return self._compile_supported_string_method_call(expr, tmp_prefix=tmp_prefix)
+        raise RuntimeError(
+            "Unsupported string expression. Supported forms are string constants, string locals, "
+            "supported str(...)/type(...)/getattr(...), and bounded string methods."
+        )
+
+    def _compile_supported_string_collection_expr(self, expr, *, tmp_prefix: str):
+        if isinstance(expr, _ExprSymbol):
+            local_type = self._local_var_types.get(expr.name)
+            if local_type in {"Ljava/util/ArrayList;", "[Ljava/lang/Object;"}:
+                return [], var(expr.name), local_type
+            raise RuntimeError(
+                f"join(...) is not supported for symbol '{expr.name}' with type {local_type or 'unknown'}."
+            )
+        if isinstance(expr, _ExprCall) and expr.func_name == "method:split":
+            split_stmts, split_expr = self._compile_supported_string_method_call(expr, tmp_prefix=tmp_prefix)
+            return split_stmts, split_expr, "Ljava/util/ArrayList;"
+        raise RuntimeError(
+            "join(...) currently supports local list/tuple symbols or a nested supported split(...) result."
+        )
+
+    def _compile_supported_string_method_call(self, expr, *, tmp_prefix: str):
+        if not self._is_supported_string_method_call(expr):
+            raise RuntimeError("Internal error: expected supported string method call")
+        method_name = expr.func_name.split(":", 1)[1]
+        if not expr.args:
+            raise RuntimeError("String method call is missing its receiver.")
+
+        recv_stmts, recv_expr = self._compile_supported_string_expr(
+            expr.args[0],
+            tmp_prefix=f"{tmp_prefix}_recv",
+        )
+        result_name = self._next_tmp(tmp_prefix)
+
+        if method_name == "split":
+            if len(expr.args) != 2:
+                raise RuntimeError(
+                    "split() currently supports exactly 1 separator argument in Ahnali."
+                )
+            sep_stmts, sep_expr = self._compile_supported_string_expr(
+                expr.args[1],
+                tmp_prefix=f"{tmp_prefix}_sep",
+            )
+            return [
+                *recv_stmts,
+                *sep_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "split",
+                        args=[recv_expr, sep_expr],
+                        return_type="Ljava/util/ArrayList;",
+                        arg_types=["Ljava/lang/String;", "Ljava/lang/String;"],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/StringMethodsRuntime;",
+                    ),
+                ),
+            ], var(result_name)
+
+        if method_name == "join":
+            if len(expr.args) != 2:
+                raise RuntimeError(
+                    "join() currently supports exactly 1 collection argument in Ahnali."
+                )
+            items_stmts, items_expr, items_type = self._compile_supported_string_collection_expr(
+                expr.args[1],
+                tmp_prefix=f"{tmp_prefix}_items",
+            )
+            helper_name = "joinList" if items_type == "Ljava/util/ArrayList;" else "joinTuple"
+            helper_arg_type = "Ljava/util/ArrayList;" if items_type == "Ljava/util/ArrayList;" else "[Ljava/lang/Object;"
+            return [
+                *recv_stmts,
+                *items_stmts,
+                assign(
+                    result_name,
+                    call(
+                        helper_name,
+                        args=[recv_expr, items_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["Ljava/lang/String;", helper_arg_type],
+                        invoke_kind="static",
+                        owner="Lcom/ahnali/runtime/StringMethodsRuntime;",
+                    ),
+                ),
+            ], var(result_name)
+
+        if method_name == "strip":
+            if len(expr.args) != 1:
+                raise RuntimeError("strip() currently supports no arguments in Ahnali.")
+            return [
+                *recv_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "trim",
+                        args=[recv_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=[],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+
+        if method_name in {"lower", "upper"}:
+            if len(expr.args) != 1:
+                raise RuntimeError(f"{method_name}() currently supports no arguments in Ahnali.")
+            java_name = "toLowerCase" if method_name == "lower" else "toUpperCase"
+            return [
+                *recv_stmts,
+                assign(
+                    result_name,
+                    call(
+                        java_name,
+                        args=[recv_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=[],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+
+        if method_name == "replace":
+            if len(expr.args) != 3:
+                raise RuntimeError(
+                    "replace() currently supports exactly 2 arguments in Ahnali. "
+                    "Supported form: string_value.replace(old, new)"
+                )
+            old_stmts, old_expr = self._compile_supported_string_expr(
+                expr.args[1],
+                tmp_prefix=f"{tmp_prefix}_old",
+            )
+            new_stmts, new_expr = self._compile_supported_string_expr(
+                expr.args[2],
+                tmp_prefix=f"{tmp_prefix}_new",
+            )
+            return [
+                *recv_stmts,
+                *old_stmts,
+                *new_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "replace",
+                        args=[recv_expr, old_expr, new_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["Ljava/lang/CharSequence;", "Ljava/lang/CharSequence;"],
+                        invoke_kind="virtual",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+
+        raise RuntimeError(
+            f"Unsupported string method: {method_name}. "
+            "Supported methods are strip(), replace(old, new), lower(), upper(), split(sep), and separator.join(items)."
+        )
+
+    def _compile_supported_str_call(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprCall) or expr.func_name != "str":
+            raise RuntimeError("Internal error: expected str(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError("str currently supports exactly 1 argument in Ahnali.")
+        target = expr.args[0]
+        if isinstance(target, _ExprConst):
+            if isinstance(target.value, str):
+                return [], const(target.value)
+            if isinstance(target.value, int) and not isinstance(target.value, bool):
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    assign(
+                        result_name,
+                        call(
+                            "valueOf",
+                            args=[const(int(target.value))],
+                            return_type="Ljava/lang/String;",
+                            arg_types=["I"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/String;",
+                        ),
+                    )
+                ], var(result_name)
+            if isinstance(target.value, float):
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    assign(
+                        result_name,
+                        call(
+                            "valueOf",
+                            args=[const(float(target.value))],
+                            return_type="Ljava/lang/String;",
+                            arg_types=["F"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/String;",
+                        ),
+                    )
+                ], var(result_name)
+            raise RuntimeError(
+                "str currently supports constant string/int/float values only."
+            )
+        if isinstance(target, _ExprSymbol):
+            if target.name in self._local_vars:
+                local_type = self._local_var_types.get(target.name)
+                if local_type == "Ljava/lang/String;":
+                    return [], var(target.name)
+                if local_type == "I":
+                    result_name = self._next_tmp(tmp_prefix)
+                    return [
+                        assign(
+                            result_name,
+                            call(
+                                "valueOf",
+                                args=[var(target.name)],
+                                return_type="Ljava/lang/String;",
+                                arg_types=["I"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/String;",
+                            ),
+                        )
+                    ], var(result_name)
+                if local_type == "F":
+                    result_name = self._next_tmp(tmp_prefix)
+                    return [
+                        assign(
+                            result_name,
+                            call(
+                                "valueOf",
+                                args=[var(target.name)],
+                                return_type="Ljava/lang/String;",
+                                arg_types=["F"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/String;",
+                            ),
+                        )
+                    ], var(result_name)
+                raise RuntimeError(
+                    f"str({target.name}) is not supported for type {local_type or 'unknown'}."
+                )
+            if target.name in self.state_spec.values:
+                int_stmts, int_expr = self._compile_int_expr(target)
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    *int_stmts,
+                    assign(
+                        result_name,
+                        call(
+                            "valueOf",
+                            args=[int_expr],
+                            return_type="Ljava/lang/String;",
+                            arg_types=["I"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/String;",
+                        ),
+                    ),
+                ], var(result_name)
+        if isinstance(target, (_ExprBinary, _ExprLocationEnabled, _ExprPermissionGranted, _ExprWorkStatus, _ExprWorkError, _ExprAlarmStatus, _ExprAlarmError, _ExprJobStatus, _ExprJobError, _ExprStorageExists, _ExprStateBackendExists)):
+            int_stmts, int_expr = self._compile_int_expr(target)
+            result_name = self._next_tmp(tmp_prefix)
+            return [
+                *int_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "valueOf",
+                        args=[int_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["I"],
+                        invoke_kind="static",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+        if isinstance(target, _ExprCall) and target.func_name == "len":
+            int_stmts, int_expr = self._compile_supported_len_call(target, tmp_prefix=f"{tmp_prefix}_len")
+            result_name = self._next_tmp(tmp_prefix)
+            return [
+                *int_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "valueOf",
+                        args=[int_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["I"],
+                        invoke_kind="static",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+        if isinstance(target, _ExprCall) and target.func_name == "int":
+            int_stmts, int_expr = self._compile_supported_int_call(target, tmp_prefix=f"{tmp_prefix}_int")
+            result_name = self._next_tmp(tmp_prefix)
+            return [
+                *int_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "valueOf",
+                        args=[int_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["I"],
+                        invoke_kind="static",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+        if isinstance(target, _ExprCall) and target.func_name == "float":
+            float_stmts, float_expr = self._compile_supported_float_call(target, tmp_prefix=f"{tmp_prefix}_float")
+            result_name = self._next_tmp(tmp_prefix)
+            return [
+                *float_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "valueOf",
+                        args=[float_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["F"],
+                        invoke_kind="static",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+        if isinstance(target, _ExprCall) and target.func_name == "isinstance":
+            int_stmts, int_expr = self._compile_supported_isinstance_call(target, tmp_prefix=f"{tmp_prefix}_isinstance")
+            result_name = self._next_tmp(tmp_prefix)
+            return [
+                *int_stmts,
+                assign(
+                    result_name,
+                    call(
+                        "valueOf",
+                        args=[int_expr],
+                        return_type="Ljava/lang/String;",
+                        arg_types=["I"],
+                        invoke_kind="static",
+                        owner="Ljava/lang/String;",
+                    ),
+                ),
+            ], var(result_name)
+        if isinstance(target, _ExprCall) and target.func_name == "type":
+            return self._compile_supported_type_call(target, tmp_prefix=f"{tmp_prefix}_type")
+        if self._is_supported_string_method_call(target):
+            return self._compile_supported_string_method_call(target, tmp_prefix=f"{tmp_prefix}_method")
+        raise RuntimeError(
+            "str currently supports supported int expressions, supported len(...) calls, and string symbols/constants only."
+        )
+
+    def _supported_type_name_for_expr(self, expr):
+        if isinstance(expr, _ExprConst):
+            if isinstance(expr.value, str):
+                return "str"
+            if isinstance(expr.value, int) and not isinstance(expr.value, bool):
+                return "int"
+            if isinstance(expr.value, float):
+                return "float"
+            raise RuntimeError(f"Unsupported constant type for type()/isinstance(): {expr.value!r}")
+        if isinstance(expr, _ExprListLiteral):
+            return "list"
+        if isinstance(expr, _ExprDictLiteral):
+            return "dict"
+        if isinstance(expr, _ExprSetLiteral):
+            return "set"
+        if isinstance(expr, _ExprTupleLiteral):
+            return "tuple"
+        if isinstance(expr, _ExprSymbol):
+            if expr.name in self.state_spec.values:
+                return "int"
+            if expr.name in self._local_vars:
+                local_type = self._local_var_types.get(expr.name)
+                mapping = {
+                    "I": "int",
+                    "F": "float",
+                    "Ljava/lang/String;": "str",
+                    "Ljava/util/ArrayList;": "list",
+                    "Ljava/util/HashMap;": "dict",
+                    "Ljava/util/HashSet;": "set",
+                    "[Ljava/lang/Object;": "tuple",
+                    "Landroid/net/Uri;": "uri",
+                    "Landroid/content/Intent;": "intent",
+                }
+                if local_type in mapping:
+                    return mapping[local_type]
+                raise RuntimeError(
+                    f"type()/isinstance() is not supported for symbol '{expr.name}' with type {local_type or 'unknown'}."
+                )
+            raise RuntimeError(
+                f"type()/isinstance() references unknown symbol '{expr.name}'."
+            )
+        if isinstance(expr, _ExprBinary):
+            return "int"
+        if isinstance(expr, (_ExprLocationEnabled, _ExprPermissionGranted, _ExprWorkStatus, _ExprWorkError, _ExprAlarmStatus, _ExprAlarmError, _ExprJobStatus, _ExprJobError, _ExprStorageExists, _ExprStateBackendExists)):
+            return "int"
+        if isinstance(expr, _ExprCall):
+            if expr.func_name == "method:split":
+                return "list"
+            if expr.func_name == "method:join":
+                return "str"
+            if expr.func_name in {"len", "int", "isinstance"}:
+                return "int"
+            if expr.func_name == "float":
+                return "float"
+            if expr.func_name == "android_uri_parse":
+                return "uri"
+            if expr.func_name in {"android_intent_view", "android_intent_chooser"}:
+                return "intent"
+            if expr.func_name in {"str", "type", "getattr"} or self._is_supported_string_method_call(expr):
+                return "str"
+        raise RuntimeError(
+            f"type()/isinstance() is not supported for expression type {type(expr).__name__}."
+        )
+
+    def _parse_supported_type_spec(self, expr):
+        if isinstance(expr, _ExprSymbol):
+            name = str(expr.name)
+            mapping = {
+                "int": "int",
+                "float": "float",
+                "str": "str",
+                "list": "list",
+                "dict": "dict",
+                "set": "set",
+                "tuple": "tuple",
+                "uri": "uri",
+                "intent": "intent",
+            }
+            if name in mapping:
+                return [mapping[name]]
+        if isinstance(expr, _ExprConst) and isinstance(expr.value, str):
+            return [str(expr.value)]
+        if isinstance(expr, _ExprTupleLiteral):
+            names = []
+            for item in expr.elements:
+                parsed = self._parse_supported_type_spec(item)
+                if len(parsed) != 1:
+                    raise RuntimeError("Nested isinstance type tuples are not supported.")
+                names.extend(parsed)
+            return names
+        raise RuntimeError(
+            "Supported isinstance/type specs are int, float, str, list, dict, set, tuple, uri, intent, "
+            "or a tuple of those names."
+        )
+
+    def _compile_supported_type_call(self, expr, *, tmp_prefix: str):
+        del tmp_prefix
+        if not isinstance(expr, _ExprCall) or expr.func_name != "type":
+            raise RuntimeError("Internal error: expected type(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError("type currently supports exactly 1 argument in Ahnali.")
+        return [], const(self._supported_type_name_for_expr(expr.args[0]))
+
+    def _compile_supported_isinstance_call(self, expr, *, tmp_prefix: str):
+        del tmp_prefix
+        if not isinstance(expr, _ExprCall) or expr.func_name != "isinstance":
+            raise RuntimeError("Internal error: expected isinstance(...) call")
+        if len(expr.args) != 2:
+            raise RuntimeError("isinstance currently supports exactly 2 arguments in Ahnali.")
+        actual = self._supported_type_name_for_expr(expr.args[0])
+        expected = self._parse_supported_type_spec(expr.args[1])
+        return [], const(1 if actual in expected else 0)
+
+    def _compile_supported_int_call(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprCall) or expr.func_name != "int":
+            raise RuntimeError("Internal error: expected int(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError("int currently supports exactly 1 argument in Ahnali.")
+        target = expr.args[0]
+        if isinstance(target, _ExprConst):
+            if isinstance(target.value, int) and not isinstance(target.value, bool):
+                return [], const(int(target.value))
+            if isinstance(target.value, float):
+                result_name = self._next_tmp(tmp_prefix)
+                return [assign(result_name, primitive_cast(const(float(target.value)), "F", "I"))], var(result_name)
+            if isinstance(target.value, str):
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    assign(
+                        result_name,
+                        call(
+                            "parseInt",
+                            args=[const(target.value)],
+                            return_type="I",
+                            arg_types=["Ljava/lang/String;"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/Integer;",
+                        ),
+                    )
+                ], var(result_name)
+            raise RuntimeError("int currently supports constant int/float/string values only.")
+        if isinstance(target, _ExprSymbol):
+            if target.name in self._local_vars:
+                local_type = self._local_var_types.get(target.name)
+                if local_type == "I":
+                    return [], var(target.name)
+                if local_type == "F":
+                    result_name = self._next_tmp(tmp_prefix)
+                    return [assign(result_name, primitive_cast(var(target.name), "F", "I"))], var(result_name)
+                if local_type == "Ljava/lang/String;":
+                    result_name = self._next_tmp(tmp_prefix)
+                    return [
+                        assign(
+                            result_name,
+                            call(
+                                "parseInt",
+                                args=[var(target.name)],
+                                return_type="I",
+                                arg_types=["Ljava/lang/String;"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/Integer;",
+                            ),
+                        )
+                    ], var(result_name)
+                raise RuntimeError(f"int({target.name}) is not supported for type {local_type or 'unknown'}.")
+            if target.name in self.state_spec.values:
+                return self._compile_int_expr(target)
+        if isinstance(target, (_ExprBinary, _ExprLocationEnabled, _ExprPermissionGranted, _ExprWorkStatus, _ExprWorkError, _ExprAlarmStatus, _ExprAlarmError, _ExprJobStatus, _ExprJobError, _ExprStorageExists, _ExprStateBackendExists)):
+            return self._compile_int_expr(target)
+        if isinstance(target, _ExprCall):
+            if target.func_name in {"len", "isinstance", "int"}:
+                if target.func_name == "len":
+                    return self._compile_supported_len_call(target, tmp_prefix=f"{tmp_prefix}_len")
+                if target.func_name == "isinstance":
+                    return self._compile_supported_isinstance_call(target, tmp_prefix=f"{tmp_prefix}_isinstance")
+                return self._compile_supported_int_call(target, tmp_prefix=f"{tmp_prefix}_int")
+            if target.func_name == "float":
+                float_stmts, float_expr = self._compile_supported_float_call(target, tmp_prefix=f"{tmp_prefix}_float")
+                result_name = self._next_tmp(tmp_prefix)
+                return [*float_stmts, assign(result_name, primitive_cast(float_expr, "F", "I"))], var(result_name)
+            if target.func_name == "str":
+                str_stmts, str_expr = self._compile_supported_str_call(target, tmp_prefix=f"{tmp_prefix}_str")
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    *str_stmts,
+                    assign(
+                        result_name,
+                        call(
+                            "parseInt",
+                            args=[str_expr],
+                            return_type="I",
+                            arg_types=["Ljava/lang/String;"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/Integer;",
+                        ),
+                    ),
+                ], var(result_name)
+        raise RuntimeError(
+            "int currently supports supported int/float/string values, supported len(...), and supported str(...)/float(...)/isinstance(...) results."
+        )
+
+    def _compile_supported_float_call(self, expr, *, tmp_prefix: str):
+        if not isinstance(expr, _ExprCall) or expr.func_name != "float":
+            raise RuntimeError("Internal error: expected float(...) call")
+        if len(expr.args) != 1:
+            raise RuntimeError("float currently supports exactly 1 argument in Ahnali.")
+        target = expr.args[0]
+        if isinstance(target, _ExprConst):
+            if isinstance(target.value, float):
+                return [], const(float(target.value))
+            if isinstance(target.value, int) and not isinstance(target.value, bool):
+                result_name = self._next_tmp(tmp_prefix)
+                return [assign(result_name, primitive_cast(const(int(target.value)), "I", "F"))], var(result_name)
+            if isinstance(target.value, str):
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    assign(
+                        result_name,
+                        call(
+                            "parseFloat",
+                            args=[const(target.value)],
+                            return_type="F",
+                            arg_types=["Ljava/lang/String;"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/Float;",
+                        ),
+                    )
+                ], var(result_name)
+            raise RuntimeError("float currently supports constant int/float/string values only.")
+        if isinstance(target, _ExprSymbol):
+            if target.name in self._local_vars:
+                local_type = self._local_var_types.get(target.name)
+                if local_type == "F":
+                    return [], var(target.name)
+                if local_type == "I":
+                    result_name = self._next_tmp(tmp_prefix)
+                    return [assign(result_name, primitive_cast(var(target.name), "I", "F"))], var(result_name)
+                if local_type == "Ljava/lang/String;":
+                    result_name = self._next_tmp(tmp_prefix)
+                    return [
+                        assign(
+                            result_name,
+                            call(
+                                "parseFloat",
+                                args=[var(target.name)],
+                                return_type="F",
+                                arg_types=["Ljava/lang/String;"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/Float;",
+                            ),
+                        )
+                    ], var(result_name)
+                raise RuntimeError(f"float({target.name}) is not supported for type {local_type or 'unknown'}.")
+            if target.name in self.state_spec.values:
+                int_stmts, int_expr = self._compile_int_expr(target)
+                result_name = self._next_tmp(tmp_prefix)
+                return [*int_stmts, assign(result_name, primitive_cast(int_expr, "I", "F"))], var(result_name)
+        if isinstance(target, (_ExprBinary, _ExprLocationEnabled, _ExprPermissionGranted, _ExprWorkStatus, _ExprWorkError, _ExprAlarmStatus, _ExprAlarmError, _ExprJobStatus, _ExprJobError, _ExprStorageExists, _ExprStateBackendExists)):
+            int_stmts, int_expr = self._compile_int_expr(target)
+            result_name = self._next_tmp(tmp_prefix)
+            return [*int_stmts, assign(result_name, primitive_cast(int_expr, "I", "F"))], var(result_name)
+        if isinstance(target, _ExprCall):
+            if target.func_name in {"len", "isinstance", "int"}:
+                int_stmts, int_expr = (
+                    self._compile_supported_len_call(target, tmp_prefix=f"{tmp_prefix}_len") if target.func_name == "len" else
+                    self._compile_supported_isinstance_call(target, tmp_prefix=f"{tmp_prefix}_isinstance") if target.func_name == "isinstance" else
+                    self._compile_supported_int_call(target, tmp_prefix=f"{tmp_prefix}_int")
+                )
+                result_name = self._next_tmp(tmp_prefix)
+                return [*int_stmts, assign(result_name, primitive_cast(int_expr, "I", "F"))], var(result_name)
+            if target.func_name == "float":
+                return self._compile_supported_float_call(target, tmp_prefix=f"{tmp_prefix}_float")
+            if target.func_name == "str":
+                str_stmts, str_expr = self._compile_supported_str_call(target, tmp_prefix=f"{tmp_prefix}_str")
+                result_name = self._next_tmp(tmp_prefix)
+                return [
+                    *str_stmts,
+                    assign(
+                        result_name,
+                        call(
+                            "parseFloat",
+                            args=[str_expr],
+                            return_type="F",
+                            arg_types=["Ljava/lang/String;"],
+                            invoke_kind="static",
+                            owner="Ljava/lang/Float;",
+                        ),
+                    ),
+                ], var(result_name)
+        raise RuntimeError(
+            "float currently supports supported int/float/string values, supported len(...), and supported str(...)/int(...)/isinstance(...) results."
+        )
 
     def _next_tmp(self, prefix="tmp"):
         self._tmp_counter += 1
@@ -6071,6 +7328,8 @@ class _PythonicContext(
                 assign(t, binary(expr.op, left_expr, right_expr)),
             ], var(t)
         if isinstance(expr, _ExprCall):
+            if expr.func_name == "len":
+                return self._compile_supported_len_call(expr, tmp_prefix="len_result")
             # User-defined function call
             fn_name = expr.func_name
             arg_stmts = []
@@ -6156,12 +7415,103 @@ class _PythonicContext(
                             owner=view_desc,
                         ),
                     ]
+                if local_type == "F":
+                    return [
+                        assign(
+                            "s",
+                            call(
+                                "valueOf",
+                                args=[var(name)],
+                                return_type="Ljava/lang/String;",
+                                arg_types=["F"],
+                                invoke_kind="static",
+                                owner="Ljava/lang/String;",
+                            ),
+                        ),
+                        assign("v", static_get(view_field, view_desc)),
+                        call_stmt(
+                            "setText",
+                            args=[var("v"), var("s")],
+                            return_type=None,
+                            arg_types=["Ljava/lang/CharSequence;"],
+                            invoke_kind="virtual",
+                            owner=view_desc,
+                        ),
+                    ]
             raise RuntimeError(
                 f"{view_id}.text references unknown symbol '{name}'. "
                 "Only local assigned symbols are supported here."
             )
         if isinstance(stmt.value, _ExprFormat):
             return self._compile_format_set_text(view_desc, view_field, stmt.value)
+        if self._is_supported_string_method_call(stmt.value):
+            prefix, result = self._compile_supported_string_method_call(
+                stmt.value,
+                tmp_prefix="string_method_text_result",
+            )
+            return [
+                *prefix,
+                assign("v", static_get(view_field, view_desc)),
+                call_stmt(
+                    "setText",
+                    args=[var("v"), result],
+                    return_type=None,
+                    arg_types=["Ljava/lang/CharSequence;"],
+                    invoke_kind="virtual",
+                    owner=view_desc,
+                ),
+            ]
+        if isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "str":
+            prefix, result = self._compile_supported_str_call(
+                stmt.value,
+                tmp_prefix="str_text_result",
+            )
+            return [
+                *prefix,
+                assign("v", static_get(view_field, view_desc)),
+                call_stmt(
+                    "setText",
+                    args=[var("v"), result],
+                    return_type=None,
+                    arg_types=["Ljava/lang/CharSequence;"],
+                    invoke_kind="virtual",
+                    owner=view_desc,
+                ),
+            ]
+        if isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "type":
+            prefix, result = self._compile_supported_type_call(
+                stmt.value,
+                tmp_prefix="type_text_result",
+            )
+            return [
+                *prefix,
+                assign("v", static_get(view_field, view_desc)),
+                call_stmt(
+                    "setText",
+                    args=[var("v"), result],
+                    return_type=None,
+                    arg_types=["Ljava/lang/CharSequence;"],
+                    invoke_kind="virtual",
+                    owner=view_desc,
+                ),
+            ]
+        if isinstance(stmt.value, _ExprCall) and stmt.value.func_name == "getattr":
+            prefix, result = self._compile_supported_getattr_call(
+                stmt.value,
+                tmp_prefix="getattr_text_result",
+            )
+            return [
+                *prefix,
+                assign("v", static_get(view_field, view_desc)),
+                call_stmt(
+                    "setText",
+                    args=[var("v"), result],
+                    return_type=None,
+                    arg_types=["Ljava/lang/CharSequence;"],
+                    invoke_kind="virtual",
+                    owner=view_desc,
+                ),
+            ]
         raise RuntimeError("Unsupported set_text value")
 
     def _compile_if_stmt(self, stmt):
@@ -6925,7 +8275,7 @@ class _PythonicContext(
                     else:
                         stmts.append(assign("x", static_get(part.name, "I")))
                 elif part.name in self._local_vars:
-                    stmts.append(assign("x", var(part.name)))
+                    stmts.append(assign("x", part.name))
                 else:
                     raise RuntimeError(
                         f"Undefined variable '{part.name}' in f-string. "
@@ -6935,6 +8285,8 @@ class _PythonicContext(
                 append_arg_types = ["I"]
                 if local_type == "Ljava/lang/String;":
                     append_arg_types = ["Ljava/lang/String;"]
+                if local_type == "F":
+                    append_arg_types = ["F"]
                 stmts.append(
                     assign(
                         "sb",
@@ -6947,6 +8299,45 @@ class _PythonicContext(
                             owner="Ljava/lang/StringBuilder;",
                         ),
                     )
+                )
+            elif isinstance(part, _ExprCall) and part.func_name == "len":
+                len_stmts, len_var = self._compile_supported_len_call(part, tmp_prefix="fmt_len_result")
+                stmts.extend(len_stmts)
+                stmts.append(
+                    assign(
+                        "sb",
+                        call(
+                            "append",
+                            args=[var("sb"), len_var],
+                            return_type="Ljava/lang/StringBuilder;",
+                            arg_types=["I"],
+                            invoke_kind="virtual",
+                            owner="Ljava/lang/StringBuilder;",
+                        ),
+                    )
+                )
+            elif self._is_supported_string_method_call(part):
+                method_stmts, method_expr = self._compile_supported_string_method_call(
+                    part,
+                    tmp_prefix="fmt_string_method",
+                )
+                stmts.extend(method_stmts)
+                stmts.append(
+                    assign(
+                        "sb",
+                        call(
+                            "append",
+                            args=[var("sb"), method_expr],
+                            return_type="Ljava/lang/StringBuilder;",
+                            arg_types=["Ljava/lang/String;"],
+                            invoke_kind="virtual",
+                            owner="Ljava/lang/StringBuilder;",
+                        ),
+                    )
+                )
+            else:
+                raise RuntimeError(
+                    "Unsupported f-string expression. Supported parts are constants, symbols, len(collection_symbol), and bounded string methods."
                 )
         stmts.append(
             assign(

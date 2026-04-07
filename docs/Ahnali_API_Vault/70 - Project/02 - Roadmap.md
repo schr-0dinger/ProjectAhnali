@@ -5,7 +5,10 @@ tags: [ahnali, project, roadmap]
 # Roadmap
 
 > [!abstract] What's next
-> Close out v1, then build the smart transpiler that competes with Kotlin.
+> Close out v1, then build a staged smart-transpiler foundation on top of the compiler that already works.
+
+> [!note] Naming clarity
+> Milestones D and E are still useful labels, but they should be read as research/program names rather than promises of full-Python delivery on a fixed near-term schedule.
 
 ## Active tracks
 
@@ -27,6 +30,13 @@ Keep everything aligned:
 - Runtime ABI and capability mapping consistency
 - Final traceability report and release gates
 
+### Phase 4 preparation: bounded advanced semantics
+After the current v1 hardening work, the next credible compiler expansion is:
+- build on the now-complete bounded Android binding layer instead of reopening that groundwork
+- extend advanced semantics only where diagnostics and lowering stay explicit
+- keep reusing runtime-plan reporting and selective helper emission when support code is actually needed
+- preserve the current verified backend path as the stable spine
+
 ## Milestones
 
 | Milestone | Status | What it means |
@@ -34,21 +44,24 @@ Keep everything aligned:
 | A: Friendly DSL | ✅ Done | Pythonic app DSL usable without Smali internals |
 | B: Feature-usable static foundation | ✅ Done | Navigation/state/event core, toolchain, styling |
 | C: Production static core | ⚠️ In progress | Release hardening, CI gating, docs finalization |
-| D: Smart transpiler foundation | 🔄 Planned | Feature detection + on-demand runtime injection |
-| E: Full Python support | 🔄 Planned | 95% Python syntax → native Android patterns |
+| D: Smart transpiler foundation | ✅ Bounded core complete | Phase 1 and Phase 2 bounded slices are implemented and tested |
+| E: Bounded Android binding expansion | ✅ Initial slice complete | Phase 3 Uri/Intent/activity bindings are implemented and tested without a backend rewrite |
 
 ## The New Direction
 
-After v1 closes, we shift from a restricted DSL to a **smart transpiler with on-demand runtime injection**:
+After v1 closes, the most credible next step is a **staged smart-transpiler foundation**:
 
-1. **Analyze** Python code to detect used features
-2. **Select** only the runtime modules that are actually needed
-3. **Translate** Python to native Android patterns (not a Python interpreter)
-4. **Emit** Smali with minimal runtime overhead (5KB-35KB vs 10-15MB)
+1. **Analyze** a broader but still bounded Python subset
+2. **Select** only the helper/runtime pieces that are actually required
+3. **Lower** into the existing verified compiler backend
+4. **Expand** the accepted surface only when the semantics stay statically checkable
 
-This is how we compete with Kotlin: full Python syntax, native Android performance, zero configuration.
+This keeps the current product identity intact: no embedded Python interpreter, no unbounded runtime engine, and no wholesale backend rewrite.
 
-See [[80 - Strategy/01 - Strategic Vision]] for the full vision and [[80 - Strategy/02 - Implementation Roadmap]] for the phase-by-phase plan.
+> [!important] Feasibility boundary
+> "Full Python" and "any Android app" should be treated as research goals, not near-term delivery promises. The codebase is currently strongest as a verified DSL compiler with an extensible backend, and the roadmap should build from that reality.
+
+See [[80 - Strategy/01 - Strategic Vision]] for the full vision, [[80 - Strategy/02 - Implementation Roadmap]] for the phase-by-phase plan, and [[60 - Architecture/06 - Phase 3 Execution Plan]] for the bounded Android-binding execution path.
 
 ## Post-v1 (if/when)
 

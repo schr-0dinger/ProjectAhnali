@@ -143,6 +143,17 @@ All phases from DSL through Smali emission are complete and tested. The pipeline
 - Switch (packed/sparse)
 - Monitor enter/exit
 
+## Where future expansion should happen
+
+The safest way to evolve Ahnali is to keep this backend pipeline stable and grow the system *before* this point:
+
+- broaden frontend analysis
+- expand the accepted Python subset in bounded slices
+- add selective runtime/helper selection
+- preserve the same verified lowering path once the program reaches IR
+
+This matters because the current backend already has the strongest correctness story in the repo. Future strategy work should treat it as the compilation spine, not the first thing to replace.
+
 ## Learn more
 
 - How Ahnali fits together: [[20 - Core Concepts/01 - How Ahnali Works]]

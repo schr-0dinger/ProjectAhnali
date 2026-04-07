@@ -10,6 +10,10 @@ from .ast import (
     _ExprConst,
     _ExprFormat,
     _ExprCall,
+    _ExprDictLiteral,
+    _ExprListLiteral,
+    _ExprSetLiteral,
+    _ExprTupleLiteral,
     _ExprHttpGetError,
     _ExprHttpAsyncError,
     _ExprHttpAsyncBody,
@@ -79,6 +83,7 @@ from .ast import (
     _StmtAlarmSchedule,
     _StmtJobCancel,
     _StmtJobSchedule,
+    _StmtAndroidStartActivity,
     _StmtOpenExternal,
     _StmtShareFile,
     _StmtWebAddJsBridge,
@@ -624,6 +629,19 @@ def _parse_stmt(stmt):
                 if not isinstance(args[0], _ExprConst) or not isinstance(args[0].value, str):
                     raise RuntimeError("open_external argument 'uri' must be a constant string")
                 return _StmtOpenExternal(args[0].value)
+            if fn == "android_start_activity":
+                args = [_parse_expr(a) for a in call.args]
+                if call.keywords:
+                    raise RuntimeError(
+                        "android_start_activity does not support keyword arguments. "
+                        "Usage: android_start_activity(intent_expr)"
+                    )
+                if len(args) != 1:
+                    raise RuntimeError(
+                        "android_start_activity expects exactly 1 argument. "
+                        "Usage: android_start_activity(intent_expr)"
+                    )
+                return _StmtAndroidStartActivity(args[0])
             if fn in (
                 STATEMENT_FN_BY_DOMAIN["capabilities"].intersection(
                     {"work_enqueue", "WorkEnqueue", "enqueue_work", "EnqueueWork"}
@@ -2183,6 +2201,24 @@ def _parse_expr(node):
             else:
                 raise RuntimeError("Unsupported f-string part")
         return _ExprFormat(parts)
+    if isinstance(node, ast.List):
+        return _ExprListLiteral([_parse_expr(elt) for elt in node.elts])
+    if isinstance(node, ast.Dict):
+        if len(node.keys) != len(node.values):
+            raise RuntimeError("Invalid dict literal")
+        return _ExprDictLiteral(
+            [(_parse_expr(key), _parse_expr(value)) for key, value in zip(node.keys, node.values)]
+        )
+    if isinstance(node, ast.Set):
+        return _ExprSetLiteral([_parse_expr(elt) for elt in node.elts])
+    if isinstance(node, ast.Tuple):
+        return _ExprTupleLiteral([_parse_expr(elt) for elt in node.elts])
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        if node.keywords:
+            raise RuntimeError("Method-call keyword arguments are not supported")
+        recv = _parse_expr(node.func.value)
+        args = [recv, *[_parse_expr(a) for a in node.args]]
+        return _ExprCall(f"method:{node.func.attr}", args)
     # Generic function call (user-defined or unknown)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         args = [_parse_expr(a) for a in node.args]

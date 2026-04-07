@@ -182,6 +182,270 @@ def _emit_permission_is_granted_method() -> list[str]:
     ]
 
 
+def _emit_reflection_get_text_method() -> list[str]:
+    return [
+        ".method public static getText(Landroid/widget/TextView;)Ljava/lang/String;",
+        "    .locals 2",
+        "    if-eqz p0, :ahnali_reflect_text_fail",
+        "    :ahnali_reflect_text_try_start",
+        "    invoke-virtual {p0}, Landroid/widget/TextView;->getText()Ljava/lang/CharSequence;",
+        "    move-result-object v0",
+        "    if-eqz v0, :ahnali_reflect_text_fail",
+        "    invoke-interface {v0}, Ljava/lang/CharSequence;->toString()Ljava/lang/String;",
+        "    move-result-object v1",
+        "    return-object v1",
+        "    :ahnali_reflect_text_try_end",
+        "    .catch Ljava/lang/Exception; {:ahnali_reflect_text_try_start .. :ahnali_reflect_text_try_end} :ahnali_reflect_text_fail",
+        "    :ahnali_reflect_text_fail",
+        "    const/4 v0, 0x0",
+        "    return-object v0",
+        ".end method",
+    ]
+
+
+def _emit_list_wrapper_runtime_methods() -> list[str]:
+    return [
+        ".method public static create()Ljava/util/ArrayList;",
+        "    .locals 1",
+        "    new-instance v0, Ljava/util/ArrayList;",
+        "    invoke-direct {v0}, Ljava/util/ArrayList;-><init>()V",
+        "    return-object v0",
+        ".end method",
+        "",
+        ".method public static addString(Ljava/util/ArrayList;Ljava/lang/String;)V",
+        "    .locals 0",
+        "    if-eqz p0, :ahnali_list_add_string_done",
+        "    invoke-virtual {p0, p1}, Ljava/util/ArrayList;->add(Ljava/lang/Object;)Z",
+        "    :ahnali_list_add_string_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static addInt(Ljava/util/ArrayList;I)V",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_list_add_int_done",
+        "    invoke-static {p1}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v0",
+        "    invoke-virtual {p0, v0}, Ljava/util/ArrayList;->add(Ljava/lang/Object;)Z",
+        "    :ahnali_list_add_int_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static size(Ljava/util/ArrayList;)I",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_list_size_fail",
+        "    invoke-virtual {p0}, Ljava/util/ArrayList;->size()I",
+        "    move-result v0",
+        "    return v0",
+        "    :ahnali_list_size_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_dict_wrapper_runtime_methods() -> list[str]:
+    return [
+        ".method public static create()Ljava/util/HashMap;",
+        "    .locals 1",
+        "    new-instance v0, Ljava/util/HashMap;",
+        "    invoke-direct {v0}, Ljava/util/HashMap;-><init>()V",
+        "    return-object v0",
+        ".end method",
+        "",
+        ".method public static putString(Ljava/util/HashMap;Ljava/lang/String;Ljava/lang/String;)V",
+        "    .locals 0",
+        "    if-eqz p0, :ahnali_dict_put_string_done",
+        "    invoke-virtual {p0, p1, p2}, Ljava/util/HashMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        "    :ahnali_dict_put_string_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static putInt(Ljava/util/HashMap;Ljava/lang/String;I)V",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_dict_put_int_done",
+        "    invoke-static {p2}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v0",
+        "    invoke-virtual {p0, p1, v0}, Ljava/util/HashMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        "    :ahnali_dict_put_int_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static size(Ljava/util/HashMap;)I",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_dict_size_fail",
+        "    invoke-virtual {p0}, Ljava/util/HashMap;->size()I",
+        "    move-result v0",
+        "    return v0",
+        "    :ahnali_dict_size_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_set_wrapper_runtime_methods() -> list[str]:
+    return [
+        ".method public static create()Ljava/util/HashSet;",
+        "    .locals 1",
+        "    new-instance v0, Ljava/util/HashSet;",
+        "    invoke-direct {v0}, Ljava/util/HashSet;-><init>()V",
+        "    return-object v0",
+        ".end method",
+        "",
+        ".method public static addString(Ljava/util/HashSet;Ljava/lang/String;)V",
+        "    .locals 0",
+        "    if-eqz p0, :ahnali_set_add_string_done",
+        "    invoke-virtual {p0, p1}, Ljava/util/HashSet;->add(Ljava/lang/Object;)Z",
+        "    :ahnali_set_add_string_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static addInt(Ljava/util/HashSet;I)V",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_set_add_int_done",
+        "    invoke-static {p1}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v0",
+        "    invoke-virtual {p0, v0}, Ljava/util/HashSet;->add(Ljava/lang/Object;)Z",
+        "    :ahnali_set_add_int_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static size(Ljava/util/HashSet;)I",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_set_size_fail",
+        "    invoke-virtual {p0}, Ljava/util/HashSet;->size()I",
+        "    move-result v0",
+        "    return v0",
+        "    :ahnali_set_size_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_tuple_wrapper_runtime_methods() -> list[str]:
+    return [
+        ".method public static create(I)[Ljava/lang/Object;",
+        "    .locals 1",
+        "    new-array v0, p0, [Ljava/lang/Object;",
+        "    return-object v0",
+        ".end method",
+        "",
+        ".method public static setString([Ljava/lang/Object;ILjava/lang/String;)V",
+        "    .locals 0",
+        "    if-eqz p0, :ahnali_tuple_set_string_done",
+        "    aput-object p2, p0, p1",
+        "    :ahnali_tuple_set_string_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static setInt([Ljava/lang/Object;II)V",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_tuple_set_int_done",
+        "    invoke-static {p2}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+        "    move-result-object v0",
+        "    aput-object v0, p0, p1",
+        "    :ahnali_tuple_set_int_done",
+        "    return-void",
+        ".end method",
+        "",
+        ".method public static size([Ljava/lang/Object;)I",
+        "    .locals 1",
+        "    if-eqz p0, :ahnali_tuple_size_fail",
+        "    array-length v0, p0",
+        "    return v0",
+        "    :ahnali_tuple_size_fail",
+        "    const/4 v0, 0x0",
+        "    return v0",
+        ".end method",
+    ]
+
+
+def _emit_string_methods_runtime_methods() -> list[str]:
+    return [
+        ".method public static split(Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;",
+        "    .locals 6",
+        "    new-instance v0, Ljava/util/ArrayList;",
+        "    invoke-direct {v0}, Ljava/util/ArrayList;-><init>()V",
+        "    if-eqz p0, :ahnali_string_split_done",
+        "    if-eqz p1, :ahnali_string_split_done",
+        "    invoke-virtual {p0, p1}, Ljava/lang/String;->split(Ljava/lang/String;)[Ljava/lang/String;",
+        "    move-result-object v1",
+        "    if-eqz v1, :ahnali_string_split_done",
+        "    array-length v2, v1",
+        "    const/4 v3, 0x0",
+        "    :ahnali_string_split_loop",
+        "    if-ge v3, v2, :ahnali_string_split_done",
+        "    aget-object v4, v1, v3",
+        "    invoke-virtual {v0, v4}, Ljava/util/ArrayList;->add(Ljava/lang/Object;)Z",
+        "    add-int/lit8 v3, v3, 0x1",
+        "    goto :ahnali_string_split_loop",
+        "    :ahnali_string_split_done",
+        "    return-object v0",
+        ".end method",
+        "",
+        ".method public static joinList(Ljava/lang/String;Ljava/util/ArrayList;)Ljava/lang/String;",
+        "    .locals 7",
+        "    new-instance v0, Ljava/lang/StringBuilder;",
+        "    invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V",
+        "    if-nez p0, :ahnali_join_list_sep_ok",
+        '    const-string p0, ""',
+        "    :ahnali_join_list_sep_ok",
+        "    if-eqz p1, :ahnali_join_list_done",
+        "    invoke-virtual {p1}, Ljava/util/ArrayList;->size()I",
+        "    move-result v1",
+        "    const/4 v2, 0x0",
+        "    :ahnali_join_list_loop",
+        "    if-ge v2, v1, :ahnali_join_list_done",
+        "    if-lez v2, :ahnali_join_list_skip_sep",
+        "    invoke-virtual {v0, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        "    move-result-object v0",
+        "    :ahnali_join_list_skip_sep",
+        "    invoke-virtual {p1, v2}, Ljava/util/ArrayList;->get(I)Ljava/lang/Object;",
+        "    move-result-object v3",
+        "    invoke-static {v3}, Ljava/lang/String;->valueOf(Ljava/lang/Object;)Ljava/lang/String;",
+        "    move-result-object v4",
+        "    invoke-virtual {v0, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        "    move-result-object v0",
+        "    add-int/lit8 v2, v2, 0x1",
+        "    goto :ahnali_join_list_loop",
+        "    :ahnali_join_list_done",
+        "    invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;",
+        "    move-result-object v5",
+        "    return-object v5",
+        ".end method",
+        "",
+        ".method public static joinTuple(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",
+        "    .locals 7",
+        "    new-instance v0, Ljava/lang/StringBuilder;",
+        "    invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V",
+        "    if-nez p0, :ahnali_join_tuple_sep_ok",
+        '    const-string p0, ""',
+        "    :ahnali_join_tuple_sep_ok",
+        "    if-eqz p1, :ahnali_join_tuple_done",
+        "    array-length v1, p1",
+        "    const/4 v2, 0x0",
+        "    :ahnali_join_tuple_loop",
+        "    if-ge v2, v1, :ahnali_join_tuple_done",
+        "    if-lez v2, :ahnali_join_tuple_skip_sep",
+        "    invoke-virtual {v0, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        "    move-result-object v0",
+        "    :ahnali_join_tuple_skip_sep",
+        "    aget-object v3, p1, v2",
+        "    invoke-static {v3}, Ljava/lang/String;->valueOf(Ljava/lang/Object;)Ljava/lang/String;",
+        "    move-result-object v4",
+        "    invoke-virtual {v0, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+        "    move-result-object v0",
+        "    add-int/lit8 v2, v2, 0x1",
+        "    goto :ahnali_join_tuple_loop",
+        "    :ahnali_join_tuple_done",
+        "    invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;",
+        "    move-result-object v5",
+        "    return-object v5",
+        ".end method",
+    ]
+
+
 
 
 def emit_capability_helper_smali(
@@ -233,6 +497,54 @@ def emit_capability_helper_smali(
         and helper_sig == "(Landroid/app/Activity;Ljava/lang/String;)I"
     ):
         lines.extend(_emit_permission_is_granted_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/ReflectionRuntime;"
+        and helper_method == "getText"
+        and helper_sig == "(Landroid/widget/TextView;)Ljava/lang/String;"
+    ):
+        lines.extend(_emit_reflection_get_text_method())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/ListWrapperRuntime;"
+        and helper_method == "create"
+        and helper_sig == "()Ljava/util/ArrayList;"
+    ):
+        lines.extend(_emit_list_wrapper_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/DictWrapperRuntime;"
+        and helper_method == "create"
+        and helper_sig == "()Ljava/util/HashMap;"
+    ):
+        lines.extend(_emit_dict_wrapper_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/SetWrapperRuntime;"
+        and helper_method == "create"
+        and helper_sig == "()Ljava/util/HashSet;"
+    ):
+        lines.extend(_emit_set_wrapper_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/TupleWrapperRuntime;"
+        and helper_method == "create"
+        and helper_sig == "(I)[Ljava/lang/Object;"
+    ):
+        lines.extend(_emit_tuple_wrapper_runtime_methods())
+        return "\n".join(lines)
+
+    if (
+        class_desc == "Lcom/ahnali/runtime/StringMethodsRuntime;"
+        and helper_method == "split"
+        and helper_sig == "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;"
+    ):
+        lines.extend(_emit_string_methods_runtime_methods())
         return "\n".join(lines)
 
     if append_service_helpers(

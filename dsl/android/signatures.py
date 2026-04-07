@@ -50,6 +50,8 @@ def _infer_expr_type(expr):
             return "Z"
         if isinstance(expr.value, int):
             return "I"
+        if isinstance(expr.value, float):
+            return "F"
         if isinstance(expr.value, str):
             return "Ljava/lang/String;"
     desc = getattr(expr, "desc", None)
@@ -558,14 +560,22 @@ _METHOD_SIGS_MANUAL = {
         "I",
         ["Ljava/lang/String;", "Ljava/lang/String;"],
     ),
-    ("Ljava/lang/String;", "valueOf", "static"): (
+    ("Ljava/lang/String;", "valueOf", "static"): [
+        ("Ljava/lang/String;", ["I"]),
+        ("Ljava/lang/String;", ["F"]),
+    ],
+    ("Ljava/lang/String;", "trim", "virtual"): ("Ljava/lang/String;", []),
+    ("Ljava/lang/String;", "replace", "virtual"): (
         "Ljava/lang/String;",
-        ["I"],
+        ["Ljava/lang/CharSequence;", "Ljava/lang/CharSequence;"],
     ),
+    ("Ljava/lang/String;", "toLowerCase", "virtual"): ("Ljava/lang/String;", []),
+    ("Ljava/lang/String;", "toUpperCase", "virtual"): ("Ljava/lang/String;", []),
     ("Ljava/lang/StringBuilder;", "<init>", "direct"): (None, []),
     ("Ljava/lang/StringBuilder;", "append", "virtual"): [
         ("Ljava/lang/StringBuilder;", ["Ljava/lang/String;"]),
         ("Ljava/lang/StringBuilder;", ["I"]),
+        ("Ljava/lang/StringBuilder;", ["F"]),
     ],
     ("Ljava/lang/StringBuilder;", "toString", "virtual"): ("Ljava/lang/String;", []),
 }

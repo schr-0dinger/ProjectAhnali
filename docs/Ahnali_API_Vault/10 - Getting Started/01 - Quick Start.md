@@ -80,7 +80,7 @@ app_spec.run()
 PYTHONPATH=. pytest -q
 ```
 
-You should see **648 passing**. If anything fails, something's broken - don't ignore it.
+You should see **691 passing**. If anything fails, something's broken - don't ignore it.
 
 ## What's next
 

@@ -4,7 +4,7 @@ tags: [ahnali, tooling, testing]
 
 # Testing
 
-> [!abstract] 648 tests, 156 test files
+> [!abstract] 691 tests, 164 test files
 > If it's not tested, it doesn't exist. Every phase has focused tests and at least one integration smoke.
 
 ## Running tests
@@ -13,7 +13,7 @@ tags: [ahnali, tooling, testing]
 PYTHONPATH=. pytest -q
 ```
 
-Current: **648 passed, 3 skipped**.
+Current: **691 passed**.
 
 ## What's tested
 
@@ -37,6 +37,7 @@ Current: **648 passed, 3 skipped**.
 - Navigation operations
 - Theme and style resolution
 - Animation DSL
+- Bounded Android binding lowering (`android_uri_parse`, `android_intent_view`, `android_intent_chooser`, `android_start_activity`)
 - Input configuration
 - Accessibility surface
 - Visual effects
@@ -55,6 +56,7 @@ Current: **648 passed, 3 skipped**.
 - Signing (debug and release)
 - JAR launchers
 - Benchmark harness
+- Feature/runtime plan tooling and emitted build reports
 - CI gates (scope matrix, capability drift, docs consistency, library policy)
 
 ## Negative tests
@@ -72,6 +74,16 @@ Some tests require a connected adb device:
 - Cold-start benchmark - boots emulator and measures startup time
 
 Skip these with `pytest -q --ignore=tests/test_http_helper_device_integration.py`.
+
+## Phase 1 runtime-plan inspection
+
+You can inspect the analyzer/runtime-selector layer directly with:
+
+```bash
+PYTHONPATH=. python tools/feature_runtime_plan.py --source path/to/file.py
+```
+
+Build outputs for Pythonic app builds also include `runtime_plan.json` when Phase 1 metadata is available.
 
 ## Learn more
 

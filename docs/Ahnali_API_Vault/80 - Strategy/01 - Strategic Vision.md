@@ -5,23 +5,40 @@ tags: [ahnali, vision, strategy, roadmap]
 # Ahnali Strategic Vision
 
 > [!abstract] The Goal
-> Make Ahnali as powerful as Kotlin for Android development — through smart transpilation with on-demand runtime injection, not a Python interpreter.
+> Make Ahnali dramatically more expressive over time through smart transpilation and selective runtime injection, without giving up the current compiler's static-default identity.
 
 ## The Core Insight
 
-We don't implement Python. We **translate Python to native Android patterns** and only inject runtime support for what can't be translated directly.
+We should not try to "implement Python" in one leap. The viable path is to **translate an analyzable Python subset to native Android patterns** and inject runtime support only where the compiler can still preserve clear contracts.
 
 ```
-Python Code
+Restricted / analyzable Python
     ↓
-Feature Analyzer (what's actually used?)
+Feature Analyzer
     ↓
-Runtime Generator (only what's needed)
+Selective Lowering + Runtime Selection
     ↓
-Smali Emitter (native Android patterns)
+Existing Verified Backend
     ↓
 APK
 ```
+
+## Reality Check
+
+Today Ahnali is already very good at:
+
+- restricted DSL authoring
+- verified CFG/SSA/Dalvik/Smali compilation
+- bounded helper injection for capabilities
+- deterministic APK packaging
+
+Today Ahnali is **not yet**:
+
+- a full-program Python compiler
+- a general Android API binding generator
+- a dynamic runtime platform
+
+That matters because the strategy is only credible if it extends the current architecture instead of pretending the current compiler does not exist.
 
 ## What This Means
 
@@ -35,14 +52,25 @@ APK
 | `dict` | `HashMap` wrapper | ~80 lines Smali |
 | `getattr()` | Reflection helper | ~100 lines Smali |
 | `async/await` | Coroutine runtime | ~400 lines Smali |
-| Full feature set | All modules | ~1500 lines Smali |
+| Full feature set | Many modules | grows with supported subset |
 
-Compare to embedding Python: **10-15 MB minimum**.
+Compare to embedding Python: the target remains far smaller and more deterministic, but exact runtime size depends on the supported subset and linked helpers.
+
+## Strategic Implementation Principle
+
+Preserve the verified backend. Most future work should happen in:
+
+- source analysis
+- frontend expansion
+- lowering
+- runtime/helper selection
+
+Only change CFG/SSA/Dalvik/emission when the feature truly requires backend work.
 
 ## The Implementation Phases
 
 ### Phase 1: Foundation (Months 1-3)
-**Goal**: Feature detection + smart runtime selection
+**Goal**: Feature detection + smart runtime selection on top of the existing compiler spine
 
 - AST feature analyzer (detects used language features)
 - Runtime module selector (only includes what's needed)
@@ -51,10 +79,12 @@ Compare to embedding Python: **10-15 MB minimum**.
 - Method generation (Python functions → Smali methods)
 - Direct Android API calls (no wrapper needed)
 
-**Deliverable**: Can compile Python classes with Android API calls to Smali
+**Deliverable**: Can analyze a broader bounded subset and route it through the current backend with selective helper inclusion
+
+**Status**: Complete for the bounded scope currently implemented in-repo: analyzer, runtime selector, emitted runtime plan/reporting, helper-class emission for selected modules, and one semantic reflection slice.
 
 ### Phase 2: Collections & Types (Months 4-6)
-**Goal**: Full Python type system support
+**Goal**: Add high-value collection and type features without weakening analyzability
 
 - `list` → `ArrayList` wrapper
 - `dict` → `HashMap` wrapper
@@ -65,23 +95,33 @@ Compare to embedding Python: **10-15 MB minimum**.
 - Operator overloading (`__add__`, `__eq__`, etc.)
 - List/dict comprehensions → loops
 
-**Deliverable**: Full Python collection support with minimal runtime
+**Deliverable**: A materially broader subset with explicit contracts and tests
+
+**Status**: Complete for the bounded repo scope currently implemented.
 
 ### Phase 3: Android SDK Coverage (Months 7-9)
-**Goal**: Complete Android API bindings
+**Goal**: Expand practical platform coverage through bounded, typed Android bindings that preserve explicit lowering contracts
 
-- Direct Smali emission for all Android APIs
-- AndroidX library support
-- Jetpack component bindings (Room, ViewModel, LiveData, Navigation)
-- Material Design widget support
-- Play Services bindings (Maps, Location, Ads)
-- Permission handling
-- Lifecycle management
+- binding metadata for a narrow set of Android classes, constructors, fields, and methods
+- explicit frontend syntax for those bindings, with fixed signatures and diagnostics
+- helper-backed Android bindings only where direct lowering is not enough
+- AndroidX/artifact wiring only for surfaces that already have toolchain precedent or clear packaging rules
+- no generic "import any Android class" promise
 
-**Deliverable**: Can build any Android app using Python
+**Implemented bounded slice**:
+
+- `android.net.Uri`-style parsing via `android_uri_parse(...)`
+- `android.content.Intent`-style construction via `android_intent_view(...)`
+- chooser wrapping via `android_intent_chooser(...)`
+- activity launch via `android_start_activity(...)`
+- runtime-plan/reporting alignment through `android.bindings.uri`, `android.bindings.intent`, and `android.bindings.activity`
+
+**Deliverable**: Broader Android integration without pretending the project already has universal SDK binding generation
+
+**Status**: Complete for the initial bounded repo scope currently implemented.
 
 ### Phase 4: Advanced Features (Months 10-12)
-**Goal**: Full Python language support
+**Goal**: Add carefully bounded advanced features where semantics stay testable and deterministic
 
 - `async/await` → coroutine runtime
 - Decorators → function wrapping
@@ -92,10 +132,10 @@ Compare to embedding Python: **10-15 MB minimum**.
 - `*args`/`**kwargs` → varargs handling
 - Multiple inheritance → interface pattern
 
-**Deliverable**: 95% Python syntax support
+**Deliverable**: More expressive bounded support, not an unconditional "95% Python" claim
 
 ### Phase 5: Ecosystem (Months 13-18)
-**Goal**: Production-ready toolchain
+**Goal**: Production-ready tooling around the compiler that actually exists
 
 - Third-party library bindings (Retrofit, Gson, Room, etc.)
 - Build system (no Gradle, but packaging + signing)
@@ -105,7 +145,7 @@ Compare to embedding Python: **10-15 MB minimum**.
 - Documentation generator
 - Package manager (Ahnali packages)
 
-**Deliverable**: Production-ready Python-to-Android compiler
+**Deliverable**: Production-ready compiler/toolchain with a credible path to a broader analyzable subset
 
 ## What We Can Replicate
 
@@ -169,23 +209,23 @@ Compare to embedding Python: **10-15 MB minimum**.
 
 ## Libraries We Can Replicate
 
-### Android SDK — 100% Coverage
-Every single API. We emit Smali directly, so there's no gap:
+### Android SDK — bounded coverage path
+The backend can emit Smali for any API *once lowering exists*, but the user-facing compiler does not yet expose arbitrary Android bindings. The realistic path is bounded typed coverage, not blanket SDK promises:
 - `android.view`, `android.widget`, `android.app`
 - `android.content`, `android.os`, `android.graphics`
 - `android.media`, `android.hardware`, `android.location`
 - All AndroidX libraries
 - All Google Play Services
 
-### Java Standard Library — 100% Coverage
-Anything that maps to Android APIs:
+### Java Standard Library — bounded practical coverage
+Anything that is explicitly lowered and tested can work well. The roadmap should treat this as a per-slice expansion story rather than a 100% claim:
 - `java.lang` (String, Object, Math, etc.)
 - `java.util` (ArrayList, HashMap, Date, etc.)
 - `java.io` (File, InputStream, OutputStream, etc.)
 - `java.net` (URL, HttpURLConnection, etc.)
 - `java.time` (LocalDate, Instant, etc.)
 
-### Kotlin Standard Library — High Coverage
+### Kotlin Standard Library - High Coverage
 
 | Kotlin Feature | Ahnali Implementation |
 |---|---|
@@ -202,7 +242,7 @@ Anything that maps to Android APIs:
 | `lazy` | Lazy initialization pattern |
 | `companion object` | Static methods |
 
-### Popular Android Libraries — High Coverage
+### Popular Android Libraries - High Coverage
 
 | Library | Ahnali Implementation |
 |---|---|
@@ -230,11 +270,11 @@ Anything that maps to Android APIs:
 
 ## The Path to Victory
 
-1. **Start with simple apps** — Forms, dashboards, settings screens
-2. **Prove the performance** — Smaller APKs, faster compilation
-3. **Build the ecosystem** — Package manager, third-party bindings
-4. **Win the niche** — Internal tools, prototypes, educational apps
-5. **Expand gradually** — More complex apps, more library support
+1. **Start with simple apps** - Forms, dashboards, settings screens
+2. **Prove the performance** - Smaller APKs, faster compilation
+3. **Build the ecosystem** - Package manager, third-party bindings
+4. **Win the niche** - Internal tools, prototypes, educational apps
+5. **Expand gradually** - More complex apps, more library support
 
 ## Current Status
 
@@ -244,6 +284,8 @@ The foundation is being built. The current codebase has:
 - ✅ 18 capability waves (networking, storage, permissions, etc.)
 - ✅ For loops, try/except, function definitions
 - ✅ Smart runtime injection (only what's used)
-- ✅ 653 passing tests
+- ✅ 691 passing tests
 
-The next step is **Phase 1: Feature Detection + Smart Runtime Selection**.
+Phase 2 has now delivered a bounded collections-and-types slice: list/dict/set/tuple literals, `len(collection_symbol)` for supported locals, bounded `str(...)`, `int(...)`, `float(...)`, `type(...)`, and `isinstance(...)` lowering, and a bounded string-method slice covering `.strip()`, `.replace(...)`, `.lower()`, `.upper()`, helper-backed `.split(...)`, and separator `.join(...)` on supported flows, all without changing the verified backend contract.
+
+Phase 3 has now delivered the first bounded Android binding slice too: an inspectable binding registry plus explicit `android_uri_parse(...)`, `android_intent_view(...)`, `android_intent_chooser(...)`, and `android_start_activity(...)` flows that lower directly through the verified backend and surface in runtime-plan metadata.

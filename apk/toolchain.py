@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from dataclasses import asdict, is_dataclass
 import io
 import hashlib
 import json
@@ -84,7 +85,7 @@ def _rewrite_class_descriptors(smali_text: str, desc_map: dict[str, str]) -> str
     lines = smali_text.split('\n')
     out_lines = []
     for line in lines:
-        # Skip string literal lines — don't rewrite descriptors inside quotes.
+        # Skip string literal lines - don't rewrite descriptors inside quotes.
         # A Smali string literal line looks like:
         #   const-string v0, "some LTest; value"
         # We detect this by checking if the line contains a quoted string
@@ -119,6 +120,65 @@ def _find_default_launcher_icon() -> Path | None:
         if path.exists():
             return path
     return None
+
+
+def _emit_runtime_module_helpers(build_dir: Path, frontend_ir) -> None:
+    selected_runtime_modules = getattr(frontend_ir, "selected_runtime_modules", []) or []
+    seen: set[tuple[str, str, str]] = set()
+    for module in selected_runtime_modules:
+        helper_class_desc = getattr(module, "helper_class_desc", None)
+        helper_method = getattr(module, "helper_method", None)
+        helper_sig = getattr(module, "helper_sig", None)
+        if not (helper_class_desc and helper_method and helper_sig):
+            continue
+        key = (helper_class_desc, helper_method, helper_sig)
+        if key in seen:
+            continue
+        seen.add(key)
+        helper_path = _class_desc_to_path(helper_class_desc).with_suffix(".smali")
+        helper_out = build_dir / "smali" / helper_path
+        helper_out.parent.mkdir(parents=True, exist_ok=True)
+        helper_out.write_text(
+            emit_capability_helper_smali(
+                class_desc=helper_class_desc,
+                helper_method=helper_method,
+                helper_sig=helper_sig,
+            ),
+            encoding="utf-8",
+        )
+
+
+def _write_runtime_plan_report(build_dir: Path, frontend_ir) -> None:
+    profile = getattr(frontend_ir, "feature_usage_profile", None)
+    modules = getattr(frontend_ir, "selected_runtime_modules", None) or []
+    if profile is None and not modules:
+        return
+
+    def _module_payload(module) -> dict[str, object]:
+        if is_dataclass(module):
+            payload = asdict(module)
+        else:
+            payload = {
+                "name": str(getattr(module, "name", "")),
+                "category": str(getattr(module, "category", "")),
+                "trigger": str(getattr(module, "trigger", "")),
+                "dependencies": list(getattr(module, "dependencies", ()) or ()),
+                "helper_class_desc": getattr(module, "helper_class_desc", None),
+                "helper_method": getattr(module, "helper_method", None),
+                "helper_sig": getattr(module, "helper_sig", None),
+            }
+        payload["dependencies"] = list(payload.get("dependencies", []) or [])
+        return payload
+
+    payload = {
+        "schema_version": "feature_runtime_plan/1",
+        "app_mode": str(getattr(frontend_ir, "app_mode", "")),
+        "feature_usage_profile": profile.to_dict() if hasattr(profile, "to_dict") else None,
+        "selected_runtime_modules": [_module_payload(module) for module in modules],
+        "runtime_module_names": list(getattr(frontend_ir, "runtime_module_names", []) or []),
+    }
+    out_path = build_dir / "runtime_plan.json"
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _detect_launcher_icon_ref(res_dir: Path) -> str | None:
@@ -714,6 +774,8 @@ def emit_build_dir_from_program(
             ),
             encoding="utf-8",
         )
+    _emit_runtime_module_helpers(build_dir, frontend_ir)
+    _write_runtime_plan_report(build_dir, frontend_ir)
     if support_classes:
         for entry in sorted(support_classes, key=lambda e: e[0]):
             listener_kind = "click"

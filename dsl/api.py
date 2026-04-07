@@ -334,22 +334,24 @@ class _UISpec:
 
 
 class _EventSpec:
-    def __init__(self, event_kind, target_id, stmts):
+    def __init__(self, event_kind, target_id, stmts, source_callable=None):
         self.event_kind = event_kind
         self.target_id = target_id
         self.stmts = stmts
+        self.source_callable = source_callable
 
 
 class _OnClickSpec(_EventSpec):
-    def __init__(self, button_id, stmts):
-        super().__init__("click", button_id, stmts)
+    def __init__(self, button_id, stmts, source_callable=None):
+        super().__init__("click", button_id, stmts, source_callable=source_callable)
         self.button_id = button_id
 
 
 class _LifecycleSpec:
-    def __init__(self, lifecycle_kind, stmts):
+    def __init__(self, lifecycle_kind, stmts, source_callable=None):
         self.lifecycle_kind = lifecycle_kind
         self.stmts = stmts
+        self.source_callable = source_callable
 
 
 class _ActivitySpec:
@@ -554,10 +556,10 @@ def ui(*items):
 def _make_event_spec(event_kind, target_id, stmts=None):
     if stmts is None:
         def decorator(fn):
-            return _EventSpec(event_kind, target_id, _parse_handler_ast(fn))
+            return _EventSpec(event_kind, target_id, _parse_handler_ast(fn), source_callable=fn)
         return decorator
     if callable(stmts):
-        return _EventSpec(event_kind, target_id, _parse_handler_ast(stmts))
+        return _EventSpec(event_kind, target_id, _parse_handler_ast(stmts), source_callable=stmts)
     return _EventSpec(event_kind, target_id, stmts)
 
 
@@ -565,11 +567,11 @@ def on_click(button_id, stmts=None):
     if stmts is None:
 
         def decorator(fn):
-            return _OnClickSpec(button_id, _parse_handler_ast(fn))
+            return _OnClickSpec(button_id, _parse_handler_ast(fn), source_callable=fn)
 
         return decorator
     if callable(stmts):
-        return _OnClickSpec(button_id, _parse_handler_ast(stmts))
+        return _OnClickSpec(button_id, _parse_handler_ast(stmts), source_callable=stmts)
     return _OnClickSpec(button_id, stmts)
 
 
@@ -665,10 +667,10 @@ def on_focus_change(view_id, stmts=None):
 def _make_lifecycle_spec(lifecycle_kind, stmts=None):
     if stmts is None:
         def decorator(fn):
-            return _LifecycleSpec(lifecycle_kind, _parse_handler_ast(fn))
+            return _LifecycleSpec(lifecycle_kind, _parse_handler_ast(fn), source_callable=fn)
         return decorator
     if callable(stmts):
-        return _LifecycleSpec(lifecycle_kind, _parse_handler_ast(stmts))
+        return _LifecycleSpec(lifecycle_kind, _parse_handler_ast(stmts), source_callable=stmts)
     return _LifecycleSpec(lifecycle_kind, stmts)
 
 
@@ -2023,6 +2025,29 @@ def _build_pythonic_app(activity_spec: _ActivitySpec, caller_module: str | None 
     program.permissions = merged
     program.capability_runtime_bindings = runtime_bindings
     program.app_mode = app_cfg.mode
+    from .analyzer import analyze_features, analyze_frontend_ir, merge_feature_profiles, select_runtime_modules
+    ir_feature_profile = analyze_frontend_ir(
+        program,
+        app_mode=app_cfg.mode,
+        capability_bindings=runtime_bindings,
+    )
+    callable_profiles = []
+    for spec in [*event_specs, *lifecycle_specs]:
+        source_callable = getattr(spec, "source_callable", None)
+        if callable(source_callable):
+            try:
+                callable_profiles.append(analyze_features(source_callable))
+            except Exception:
+                continue
+    feature_usage_profile = merge_feature_profiles(ir_feature_profile, *callable_profiles)
+    selected_runtime_modules = select_runtime_modules(
+        feature_usage_profile,
+        capability_bindings=runtime_bindings,
+        support_classes=getattr(program, "support_classes", []),
+    )
+    program.feature_usage_profile = feature_usage_profile
+    program.selected_runtime_modules = selected_runtime_modules
+    program.runtime_module_names = [module.name for module in selected_runtime_modules]
     return program
 
 

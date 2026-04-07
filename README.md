@@ -1,6 +1,6 @@
 # Ahnali
 
-A Python-to-Android compiler. You write Python, it emits Smali, you get an APK. No Java, no Kotlin, no Gradle - just a straight shot from DSL to Dalvik bytecode.
+A restricted Python-to-Android compiler with a verified backend. You write bounded Pythonic DSL code, it emits Smali, and you get an APK. No Java, no Kotlin, no Gradle - just a straight shot from DSL to Dalvik bytecode.
 
 ## What it actually does
 
@@ -22,6 +22,10 @@ app(
 ```
 
 This compiles to Smali, gets packaged with `aapt2`, signed, and you have a working APK. The whole UI, navigation, state, and event handling is resolved at compile time. There's no interpreter sitting in your app at runtime figuring out what a button means.
+
+The newer smart-transpiler work builds on top of that compiler. It does not replace the backend; it expands the accepted frontend in bounded slices and selectively links helper/runtime support when needed.
+
+The bounded Phase 3 slice is now live too: explicit Android bindings for `android_uri_parse(...)`, `android_intent_view(...)`, `android_intent_chooser(...)`, and `android_start_activity(...)` lower directly through the existing backend and show up in runtime-plan metadata.
 
 ## How the compiler works
 
@@ -57,11 +61,13 @@ There's also an opt-in reactive mode if you need it, but static is the default a
 PYTHONPATH=. pytest
 ```
 
-Current: 648 passing, 3 skipped.
+Current: 691 passing.
 
 ## Building an APK
 
 The toolchain chains together `aapt2`, `d8`, `zipalign`, and `apksigner`. There's a `build_install_run()` helper in the codebase that does the full flow. You'll need the Android SDK on your PATH for the packaging steps.
+
+If a program was built through the Pythonic app path, the build dir now also includes `runtime_plan.json`, which captures the Phase 1 feature-analysis/runtime-selection result.
 
 ## Project structure
 
@@ -73,7 +79,7 @@ ssa/        - SSA construction and verification
 dalvik/     - Dalvik IR, blocks, method representation
 passes/     - Compiler passes: liveness, regalloc, DCE, SSA opts
 emit/       - Smali emission
-tests/      - Everything test-related (156 files)
+tests/      - Everything test-related (164 test files)
 tools/      - Build tooling, benchmark harness, CI helpers
 docs/       - All documentation
 cfg/        - Config files: ABI snapshots, benchmark baselines, scope matrix
@@ -98,6 +104,7 @@ JNI/native bridges, embedded Python, camera/audio/video pipelines, maps, Bluetoo
 4) ⚠️ **Program 6-B** - Capability breadth closure/freeze (in progress).
 5) ⚠️ **Program 12-A** - Docs consistency gate (in progress).
 6) ⚠️ **Program 11-B + 12-B** - Final static-v1 release hardening (in progress).
+7) ✅ **Phase 3** - Bounded Android binding surfaces (initial Uri/Intent/activity slice closed).
 
 ## Deferred Beyond V1
 
@@ -118,4 +125,4 @@ Minimal by design. `rich` for nicer output, `httpx` for the HTTP helpers, `pytes
 
 ---
 
-Last updated: 2026-03-10
+Last updated: 2026-04-07

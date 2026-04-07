@@ -71,6 +71,26 @@ class _ExprCall:
         self.args = args
 
 
+class _ExprListLiteral:
+    def __init__(self, elements):
+        self.elements = elements
+
+
+class _ExprDictLiteral:
+    def __init__(self, entries):
+        self.entries = entries
+
+
+class _ExprSetLiteral:
+    def __init__(self, elements):
+        self.elements = elements
+
+
+class _ExprTupleLiteral:
+    def __init__(self, elements):
+        self.elements = elements
+
+
 class _ExprStorageGet:
     def __init__(self, key, default_value):
         self.key = key
@@ -452,6 +472,11 @@ class _StmtShareFile:
 class _StmtOpenExternal:
     def __init__(self, uri):
         self.uri = uri
+
+
+class _StmtAndroidStartActivity:
+    def __init__(self, intent):
+        self.intent = intent
 
 
 class _StmtWorkEnqueue:

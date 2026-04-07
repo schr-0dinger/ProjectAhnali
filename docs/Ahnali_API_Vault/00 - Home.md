@@ -85,6 +85,7 @@ Platform services you can tap into from your handlers.
 
 - [[60 - Architecture/01 - Dual Mode Architecture]] - Static default, hybrid optional
 - [[60 - Architecture/02 - Runtime Model]] - Core runtime and capability modules
+- [[60 - Architecture/05 - Pipeline Evolution Plan]] - How to grow the frontend without rewriting the backend
 - [[60 - Architecture/03 - Optimization Backlog]] - What we want to add eventually
 - [[60 - Architecture/04 - Deferred Features]] - What's parked for post-v1
 
@@ -96,7 +97,7 @@ Platform services you can tap into from your handlers.
 
 ## Strategy
 
-The long-term vision: making Ahnali as powerful as Kotlin through smart transpilation with on-demand runtime injection.
+The long-term vision: broadening Ahnali through staged smart transpilation and selective runtime injection while preserving the current static compiler identity.
 
 - [[80 - Strategy/01 - Strategic Vision]] - The goal, the approach, what we can replicate
 - [[80 - Strategy/02 - Implementation Roadmap]] - Phase-by-phase plan from v1 to production

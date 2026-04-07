@@ -34,6 +34,7 @@ PYTHONPATH=. python tools/python_library_policy.py
 - **Tests for everything** - new code needs tests
 - **Update docs** - if you change behavior, update the docs
 - **Follow the library policy** - no new dependencies without updating `cfg/python_library_policy.json`
+- **Preserve the backend spine** - prefer frontend/lowering/runtime-selection changes before rewriting CFG/SSA/Dalvik stages
 
 ## Where to look
 
@@ -43,6 +44,11 @@ PYTHONPATH=. python tools/python_library_policy.py
 - Tests: `tests/`
 - Tooling: `tools/`
 - Config: `cfg/`
+
+## Workflow docs
+
+- Repo workflow: `WORKFLOW.md`
+- Repo skills map: `skills.md`
 
 ## Questions?
 

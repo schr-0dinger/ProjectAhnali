@@ -54,6 +54,18 @@ The toolchain supports reproducibility hash checks for unsigned archive content.
 - Stable ID paths are supported for resources
 - Resource merge from AAR dependencies works through d8
 
+## Runtime plan artifact
+
+When a program is built through the Pythonic app path and carries Phase 1 metadata, the build directory includes `runtime_plan.json`.
+
+That report captures:
+- the merged feature-usage profile
+- the selected runtime modules
+- the runtime-module names
+- the app mode used during build
+
+This is the easiest way to confirm what the analyzer/runtime-selector layer decided for a given build.
+
 ## AAR dependencies
 
 The toolchain resolves AARs, merges their manifests, extracts symbols, and generates `R$*` classes. Transitive AAR inference works through manifest closure.

@@ -29,9 +29,9 @@ Optional, capability-scoped extension layer. UI remains static; dynamic behavior
 
 ---
 
-## 3) Code Reality Snapshot (2026-03-10)
+## 3) Code Reality Snapshot (2026-04-06)
 
-Test suite: **648 passed, 3 skipped** (`PYTHONPATH=. pytest -q -rs`).
+Test suite: **691 passed** (`PYTHONPATH=. pytest -q`).
 
 The toolchain has a one-command flow (`build_install_run(...)`). The following are implemented and tested:
 
