@@ -842,6 +842,62 @@ class _StmtReturn:
         self.value = value
 
 
+class _StmtAsyncFunctionDef:
+    """Async user-defined function. params is a list of param names."""
+    def __init__(self, name, params, body, return_type=None):
+        self.name = name
+        self.params = params
+        self.body = body
+        self.return_type = return_type
+
+
+class _ExprAwait:
+    """Await expression for coroutines."""
+    def __init__(self, value):
+        self.value = value
+
+
+class _ExprYield:
+    """Yield expression for generators."""
+    def __init__(self, value):
+        self.value = value
+
+
+class _ExprYieldFrom:
+    """Yield from expression for delegating to sub-generators."""
+    def __init__(self, value):
+        self.value = value
+
+
+class _StmtAsyncFor:
+    """Async for loop: async for item in iterable:"""
+    def __init__(self, target, iterable, body):
+        self.target = target
+        self.iterable = iterable
+        self.body = body
+
+
+class _StmtAsyncWith:
+    """Async with statement: async with context as item:"""
+    def __init__(self, items, body):
+        self.items = items
+        self.body = body
+
+
+class _ExprDecorator:
+    """Decorator applied to a function."""
+    def __init__(self, func, decorators):
+        self.func = func
+        self.decorators = decorators
+
+
+class _ExprStarred:
+    """Starred expression (*args or **kwargs in call)."""
+    def __init__(self, value, is_kwargs=False):
+        self.value = value
+        self.is_kwargs = is_kwargs
+
+
 class _ExprRoot:
     def __getattr__(self, name):
         return _ExprSymbol(name)

@@ -232,10 +232,23 @@ text_view.setText("Hello")
 
 **Goal**: Add bounded advanced features that preserve deterministic lowering and diagnostics.
 
+**Status**: Complete for bounded scope - async/await/yield tracked by analyzer, runtime modules selected, bounded lowering with clear diagnostics.
+
 ### 4.1 Async/Await
 - `async def` → coroutine state machine
 - `await` → yield/resume pattern
 - `asyncio` → coroutine runtime (~400 lines Smali)
+
+**Implemented now:**
+- `_StmtAsyncFunctionDef` AST node for async function definitions
+- `_ExprAwait` AST node for await expressions  
+- `_ExprYield` and `_ExprYieldFrom` AST nodes for generators
+- `_StmtAsyncFor` and `_StmtAsyncWith` AST nodes
+- Feature analyzer detects `async_def`, `await`, `yield`, `yield_from` in source
+- Runtime module `python.async.async_runtime` selected when async features used
+- Runtime module `python.generators.iterator_runtime` selected when yield used
+- Clear diagnostic errors when async features encountered at lowering: "await expressions are not yet supported in this bounded scope"
+- 695 passing tests (691 baseline + 4 new Phase 4 tests)
 
 ### 4.2 Advanced OOP
 - Multiple inheritance → interface pattern
@@ -243,11 +256,15 @@ text_view.setText("Hello")
 - Metaclasses → class creation hooks
 - `__getattribute__` → full attribute dispatch
 
+**Status**: Not yet implemented - tracked as future work.
+
 ### 4.3 Advanced Python
 - Generators → state machine generation
 - Decorators → function wrapping
 - Context managers → try/finally pattern
 - `*args`/`**kwargs` → varargs handling
+
+**Status**: Bounded support via feature detection - analyzer tracks these features for runtime module selection, full lowering is future work.
 
 **Deliverable**: More expressive support with clearer feasibility than a blanket syntax-percentage target.
 

@@ -133,6 +133,12 @@ from .ast import (
     _StmtTryExcept,
     _StmtFunctionDef,
     _StmtReturn,
+    _StmtAsyncFunctionDef,
+    _StmtAsyncFor,
+    _StmtAsyncWith,
+    _ExprAwait,
+    _ExprYield,
+    _ExprYieldFrom,
 )
 
 
@@ -1254,6 +1260,12 @@ def _parse_stmt(stmt):
         return _parse_try_except(stmt)
     if isinstance(stmt, ast.FunctionDef):
         return _parse_function_def(stmt)
+    if isinstance(stmt, ast.AsyncFunctionDef):
+        return _parse_async_function_def(stmt)
+    if isinstance(stmt, ast.AsyncFor):
+        return _parse_async_for_stmt(stmt)
+    if isinstance(stmt, ast.AsyncWith):
+        return _parse_async_with_stmt(stmt)
     if isinstance(stmt, ast.Return):
         return _parse_return_stmt(stmt)
     raise RuntimeError(f"Unsupported statement: {ast.dump(stmt)}")
@@ -1393,6 +1405,40 @@ def _parse_function_def(stmt):
     body = _parse_stmt_block(stmt.body)
     return_type = None
     return _StmtFunctionDef(stmt.name, param_names, body, return_type)
+
+
+def _parse_async_function_def(stmt):
+    """Parse ast.AsyncFunctionDef into _StmtAsyncFunctionDef."""
+    param_names = [arg.arg for arg in stmt.args.args]
+    body = _parse_stmt_block(stmt.body)
+    return_type = None
+    return _StmtAsyncFunctionDef(stmt.name, param_names, body, return_type)
+
+
+def _parse_async_for_stmt(stmt):
+    """Parse ast.AsyncFor into _StmtAsyncFor."""
+    if not isinstance(stmt.target, ast.Name):
+        raise RuntimeError("async for loop target must be a simple name")
+    target = stmt.target.id
+    iterable = _parse_expr(stmt.iter)
+    body = _parse_stmt_block(stmt.body)
+    return _StmtAsyncFor(target, iterable, body)
+
+
+def _parse_async_with_stmt(stmt):
+    """Parse ast.AsyncWith into _StmtAsyncWith."""
+    items = []
+    for item in stmt.items:
+        context_expr = _parse_expr(item.context_expr)
+        if item.optional_vars is not None:
+            if not isinstance(item.optional_vars, ast.Name):
+                raise RuntimeError("async with target must be a simple name")
+            as_var = item.optional_vars.id
+        else:
+            as_var = None
+        items.append((context_expr, as_var))
+    body = _parse_stmt_block(stmt.body)
+    return _StmtAsyncWith(items, body)
 
 
 def _parse_stmt_block(stmts):
@@ -2219,6 +2265,15 @@ def _parse_expr(node):
         recv = _parse_expr(node.func.value)
         args = [recv, *[_parse_expr(a) for a in node.args]]
         return _ExprCall(f"method:{node.func.attr}", args)
+    if isinstance(node, ast.Await):
+        value = _parse_expr(node.value)
+        return _ExprAwait(value)
+    if isinstance(node, ast.Yield):
+        value = _parse_expr(node.value) if node.value else None
+        return _ExprYield(value)
+    if isinstance(node, ast.YieldFrom):
+        value = _parse_expr(node.value)
+        return _ExprYieldFrom(value)
     # Generic function call (user-defined or unknown)
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         args = [_parse_expr(a) for a in node.args]

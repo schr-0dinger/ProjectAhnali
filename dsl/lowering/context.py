@@ -142,6 +142,12 @@ from dsl.ast import (
     _StmtTryExcept,
     _StmtFunctionDef,
     _StmtReturn,
+    _StmtAsyncFunctionDef,
+    _StmtAsyncFor,
+    _StmtAsyncWith,
+    _ExprAwait,
+    _ExprYield,
+    _ExprYieldFrom,
 )
 from dsl.ir_helpers import (
     add_view,
@@ -3152,10 +3158,12 @@ class _PythonicContext(
             return self._compile_function_def(stmt)
         if isinstance(stmt, _StmtReturn):
             return self._compile_return_stmt(stmt)
-        if isinstance(stmt, _StmtFunctionDef):
-            return self._compile_function_def(stmt)
-        if isinstance(stmt, _StmtReturn):
-            return self._compile_return_stmt(stmt)
+        if isinstance(stmt, _StmtAsyncFunctionDef):
+            return self._compile_async_function_def(stmt)
+        if isinstance(stmt, _StmtAsyncFor):
+            return self._compile_async_for_stmt(stmt)
+        if isinstance(stmt, _StmtAsyncWith):
+            return self._compile_async_with_stmt(stmt)
         if isinstance(stmt, _StmtToast):
             return self._compile_toast_stmt(stmt)
         if isinstance(stmt, _StmtSnackbar):
@@ -7353,6 +7361,21 @@ class _PythonicContext(
                     ),
                 ),
             ], var(t)
+        if isinstance(expr, _ExprAwait):
+            raise RuntimeError(
+                "await expressions are not yet supported in this bounded scope. "
+                "Feature is tracked by the analyzer for runtime module selection."
+            )
+        if isinstance(expr, _ExprYield):
+            raise RuntimeError(
+                "yield expressions are not yet supported in this bounded scope. "
+                "Feature is tracked by the analyzer for runtime module selection."
+            )
+        if isinstance(expr, _ExprYieldFrom):
+            raise RuntimeError(
+                "yield from expressions are not yet supported in this bounded scope. "
+                "Feature is tracked by the analyzer for runtime module selection."
+            )
         raise RuntimeError(f"Unsupported expression in assignment: {expr}")
 
     def _compile_set_text_stmt(self, stmt):
@@ -8390,6 +8413,35 @@ class _PythonicContext(
         prefix, result = self._compile_int_expr(stmt.value)
         prefix.append(Return(result))
         return prefix
+
+    def _compile_async_function_def(self, stmt):
+        """Compile an async function definition.
+
+        Bounded scope: async def is tracked by feature analyzer but not yet
+        fully lowered. The analyzer records this for runtime module selection.
+        """
+        name = stmt.name
+        params = stmt.params
+        param_types = ["I"] * len(params)
+
+        if not hasattr(self, "_user_functions"):
+            self._user_functions = []
+        self._user_functions.append((name, params, param_types, stmt.body, stmt.return_type, True))
+        return []
+
+    def _compile_async_for_stmt(self, stmt):
+        """Compile an async for loop.
+
+        Bounded scope: async for is tracked but not yet fully lowered.
+        """
+        raise RuntimeError("async for is not yet supported in this bounded scope")
+
+    def _compile_async_with_stmt(self, stmt):
+        """Compile an async with statement.
+
+        Bounded scope: async with is tracked but not yet fully lowered.
+        """
+        raise RuntimeError("async with is not yet supported in this bounded scope")
 
 
 # -------------------------------
