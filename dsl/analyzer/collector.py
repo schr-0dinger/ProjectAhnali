@@ -47,7 +47,7 @@ class _FeatureCollector(ast.NodeVisitor):
         self.collections = _empty_flags("list", "dict", "set", "tuple", "list_comprehension", "dict_comprehension", "set_comprehension")
         self.control_flow = _empty_flags("if", "for", "while", "try", "with", "async_with")
         self.functions = _empty_flags("def", "lambda", "return", "decorators", "varargs")
-        self.classes = _empty_flags("class")
+        self.classes = _empty_flags("class", "inheritance", "descriptors", "metaclasses", "getattribute")
         self.async_features = _empty_flags("async_def", "await", "yield", "yield_from")
         self.introspection = _empty_flags("getattr", "setattr", "hasattr", "delattr")
         self.imports = _empty_flags("import", "import_from")
@@ -113,6 +113,18 @@ class _FeatureCollector(ast.NodeVisitor):
 
     def visit_ClassDef(self, node: ast.ClassDef):
         self.classes["class"] = True
+        if node.bases:
+            self.classes["inheritance"] = True
+        for kw in node.keywords:
+            if kw.arg == "metaclass":
+                self.classes["metaclasses"] = True
+                break
+        for item in node.body:
+            if isinstance(item, ast.FunctionDef):
+                if item.name in ("__get__", "__set__", "__delete__"):
+                    self.classes["descriptors"] = True
+                if item.name == "__getattribute__":
+                    self.classes["getattribute"] = True
         self.generic_visit(node)
 
     def visit_Await(self, node: ast.Await):

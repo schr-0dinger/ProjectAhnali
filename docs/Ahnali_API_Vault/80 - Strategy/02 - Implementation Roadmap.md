@@ -256,7 +256,15 @@ text_view.setText("Hello")
 - Metaclasses → class creation hooks
 - `__getattribute__` → full attribute dispatch
 
-**Status**: Not yet implemented - tracked as future work.
+**Implemented now:**
+- Feature analyzer detects inheritance, descriptors, metaclasses, __getattribute__
+- Runtime modules selected when these features are used:
+  - `python.oop.inheritance` for class inheritance
+  - `python.oop.descriptors` for __get__, __set__, __delete__
+  - `python.oop.metaclasses` for metaclass definitions
+- AST node `_StmtClassDef` with support for bases, body, decorators, metaclass
+- Clear diagnostic errors when inheritance/metaclass used at lowering
+- 708 passing tests (701 baseline + 7 new Phase 4.2 tests)
 
 ### 4.3 Advanced Python
 - Generators → state machine generation

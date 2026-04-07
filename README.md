@@ -61,7 +61,7 @@ There's also an opt-in reactive mode if you need it, but static is the default a
 PYTHONPATH=. pytest
 ```
 
-Current: 701 passing.
+Current: 708 passing.
 
 ## Building an APK
 

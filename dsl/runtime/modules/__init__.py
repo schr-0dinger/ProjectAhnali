@@ -162,5 +162,32 @@ def default_runtime_module_registry() -> dict[str, RuntimeModuleSpec]:
             helper_method="pack",
             helper_sig="([Ljava/lang/Object;)[Ljava/lang/Object;",
         ),
+        RuntimeModuleSpec(
+            name="python.oop.inheritance",
+            category="python",
+            trigger="class inheritance (class Foo(Bar))",
+            dependencies=("core.static",),
+            helper_class_desc="Lcom/ahnali/runtime/InheritanceRuntime;",
+            helper_method="init",
+            helper_sig="()V",
+        ),
+        RuntimeModuleSpec(
+            name="python.oop.descriptors",
+            category="python",
+            trigger="descriptors (__get__, __set__, __delete__)",
+            dependencies=("core.static",),
+            helper_class_desc="Lcom/ahnali/runtime/DescriptorRuntime;",
+            helper_method="init",
+            helper_sig="()V",
+        ),
+        RuntimeModuleSpec(
+            name="python.oop.metaclasses",
+            category="python",
+            trigger="metaclass definition",
+            dependencies=("core.static",),
+            helper_class_desc="Lcom/ahnali/runtime/MetaclassRuntime;",
+            helper_method="init",
+            helper_sig="()V",
+        ),
     ]
     return {module.name: module for module in modules}

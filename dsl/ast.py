@@ -891,6 +891,16 @@ class _StmtWith:
         self.body = body
 
 
+class _StmtClassDef:
+    """Class definition with inheritance and decorators."""
+    def __init__(self, name, bases, body, decorators=None, metaclass=None):
+        self.name = name
+        self.bases = bases
+        self.body = body
+        self.decorators = decorators or []
+        self.metaclass = metaclass
+
+
 class _ExprStarred:
     """Starred expression (*args or **kwargs in call)."""
     def __init__(self, value, is_kwargs=False):

@@ -66,6 +66,13 @@ def select_runtime_modules(
     if profile.functions.get("varargs"):
         _append_unique(selected, seen, registry["python.advanced.varargs"])
 
+    if profile.classes.get("inheritance"):
+        _append_unique(selected, seen, registry["python.oop.inheritance"])
+    if profile.classes.get("descriptors"):
+        _append_unique(selected, seen, registry["python.oop.descriptors"])
+    if profile.classes.get("metaclasses"):
+        _append_unique(selected, seen, registry["python.oop.metaclasses"])
+
     if any(True for _ in (support_classes or [])):
         _append_unique(selected, seen, registry["support.event_listeners"])
 

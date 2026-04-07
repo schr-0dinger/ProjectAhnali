@@ -146,6 +146,7 @@ from dsl.ast import (
     _StmtAsyncFor,
     _StmtAsyncWith,
     _StmtWith,
+    _StmtClassDef,
     _ExprStarred,
     _ExprArguments,
     _ExprAwait,
@@ -3169,6 +3170,8 @@ class _PythonicContext(
             return self._compile_async_with_stmt(stmt)
         if isinstance(stmt, _StmtWith):
             return self._compile_with_stmt(stmt)
+        if isinstance(stmt, _StmtClassDef):
+            return self._compile_class_def_stmt(stmt)
         if isinstance(stmt, _StmtToast):
             return self._compile_toast_stmt(stmt)
         if isinstance(stmt, _StmtSnackbar):
@@ -8462,6 +8465,24 @@ class _PythonicContext(
             "with statement is not yet supported in this bounded scope. "
             "Feature is tracked by the analyzer for runtime module selection."
         )
+
+    def _compile_class_def_stmt(self, stmt):
+        """Compile a class definition.
+
+        Bounded scope: class definitions with inheritance, descriptors,
+        metaclasses are tracked but not yet fully lowered.
+        """
+        if stmt.bases:
+            raise RuntimeError(
+                "Class inheritance is not yet supported in this bounded scope. "
+                "Feature is tracked by the analyzer for runtime module selection."
+            )
+        if stmt.metaclass:
+            raise RuntimeError(
+                "Metaclasses are not yet supported in this bounded scope. "
+                "Feature is tracked by the analyzer for runtime module selection."
+            )
+        return []
 
 
 # -------------------------------

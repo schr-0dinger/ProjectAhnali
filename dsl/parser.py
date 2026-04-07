@@ -137,6 +137,7 @@ from .ast import (
     _StmtAsyncFor,
     _StmtAsyncWith,
     _StmtWith,
+    _StmtClassDef,
     _ExprAwait,
     _ExprYield,
     _ExprYieldFrom,
@@ -1269,6 +1270,8 @@ def _parse_stmt(stmt):
         return _parse_async_with_stmt(stmt)
     if isinstance(stmt, ast.With):
         return _parse_with_stmt(stmt)
+    if isinstance(stmt, ast.ClassDef):
+        return _parse_class_def(stmt)
     if isinstance(stmt, ast.Return):
         return _parse_return_stmt(stmt)
     raise RuntimeError(f"Unsupported statement: {ast.dump(stmt)}")
@@ -1458,6 +1461,18 @@ def _parse_with_stmt(stmt):
         items.append((context_expr, as_var))
     body = _parse_stmt_block(stmt.body)
     return _StmtWith(items, body)
+
+
+def _parse_class_def(stmt):
+    """Parse ast.ClassDef into _StmtClassDef."""
+    bases = [base.id for base in stmt.bases if isinstance(base, ast.Name)]
+    body = _parse_stmt_block(stmt.body)
+    decorators = [d.id if isinstance(d, ast.Name) else None for d in stmt.decorator_list]
+    metaclass = None
+    for kw in stmt.keywords:
+        if kw.arg == "metaclass" and isinstance(kw.value, ast.Name):
+            metaclass = kw.value.id
+    return _StmtClassDef(stmt.name, bases, body, decorators, metaclass)
 
 
 def _parse_stmt_block(stmts):
