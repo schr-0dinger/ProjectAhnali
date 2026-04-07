@@ -59,6 +59,13 @@ def select_runtime_modules(
     if profile.imports.get("import") or profile.imports.get("import_from"):
         _append_unique(selected, seen, registry["python.imports.static_loader"])
 
+    if profile.functions.get("decorators"):
+        _append_unique(selected, seen, registry["python.advanced.decorators"])
+    if profile.control_flow.get("with") or profile.control_flow.get("async_with"):
+        _append_unique(selected, seen, registry["python.advanced.context_managers"])
+    if profile.functions.get("varargs"):
+        _append_unique(selected, seen, registry["python.advanced.varargs"])
+
     if any(True for _ in (support_classes or [])):
         _append_unique(selected, seen, registry["support.event_listeners"])
 

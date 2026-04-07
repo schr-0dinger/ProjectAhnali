@@ -135,5 +135,32 @@ def default_runtime_module_registry() -> dict[str, RuntimeModuleSpec]:
             trigger="generated support listener classes",
             dependencies=("core.static",),
         ),
+        RuntimeModuleSpec(
+            name="python.advanced.decorators",
+            category="python",
+            trigger="function decorators",
+            dependencies=("core.static",),
+            helper_class_desc="Lcom/ahnali/runtime/DecoratorRuntime;",
+            helper_method="wrap",
+            helper_sig="(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        ),
+        RuntimeModuleSpec(
+            name="python.advanced.context_managers",
+            category="python",
+            trigger="with statement / context managers",
+            dependencies=("core.static",),
+            helper_class_desc="Lcom/ahnali/runtime/ContextManagerRuntime;",
+            helper_method="enter",
+            helper_sig="(Ljava/lang/Object;)Ljava/lang/Object;",
+        ),
+        RuntimeModuleSpec(
+            name="python.advanced.varargs",
+            category="python",
+            trigger="*args / **kwargs in function definitions",
+            dependencies=("core.static",),
+            helper_class_desc="Lcom/ahnali/runtime/VarargsRuntime;",
+            helper_method="pack",
+            helper_sig="([Ljava/lang/Object;)[Ljava/lang/Object;",
+        ),
     ]
     return {module.name: module for module in modules}

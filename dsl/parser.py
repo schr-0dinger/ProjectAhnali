@@ -136,6 +136,7 @@ from .ast import (
     _StmtAsyncFunctionDef,
     _StmtAsyncFor,
     _StmtAsyncWith,
+    _StmtWith,
     _ExprAwait,
     _ExprYield,
     _ExprYieldFrom,
@@ -1266,6 +1267,8 @@ def _parse_stmt(stmt):
         return _parse_async_for_stmt(stmt)
     if isinstance(stmt, ast.AsyncWith):
         return _parse_async_with_stmt(stmt)
+    if isinstance(stmt, ast.With):
+        return _parse_with_stmt(stmt)
     if isinstance(stmt, ast.Return):
         return _parse_return_stmt(stmt)
     raise RuntimeError(f"Unsupported statement: {ast.dump(stmt)}")
@@ -1439,6 +1442,22 @@ def _parse_async_with_stmt(stmt):
         items.append((context_expr, as_var))
     body = _parse_stmt_block(stmt.body)
     return _StmtAsyncWith(items, body)
+
+
+def _parse_with_stmt(stmt):
+    """Parse ast.With into _StmtWith."""
+    items = []
+    for item in stmt.items:
+        context_expr = _parse_expr(item.context_expr)
+        if item.optional_vars is not None:
+            if not isinstance(item.optional_vars, ast.Name):
+                raise RuntimeError("with target must be a simple name")
+            as_var = item.optional_vars.id
+        else:
+            as_var = None
+        items.append((context_expr, as_var))
+    body = _parse_stmt_block(stmt.body)
+    return _StmtWith(items, body)
 
 
 def _parse_stmt_block(stmts):

@@ -264,7 +264,15 @@ text_view.setText("Hello")
 - Context managers → try/finally pattern
 - `*args`/`**kwargs` → varargs handling
 
-**Status**: Bounded support via feature detection - analyzer tracks these features for runtime module selection, full lowering is future work.
+**Implemented now:**
+- Feature analyzer detects decorators, varargs (*args/**kwargs), with statement, async with
+- Runtime modules selected when these features are used:
+  - `python.advanced.decorators` for @decorator syntax
+  - `python.advanced.context_managers` for with statement
+  - `python.advanced.varargs` for *args/**kwargs in function definitions
+- Clear diagnostic errors when these features are encountered at lowering: "with statement is not yet supported in this bounded scope"
+- AST nodes added: `_StmtWith`, `_ExprStarred`, `_ExprArguments`
+- 701 passing tests (695 baseline + 6 new Phase 4.3 tests)
 
 **Deliverable**: More expressive support with clearer feasibility than a blanket syntax-percentage target.
 

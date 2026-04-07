@@ -145,6 +145,9 @@ from dsl.ast import (
     _StmtAsyncFunctionDef,
     _StmtAsyncFor,
     _StmtAsyncWith,
+    _StmtWith,
+    _ExprStarred,
+    _ExprArguments,
     _ExprAwait,
     _ExprYield,
     _ExprYieldFrom,
@@ -3164,6 +3167,8 @@ class _PythonicContext(
             return self._compile_async_for_stmt(stmt)
         if isinstance(stmt, _StmtAsyncWith):
             return self._compile_async_with_stmt(stmt)
+        if isinstance(stmt, _StmtWith):
+            return self._compile_with_stmt(stmt)
         if isinstance(stmt, _StmtToast):
             return self._compile_toast_stmt(stmt)
         if isinstance(stmt, _StmtSnackbar):
@@ -8442,6 +8447,17 @@ class _PythonicContext(
         Bounded scope: async with is tracked but not yet fully lowered.
         """
         raise RuntimeError("async with is not yet supported in this bounded scope")
+
+    def _compile_with_stmt(self, stmt):
+        """Compile a with statement.
+
+        Bounded scope: with statement is tracked but not yet fully lowered.
+        The analyzer records this for runtime module selection.
+        """
+        raise RuntimeError(
+            "with statement is not yet supported in this bounded scope. "
+            "Feature is tracked by the analyzer for runtime module selection."
+        )
 
 
 # -------------------------------

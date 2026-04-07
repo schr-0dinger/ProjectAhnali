@@ -45,8 +45,8 @@ def _empty_flags(*keys: str) -> dict[str, bool]:
 class _FeatureCollector(ast.NodeVisitor):
     def __init__(self):
         self.collections = _empty_flags("list", "dict", "set", "tuple", "list_comprehension", "dict_comprehension", "set_comprehension")
-        self.control_flow = _empty_flags("if", "for", "while", "try", "with")
-        self.functions = _empty_flags("def", "lambda", "return")
+        self.control_flow = _empty_flags("if", "for", "while", "try", "with", "async_with")
+        self.functions = _empty_flags("def", "lambda", "return", "decorators", "varargs")
         self.classes = _empty_flags("class")
         self.async_features = _empty_flags("async_def", "await", "yield", "yield_from")
         self.introspection = _empty_flags("getattr", "setattr", "hasattr", "delattr")
@@ -82,13 +82,25 @@ class _FeatureCollector(ast.NodeVisitor):
         self.control_flow["with"] = True
         self.generic_visit(node)
 
+    def visit_AsyncWith(self, node: ast.AsyncWith):
+        self.control_flow["async_with"] = True
+        self.generic_visit(node)
+
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self.functions["def"] = True
+        if node.decorator_list:
+            self.functions["decorators"] = True
+        if node.args.vararg or node.args.kwarg or node.args.kwonlyargs:
+            self.functions["varargs"] = True
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
         self.functions["def"] = True
         self.async_features["async_def"] = True
+        if node.decorator_list:
+            self.functions["decorators"] = True
+        if node.args.vararg or node.args.kwarg or node.args.kwonlyargs:
+            self.functions["varargs"] = True
         self.generic_visit(node)
 
     def visit_Return(self, node: ast.Return):

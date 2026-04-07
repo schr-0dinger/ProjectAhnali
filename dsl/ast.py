@@ -884,11 +884,11 @@ class _StmtAsyncWith:
         self.body = body
 
 
-class _ExprDecorator:
-    """Decorator applied to a function."""
-    def __init__(self, func, decorators):
-        self.func = func
-        self.decorators = decorators
+class _StmtWith:
+    """With statement: with context as item:"""
+    def __init__(self, items, body):
+        self.items = items
+        self.body = body
 
 
 class _ExprStarred:
@@ -896,6 +896,14 @@ class _ExprStarred:
     def __init__(self, value, is_kwargs=False):
         self.value = value
         self.is_kwargs = is_kwargs
+
+
+class _ExprArguments:
+    """Function arguments with *args and **kwargs support."""
+    def __init__(self, args, vararg=None, kwarg=None):
+        self.args = args
+        self.vararg = vararg
+        self.kwarg = kwarg
 
 
 class _ExprRoot:
